@@ -1,0 +1,33 @@
+[
+  {
+    "ContainingType": "Alahia.eCF.Api.Controllers.EcfController",
+    "Method": "Enviar",
+    "RelativePath": "api/Ecf/enviar",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "file",
+        "Type": "Microsoft.AspNetCore.Http.IFormFile",
+        "IsRequired": false
+      },
+      {
+        "Name": "rnc",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "rutaCertificado",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "passwordCertificado",
+        "Type": "System.String",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  }
+]

@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Controller_SelectedScaffolderID>ApiControllerWithActionsScaffolder</Controller_SelectedScaffolderID>
+    <Controller_SelectedScaffolderCategoryPath>root/Common/Api</Controller_SelectedScaffolderCategoryPath>
+    <NameOfLastUsedPublishProfile>C:\Users\USUARIO\AlahiaPosApi\AlahiaPosApi\AlahiaPosApi\Properties\PublishProfiles\FolderProfile.pubxml</NameOfLastUsedPublishProfile>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Update="Resource\e-CF 31 v.1.0.xsd">
+      <SubType>Designer</SubType>
+    </None>
+    <None Update="Resource\e-CF 33 v.1.0.xsd">
+      <SubType>Designer</SubType>
+    </None>
+    <None Update="Resource\e-CF 41 v.1.0.xsd">
+      <SubType>Designer</SubType>
+    </None>
+  </ItemGroup>
+</Project>

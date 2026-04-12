@@ -1,0 +1,21 @@
+﻿using AlahiaPos.Entities.Domain;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace AlahiaPos.Entities.Interfaces
+{
+    public interface IGastos
+    {
+        Task<IEnumerable<Gastos>> GetAllGastos(int IdEmpresa);
+        Task<decimal> TotalGastosDelMes(int IdEmpresa);
+        Task<Gastos> GetGastosById(int id);
+        Task InsertGastos(Gastos Gastos);
+
+        void UpdateGastos(Gastos Gastos);
+
+        void DeleteGastos(int id);
+    }
+}

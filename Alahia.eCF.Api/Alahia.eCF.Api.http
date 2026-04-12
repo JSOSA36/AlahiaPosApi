@@ -1,0 +1,6 @@
+@Alahia.eCF.Api_HostAddress = http://localhost:5203
+
+GET {{Alahia.eCF.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

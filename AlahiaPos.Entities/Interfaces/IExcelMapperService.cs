@@ -1,0 +1,17 @@
+﻿using AlahiaPos.Entities.Domain;
+using AlahiaPos.Entities.Dto;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace AlahiaPos.Entities.Interfaces
+{
+    
+        public interface IExcelMapperService
+        {
+            Task<List<EcfDto>> Mapear(Stream excelStream, int tipoeCF);
+        }
+    }
+

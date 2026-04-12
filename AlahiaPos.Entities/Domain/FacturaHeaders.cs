@@ -1,0 +1,78 @@
+﻿using AlahiaPos.Entities.Interfaces;
+
+using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace AlahiaPos.Entities.Domain
+{
+    public class FacturaHeaders:BaseEntity
+    {
+        [Key]
+        public int IdFacturaHeader { get; set; }
+
+        public bool? PrintLavador { get; set; }
+        public string? NumeroDocumento { get; set; } = "";
+         public string? Moneda { get; set; }
+        public string? Plazo { get; set; } = "";
+        public string? TipoFactura { get; set; } = "";
+        public decimal MontoPropina { get; set; }
+        public bool PrintPending { get; set; }
+        public bool? PrintAcount { get; set; }
+        public int? IdEmpleados { get; set; }
+        public int? IdEmpleadoComision { get; set; }
+        public string? Hora { get; set; } = "";
+        public int? IdMoso { get; set; }
+        public int? IdMesa { get; set; }
+        public int? IdTipoDocumentos { get; set; }
+        public string? NCF { get; set; } = "";
+        public string? FormaPago { get; set; } = "";
+        public int? IDCliente { get; set; }
+        
+        public string? MotivoAnulacion { get; set; }
+        public decimal Efectivo { get; set; }
+
+        public decimal SubTotal { get; set; }
+        public decimal MontoTarjetaVisa { get; set; }
+        public decimal MontoTarjetaMasterCard { get; set; }
+        public decimal MontoTransferencia { get; set; }
+        public decimal MontoCheques { get; set; }
+        public decimal MontoEfectivo { get; set; }
+        public decimal MontoNotaCredito { get; set; }
+        public decimal Cambio { get; set; }
+        public decimal Total { get; set; }
+        public decimal TotalItbis { get; set; }
+        public decimal TotalDescuento { get; set; }
+       
+        public bool EstaCancelada { get; set; }
+        public bool EstaCerrada { get; set; }
+        public string? Nota { get; set; } = "";
+        public DateTime FechaBencimiento { get; set; }
+        public string? Estado { get; set; } = "";
+        public decimal Pagado { get; set; }
+        [ForeignKey(nameof(IDCliente))]
+        //[NotMapped]
+        public Clientes? Clientes { get; set; } = new Clientes();
+        //[NotMapped]
+        [ForeignKey(nameof(IdEmpleados))]
+        public virtual Empleados? Empleados { get; set; } = new Empleados();
+        [NotMapped]
+        public virtual TipoDocumentos? TipoDocumentos { get; set; } = new TipoDocumentos();
+        //[NotMapped]
+        public virtual IEnumerable<FacturaDetalles>? FacturaDetalles { get; set; }
+        public decimal Pendiente { get; set; }
+       
+        public bool AjustadoInventario { get; set; }
+        [NotMapped]
+        public Mesas? Mesas { get; set; }=new Mesas();
+        public string? NombreCuenta { get; set; } = "";
+        public string? Estado_Orden { get; set; }
+        //public string? EstadoOrden { get; set; }
+        public string? TipoOrden { get; set; } = "";
+        
+    }
+}

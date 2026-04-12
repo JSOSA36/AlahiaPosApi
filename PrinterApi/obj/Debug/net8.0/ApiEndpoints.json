@@ -1,0 +1,44 @@
+[
+  {
+    "ContainingType": "PrinterApi.Controllers.PrinterController",
+    "Method": "PrintFactura",
+    "RelativePath": "api/Printer/factura/{idFactura}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idFactura",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "PrinterApi.Controllers.PrinterController",
+    "Method": "PrintLavador",
+    "RelativePath": "api/Printer/lavador/{idFacturaHeader}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idFacturaHeader",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "PrinterApi.Controllers.PrinterController",
+    "Method": "Ping",
+    "RelativePath": "api/Printer/ping",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  }
+]

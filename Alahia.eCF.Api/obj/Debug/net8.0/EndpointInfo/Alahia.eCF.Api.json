@@ -1,0 +1,60 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Alahia.eCF.Api",
+    "version": "1.0"
+  },
+  "paths": {
+    "/api/Ecf/enviar": {
+      "post": {
+        "tags": [
+          "Ecf"
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  },
+                  "rnc": {
+                    "type": "string"
+                  },
+                  "rutaCertificado": {
+                    "type": "string"
+                  },
+                  "passwordCertificado": {
+                    "type": "string"
+                  }
+                }
+              },
+              "encoding": {
+                "file": {
+                  "style": "form"
+                },
+                "rnc": {
+                  "style": "form"
+                },
+                "rutaCertificado": {
+                  "style": "form"
+                },
+                "passwordCertificado": {
+                  "style": "form"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    }
+  },
+  "components": { }
+}

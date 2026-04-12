@@ -1,0 +1,68 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "PrinterApi",
+    "version": "1.0"
+  },
+  "paths": {
+    "/api/Printer/factura/{idFactura}": {
+      "get": {
+        "tags": [
+          "Printer"
+        ],
+        "parameters": [
+          {
+            "name": "idFactura",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Printer/lavador/{idFacturaHeader}": {
+      "get": {
+        "tags": [
+          "Printer"
+        ],
+        "parameters": [
+          {
+            "name": "idFacturaHeader",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Printer/ping": {
+      "get": {
+        "tags": [
+          "Printer"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    }
+  },
+  "components": { }
+}

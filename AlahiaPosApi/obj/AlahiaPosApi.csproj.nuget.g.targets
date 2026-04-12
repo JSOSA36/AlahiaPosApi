@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ImportGroup Condition=" '$(ExcludeRestorePackageImports)' != 'true' ">
+    <Import Project="$(NuGetPackageRoot)microsoft.extensions.logging.abstractions\7.0.0\buildTransitive\net6.0\Microsoft.Extensions.Logging.Abstractions.targets" Condition="Exists('$(NuGetPackageRoot)microsoft.extensions.logging.abstractions\7.0.0\buildTransitive\net6.0\Microsoft.Extensions.Logging.Abstractions.targets')" />
+    <Import Project="$(NuGetPackageRoot)microsoft.bcl.memory\9.0.0\buildTransitive\netcoreapp2.0\Microsoft.Bcl.Memory.targets" Condition="Exists('$(NuGetPackageRoot)microsoft.bcl.memory\9.0.0\buildTransitive\netcoreapp2.0\Microsoft.Bcl.Memory.targets')" />
+    <Import Project="$(NuGetPackageRoot)system.text.json\8.0.5\buildTransitive\net6.0\System.Text.Json.targets" Condition="Exists('$(NuGetPackageRoot)system.text.json\8.0.5\buildTransitive\net6.0\System.Text.Json.targets')" />
+    <Import Project="$(NuGetPackageRoot)system.formats.asn1\11.0.0-preview.1.26104.118\buildTransitive\netcoreapp2.0\System.Formats.Asn1.targets" Condition="Exists('$(NuGetPackageRoot)system.formats.asn1\11.0.0-preview.1.26104.118\buildTransitive\netcoreapp2.0\System.Formats.Asn1.targets')" />
+    <Import Project="$(NuGetPackageRoot)microsoft.bcl.cryptography\11.0.0-preview.1.26104.118\buildTransitive\netcoreapp2.0\Microsoft.Bcl.Cryptography.targets" Condition="Exists('$(NuGetPackageRoot)microsoft.bcl.cryptography\11.0.0-preview.1.26104.118\buildTransitive\netcoreapp2.0\Microsoft.Bcl.Cryptography.targets')" />
+    <Import Project="$(NuGetPackageRoot)system.security.cryptography.pkcs\11.0.0-preview.1.26104.118\buildTransitive\netcoreapp2.0\System.Security.Cryptography.Pkcs.targets" Condition="Exists('$(NuGetPackageRoot)system.security.cryptography.pkcs\11.0.0-preview.1.26104.118\buildTransitive\netcoreapp2.0\System.Security.Cryptography.Pkcs.targets')" />
+    <Import Project="$(NuGetPackageRoot)system.security.cryptography.xml\11.0.0-preview.1.26104.118\buildTransitive\netcoreapp2.0\System.Security.Cryptography.Xml.targets" Condition="Exists('$(NuGetPackageRoot)system.security.cryptography.xml\11.0.0-preview.1.26104.118\buildTransitive\netcoreapp2.0\System.Security.Cryptography.Xml.targets')" />
+    <Import Project="$(NuGetPackageRoot)microsoft.extensions.apidescription.server\3.0.0\build\Microsoft.Extensions.ApiDescription.Server.targets" Condition="Exists('$(NuGetPackageRoot)microsoft.extensions.apidescription.server\3.0.0\build\Microsoft.Extensions.ApiDescription.Server.targets')" />
+  </ImportGroup>
+</Project>
