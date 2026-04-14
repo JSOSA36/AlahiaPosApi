@@ -4512,6 +4512,37 @@
         }
       }
     },
+    "/api/FacturaHeader/ProcesarFactura": {
+      "post": {
+        "tags": [
+          "FacturaHeader"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FacturaDirectaDTO"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FacturaDirectaDTO"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/FacturaDirectaDTO"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
     "/api/FacturaHeader/InsertFactura": {
       "post": {
         "tags": [
@@ -11553,6 +11584,22 @@
           },
           "facturaHeader": {
             "$ref": "#/components/schemas/FacturaHeaders"
+          }
+        },
+        "additionalProperties": false
+      },
+      "FacturaDirectaDTO": {
+        "type": "object",
+        "properties": {
+          "header": {
+            "$ref": "#/components/schemas/FacturaHeaderDto"
+          },
+          "pagos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PagoDTO"
+            },
+            "nullable": true
           }
         },
         "additionalProperties": false

@@ -22,3 +22,16 @@ C:\Users\USUARIO\AlahiaPosApi\AlahiaPosApi\AlahiaPos.Entities\obj\Release\net6.0
 C:\Users\USUARIO\AlahiaPosApi\AlahiaPosApi\AlahiaPos.Entities\obj\Release\net6.0\refint\AlahiaPos.Entities.dll
 C:\Users\USUARIO\AlahiaPosApi\AlahiaPosApi\AlahiaPos.Entities\obj\Release\net6.0\AlahiaPos.Entities.pdb
 C:\Users\USUARIO\AlahiaPosApi\AlahiaPosApi\AlahiaPos.Entities\obj\Release\net6.0\ref\AlahiaPos.Entities.dll
+C:\Users\USUARIO\Documents\GitHub\AlahiaPosApi\AlahiaPos.Entities\bin\Release\net6.0\AlahiaPos.Entities.deps.json
+C:\Users\USUARIO\Documents\GitHub\AlahiaPosApi\AlahiaPos.Entities\bin\Release\net6.0\AlahiaPos.Entities.dll
+C:\Users\USUARIO\Documents\GitHub\AlahiaPosApi\AlahiaPos.Entities\bin\Release\net6.0\AlahiaPos.Entities.pdb
+C:\Users\USUARIO\Documents\GitHub\AlahiaPosApi\AlahiaPos.Entities\obj\Release\net6.0\AlahiaPos.Entities.csproj.AssemblyReference.cache
+C:\Users\USUARIO\Documents\GitHub\AlahiaPosApi\AlahiaPos.Entities\obj\Release\net6.0\AlahiaPos.Entities.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\USUARIO\Documents\GitHub\AlahiaPosApi\AlahiaPos.Entities\obj\Release\net6.0\AlahiaPos.Entities.AssemblyInfoInputs.cache
+C:\Users\USUARIO\Documents\GitHub\AlahiaPosApi\AlahiaPos.Entities\obj\Release\net6.0\AlahiaPos.Entities.AssemblyInfo.cs
+C:\Users\USUARIO\Documents\GitHub\AlahiaPosApi\AlahiaPos.Entities\obj\Release\net6.0\AlahiaPos.Entities.csproj.CoreCompileInputs.cache
+C:\Users\USUARIO\Documents\GitHub\AlahiaPosApi\AlahiaPos.Entities\obj\Release\net6.0\AlahiaPos.Entities.sourcelink.json
+C:\Users\USUARIO\Documents\GitHub\AlahiaPosApi\AlahiaPos.Entities\obj\Release\net6.0\AlahiaPos.Entities.dll
+C:\Users\USUARIO\Documents\GitHub\AlahiaPosApi\AlahiaPos.Entities\obj\Release\net6.0\refint\AlahiaPos.Entities.dll
+C:\Users\USUARIO\Documents\GitHub\AlahiaPosApi\AlahiaPos.Entities\obj\Release\net6.0\AlahiaPos.Entities.pdb
+C:\Users\USUARIO\Documents\GitHub\AlahiaPosApi\AlahiaPos.Entities\obj\Release\net6.0\ref\AlahiaPos.Entities.dll

@@ -106,15 +106,15 @@ namespace AlahiaPosApi.Controllers
                 // 🔥 ALERTA 80%
                 string alertaPlan = null;
 
-                if (plan.LimiteFacturacion > 0)
-                {
-                    var porcentajeUso = (totalFacturado / plan.LimiteFacturacion) * 100;
+                //if (plan.LimiteFacturacion > 0)
+                //{
+                //    var porcentajeUso = (totalFacturado / plan.LimiteFacturacion) * 100;
 
-                    if (porcentajeUso >= 80 && porcentajeUso < 100)
-                    {
-                        alertaPlan = $"Has consumido el {Math.Round(porcentajeUso, 0)}% de tu plan.";
-                    }
-                }
+                //    if (porcentajeUso >= 80 && porcentajeUso < 100)
+                //    {
+                //        alertaPlan = $"Has consumido el {Math.Round(porcentajeUso, 0)}% de tu plan.";
+                //    }
+                //}
 
                 // 🔴 BLOQUEO LOGIN
                 if (plan.LimiteFacturacion > 0 && totalFacturado >= plan.LimiteFacturacion)

@@ -3118,6 +3118,22 @@
   },
   {
     "ContainingType": "AlahiaPosApi.Controllers.FacturaHeaderController",
+    "Method": "ProcesarFactura",
+    "RelativePath": "api/FacturaHeader/ProcesarFactura",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "dto",
+        "Type": "AlahiaPos.Entities.Dto.FacturaDirectaDTO",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.FacturaHeaderController",
     "Method": "RePrintLavador",
     "RelativePath": "api/FacturaHeader/RePrintLavador/{IdFact}",
     "HttpMethod": "GET",

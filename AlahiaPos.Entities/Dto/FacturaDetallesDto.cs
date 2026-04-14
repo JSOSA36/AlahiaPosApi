@@ -25,7 +25,7 @@ namespace AlahiaPos.Entities.Dto
         public bool EnviadoCocina { get; set; }
         public decimal PrecioOferta { get; set; }
         //[NotMapped]
-        public string NombreEmpleadoComision { get; set; }
+        public string? NombreEmpleadoComision { get; set; }
         public virtual Productos? Productos { get; set; }
       
         public virtual FacturaHeaders? FacturaHeader { get; set; }

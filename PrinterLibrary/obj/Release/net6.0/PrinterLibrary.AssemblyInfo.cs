@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("PrinterLibrary")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+0da85878b1bc0f0bf3897ed227a2a8c7f07be655")]
 [assembly: System.Reflection.AssemblyProductAttribute("PrinterLibrary")]
 [assembly: System.Reflection.AssemblyTitleAttribute("PrinterLibrary")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

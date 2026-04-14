@@ -16,7 +16,7 @@ namespace AlahiaPos.Entities.Dto
         public string? TipoFactura { get; set; } = "";
         public string? NombreCuenta { get; set; } = "";
         public decimal MontoPropina { get; set; }
-        public string Moneda { get; set; }
+        public string? Moneda { get; set; }
         public int? IdEmpleados { get; set; }
         public DateTime FechaInseccion { get; set; }
         public string? TipoOrden { get; set; } = "";

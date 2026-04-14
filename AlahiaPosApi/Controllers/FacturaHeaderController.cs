@@ -534,8 +534,155 @@ namespace AlahiaPosApi.Controllers
                 // log si quieres
             }
         }
+        [HttpPost]
+        [Route("ProcesarFactura")]
+        public async Task<IActionResult> ProcesarFactura([FromBody] FacturaDirectaDTO dto)
+        {
+            try
+            {
+                if (dto == null || dto.Header == null)
+                    return BadRequest("Header vacío");
 
+                FacturaHeaders header;
 
+                // ============================================
+                // 🔹 CREAR O USAR FACTURA
+                // ============================================
+                if (dto.Header.IdFacturaHeader == 0)
+                {
+                    // 🔥 MAPEAR DTO → ENTIDAD
+                    header = _Mapper.Map<FacturaHeaders>(dto.Header);
+
+                    // 🔥 evitar validaciones innecesarias
+                    header.Empleados = null;
+                    header.Clientes = null;
+
+                    header.FechaInseccion = DateTime.Now;
+                    header.Estado = "Pendiente";
+
+                    decimal total = 0;
+                    decimal totalItbis = 0;
+
+                    foreach (var item in header.FacturaDetalles)
+                    {
+                        var prod = _productos.GetProductoById(item.IdProducto);
+
+                        decimal precio = item.PrecioOferta > 0
+                            ? item.PrecioOferta
+                            : prod.PrecioVenta;
+
+                        item.SubTotal = (precio * item.Cantidad) + item.Itbis;
+                        if (!item.IdEmpleadoComision.HasValue)
+                            item.IdEmpleadoComision = 0;
+                        total += item.SubTotal;
+                        totalItbis += item.Itbis;
+
+                        item.Productos = null;
+                    }
+
+                    header.Total = total;
+                    header.TotalItbis = totalItbis;
+                    header.SubTotal = total - totalItbis;
+                    header.Clientes = null;
+                    header.FechaBencimiento = DateTime.Now;
+                    header.FechaInseccion= DateTime.Now;
+                    header.IdEmpleadoComision = dto.Header.IdMoso;
+                    header.IdEmpleados = dto.Header.IdMoso;
+                    header.PrintAcount = false;
+                    header.IDCliente = 819;
+                    header.IdMesa = 1;
+                    header.IdTipoDocumentos = 1;
+                    await _facturaHeader.InsertFacturaHeader(header);
+                    header.IdFacturaHeader = header.IdFacturaHeader;
+                }
+                else
+                {
+                    // 🔥 BUSCAR FACTURA EXISTENTE (ORDEN)
+                    header = _facturaHeader.GetById(dto.Header.IdFacturaHeader);
+
+                    if (header == null)
+                        return NotFound("Factura no encontrada");
+                }
+
+                // ============================================
+                // 🔹 PROCESAR PAGOS
+                // ============================================
+                decimal totalPagadoAhora = 0;
+
+                var pagos = dto.Pagos ?? new List<PagoDTO>();
+
+                var pagosAgrupados = pagos
+                    .Where(x => x.Monto > 0)
+                    .GroupBy(x => x.Metodo)
+                    .Select(g => new
+                    {
+                        Metodo = g.Key,
+                        Monto = g.Sum(x => x.Monto)
+                    });
+
+                foreach (var pago in pagosAgrupados)
+                {
+                    totalPagadoAhora += pago.Monto;
+
+                    // 🔥 INGRESOS
+                    var existeIngreso = await _IngresosServices.ExisteIngreso(
+                        header.IdFacturaHeader,
+                        pago.Metodo
+                    );
+
+                    if (!existeIngreso)
+                    {
+                        await _IngresosServices.InsertIngreso(new Ingresos
+                        {
+                            IdEmpresa = header.IdEmpresa,
+                            FechaRegistro = DateTime.Now,
+                            Descripcion = $"Factura #{header.IdFacturaHeader}",
+                            Categoria = header.TipoFactura == "Contado"
+                                ? "Venta de Contado"
+                                : "Abono a Crédito",
+                            Origen = "Sistema",
+                            Monto = pago.Monto,
+                            FormaPago = pago.Metodo,
+                            Referencia = $"Factura #{header.IdFacturaHeader}",
+                            IdFacturaHeader = header.IdFacturaHeader,
+                            IdCliente = header.IDCliente
+                        });
+                    }
+
+                    // 🔥 REGISTRO PAGO CLIENTE
+                    await _PagoFacturaClientes.InsertPagosFacturasClientes(
+                        new PagosFacturasClientes
+                        {
+                            IdFacturaHeader = header.IdFacturaHeader,
+                            IDCliente = header.IDCliente,
+                            FormaPago = pago.Metodo,
+                            Monto = pago.Monto
+                        });
+                }
+
+                // ============================================
+                // 🔹 ACTUALIZAR ESTADO
+                // ============================================
+                header.Pagado += totalPagadoAhora;
+                header.Pendiente = header.Total - header.Pagado;
+
+                header.Estado = header.Pendiente > 0
+                    ? "Pendiente"
+                    : "Pagada";
+
+                 _facturaHeader.UpdateFacturaHeader(header.IdFacturaHeader, header);
+
+                return Ok(new
+                {
+                    message = "Factura procesada correctamente",
+                    idFactura = header.IdFacturaHeader
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
         [HttpPost()]
         [Route("InsertFactura")]
         public async Task InsertFactura([FromBody] FacturaHeaderDto value)
