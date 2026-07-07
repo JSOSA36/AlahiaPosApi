@@ -18,6 +18,20 @@ namespace AlahiaPos.Entities.Dto
         public int IdProducto { get; set; }
         public decimal Dias { get; set; }
         public decimal Cantidad { get; set; }
+        // 🔥 DESCRIPCIÓN (IMPRESIÓN / TICKET)
+        public string? Descripcion { get; set; } = "";
+
+        // 🔥 PRECIO Y TOTAL
+        public decimal Precio { get; set; }
+        public decimal Total { get; set; }
+
+        // 🔥 ENCARGOS (BIZCOCHOS)
+        public string? TipoMasa { get; set; }
+        public string? TipoRelleno { get; set; }
+        public decimal Libras { get; set; }
+
+        // 🔥 OPCIONAL (DETALLE FINO)
+        public string? NotaDetalle { get; set; }
         public int? IdEmpleadoComision { get; set; }
         public decimal Itbis { get; set; }
         public decimal SubTotal { get; set; }

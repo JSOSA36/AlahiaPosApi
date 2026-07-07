@@ -1,8 +1,10 @@
 ﻿using AlahiaPos.DataAccess.Servicios;
 using AlahiaPos.Entities.Domain;
 using AlahiaPos.Entities.Dto;
+using AlahiaPos.Entities.Dto.Invoice;
 using AlahiaPos.Entities.Interfaces;
 using AutoMapper;
+using Google.Apis.Util;
 using iTextSharp.text;
 using iTextSharp.text.pdf;
 using iTextSharp.text.pdf.draw;
@@ -12,9 +14,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.Identity.Client;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 using System.IO;
 using System.Text.Json;
+using System.Threading.Tasks;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -27,7 +29,7 @@ namespace AlahiaPosApi.Controllers
         IMapper _Mapper;
         IFacturaHeader _facturaHeader;
         IFacturaDetalle _facturaDetalle;
-        IProductos _productos;
+        
         IEmpresas _Empresas;
         IEmpleados _IEmpleado;
         IMesas IMesas;
@@ -37,20 +39,43 @@ namespace AlahiaPosApi.Controllers
         ICitas _ICita;
         IUsuarios _IUsuarios;
         IPrinterTicket _IPrinter;
+        private readonly INCF_Secuencias _INCF_Secuencias;
+        IProductos _Productos;
         IPagosFacturasClientes _PagoFacturaClientes;
+        IMetodoPagoCuentaService _MetodoPagoCuentaService;
+        IMovimientoFinancieroService _MovimientoFinancieroService;
+        private readonly ISecuenciaDocumentoService _secuenciaDocumentoService;
+        IMovimientosInventarioService _movimientosInventario;
         public FacturaHeaderController(IMapper mapper, IFacturaHeader facturaHeader,
-            IFacturaDetalle facturaDetalle,
+            IFacturaDetalle facturaDetalle,IProductos productos,
             IProductos Producto, IMesas iMesas, IValidateIMpuesto validateIMpuesto, IClientes Clientes,
             IEmpresas empresas, IIngresos ingresos, ICitas iCita, IUsuarios usuarios,
-            IPagosFacturasClientes pagoFacturaClientes, IEmpleados iEmpleado, IPrinterTicket iPrinter)
+            IPagosFacturasClientes pagoFacturaClientes,
+            INCF_Secuencias INCF_Secuencias,
+            IEmpleados iEmpleado, 
+            IPrinterTicket iPrinter,
+            ISecuenciaDocumentoService
+            secuenciaDocumentoService,
+            
+            IMetodoPagoCuentaService MetodoPagoCuentaService,
+            IMovimientoFinancieroService MovimientoFinancieroService,
+            IMovimientosInventarioService movimientosInventario
+          
+
+            )
         {
+
+            _MetodoPagoCuentaService = MetodoPagoCuentaService;
+            _MovimientoFinancieroService= MovimientoFinancieroService;
             _Mapper = mapper;
             _facturaHeader = facturaHeader;
             _facturaDetalle = facturaDetalle;
-            _productos = Producto;
-            IMesas = iMesas;
+            _Productos = Producto;
+            _INCF_Secuencias = INCF_Secuencias;
+             IMesas = iMesas;
             this.validateIMpuesto = validateIMpuesto;
             this._Clientes = Clientes;
+            _movimientosInventario = movimientosInventario;
             this._Empresas = empresas;
             this._IngresosServices = ingresos;
             _ICita = iCita;
@@ -58,6 +83,7 @@ namespace AlahiaPosApi.Controllers
             _PagoFacturaClientes = pagoFacturaClientes;
             _IEmpleado = iEmpleado;
             _IPrinter = iPrinter;
+            _secuenciaDocumentoService = secuenciaDocumentoService;
         }
 
         // GET: api/<FacturaHeaderController>
@@ -91,7 +117,7 @@ namespace AlahiaPosApi.Controllers
                     if (d.StatuItem == false)
                     {
                         // ⭐ cargar producto
-                        var producto = await _productos.GetAllProductosById(d.IdProducto);
+                        var producto = await _Productos.GetAllProductosById(d.IdProducto);
                         d.Productos = producto;
 
                         // ⭐ cargar nombre lavador comisión
@@ -143,7 +169,7 @@ namespace AlahiaPosApi.Controllers
                     if (d.StatuItem == false)
                     {
                         // ⭐ cargar producto
-                        var producto = await _productos.GetAllProductosById(d.IdProducto);
+                        var producto = await _Productos.GetAllProductosById(d.IdProducto);
                         d.Productos = producto;
 
                         // ⭐ cargar nombre lavador comisión
@@ -192,7 +218,7 @@ namespace AlahiaPosApi.Controllers
                 {
                     if (det.StatuItem == false)
                     {
-                        var producto = await _productos.GetAllProductosById(det.IdProducto);
+                        var producto = await _Productos.GetAllProductosById(det.IdProducto);
                         det.Productos = producto;
                         detallesFiltrados.Add(det);
                     }
@@ -233,7 +259,7 @@ namespace AlahiaPosApi.Controllers
                     foreach (var d in item.FacturaDetalles)
                     {
 
-                        var _producto = await _productos.GetAllProductosById(d.IdProducto);
+                        var _producto = await _Productos.GetAllProductosById(d.IdProducto);
                         d.Productos = _producto;
 
                         ListaDetalles.Add(d);
@@ -278,7 +304,7 @@ namespace AlahiaPosApi.Controllers
             factura.FacturaDetalles = await _facturaDetalle.GetDetalleByIdHeaderAsync(factura.IdFacturaHeader);
 
             foreach (var d in factura.FacturaDetalles)
-                d.Productos = await _productos.GetAllProductosById(d.IdProducto);
+                d.Productos = await _Productos.GetAllProductosById(d.IdProducto);
 
             using (var ms = new MemoryStream())
             {
@@ -428,7 +454,7 @@ namespace AlahiaPosApi.Controllers
                 foreach (var itemdetalle in _DetalleFact)
                 {
                     var _Producto =
-                    await _productos
+                    await _Productos
                     .GetAllProductosById(
                         itemdetalle.IdProducto);
 
@@ -462,32 +488,88 @@ namespace AlahiaPosApi.Controllers
         }
 
         // POST api/<FacturaHeaderController>
-        [HttpPost()]
-        public async Task Post([FromBody] FacturaHeaderDto value)
+        [HttpPost]
+        public async Task<IActionResult> Post([FromBody] FacturaHeaderDto value)
         {
             try
-
             {
-                List<FacturaDetalles> lista = new List<FacturaDetalles>();
-                var Header = _Mapper.Map<FacturaHeaders>(value);
+                // =========================================
+                // 🔥 SI EXISTE → ELIMINAR COMPLETA
+                // =========================================
+
+                if (value.IdFacturaHeader > 0)
+                {
+                    await _facturaHeader
+                        .EliminarFacturaCompleta(
+                            value.IdFacturaHeader
+                        );
+                }
+
+                // =========================================
+                // 🔥 MAPEAR HEADER
+                // =========================================
+
+                List<FacturaDetalles> lista =
+                    new List<FacturaDetalles>();
+
+                var Header =
+                    _Mapper.Map<FacturaHeaders>(value);
+
+                Header.IdFacturaHeader = 0;
+
                 Header.Clientes = null;
-                var _GetEmpleado = await _IUsuarios.ObtenerPorId((int)value.IdMoso);
+
+                var _GetEmpleado =
+                    await _IUsuarios.ObtenerPorId(
+                        (int)value.IdMoso
+                    );
+
                 Header.IdMesa = 1;
-                Header.Estado_Orden = "Pendiente";
-                Header.FechaInseccion = DateTime.Now.Date;
-                Header.IDCliente = value.IDCliente;
-                Header.Hora = DateTime.Now.ToString("hh:mm tt");
+
+                Header.Estado_Orden =
+                    "Pendiente";
+
+                Header.FechaInseccion =
+                    DateTime.Now.Date;
+
+                Header.IDCliente =
+                    value.IDCliente;
+
+                Header.Hora =
+                    DateTime.Now.ToString(
+                        "hh:mm tt"
+                    );
+
                 Header.PrintPending = false;
+
                 Header.IdEmpleadoComision = 1;
-                Header.IdEmpresa = value.IdEmpresa;
-                Header.IdEmpleados = _GetEmpleado.IdEmpleado;
+
+                Header.IdEmpresa =
+                    value.IdEmpresa;
+
+                Header.IdEmpleados =
+                    _GetEmpleado.IdEmpleado;
+
                 Header.PrintLavador = false;
+                Header.IdUsuario = _GetEmpleado.IdUsuario;
                 Header.IdTipoDocumentos = 10;
+
+                // =========================================
+                // 🔥 DETALLES
+                // =========================================
+
                 foreach (var item in Header.FacturaDetalles)
                 {
-                    var _Producto = _productos.GetProductoById(item.IdProducto);
+                    var _Producto =
+                        _Productos.GetProductoById(
+                            item.IdProducto
+                        );
 
-                    item.FechaInseccion = DateTime.Now.Date;
+                    item.IdFacturaDetalle = 0;
+
+                    item.FechaInseccion =
+                        DateTime.Now.Date;
+
                     item.StatuItem = false;
 
                     if (item.IdEmpleadoComision == null)
@@ -496,42 +578,87 @@ namespace AlahiaPosApi.Controllers
                     // ============================
                     // 🔥 PRECIOS
                     // ============================
-                    decimal precioOriginal = _Producto.PrecioVenta;
-                    decimal precioFinal = item.PrecioOferta > 0
-                                            ? item.PrecioOferta
-                                            : _Producto.PrecioVenta;
+
+                    decimal precioOriginal =
+                        _Producto.PrecioVenta;
+
+                    decimal precioFinal =
+                        item.PrecioOferta > 0
+                            ? item.PrecioOferta
+                            : _Producto.PrecioVenta;
 
                     // ============================
                     // 🔥 DESCUENTO REAL
                     // ============================
-                    item.Descuento = (precioOriginal - precioFinal);
+
+                    item.Descuento =
+                        (precioOriginal - precioFinal);
+
                     if (item.Descuento < 0)
                         item.Descuento = 0;
 
                     // ============================
                     // 🔥 SUBTOTAL FINAL
                     // ============================
-                    item.SubTotal = (precioFinal * item.Cantidad) + item.Itbis;
+
+                    item.SubTotal =
+                        (precioFinal * item.Cantidad)
+                        + item.Itbis;
 
                     item.Productos = null;
+
                     lista.Add(item);
                 }
 
                 Header.FacturaDetalles = lista;
 
-                decimal Total = lista.Sum(c => c.SubTotal);
-                decimal TotalIbits = lista.Sum(c => c.Itbis);
+                // =========================================
+                // 🔥 TOTALES
+                // =========================================
 
-                Header.SubTotal = Total - TotalIbits;
-                Header.Total = Total;
+                decimal Total =
+                    lista.Sum(c => c.SubTotal);
+
+                decimal TotalIbits =
+                    lista.Sum(c => c.Itbis);
+
+                Header.SubTotal =
+                    Total - TotalIbits;
+
+                Header.Total =
+                    Total;
+
                 Header.PrintAcount = true;
-                Header.TotalItbis = TotalIbits;
 
-                await _facturaHeader.InsertFacturaHeader(Header);
+                Header.TotalItbis =
+                    TotalIbits;
+
+                // =========================================
+                // 🔥 INSERTAR
+                // =========================================
+
+                await _facturaHeader
+                    .InsertFacturaHeader(Header);
+
+
+                return Ok(new
+                {
+                    idFacturaHeader = Header.IdFacturaHeader
+                });
             }
             catch (Exception ex)
             {
-                // log si quieres
+                throw;
+            }
+        }
+        int GetIdTipoDocumento(string tipo)
+        {
+            switch (tipo?.ToLower())
+            {
+                case "factura": return 1;
+                case "cotizacion": return 2;
+                case "orden": return 3;   // 🔥 Pedido en BD = Orden en front
+                default: return 1;
             }
         }
         [HttpPost]
@@ -545,35 +672,67 @@ namespace AlahiaPosApi.Controllers
 
                 FacturaHeaders header;
 
-                // ============================================
-                // 🔹 CREAR O USAR FACTURA
-                // ============================================
                 if (dto.Header.IdFacturaHeader == 0)
                 {
-                    // 🔥 MAPEAR DTO → ENTIDAD
                     header = _Mapper.Map<FacturaHeaders>(dto.Header);
 
-                    // 🔥 evitar validaciones innecesarias
                     header.Empleados = null;
                     header.Clientes = null;
-
                     header.FechaInseccion = DateTime.Now;
+                    header.FechaBencimiento = DateTime.Now;
                     header.Estado = "Pendiente";
+                    header.IDCliente = dto.Header.IDCliente;
+                    header.TotalDescuento = dto.Header.TotalDescuento;
+                    header.TipoFactura = string.IsNullOrWhiteSpace(dto.Header.TipoFactura)
+                        ? "Contado"
+                        : dto.Header.TipoFactura;
+                    header.IdUsuario = dto.Header.IdUsuario;
+                    header.IdTipoDocumentos = dto.Header.IdTipoDocumentos;
+                    header.TipoOrden = dto.Header.TipoOrden;
+
+                    // =====================================================
+                    // 🔥 NCF / eNCF
+                    // =====================================================
+                    if (dto.Header.TipoComprobante != "FACT")
+                    {
+                        header.NCF = await 
+                            _INCF_Secuencias.GenerarNCF(dto.Header.IdEmpresa, dto.Header.TipoComprobante);
+
+                        
+                    }
+                    else
+                    {
+                        header.NCF = "";
+                    }
+
+                    // Número interno normal
+                    header.NumeroDocumento = await _secuenciaDocumentoService
+                        .GenerarDocumentoAsync(header.IdEmpresa, 1);
+
+                    header.IdEmpleadoComision = dto.Header.IdMoso;
+                    header.IdEmpleados = dto.Header.IdMoso;
+                    header.IdUsuario = dto.Header.IdUsuario;
+                    header.PrintAcount = false;
+                    header.IdMesa = 1;
+                    header.RNC = dto.Header.RNC;
+                    header.NombreEmpresa = dto.Header.NombreEmpresa;
 
                     decimal total = 0;
                     decimal totalItbis = 0;
 
                     foreach (var item in header.FacturaDetalles)
                     {
-                        var prod = _productos.GetProductoById(item.IdProducto);
+                        var prod = _Productos.GetProductoById(item.IdProducto);
 
                         decimal precio = item.PrecioOferta > 0
                             ? item.PrecioOferta
                             : prod.PrecioVenta;
 
                         item.SubTotal = (precio * item.Cantidad) + item.Itbis;
+
                         if (!item.IdEmpleadoComision.HasValue)
                             item.IdEmpleadoComision = 0;
+
                         total += item.SubTotal;
                         totalItbis += item.Itbis;
 
@@ -583,30 +742,62 @@ namespace AlahiaPosApi.Controllers
                     header.Total = total;
                     header.TotalItbis = totalItbis;
                     header.SubTotal = total - totalItbis;
-                    header.Clientes = null;
-                    header.FechaBencimiento = DateTime.Now;
-                    header.FechaInseccion= DateTime.Now;
-                    header.IdEmpleadoComision = dto.Header.IdMoso;
-                    header.IdEmpleados = dto.Header.IdMoso;
-                    header.PrintAcount = false;
-                    header.IDCliente = 819;
-                    header.IdMesa = 1;
-                    header.IdTipoDocumentos = 1;
+
                     await _facturaHeader.InsertFacturaHeader(header);
-                    header.IdFacturaHeader = header.IdFacturaHeader;
                 }
                 else
                 {
-                    // 🔥 BUSCAR FACTURA EXISTENTE (ORDEN)
-                    header = _facturaHeader.GetById(dto.Header.IdFacturaHeader);
+                    
 
-                    if (header == null)
-                        return NotFound("Factura no encontrada");
-                }
 
-                // ============================================
-                // 🔹 PROCESAR PAGOS
-                // ============================================
+                        // Es una orden existente
+
+                        header = _facturaHeader.GetById(dto.Header.IdFacturaHeader);
+                    switch (dto.Header.IdTipoDocumentos)
+                    {
+                        case 1: // Orden
+                            header.IdTipoDocumentos = 1;
+                            break;
+
+                        case 10: // Cotización (futuro)
+                            header.IdTipoDocumentos = 10;
+                            break;
+
+                        default:
+                            throw new Exception(
+                                "Este documento no puede convertirse en factura.");
+                    }
+                    header.FechaInseccion = DateTime.Now;
+                        header.FechaBencimiento = DateTime.Now;
+                        
+                        header.TipoFactura = dto.Header.TipoFactura;
+                        header.TotalDescuento = dto.Header.TotalDescuento;
+                        header.RNC = dto.Header.RNC;
+                        header.NombreEmpresa = dto.Header.NombreEmpresa;
+                        header.Estado =
+                        header.Pendiente > 0
+                        ? "Pendiente"
+                        : "Pagada";
+                    if (dto.Header.TipoComprobante != "FACT")
+                        {
+                            header.NCF =
+                                await _INCF_Secuencias.GenerarNCF(
+                                    header.IdEmpresa,
+                                    dto.Header.TipoComprobante);
+                        }
+
+                        header.NumeroDocumento =
+                            await _secuenciaDocumentoService
+                                .GenerarDocumentoAsync(
+                                    header.IdEmpresa,
+                                    1);
+               }
+                
+
+                // =====================================================
+                // 🔥 PAGOS
+                // =====================================================
+
                 decimal totalPagadoAhora = 0;
 
                 var pagos = dto.Pagos ?? new List<PagoDTO>();
@@ -618,13 +809,22 @@ namespace AlahiaPosApi.Controllers
                     {
                         Metodo = g.Key,
                         Monto = g.Sum(x => x.Monto)
-                    });
+                    })
+                    .ToList();
+
+                var metodosPago = pagosAgrupados
+                    .Select(x => x.Metodo)
+                    .Distinct()
+                    .ToList();
+
+                header.FormaPago = metodosPago.Count == 1
+                    ? metodosPago.First()
+                    : "Mixto";
 
                 foreach (var pago in pagosAgrupados)
                 {
                     totalPagadoAhora += pago.Monto;
 
-                    // 🔥 INGRESOS
                     var existeIngreso = await _IngresosServices.ExisteIngreso(
                         header.IdFacturaHeader,
                         pago.Metodo
@@ -649,7 +849,22 @@ namespace AlahiaPosApi.Controllers
                         });
                     }
 
-                    // 🔥 REGISTRO PAGO CLIENTE
+                    var metodoConfigurado = await _MetodoPagoCuentaService
+                        .GetByMetodoAsync(header.IdEmpresa, pago.Metodo);
+
+                    if (metodoConfigurado != null &&
+                        metodoConfigurado.IdCuentaFinanciera > 0)
+                    {
+                        await _MovimientoFinancieroService.RegistrarEntradaAsync(
+                            header.IdEmpresa,
+                            header.IdEmpleados ?? 0,
+                            metodoConfigurado.IdCuentaFinanciera,
+                            pago.Monto,
+                            $"Factura #{header.IdFacturaHeader}",
+                            $"Ingreso automático desde ventas ({pago.Metodo})"
+                        );
+                    }
+
                     await _PagoFacturaClientes.InsertPagosFacturasClientes(
                         new PagosFacturasClientes
                         {
@@ -660,22 +875,120 @@ namespace AlahiaPosApi.Controllers
                         });
                 }
 
-                // ============================================
-                // 🔹 ACTUALIZAR ESTADO
-                // ============================================
                 header.Pagado += totalPagadoAhora;
                 header.Pendiente = header.Total - header.Pagado;
+                header.Estado = header.Pendiente > 0 ? "Pendiente" : "Pagada";
+                header.Clientes = null;
+                header.TipoOrden = "";
 
-                header.Estado = header.Pendiente > 0
-                    ? "Pendiente"
-                    : "Pagada";
+                _facturaHeader.UpdateFacturaHeader(header.IdFacturaHeader, header);
 
-                 _facturaHeader.UpdateFacturaHeader(header.IdFacturaHeader, header);
+                // =====================================================
+                // 🔥 MOVIMIENTO INVENTARIO
+                // =====================================================
+
+                var movimientoInventario = new MovimientosInventario
+                {
+                    TipoMovimiento = "SALIDA",
+                    Motivo = "VENTA",
+                    Referencia = $"Factura #{header.IdFacturaHeader}",
+                    Observacion = "Salida automática por venta",
+                    Fecha = DateTime.Now,
+                    IdEmpresa = header.IdEmpresa,
+                    IdUsuario = header.IdEmpleados,
+                    Activo = true,
+                    Detalles = new List<MovimientosInventarioDetalle>()
+                };
+
+                var detallesFactura = _facturaDetalle
+                    .GetDetalleByIdHeader(header.IdFacturaHeader);
+
+                foreach (var det in detallesFactura)
+                {
+                    var producto = _Productos.GetProductoById(det.IdProducto);
+
+                    if (producto == null)
+                        continue;
+
+                    if (producto.EsServicio)
+                        continue;
+
+                    if (!producto.ControlarStock)
+                        continue;
+
+                    movimientoInventario.Detalles.Add(
+                        new MovimientosInventarioDetalle
+                        {
+                            IdProducto = producto.IdProducto,
+                            Cantidad = det.Cantidad,
+                            Precio = 0,
+                            SubTotal = 0,
+                            Observacion = $"Venta factura #{header.IdFacturaHeader}"
+                        });
+                }
+
+                if (movimientoInventario.Detalles.Any())
+                    await _movimientosInventario.GuardarMovimiento(movimientoInventario);
+
+                // =====================================================
+                // 🔥 DATOS PARA PRINT Y e-CF
+                // =====================================================
+
+                var empresa = await _Empresas.GetEmpresaById(header.IdEmpresa);
+
+                var cliente = header.IDCliente > 0
+                    ? await _Clientes.GetAllClientesById((int)header.IDCliente)
+                    : null;
+
+                var detalles = _facturaDetalle
+                    .GetDetalleByIdHeader(header.IdFacturaHeader);
+
+                var itemsPrint = new List<FacturaItemPrintDTO>();
+
+                foreach (var d in detalles)
+                {
+                    var producto = _Productos.GetProductoById(d.IdProducto);
+
+                    var precio = d.PrecioOferta > 0
+                        ? d.PrecioOferta
+                        : producto.PrecioVenta;
+
+                    itemsPrint.Add(new FacturaItemPrintDTO
+                    {
+                        Nombre = producto?.Nombre ?? "Producto",
+                        Cantidad = d.Cantidad,
+                        Precio = precio,
+                        SubTotal = d.SubTotal
+                    });
+                }
+
+                var facturaPrint = new FacturaPrintDTO
+                {
+                    IdFactura = header.IdFacturaHeader,
+                    Cliente = cliente?.NombreComercial ?? "Al Portador",
+                    Empresa = empresa?.NombreComercial ?? "Mi Empresa",
+                    Rnc = empresa?.RNC ?? "",
+                    Direccion = empresa?.Direccion ?? "",
+                    Telefono = empresa?.Telefono ?? "",
+                    Fecha = header.FechaInseccion,
+                    TipoFactura = header.TipoFactura,
+                    Total = header.Total,
+                    Pagado = header.Pagado,
+                    Pendiente = header.Pendiente,
+                    Items = itemsPrint
+                };
+
+                // =====================================================
+                // 🔥 FACTURACIÓN ELECTRÓNICA
+                // =====================================================
+
+               
 
                 return Ok(new
                 {
                     message = "Factura procesada correctamente",
-                    idFactura = header.IdFacturaHeader
+                    idFactura = header.IdFacturaHeader,
+                    factura = facturaPrint
                 });
             }
             catch (Exception ex)
@@ -707,9 +1020,60 @@ namespace AlahiaPosApi.Controllers
 
             }
         }
+
+        [HttpGet]
+        [Route("GetAllOrdenesByFecha")]
+        public async Task<IEnumerable<FacturaHeaderDto>> GetAllOrdenesByFecha(
+        int IdEmpresa,
+        DateTime fechaDesde,
+        DateTime fechaHasta)
+        {
+            var listaReturn = new List<FacturaHeaders>();
+
+            // 🔥 Buscar headers por rango de fecha
+            var headers = await _facturaHeader.GetAllOrdenesByFecha(
+                IdEmpresa,
+                fechaDesde,
+                fechaHasta);
+
+            if (headers == null || !headers.Any())
+                return new List<FacturaHeaderDto>();
+
+            foreach (var item in headers)
+            {
+                var detalles = await _facturaDetalle.GetOrdenesByHeader(item.IdFacturaHeader);
+
+                if (detalles == null || !detalles.Any())
+                    continue;
+
+                var listaDetalles = new List<FacturaDetalles>();
+
+                foreach (var d in detalles)
+                {
+                    
+                        // ⭐ cargar producto
+                        var producto = await _Productos.GetAllProductosById(d.IdProducto);
+                        d.Productos = producto;
+
+                        // ❌ YA NO CARGAMOS EMPLEADO
+                        // 🔥 menos queries y más rápido
+
+                        listaDetalles.Add(d);
+                    
+                }
+
+                if (listaDetalles.Any())
+                {
+                    item.FacturaDetalles = listaDetalles;
+                    listaReturn.Add(item);
+                }
+            }
+
+            return _Mapper.Map<FacturaHeaderDto[]>(listaReturn);
+        }
         [HttpPost()]
         [Route("DesdeCita/{idCita}")]
-       
+
         public async Task<IActionResult> CrearOrdenDesdeCita(int idCita)
         {
             var cita = await _ICita.GetCitaById(idCita);
@@ -717,7 +1081,7 @@ namespace AlahiaPosApi.Controllers
             if (cita == null)
                 return NotFound("Cita no encontrada");
 
-            
+
 
             if (cita.IdProducto <= 0)
                 return BadRequest("La cita no tiene un servicio válido");
@@ -728,7 +1092,7 @@ namespace AlahiaPosApi.Controllers
             if (cita.IdCliente == null)
                 return BadRequest("La cita no tiene cliente asignado");
 
-            var producto = _productos.GetProductoById(cita.IdProducto);
+            var producto = _Productos.GetProductoById(cita.IdProducto);
 
             if (producto == null)
                 return BadRequest("Producto no encontrado");
@@ -747,7 +1111,7 @@ namespace AlahiaPosApi.Controllers
                 PrintPending = false,
                 PrintAcount = true,
                 IdEmpleadoComision = cita.IdEmpleado,
-                NombreCuenta=cita.NombreCliente
+                NombreCuenta = cita.NombreCliente
 
 
             };
@@ -877,9 +1241,11 @@ namespace AlahiaPosApi.Controllers
             // ============================================
             // 🔹 CONTADO
             // ============================================
+
+
             if (dto.TipoFactura == "Contado")
             {
-               
+
 
                 if (dto.DetallePagos != null && dto.DetallePagos.Any())
                 {
@@ -914,14 +1280,14 @@ namespace AlahiaPosApi.Controllers
                         var existeIngreso = await _IngresosServices.ExisteIngreso(
                         header.IdFacturaHeader,
                         pago.Metodo
-                       
+
                         );
 
                         if (!existeIngreso)
                         {
                             await _IngresosServices.InsertIngreso(ingreso);
                         }
-                        
+
 
                         var pagoCliente = new PagosFacturasClientes
                         {
@@ -1029,6 +1395,8 @@ namespace AlahiaPosApi.Controllers
                 header.Pendiente = header.Total - header.Pagado;
                 header.TipoFactura = "Credito";
                 header.Estado = header.Pendiente > 0 ? "Pendiente" : "Pagada";
+                header.NumeroDocumento = await _secuenciaDocumentoService
+                       .GenerarDocumentoAsync(header.IdEmpresa, 1);
             }
 
             header.FechaInseccion = DateTime.Now;
@@ -1037,19 +1405,66 @@ namespace AlahiaPosApi.Controllers
             _facturaHeader.UpdateFacturaHeader(header.IdFacturaHeader, header);
 
             // ============================================
-            // 🔹 COMPLETAR CITA
+            // 🔥 MOVIMIENTO INVENTARIO POR VENTA
             // ============================================
-            //var cita = await _ICita.GetCitaByIdFactHeader(header.IdFacturaHeader);
-            //if (cita != null)
-            //{
-            //    cita.Estado = "Completada";
-            //    _ICita.UpdateCita(cita);
-            //}
 
-            //await _IPrinter.GenerateTicketLavador(header.IdFacturaHeader);
+            var detallesFactura =
+                _facturaDetalle
+                .GetDetalleByIdHeader(
+                    header.IdFacturaHeader
+                );
 
-            //if (header.PrintPending == true)
-            //    await _IPrinter.GenerateTicketFacturaCliente(header.IdFacturaHeader);
+            var movimientoInventario =
+                new MovimientosInventario
+                {
+                    TipoMovimiento = "SALIDA",
+                    Motivo = "VENTA",
+                    Referencia = $"Factura #{header.IdFacturaHeader}",
+                    Observacion = "Salida automática por venta",
+                    Fecha = DateTime.Now,
+                    IdEmpresa = header.IdEmpresa,
+                    IdUsuario = header.IdEmpleados,
+                    Activo = true,
+                    Detalles = new List<MovimientosInventarioDetalle>()
+                };
+
+            foreach (var det in detallesFactura)
+            {
+                var producto =
+                    _Productos.GetProductoById(
+                        det.IdProducto
+                    );
+
+                if (producto == null)
+                    continue;
+
+                // No descontar servicios
+                if (producto.EsServicio)
+                    continue;
+
+                // Solo productos que controlan stock
+                if (!producto.ControlarStock)
+                    continue;
+
+                movimientoInventario.Detalles.Add(
+                    new MovimientosInventarioDetalle
+                    {
+                        IdProducto = producto.IdProducto,
+                        Cantidad = det.Cantidad,
+                        Precio = 0,
+                        SubTotal = 0,
+                        Observacion = $"Venta factura #{header.IdFacturaHeader}"
+                    }
+                );
+            }
+
+            if (movimientoInventario.Detalles.Any())
+            {
+                await _movimientosInventario
+                    .GuardarMovimiento(
+                        movimientoInventario
+                    );
+            }
 
             return Ok(new { message = "Factura generada correctamente." });
         }
@@ -1150,7 +1565,7 @@ namespace AlahiaPosApi.Controllers
         [Route("RePrintLavador/{IdFact}")]
         public async Task<IActionResult> RePrintLavador(int IdFact)
         {
-            await  _IPrinter.GenerateTicketLavador(IdFact);
+            await _IPrinter.GenerateTicketLavador(IdFact);
 
             return Ok("Ticket lavador enviado nuevamente a cola");
         }
@@ -1184,9 +1599,9 @@ namespace AlahiaPosApi.Controllers
             }
             catch (Exception ex)
             {
-
+                string error = ex.Message;
             }
-            
+
             return Lista;
         }
         /// <summary>
@@ -1229,9 +1644,44 @@ namespace AlahiaPosApi.Controllers
                 });
             }
         }
+        [HttpGet]
+        [Route("GetIngresosCajaAbierta")]
+        public async Task<IActionResult>
+GetIngresosCajaAbierta(
 
-     
-    [HttpGet("GetCuentasPorCobrar/{idEmpresa}")]
+    int idEmpresa,
+
+    int idUsuario
+)
+        {
+            try
+            {
+                var result =
+
+                    await _facturaHeader
+                    .GetIngresosCajaAbierta(
+
+                        idEmpresa,
+
+                        idUsuario
+                    );
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new
+                {
+                    message =
+                        "Error obteniendo ingresos de la caja abierta",
+
+                    error =
+                        ex.Message
+                });
+            }
+        }
+
+        [HttpGet("GetCuentasPorCobrar/{idEmpresa}")]
         public async Task<IActionResult> GetCuentasPorCobrar(int idEmpresa)
         {
             try
@@ -1253,6 +1703,57 @@ namespace AlahiaPosApi.Controllers
             }
         }
 
+    
+    // ======================================================
+// 🔥 REPORTE 607
+// ======================================================
+
+[HttpGet]
+        [Route("Reporte607")]
+        public async Task<IActionResult>
+Reporte607(
+    DateTime desde,
+    DateTime hasta,
+    int idEmpresa
+)
+        {
+            try
+            {
+                var result =
+                    await _facturaHeader
+                    .GetReporte607Async(
+                        desde,
+                        hasta,
+                        idEmpresa
+                    );
+
+                if (
+                    result == null ||
+                    !result.Any()
+                )
+                {
+                    return NotFound(
+                        "No existen datos para el rango seleccionado."
+                    );
+
+                }
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new
+                {
+                    message =
+                        "Error obteniendo reporte 607",
+
+                    error =
+                        ex.Message
+                });
+            }
+        }
     } 
+
+
 }
 

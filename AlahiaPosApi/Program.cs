@@ -46,7 +46,7 @@ builder.Services.AddScoped<IClientes, ClienteServices>();
 builder.Services.AddScoped<IProveedores, ProveedoresServices>();
 builder.Services.AddScoped<IOrdenCompraHeader, OrdenCompraHeaderServices>();
 builder.Services.AddScoped<IGastos, GastosServices>();
-builder.Services.AddScoped<IEmpresas, IEmpresaServices>();
+builder.Services.AddScoped<IEmpresas, EmpresaServices>();
 builder.Services.AddScoped<ICocinas, CocinaServices>();
 builder.Services.AddScoped<IParametroConfig, IParametroCOnfigServices>();
 builder.Services.AddScoped<IValidateIMpuesto, ValidateImpuestos>();
@@ -60,12 +60,25 @@ builder.Services.AddScoped<IDescuentoDetalle, DescuentoDetalleServices>();
 builder.Services.AddScoped<IPagosFacturasClientes, PagosFacturasClientesService>();
 builder.Services.AddScoped<IIngresos, IngresosService>();
 builder.Services.AddScoped<IDescuentoAreaDetalle, DescuentoAreaDetalleService>();
-builder.Services.AddScoped<IRfceBuilder, RfceBuilderServices>();
+builder.Services.AddScoped<INCF_Secuencias, NCF_SecuenciasServices>();
 builder.Services.AddScoped<INotification, NotificationServices>();
 builder.Services.AddScoped<IModulo, ModulosServices>();
 builder.Services.AddScoped<IEmpresaModulos, EmpresaModulosServices>();
 builder.Services.AddScoped<IPlanesCloud, PlanesCloudService>();
+builder.Services.AddScoped<ISecuenciaDocumentoService, SecuenciaDocumentoService>();
+builder.Services.AddScoped<ICajaCierreService, CajaCierreServices>();
+builder.Services.AddScoped<ICajaAperturaService, CajaAperturaServices>();
+builder.Services.AddScoped<ICajaMovimientoService, CajaMovimientoServices>();
+builder.Services.AddScoped<ICuentaFinancieraService, CuentaFinancieraService>();
+builder.Services.AddScoped<IMovimientoFinancieroService, MovimientoFinancieroService>();
+builder.Services.AddScoped<IMetodoPagoCuentaService, MetodoPagoCuentaService>();
+// ======================================================
+// 🔥 MOVIMIENTOS INVENTARIO
+// ======================================================
 
+builder.Services.AddScoped<
+    IMovimientosInventarioService,
+    MovimientosInventarioServices>();
 builder.Services.AddScoped<IUsuarios, UsuariosService>();
 builder.Services.AddScoped<IPerfiles, PerfilesService>();
 builder.Services.AddScoped<IPerfilRoles, PerfilRolesService>();
@@ -73,22 +86,21 @@ builder.Services.AddScoped<ILoginService, LoginService>();
 builder.Services.AddScoped<IEmpleados, EmpleadosService>();
 builder.Services.AddScoped<IParametrosService, ParametrosService>();
 builder.Services.AddScoped<IPrinterTicket, PrinterTicketServices>();
-builder.Services.AddScoped<IExcelMapperService, ExcelMapperService>();
-builder.Services.AddScoped<INCF_Secuencias, NCF_SecuenciasServices>();
-builder.Services.AddScoped<IXmlGeneratorService, XmlGeneratorService>();
 
+
+
+builder.Services.AddScoped<IPagoEmpresaService, PagoEmpresaService>();
+builder.Services.AddScoped<IBizcochoEncargoService, BizcochoEncargoServices>();
 builder.Services.AddScoped<ILavadorConsumoServices, LavadorConsumoServices>();
 builder.Services.Configure<DgiiSettings>(builder.Configuration.GetSection("DGII"));
-builder.Services.AddHttpClient<IDgiiClientService, DgiiClientService>();
+
 
 builder.Services.AddScoped<TwilioService>();
 
 // =============================
 // ✅ DGII / E-CF (lo nuevo)
 // =============================
-builder.Services.AddScoped<ITestSetLoader, DgiiTestSetLoaderServices>();
-builder.Services.AddScoped<IECFSigner, ECFSignerServices>();
-builder.Services.AddScoped<IECFValidator, ECFValidator>();
+
 
 builder.Services.Configure<DgiiSettings>(
     builder.Configuration.GetSection("DGII"));

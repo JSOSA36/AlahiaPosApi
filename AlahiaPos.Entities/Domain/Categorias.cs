@@ -17,5 +17,10 @@ namespace AlahiaPos.Entities.Domain
         public string? Tipo { get; set; }
         public bool IsActiva { get; set; }
         public int Prioridad { get; set; }
+        // =========================================
+        // 🔥 MODELO C#
+        // =========================================
+
+        public string? TipoOperacion { get; set; }
     }
 }

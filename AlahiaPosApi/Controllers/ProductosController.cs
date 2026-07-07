@@ -37,6 +37,12 @@ namespace AlahiaPosApi.Controllers
         {
             return await services.GetAllProductos(IdEmpresa);
         }
+        [HttpGet()]
+        [Route("GetListadoProductosVenta/{IdEmpresa}")]
+        public async Task<IEnumerable<Productos>> GetListadoProductosVenta(int IdEmpresa)
+        {
+            return await services.GetAllProductosVenta(IdEmpresa);
+        }
 
         // GET api/<ProductosController>/5
         [HttpGet("{id}/{IdEmpresa}")]
@@ -54,69 +60,107 @@ namespace AlahiaPosApi.Controllers
 
         // POST api/<ProductosController>
         [HttpPost]
-        public async Task Post([FromForm] ProductosDto value)
+        public async Task<IActionResult> GuardarProducto([FromForm] ProductosDto value)
         {
-
             try
             {
+                Productos p;
 
+                // 🔥 SI VIENE ID → UPDATE
+                if (value.idProducto > 0)
+                {
+                    p =  services.GetProductoById(value.idProducto);
 
-              
-                Productos p = new Productos();
+                    if (p == null)
+                        return NotFound("Producto no encontrado");
+                }
+                else
+                {
+                    // 🔥 INSERT
+                    p = new Productos();
+                    p.FechaVencimiento = DateTime.Now.ToLongDateString();
+                    p.IdAlmacen = 1;
+                    p.IdProveedor = 1;
+                    p.IdUnidadMedida = 1;
+                }
+
+                // 🔥 CAMPOS COMUNES (INSERT Y UPDATE)
                 p.Nombre = value.nombre;
                 p.Descripcion = value.nombre;
-                p.Cantidad = value.cantidad;
-                p.Stock = value.stockminimo;
-                p.PrecioVenta = value.precio;
-                p.PrecioCompra = value.costo;
-                p.IdArea = value.IdArea;
-                p.DuracionServicio = value.DuracionServicio;
-                p.DisponibleEnCitas = value.DisponibleEnCitas;
 
-                p.CodigoBarra = value.CodigoBarra;
+                p.Cantidad = value.cantidad ?? 0;
+                p.Stock = 1;
 
+                p.PrecioVenta = value.precio ?? 0;
+                p.PrecioCompra = value.costo ?? 0;
+
+                p.IdArea = value.IdArea ?? 0;
+                p.IdCategoria = value.idcategoria ?? 0;
+                p.TipoOperacion = value.TipoOperacion;
+                p.DuracionServicio = value.DuracionServicio ?? 0;
+                p.DisponibleEnCitas = value.DisponibleEnCitas ?? true;
+
+                p.CodigoBarra = string.IsNullOrEmpty(value.CodigoBarra) ? "N/A" : value.CodigoBarra;
 
                 p.Precio1 = 0;
                 p.Precio2 = 0;
                 p.Precio3 = 0;
                 p.PorcientoGanancia = 0;
                 p.PorcientoDescuento = 0;
-                p.EsServicio = value.EsServicio;
-                p.Itbis = value.Itbis ;
+
+                p.EsServicio = value.EsServicio ?? false;
+                p.Itbis = value.Itbis ?? false;
+
                 p.Descuento = 0;
                 p.IsActivo = true;
 
-                p.SeVende = true;
-                p.SeCompra = true;
-                p.ControlarStock = true;
-                p.FechaVencimiento = DateTime.Now.ToLongDateString();
+                
+
+                // 🔥 SI ES SERVICIO → SIN STOCK
+                p.ControlarStock = p.EsServicio ? false : value.ControlarStock;
+
                 p.Ganancia = 0;
-                p.IdAlmacen = 1;
-                p.IdProveedor = 1;
-                p.IdCategoria = value.idcategoria;
-                p.IdUnidadMedida = 1;
                 p.Rentado = 0;
+
                 p.IdEmpresa = value.IdEmpresa;
-                p.ControlarStock = value.ControlarStock;
-               
-                p.EsProductoBelleza = value.isproductobelleza;
+                p.EsProductoBelleza = value.isproductobelleza ?? false;
+
+                // 🔥 IMAGEN
                 if (value.Imagen != null)
                 {
-
                     using var ms = new MemoryStream();
                     await value.Imagen.CopyToAsync(ms);
                     byte[] imagenBytes = ms.ToArray();
-                    p.Imagen1 = Utility.UploadFileFtp(imagenBytes,
-                    +GlobalParamter.IdEmpresa + value.nombre + ".jpg");
+
+                    p.Imagen1 = Utility.UploadFileFtp(
+                        imagenBytes,
+                        GlobalParamter.IdEmpresa + value.nombre + ".jpg"
+                    );
                 }
 
-
-                await services.InsertProductos(p);
+                // 🔥 GUARDAR SEGÚN CASO
+                if (value.idProducto > 0)
+                {
+                     services.UpdateProductos(p.IdProducto, p);
+                   
+                    return Ok(new
+                    {
+                        message = "Producto actualizado ✅"
+                    });
+                }
+                else
+                {
+                    await services.InsertProductos(p);
+                    
+                    return Ok(new
+                    {
+                        message = "Producto creado ✅"
+                    });
+                }
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.ToString());
-
+                return BadRequest(ex.Message);
             }
         }
 
@@ -141,19 +185,20 @@ namespace AlahiaPosApi.Controllers
 
             Producto.Nombre = value.nombre;
             Producto.Descripcion = value.nombre;
-            Producto.Cantidad = value.cantidad;
-            Producto.Stock = value.stockminimo;
-            Producto.PrecioVenta = value.precio;
-            Producto.PrecioCompra = value.costo;
+            Producto.Cantidad = (decimal)value.cantidad;
+            Producto.Stock = (decimal)value.stockminimo;
+            Producto.PrecioVenta = (decimal)value.precio;
+            Producto.PrecioCompra = (decimal)value.costo;
             Producto.ControlarStock = value.ControlarStock;
             Producto.IdCategoria = value.idcategoria;
+            Producto.TipoOperacion = value.TipoOperacion;
             Producto.IdArea = value.IdArea;
             Producto.EsProductoBelleza = value.isproductobelleza;
-            Producto.DuracionServicio = value.DuracionServicio;
-            Producto.DisponibleEnCitas = value.DisponibleEnCitas;
+            Producto.DuracionServicio = (int)value.DuracionServicio;
+            Producto.DisponibleEnCitas = (bool)value.DisponibleEnCitas;
             Producto.CodigoBarra = value.CodigoBarra;
-            Producto.Itbis = value.Itbis;
-            Producto.EsServicio = value.EsServicio;
+            Producto.Itbis = (bool)value.Itbis;
+            Producto.EsServicio = (bool)value.EsServicio;
 
             services.UpdateProductos(value.idProducto,Producto);
         }

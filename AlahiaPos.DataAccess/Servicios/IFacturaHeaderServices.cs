@@ -22,11 +22,16 @@ namespace AlahiaPos.DataAccess.Servicios
         IRepository<FacturaDetalles> _FacturaDetalles;
         IRepository<Clientes> _Clientes;
         IRepository<Empresas> _Empresas;
+        IRepository<Gastos> _GastosRepository;
         IRepository<LavadorConsumo> _ILavadorConsumo;
+        IRepository<Ingresos> _Ingresos;
         public IFacturaHeaderServices(IRepository<FacturaHeaders> repository,
             IRepository<Empleados> Empleados, IRepository<Productos> Productos,
-            IRepository<FacturaDetalles> facturaDetalles, IRepository<EmpleadoAreaComision> 
-            iEmpleadoComision, IRepository<Clientes> clientes, IRepository<Empresas> empresas, IRepository<LavadorConsumo> LavadorConsumo)
+            IRepository<FacturaDetalles> facturaDetalles, IRepository<EmpleadoAreaComision>
+            iEmpleadoComision, IRepository<Clientes> clientes,
+             IRepository<Gastos> GastosRepository,
+        IRepository<Empresas> empresas,
+            IRepository<LavadorConsumo> LavadorConsumo, IRepository<Ingresos> ingresos)
         {
             _repository = repository;
             _Empleados = Empleados;
@@ -34,8 +39,10 @@ namespace AlahiaPos.DataAccess.Servicios
             _FacturaDetalles = facturaDetalles;
             _IEmpleadoComision = iEmpleadoComision;
             _Clientes = clientes;
+            _GastosRepository = GastosRepository;
             _Empresas = empresas;
             _ILavadorConsumo = LavadorConsumo;
+            _Ingresos = ingresos;
         }
 
 
@@ -43,13 +50,30 @@ namespace AlahiaPos.DataAccess.Servicios
         {
             return _repository.GetById(Id);
         }
-        public async Task<IEnumerable<FacturaHeaders>> GetAllOrdenes(int IdEmpresa)
+        public async Task<IEnumerable<FacturaHeaders>> GetAllOrdenes(
+    int IdEmpresa
+)
         {
-            DateTime _Fecha = System.DateTime.Now.Date;
-            return await _repository.GetAllByExpresionAsync(c =>
-             c.IdTipoDocumentos == 10 && c.IdEmpresa == IdEmpresa
-             && c.FechaInseccion.Date == _Fecha.Date,
-                 "Clientes", "FacturaDetalles");
+            DateTime hoy =
+                DateTime.Now.Date;
+
+            DateTime manana =
+                hoy.AddDays(1);
+
+            return await _repository
+                .GetAllByExpresionAsync(c =>
+
+                    c.IdTipoDocumentos == 10
+                    &&
+
+                    c.IdEmpresa == IdEmpresa,
+                   
+
+                    
+
+                    "Clientes",
+                    "FacturaDetalles"
+                );
         }
         public async Task<IEnumerable<FacturaHeaders>> GetAllFacturas(int IdEmpresa)
         {
@@ -58,9 +82,9 @@ namespace AlahiaPos.DataAccess.Servicios
             return await _repository.GetAllByExpresionAsync(c =>
                 c.IdTipoDocumentos == 1
                 && c.IdEmpresa == IdEmpresa
-                
+
                 && c.FechaInseccion >= fechaDesde,
-                
+
                 "Clientes", "FacturaDetalles");
         }
         public async Task<IEnumerable<FacturaHeaders>> GetAllFacturaPendientes(int IdCliente, int IdEmpresa)
@@ -399,7 +423,11 @@ namespace AlahiaPos.DataAccess.Servicios
             return Total;
 
         }
-        public IEnumerable<ComisionesResultDto> GetComisionesDetalle(DateTime Desde, DateTime Hasta, int IdEmpresa)
+        public IEnumerable<ComisionesResultDto> GetComisionesDetalle(
+     DateTime Desde,
+     DateTime Hasta,
+     int IdEmpresa
+ )
         {
             var listado = new List<ComisionesDto>();
 
@@ -415,39 +443,55 @@ namespace AlahiaPos.DataAccess.Servicios
             if (!facturas.Any())
                 return new List<ComisionesResultDto>();
 
-            var idsFacturas = facturas.Select(f => f.IdFacturaHeader).ToList();
+            var facturasDict =
+                facturas.ToDictionary(f => f.IdFacturaHeader);
 
-            // 🔵 2️⃣ DETALLES EN BLOQUE
+            var idsFacturas =
+                facturasDict.Keys.ToList();
+
+            // 🔵 2️⃣ DETALLES
             var detalles = _FacturaDetalles
-                .GetAllByExpresionNoAsync(d => idsFacturas.Contains(d.IdFacturaHeader))
+                .GetAllByExpresionNoAsync(
+                    d => idsFacturas.Contains(d.IdFacturaHeader)
+                )
                 .ToList();
 
             if (!detalles.Any())
                 return new List<ComisionesResultDto>();
 
-            // 🔵 3️⃣ PRODUCTOS EN BLOQUE
-            var idsProductos = detalles.Select(d => d.IdProducto).Distinct().ToList();
+            // 🔵 3️⃣ PRODUCTOS
+            var idsProductos = detalles
+                .Select(d => d.IdProducto)
+                .Distinct()
+                .ToList();
 
             var productos = _Productos
-                .GetAllByExpresionNoAsync(p => idsProductos.Contains(p.IdProducto))
+                .GetAllByExpresionNoAsync(
+                    p => idsProductos.Contains(p.IdProducto)
+                )
                 .ToDictionary(p => p.IdProducto);
 
-            // 🔵 4️⃣ EMPLEADOS EN BLOQUE
+            // 🔵 4️⃣ EMPLEADOS
             var idsEmpleados = detalles
-                .Select(d => d.IdEmpleadoComision)
+                .Where(d => d.IdEmpleadoComision.HasValue)
+                .Select(d => d.IdEmpleadoComision.Value)
                 .Distinct()
                 .ToList();
 
             var empleados = _Empleados
-                .GetAllByExpresionNoAsync(e => idsEmpleados.Contains(e.IdEmpleados))
+                .GetAllByExpresionNoAsync(
+                    e => idsEmpleados.Contains(e.IdEmpleados)
+                )
                 .ToDictionary(e => e.IdEmpleados);
 
-            // 🔵 5️⃣ COMISIONES EN BLOQUE
+            // 🔵 5️⃣ CONFIG COMISIONES
             var comisionesAreas = _IEmpleadoComision
-                .GetAllByExpresionNoAsync(c => c.IdEmpresa == IdEmpresa)
+                .GetAllByExpresionNoAsync(
+                    c => c.IdEmpresa == IdEmpresa
+                )
                 .ToList();
 
-            // 🔵 6️⃣ CONSUMOS EN BLOQUE
+            // 🔵 6️⃣ CONSUMOS
             var consumos = _ILavadorConsumo
                 .GetAllByExpresionNoAsync(c =>
                     c.Fecha.Date >= Desde.Date &&
@@ -455,28 +499,52 @@ namespace AlahiaPos.DataAccess.Servicios
                     c.IdEmpresa == IdEmpresa
                 )
                 .GroupBy(c => c.IdEmpleado)
-                .ToDictionary(g => g.Key, g => g.Sum(x => x.Monto));
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.Sum(x => x.Monto)
+                );
 
-            // 🔵 7️⃣ RECORRIDO PRINCIPAL (YA TODO EN MEMORIA)
+            // 🔵 7️⃣ PROCESAR
             foreach (var item in detalles)
             {
-                if (!productos.ContainsKey(item.IdProducto))
+                // 🔥 SIN EMPLEADO
+                if (!item.IdEmpleadoComision.HasValue)
                     continue;
 
-                if (!empleados.ContainsKey((int)item.IdEmpleadoComision))
+                var idEmpleado =
+                    item.IdEmpleadoComision.Value;
+
+                // 🔥 PRODUCTO
+                if (!productos.TryGetValue(
+                    item.IdProducto,
+                    out var producto))
                     continue;
 
-                var producto = productos[item.IdProducto];
-                var empleado = empleados[(int)item.IdEmpleadoComision];
+                // 🔥 EMPLEADO
+                if (!empleados.TryGetValue(
+                    idEmpleado,
+                    out var empleado))
+                    continue;
 
-                var factura = facturas.First(f => f.IdFacturaHeader == item.IdFacturaHeader);
+                // 🔥 FACTURA
+                if (!facturasDict.TryGetValue(
+                    item.IdFacturaHeader,
+                    out var factura))
+                    continue;
 
+                // 🔥 CONFIG COMISIÓN
                 var comisionArea = comisionesAreas
-                    .FirstOrDefault(c => c.IdEmpleado == empleado.IdEmpleados &&
-                                         c.IdArea == producto.IdArea);
+                    .FirstOrDefault(c =>
+                        c.IdEmpleado == empleado.IdEmpleados &&
+                        c.IdArea == producto.IdArea
+                    );
 
                 if (comisionArea == null)
                     continue;
+
+                // =====================================
+                // 🔥 FACTURA CRÉDITO
+                // =====================================
 
                 decimal proporcionPagada = 1;
 
@@ -485,33 +553,65 @@ namespace AlahiaPos.DataAccess.Servicios
                     if (factura.Total <= 0)
                         continue;
 
-                    proporcionPagada = factura.Pagado / factura.Total;
-                    if (proporcionPagada > 1) proporcionPagada = 1;
+                    proporcionPagada =
+                        factura.Pagado / factura.Total;
+
+                    if (proporcionPagada > 1)
+                        proporcionPagada = 1;
                 }
 
-                decimal baseParaComision = factura.TipoFactura == "Credito"
-                    ? item.SubTotal * proporcionPagada
-                    : item.SubTotal;
+                // =====================================
+                // 🔥 SUBTOTAL SIN ITBIS
+                // =====================================
+
+                decimal subtotalSinItbis =
+                    item.SubTotal - item.Itbis;
+
+                if (subtotalSinItbis < 0)
+                    subtotalSinItbis = 0;
+
+                // =====================================
+                // 🔥 BASE COMISIÓN
+                // =====================================
+
+                decimal baseParaComision =
+                    factura.TipoFactura == "Credito"
+                    ? subtotalSinItbis * proporcionPagada
+                    : subtotalSinItbis;
 
                 if (baseParaComision <= 0)
                     continue;
+
+                // =====================================
+                // 🔥 CALCULAR COMISIÓN
+                // =====================================
 
                 decimal totalComision = 0;
 
                 if (comisionArea.TipoComision == "MONTO")
                 {
-                    totalComision = (comisionArea.MontoComision ?? 0) * item.Cantidad;
+                    totalComision =
+                        (comisionArea.MontoComision ?? 0)
+                        * item.Cantidad;
                 }
                 else
                 {
-                    decimal porciento = comisionArea.PorcientoComision ?? 0;
-                    if (porciento <= 0) continue;
+                    decimal porciento =
+                        comisionArea.PorcientoComision ?? 0;
 
-                    totalComision = baseParaComision * porciento / 100;
+                    if (porciento <= 0)
+                        continue;
+
+                    totalComision =
+                        baseParaComision * porciento / 100;
                 }
 
                 if (totalComision <= 0)
                     continue;
+
+                // =====================================
+                // 🔥 AGREGAR RESULTADO
+                // =====================================
 
                 listado.Add(new ComisionesDto
                 {
@@ -519,37 +619,58 @@ namespace AlahiaPos.DataAccess.Servicios
                     Nombre = empleado.Nombre,
                     Fecha = factura.FechaInseccion,
                     ProductoServicio = producto.Nombre,
+
+                    // 🔥 TOTAL SIN ITBIS
                     Total = baseParaComision,
+
                     TotalComisiones = totalComision
                 });
             }
 
-            // 🔵 8️⃣ AGRUPAR RESULTADO FINAL
+            // 🔵 8️⃣ AGRUPAR
             var resultado = listado
-                .GroupBy(l => new { l.IdEmpleado, l.Nombre })
+                .GroupBy(l => new
+                {
+                    l.IdEmpleado,
+                    l.Nombre
+                })
+
                 .Select(g =>
                 {
-                    var totalComision = g.Sum(x => x.TotalComisiones);
+                    var totalComision =
+                        g.Sum(x => x.TotalComisiones);
 
-                    var consumo = consumos.ContainsKey(g.Key.IdEmpleado)
-                        ? consumos[g.Key.IdEmpleado]
+                    var consumo =
+                        consumos.TryGetValue(
+                            g.Key.IdEmpleado,
+                            out var c
+                        )
+                        ? c
                         : 0;
 
                     return new ComisionesResultDto
                     {
                         IdEmpleado = g.Key.IdEmpleado,
+
                         Empleados = g.Key.Nombre,
+
                         TotalComisiones = totalComision,
+
                         TotalConsumo = consumo,
-                        NetoPagar = totalComision - consumo < 0 ? 0 : totalComision - consumo
+
+                        NetoPagar =
+                            totalComision - consumo < 0
+                            ? 0
+                            : totalComision - consumo
                     };
                 })
+
                 .OrderByDescending(x => x.NetoPagar)
+
                 .ToList();
 
             return resultado;
         }
-
 
         public IEnumerable<ServicioEmpleadoDto> GetServicioByEMpleados(
      DateTime Desde,
@@ -584,7 +705,7 @@ namespace AlahiaPos.DataAccess.Servicios
                     var producto = _Productos.GetById(item.IdProducto);
                     if (producto == null) continue;
 
-                    
+
 
                     if (item.IdEmpleadoComision == null) continue;
 
@@ -647,7 +768,7 @@ namespace AlahiaPos.DataAccess.Servicios
                     });
                 }
             }
-            var Totalver=result.Sum(c=>c.SubTotal);
+            var Totalver = result.Sum(c => c.SubTotal);
 
             return result;
         }
@@ -674,7 +795,7 @@ namespace AlahiaPos.DataAccess.Servicios
 
             // 🔹 Paso 3: Obtener los detalles correspondientes a esas facturas
             var detalles = await _FacturaDetalles.GetAllByExpresionAsync(d => facturasIds.Contains(d.IdFacturaHeader));
-            
+
             if (detalles == null || !detalles.Any())
                 return new List<ServicioRankingDto>();
 
@@ -775,7 +896,7 @@ namespace AlahiaPos.DataAccess.Servicios
             var detalles = _FacturaDetalles
                 .GetAllByExpresionNoAsync(d =>
                     d.IdFacturaHeader == idFacturaHeader &&
-                   
+
                     d.IdEmpleadoComision != null
                 )
                 .ToList();
@@ -848,7 +969,119 @@ namespace AlahiaPos.DataAccess.Servicios
             return result;
         }
 
-      
+        // ======================================================
+        // 🔥 REPORTE 607
+        // ======================================================
+
+        public async Task<IEnumerable<Reporte607Dto>>
+        GetReporte607Async(
+            DateTime desde,
+            DateTime hasta,
+            int idEmpresa
+        )
+        {
+            var facturas =
+                await _repository
+                .GetAllByExpresionAsync(
+
+                x =>
+
+                    x.IdEmpresa == idEmpresa
+
+                    &&
+
+                    x.IdTipoDocumentos == 1
+
+                    &&
+
+                    x.EstaCancelada == false
+
+                    &&
+
+                    x.FechaInseccion.Date >=
+                    desde.Date
+
+                    &&
+
+                    x.FechaInseccion.Date <=
+                    hasta.Date
+
+                    &&
+                    x.NCF != string.Empty
+                );
+
+            if (
+                facturas == null ||
+                !facturas.Any()
+            )
+            {
+                return new List<Reporte607Dto>();
+            }
+
+            var result =
+                facturas
+                .Select(x =>
+                    new Reporte607Dto
+                    {
+                        Fecha =
+                            x.FechaInseccion,
+
+                        RNC =
+                            string.IsNullOrEmpty(x.RNC)
+                            ? ""
+                            : x.RNC,
+
+                        NCF =
+                            x.NCF,
+
+                        FormaPago =
+
+    x.FormaPago.Contains("Popular")
+    ||
+
+    x.FormaPago.Contains("BHD")
+    ||
+
+    x.FormaPago.Contains("Banreservas")
+    ||
+
+    x.FormaPago.Contains("APAP")
+    ||
+
+    x.FormaPago.Contains("Transfer")
+    ||
+
+    x.FormaPago.Contains("Qik")
+
+        ? "Transferencia"
+
+    :
+
+    x.FormaPago.Contains("Visa")
+    ||
+
+    x.FormaPago.Contains("Mastercard")
+    ||
+
+    x.FormaPago.Contains("Tarjeta")
+
+        ? "Tarjeta"
+
+    :
+
+    "Efectivo",
+
+                        ITBIS =
+                            x.TotalItbis,
+
+                        Total =
+                            x.Total
+                    })
+                .OrderByDescending(x => x.Fecha)
+                .ToList();
+
+            return result;
+        }
         public async Task<TicketFacturaClienteDto?> GetFacturaClienteById(int idFacturaHeader)
         {
             // ⭐ FACTURA
@@ -912,6 +1145,631 @@ namespace AlahiaPos.DataAccess.Servicios
 
             return dto;
         }
-    } 
+
+        public async Task
+        CerrarFacturasPendientes(
+
+            int idEmpresa,
+
+            int idUsuario,
+
+            int idCajaCierre
+        )
+        {
+            try
+            {
+                /* =====================================
+                🔥 FACTURAS ABIERTAS
+                ====================================== */
+
+                var facturas =
+
+                    await _repository
+                    .GetAllByExpresionAsync(
+
+                        x =>
+
+                            x.IdEmpresa
+                            == idEmpresa
+
+                            &&
+
+                            x.IdUsuario
+                            == idUsuario
+
+                            &&
+
+                            x.EstaCerrada
+                            == false
+
+                            &&
+
+                            x.IdTipoDocumentos
+                            == 1
+                    );
+
+                if (
+                    facturas == null
+                    ||
+                    !facturas.Any()
+                )
+                {
+                    return;
+                }
+
+                /* =====================================
+                🔥 CERRAR
+                ====================================== */
+
+                foreach (var factura in facturas)
+                {
+                    try
+                    {
+                        factura.Clientes = null;
+                        factura.EstaCerrada =
+                            true;
+
+                        factura.IdCajaCierre =
+                            idCajaCierre;
+
+                        _repository.Update(
+
+                            factura.IdFacturaHeader,
+
+                            factura
+                        );
+                    }
+                    catch (Exception exFactura)
+                    {
+                        Console.WriteLine(
+
+                            "ERROR FACTURA: "
+                            +
+                            factura.IdFacturaHeader
+                        );
+
+                        Console.WriteLine(
+                            exFactura.Message
+                        );
+
+                        Console.WriteLine(
+                            exFactura.InnerException?.Message
+                        );
+
+                        throw;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(
+                    "ERROR CERRANDO FACTURAS"
+                );
+
+                Console.WriteLine(
+                    ex.Message
+                );
+
+                Console.WriteLine(
+                    ex.InnerException?.Message
+                );
+
+                throw;
+            }
+        }
+        public async Task<List<CierreCajaDto>> GetIngresosCajaAbierta(
+     int idEmpresa,
+     int idUsuario)
+        {
+            // =====================================
+            // 🔥 FACTURAS PENDIENTES DE CIERRE
+            // =====================================
+
+            var facturas = await _repository
+                .GetAllByExpresionAsync(x =>
+
+                    x.IdEmpresa == idEmpresa
+
+                    && x.IdUsuario == idUsuario
+
+                    && x.IdTipoDocumentos == 1
+
+                    && x.EstaCerrada == false
+
+                    && x.EstaCancelada == false
+                );
+
+            if (facturas == null || !facturas.Any())
+                return new();
+
+            // =====================================
+            // 🔥 TOTALES FACTURAS
+            // =====================================
+
+            decimal totalVentasBrutas =
+                facturas.Sum(x => x.Total);
+
+            decimal totalDescuento =
+                facturas.Sum(x => x.TotalDescuento);
+
+            var idsFacturas = facturas
+                .Select(x => x.IdFacturaHeader)
+                .ToList();
+
+            // =====================================
+            // 🔥 INGRESOS DE FACTURAS
+            // =====================================
+
+            var ingresos = await _Ingresos
+                .GetAllByExpresionAsync(x =>
+
+                    x.IdEmpresa == idEmpresa
+
+                    && idsFacturas.Contains((int)x.IdFacturaHeader)
+
+                    && x.EstaAnulado == false
+                );
+
+            // =====================================
+            // 🔥 INGRESOS EXTRAORDINARIOS
+            // =====================================
+
+            var ingresosExtra = await _Ingresos
+      .GetAllByExpresionAsync(x =>
+
+          x.IdEmpresa == idEmpresa
+
+          && x.IdUsuario == idUsuario
+
+          && (
+              x.IdFacturaHeader == null
+              ||
+              x.IdFacturaHeader == 0
+          )
+
+          && x.EstaAnulado == false
+      );
+
+            decimal totalIngresosExtra =
+                ingresosExtra.Sum(x => x.Monto);
+
+            // =====================================
+            // 🔥 UNIR TODOS LOS INGRESOS
+            // =====================================
+
+            var todosLosIngresos =
+                ingresos
+                .Concat(ingresosExtra)
+                .ToList();
+
+            // =====================================
+            // 🔥 GASTOS PAGADOS EN EFECTIVO
+            // =====================================
+
+            var gastos = await _GastosRepository
+                .GetAllByExpresionAsync(x =>
+
+                    x.IdEmpresa == idEmpresa
+
+                    && x.IdUsuario == idUsuario
+
+                    && x.EstaAnulado == false
+
+                    && x.EstaCerrada != true
+
+                    && x.FormaPago != null
+
+                    && x.FormaPago.ToUpper() == "EFECTIVO"
+                );
+
+            decimal totalGastos =
+                gastos.Sum(x => x.Monto);
+
+            // =====================================
+            // 🔥 INGRESOS NETOS
+            // =====================================
+
+            decimal ingresosNetos =
+
+                totalVentasBrutas
+
+                + totalIngresosExtra
+
+                - totalDescuento
+
+                - totalGastos;
+
+            // =====================================
+            // 🔥 AGRUPAR POR MÉTODO DE PAGO
+            // =====================================
+
+            var resultado = todosLosIngresos
+                .GroupBy(x => x.FormaPago)
+                .Select(g => new CierreCajaDto
+                {
+                    FormaPago = g.Key,
+
+                    Total = g.Sum(x => x.Monto),
+
+                    TotalVentasBrutas = totalVentasBrutas,
+
+                    TotalDescuento = totalDescuento,
+
+                    TotalGastos = totalGastos,
+
+                    TotalIngresosExtra = totalIngresosExtra,
+
+                    TotalIngresosNetos = ingresosNetos
+                })
+                .OrderBy(x => x.FormaPago)
+                .ToList();
+
+            return resultado;
+        }
+        public async Task<IEnumerable<FacturaHeaders>> GetAllOrdenesByFecha(
+        int IdEmpresa,
+        DateTime fechaDesde,
+        DateTime fechaHasta)
+        {
+            return await _repository.GetAllByExpresionAsync(c =>
+                 c.IdTipoDocumentos == 1
+                 && c.IdEmpresa == IdEmpresa
+                 && c.FechaInseccion.Date >= fechaDesde.Date
+                 && c.FechaInseccion.Date <= fechaHasta.Date,
+                 "Clientes",
+                 "FacturaDetalles");
+        }
+
+        public async Task<
+    List<CajaProductoDto>>
+    GetProductosPendientesCierre(
+
+        int idEmpresa,
+
+        int idUsuario
+        
+    )
+        {
+            // =========================================
+            // 🔥 FACTURAS ABIERTAS
+            // =========================================
+
+            var facturas =
+                await _repository
+                .GetAllByExpresionAsync(
+
+                    x =>
+
+                        x.IdEmpresa
+                        == idEmpresa
+
+                        &&
+
+                        x.IdUsuario
+                        == idUsuario
+
+                        &&
+
+                        x.IdTipoDocumentos
+                        == 1
+
+                        &&
+                        x.EstaCerrada==false
+                );
+
+            if (
+                facturas == null
+                ||
+                !facturas.Any()
+            )
+            {
+                return new();
+            }
+
+            // =========================================
+            // 🔥 IDS FACTURAS
+            // =========================================
+
+            var idsFacturas =
+                facturas
+                .Select(x =>
+                    x.IdFacturaHeader
+                )
+                .ToList();
+
+            // =========================================
+            // 🔥 DETALLES
+            // =========================================
+
+            var detalles =
+                _FacturaDetalles
+                .GetAllByExpresionNoAsync(
+
+                    x =>
+
+                        idsFacturas
+                        .Contains(
+                            x.IdFacturaHeader
+                        )
+                )
+                .ToList();
+
+            if (
+                !detalles.Any()
+            )
+            {
+                return new();
+            }
+
+            // =========================================
+            // 🔥 PRODUCTOS
+            // =========================================
+
+            var productosIds =
+                detalles
+                .Select(x =>
+                    x.IdProducto
+                )
+                .Distinct()
+                .ToList();
+
+            var productos =
+                _Productos
+                .GetAllByExpresionNoAsync(
+
+                    x =>
+
+                        productosIds
+                        .Contains(
+                            x.IdProducto
+                        )
+                )
+                .ToList();
+
+            // =========================================
+            // 🔥 AGRUPAR
+            // =========================================
+
+            var result =
+                detalles
+
+                .GroupBy(x =>
+                    x.IdProducto
+                )
+
+                .Select(g =>
+                {
+                    var producto =
+                        productos
+                        .FirstOrDefault(
+
+                            p =>
+
+                                p.IdProducto
+                                == g.Key
+                        );
+
+                    return new CajaProductoDto
+                    {
+                        IdProducto =
+                            g.Key,
+
+                        Producto =
+                            producto?.Nombre
+                            ?? "",
+
+                        CantidadVendida =
+                            g.Sum(x =>
+                                x.Cantidad
+                            ),
+
+                        TotalVendido =
+                            g.Sum(x =>
+                                x.SubTotal
+                            ),
+
+                        ExistenciaActual =
+                            producto?.Cantidad
+                            ?? 0
+                    };
+                })
+
+                .OrderByDescending(x =>
+                    x.CantidadVendida
+                )
+
+                .ToList();
+
+            return result;
+        }
+
+
+        public async Task<List<CajaProductoDto>>
+        GetProductosPorCajaCierre(
+
+            int idEmpresa,
+
+            int idUsuario,
+
+            int idCajaCierre
+        )
+        {
+            /* =====================================
+            🔥 FACTURAS DEL CIERRE
+            ====================================== */
+
+            var facturas =
+
+                await _repository
+                .GetAllByExpresionAsync(
+
+                    x =>
+
+                        x.IdEmpresa == idEmpresa
+
+                        &&
+
+                        x.IdUsuario == idUsuario
+
+                        &&
+
+                        x.IdCajaCierre == idCajaCierre
+
+                        &&
+
+                        x.EstaCerrada == true
+
+                        &&
+
+                        x.IdTipoDocumentos == 1
+                );
+
+            if (
+                facturas == null
+                ||
+                !facturas.Any()
+            )
+            {
+                return new();
+            }
+
+            /* =====================================
+            🔥 IDS FACTURAS
+            ====================================== */
+
+            var idsFacturas =
+
+                facturas
+                .Select(x =>
+
+                    x.IdFacturaHeader
+                )
+                .ToList();
+
+            /* =====================================
+            🔥 DETALLES
+            ====================================== */
+
+            var detalles =
+
+                _FacturaDetalles
+                .GetAllByExpresionNoAsync(
+
+                    x =>
+
+                        idsFacturas
+                        .Contains(
+
+                            x.IdFacturaHeader
+                        )
+                )
+                .ToList();
+
+            if (
+                !detalles.Any()
+            )
+            {
+                return new();
+            }
+
+            /* =====================================
+            🔥 IDS PRODUCTOS
+            ====================================== */
+
+            var productosIds =
+
+                detalles
+                .Select(x =>
+
+                    x.IdProducto
+                )
+                .Distinct()
+                .ToList();
+
+            /* =====================================
+            🔥 PRODUCTOS
+            ====================================== */
+
+            var productos =
+
+                _Productos
+                .GetAllByExpresionNoAsync(
+
+                    x =>
+
+                        productosIds
+                        .Contains(
+
+                            x.IdProducto
+                        )
+                )
+                .ToList();
+
+            /* =====================================
+            🔥 AGRUPAR
+            ====================================== */
+
+            var result =
+
+                detalles
+
+                .GroupBy(x =>
+
+                    x.IdProducto
+                )
+
+                .Select(g =>
+                {
+                    var producto =
+
+                        productos
+                        .FirstOrDefault(
+
+                            p =>
+
+                                p.IdProducto
+                                == g.Key
+                        );
+
+                    return new CajaProductoDto
+                    {
+                        IdProducto =
+                            g.Key,
+
+                        Producto =
+                            producto?.Nombre
+                            ?? "",
+
+                        CantidadVendida =
+
+                            g.Sum(x =>
+
+                                x.Cantidad
+                            ),
+
+                        TotalVendido =
+
+                            g.Sum(x =>
+
+                                x.SubTotal
+                            ),
+
+                        ExistenciaActual =
+
+                            producto?.Cantidad
+                            ?? 0
+                    };
+                })
+
+                .OrderByDescending(x =>
+
+                    x.CantidadVendida
+                )
+
+                .ToList();
+
+            return result;
+        }
+    }
 }
 

@@ -14,7 +14,14 @@ namespace AlahiaPos.Entities.Domain
     {
         [Key]
         public int IdFacturaHeader { get; set; }
-
+        public string? RNC { get; set; }
+        public int? IdCajaCierre
+        {
+            get;
+            set;
+        }
+        public int? IdUsuario { get; set; }
+        public string? NombreEmpresa { get; set; }
         public bool? PrintLavador { get; set; }
         public string? NumeroDocumento { get; set; } = "";
          public string? Moneda { get; set; }
@@ -73,6 +80,13 @@ namespace AlahiaPos.Entities.Domain
         public string? Estado_Orden { get; set; }
         //public string? EstadoOrden { get; set; }
         public string? TipoOrden { get; set; } = "";
-        
+        // 🔥 ENTREGA
+        public DateTime? FechaEntrega { get; set; }
+        public string? HoraEntrega { get; set; }
+        // 🔥 CONTROL DE ENCARGOS
+        public decimal Abono { get; set; } // pago inicial
+        public decimal Balance { get; set; } // Total - Pagado
+
+
     }
 }

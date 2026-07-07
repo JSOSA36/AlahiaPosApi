@@ -1,4 +1,5 @@
-﻿using AlahiaPos.Entities.Domain;
+﻿using AlahiaPos.DataAccess.Servicios;
+using AlahiaPos.Entities.Domain;
 using AlahiaPos.Entities.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using System;
@@ -11,10 +12,25 @@ namespace AlahiaPos.API.Controllers
     public class IngresosController : ControllerBase
     {
         private readonly IIngresos _ingresosService;
+        private readonly
+       IMetodoPagoCuentaService
+       _MetodoPagoCuentaService;
 
-        public IngresosController(IIngresos ingresosService)
+        private readonly
+        IMovimientoFinancieroService
+        _MovimientoFinancieroService;
+        public IngresosController(IIngresos ingresosService, IMetodoPagoCuentaService
+            metodoPagoCuentaService,
+
+            IMovimientoFinancieroService
+            movimientoFinancieroService)
         {
             _ingresosService = ingresosService;
+            _MetodoPagoCuentaService =
+                metodoPagoCuentaService;
+
+            _MovimientoFinancieroService =
+                movimientoFinancieroService;
         }
 
         // ================================================
@@ -42,13 +58,105 @@ namespace AlahiaPos.API.Controllers
 
         // ✅ POST: api/Ingresos
         [HttpPost]
-        public async Task<IActionResult> InsertIngreso([FromBody] Ingresos ingreso)
+        public async Task<IActionResult>
+ InsertIngreso(
+     [FromBody]
+    Ingresos ingreso
+ )
         {
-            if (ingreso == null)
-                return BadRequest(new { message = "El objeto ingreso no puede ser nulo." });
+            try
+            {
 
-            await _ingresosService.InsertIngreso(ingreso);
-            return Ok(new { message = "Ingreso registrado correctamente ✅" });
+                // =========================================
+                // 🔥 VALIDAR
+                // =========================================
+
+                if (ingreso == null)
+                {
+                    return BadRequest(new
+                    {
+                        message =
+                            "El objeto ingreso no puede ser nulo."
+                    });
+                }
+
+                // =========================================
+                // 🔥 FECHA
+                // =========================================
+
+                ingreso.FechaRegistro =
+                    DateTime.Now;
+
+                // =========================================
+                // 🔥 GUARDAR INGRESO
+                // =========================================
+
+                await _ingresosService
+                .InsertIngreso(
+                    ingreso
+                );
+
+                // =========================================
+                // 🔥 MÉTODO CONFIGURADO
+                // =========================================
+
+                var metodoCuenta =
+                    await _MetodoPagoCuentaService
+                    .GetByMetodoAsync(
+
+                        ingreso.IdEmpresa,
+
+                        ingreso.FormaPago
+                    );
+
+                // =========================================
+                // 🔥 REGISTRAR MOVIMIENTO
+                // =========================================
+
+                if (
+                    metodoCuenta != null
+                    &&
+                    metodoCuenta
+                    .IdCuentaFinanciera > 0
+                )
+                {
+
+                    await _MovimientoFinancieroService
+                    .RegistrarEntradaAsync(
+
+                        ingreso.IdEmpresa,
+
+                        ingreso.IdUsuario ?? 0,
+
+                        metodoCuenta
+                        .IdCuentaFinanciera,
+
+                        ingreso.Monto,
+
+                        $"Ingreso - {ingreso.Categoria}",
+
+                        ingreso.Descripcion
+                        ??
+                        "Entrada automática por ingreso"
+                    );
+                }
+
+                return Ok(new
+                {
+                    message =
+                        "Ingreso registrado correctamente ✅"
+                });
+            }
+
+            catch (Exception ex)
+            {
+
+                return BadRequest(new
+                {
+                    message =
+                        ex.Message
+                });
+            }
         }
 
         // ✅ PUT: api/Ingresos/{IdIngreso}
@@ -70,18 +178,60 @@ namespace AlahiaPos.API.Controllers
             return Ok(new { message = "Ingreso eliminado correctamente ✅" });
         }
         [HttpGet("ingresos-por-linea")]
-        public async Task<IActionResult> GetIngresosPorLinea(
-       int idEmpresa,
-       DateTime fechaInicio,
-       DateTime fechaFin)
-        {
-            var data = await _ingresosService.GetIngresosPorLineaNegocio(
-                idEmpresa,
-                fechaInicio,
-                fechaFin
-            );
+        public async Task<IActionResult>
+GetIngresosPorLinea(
 
-            return Ok(data);
+    int idEmpresa,
+
+    DateTime fechaInicio,
+
+    DateTime fechaFin
+)
+        {
+            try
+            {
+
+                // =========================================
+                // 🔥 DATA
+                // =========================================
+
+                var data =
+                    await _ingresosService
+                    .GetIngresosPorLineaNegocio(
+
+                        idEmpresa,
+
+                        fechaInicio,
+
+                        fechaFin
+                    );
+
+                // =========================================
+                // 🔥 RESPONSE
+                // =========================================
+
+                return Ok(new
+                {
+                    success = true,
+
+                    message =
+                        "Ingresos obtenidos correctamente",
+
+                    data = data
+                });
+            }
+
+            catch (Exception ex)
+            {
+
+                return BadRequest(new
+                {
+                    success = false,
+
+                    message =
+                        ex.Message
+                });
+            }
         }
         // ✅ GET: api/Ingresos/GetIngresosByFecha/{IdEmpresa}/{fechaInicio}/{fechaFin}
         [HttpGet("GetIngresosByFecha/{IdEmpresa}/{fechaInicio}/{fechaFin}")]

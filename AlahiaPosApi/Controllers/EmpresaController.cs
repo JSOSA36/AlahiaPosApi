@@ -5,6 +5,7 @@ using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
 using PrinterLibrary;
 using System.Net.Http.Headers;
+using System.Numerics;
 
 namespace AlahiaPosApi.Controllers
 {
@@ -19,6 +20,7 @@ namespace AlahiaPosApi.Controllers
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly IProductos _IProductos;
         private readonly ICategorias _Categorias;
+        private readonly IPlanesCloud _PlanesCloud;
         private IEmpleados _empleados;
         public EmpresaController(
             IEmpresas empresas,
@@ -28,7 +30,8 @@ namespace AlahiaPosApi.Controllers
             IHttpClientFactory httpClientFactory,
             IAreas area,
             ICategorias categorias,
-            IEmpleados empleados)
+            IEmpleados empleados,
+            IPlanesCloud planesCloud)
         {
             _Empresas = empresas;
             _Usuarios = usuarios;
@@ -38,6 +41,7 @@ namespace AlahiaPosApi.Controllers
             _httpClientFactory = httpClientFactory;
             _Categorias = categorias;
             _empleados = empleados;
+            _PlanesCloud = planesCloud;
         }
 
         // =====================================================
@@ -51,9 +55,16 @@ namespace AlahiaPosApi.Controllers
 
             var dto = _Mapper.Map<EmpresaDto>(empresa);
 
+            // 🔥 LOGO
             dto.LogoUrl = !string.IsNullOrEmpty(empresa.Logo)
                 ? $"{Request.Scheme}://{Request.Host}/api/empresa/GetLogo/{id}"
                 : null;
+
+            // ============================
+            // 🔥 PLAN
+            // ============================
+            var plan = await _PlanesCloud.GetPlanById((int)empresa.IdPlan);
+            dto.NombrePlan = plan?.Nombre ?? "Demo";
 
             return Ok(dto);
         }
@@ -300,9 +311,46 @@ namespace AlahiaPosApi.Controllers
                 });
             }
         }
+        [HttpPost("ActualizarEstadoEmpresa/{empresaId}")]
+        public async Task<IActionResult> ActualizarEstadoEmpresa(int empresaId)
+        {
+            await _Empresas.ActualizarEstadoEmpresa(empresaId);
 
+            return Ok(new
+            {
+                message = "Estado actualizado correctamente 🔄"
+            });
+        }
+        [HttpGet("PuedeOperar/{empresaId}")]
+        public async Task<IActionResult> PuedeOperar(int empresaId)
+        {
+            var empresa = await _Empresas.GetEmpresaById(empresaId);
 
+            if (empresa == null)
+                return NotFound();
 
+            var puede = _Empresas.PuedeOperar(empresa);
+
+            return Ok(new { puedeOperar = puede });
+        }
+        [HttpPost("ActualizarEstado")]
+        public async Task<IActionResult> ActualizarEstado()
+        {
+            await _Empresas.ActualizarEstadoAutomatico();
+            return Ok(new { message = "Estados actualizados correctamente 🔄" });
+        }
+        [HttpPost("MarcarPago/{empresaId}")]
+        public async Task<IActionResult> MarcarPago(int empresaId)
+        {
+            await _Empresas.MarcarPago(empresaId);
+            return Ok(new { message = "Pago aprobado y servicio activado ✅" });
+        }
+        [HttpPost("MarcarPendiente/{empresaId}")]
+        public async Task<IActionResult> MarcarPendiente(int empresaId)
+        {
+            await _Empresas.MarcarPendiente(empresaId);
+            return Ok(new { message = "Pago en revisión ⏳" });
+        }
 
         // =====================================================
         // 🔹 CATÁLOGO PÚBLICO

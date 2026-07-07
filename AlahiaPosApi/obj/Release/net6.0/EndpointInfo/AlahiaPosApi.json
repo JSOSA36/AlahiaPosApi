@@ -5,6 +5,189 @@
     "version": "1.0"
   },
   "paths": {
+    "/api/AreaNegocio/{IdEmpresa}": {
+      "get": {
+        "tags": [
+          "AreaNegocio"
+        ],
+        "parameters": [
+          {
+            "name": "IdEmpresa",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AreaNegocio"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AreaNegocio"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AreaNegocio"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/AreaNegocio/GetById/{id}": {
+      "get": {
+        "tags": [
+          "AreaNegocio"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/AreaNegocio"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AreaNegocio"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AreaNegocio"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/AreaNegocio": {
+      "post": {
+        "tags": [
+          "AreaNegocio"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AreaNegocio"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AreaNegocio"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/AreaNegocio"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/AreaNegocio/{id}": {
+      "put": {
+        "tags": [
+          "AreaNegocio"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AreaNegocio"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AreaNegocio"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/AreaNegocio"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "AreaNegocio"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
     "/api/Areas/{IdEmpresa}": {
       "get": {
         "tags": [
@@ -188,7 +371,1121 @@
         }
       }
     },
+    "/api/BizcochoEncargo": {
+      "get": {
+        "tags": [
+          "BizcochoEncargo"
+        ],
+        "parameters": [
+          {
+            "name": "idEmpresa",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "BizcochoEncargo"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestBizcochoEncargoDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestBizcochoEncargoDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestBizcochoEncargoDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/BizcochoEncargo/{id}": {
+      "get": {
+        "tags": [
+          "BizcochoEncargo"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "idEmpresa",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "BizcochoEncargo"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateBizcochoEncargoDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateBizcochoEncargoDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateBizcochoEncargoDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "BizcochoEncargo"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "idEmpresa",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/BizcochoEncargo/pendientes": {
+      "get": {
+        "tags": [
+          "BizcochoEncargo"
+        ],
+        "parameters": [
+          {
+            "name": "idEmpresa",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/BizcochoEncargo/fecha": {
+      "get": {
+        "tags": [
+          "BizcochoEncargo"
+        ],
+        "parameters": [
+          {
+            "name": "idEmpresa",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "fecha",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/BizcochoEncargo/buscar": {
+      "get": {
+        "tags": [
+          "BizcochoEncargo"
+        ],
+        "parameters": [
+          {
+            "name": "idEmpresa",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "filtro",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/BizcochoEncargo/pagar": {
+      "post": {
+        "tags": [
+          "BizcochoEncargo"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PagoEncargoDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PagoEncargoDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/PagoEncargoDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/BizcochoEncargo/entregar": {
+      "post": {
+        "tags": [
+          "BizcochoEncargo"
+        ],
+        "parameters": [
+          {
+            "name": "idEncargo",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "idEmpresa",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/BizcochoEncargo/total-hoy": {
+      "get": {
+        "tags": [
+          "BizcochoEncargo"
+        ],
+        "parameters": [
+          {
+            "name": "idEmpresa",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/BizcochoEncargo/pagados-hoy": {
+      "get": {
+        "tags": [
+          "BizcochoEncargo"
+        ],
+        "parameters": [
+          {
+            "name": "idEmpresa",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/BizcochoEncargo/print": {
+      "get": {
+        "tags": [
+          "BizcochoEncargo"
+        ],
+        "parameters": [
+          {
+            "name": "idFacturaHeader",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "idEmpresa",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/BizcochoEncargo/facturas": {
+      "get": {
+        "tags": [
+          "BizcochoEncargo"
+        ],
+        "parameters": [
+          {
+            "name": "idEmpresa",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "desde",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "hasta",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/BizcochoEncargo/GetCierreDelDia": {
+      "get": {
+        "tags": [
+          "BizcochoEncargo"
+        ],
+        "parameters": [
+          {
+            "name": "idEmpresa",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/CajaApertura": {
+      "get": {
+        "tags": [
+          "CajaApertura"
+        ],
+        "parameters": [
+          {
+            "name": "idEmpresa",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CajaApertura"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CajaApertura"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CajaApertura"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/CajaApertura/{id}": {
+      "get": {
+        "tags": [
+          "CajaApertura"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/CajaApertura"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CajaApertura"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CajaApertura"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "CajaApertura"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/CajaApertura/CajaAbierta": {
+      "get": {
+        "tags": [
+          "CajaApertura"
+        ],
+        "parameters": [
+          {
+            "name": "idEmpresa",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "idUsuario",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/CajaApertura"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CajaApertura"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CajaApertura"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/CajaApertura/Abrir": {
+      "post": {
+        "tags": [
+          "CajaApertura"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CajaApertura"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CajaApertura"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CajaApertura"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/CajaApertura/Cerrar/{idCaja}": {
+      "put": {
+        "tags": [
+          "CajaApertura"
+        ],
+        "parameters": [
+          {
+            "name": "idCaja",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/CajaCierre": {
+      "get": {
+        "tags": [
+          "CajaCierre"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CajaListadoDto"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CajaListadoDto"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CajaListadoDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/CajaCierre/GetByFecha": {
+      "get": {
+        "tags": [
+          "CajaCierre"
+        ],
+        "parameters": [
+          {
+            "name": "idEmpresa",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "desde",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "hasta",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CajaListadoDto"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CajaListadoDto"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CajaListadoDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/CajaCierre/{id}": {
+      "get": {
+        "tags": [
+          "CajaCierre"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/CajaCierre"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CajaCierre"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CajaCierre"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "CajaCierre"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/CajaCierre/UltimoCierre": {
+      "get": {
+        "tags": [
+          "CajaCierre"
+        ],
+        "parameters": [
+          {
+            "name": "idEmpresa",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/CajaCierre"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CajaCierre"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CajaCierre"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/CajaCierre/Procesar": {
+      "post": {
+        "tags": [
+          "CajaCierre"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CajaCierre"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CajaCierre"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CajaCierre"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/CajaCierre/ImprimirCierre/{idCajaCierre}": {
+      "get": {
+        "tags": [
+          "CajaCierre"
+        ],
+        "parameters": [
+          {
+            "name": "idCajaCierre",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/CajaMovimiento": {
+      "get": {
+        "tags": [
+          "CajaMovimiento"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CajaMovimiento"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CajaMovimiento"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CajaMovimiento"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/CajaMovimiento/ByCaja/{idCaja}": {
+      "get": {
+        "tags": [
+          "CajaMovimiento"
+        ],
+        "parameters": [
+          {
+            "name": "idCaja",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CajaMovimiento"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CajaMovimiento"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CajaMovimiento"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/CajaMovimiento/Entrada": {
+      "post": {
+        "tags": [
+          "CajaMovimiento"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CajaMovimiento"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CajaMovimiento"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CajaMovimiento"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/CajaMovimiento/Salida": {
+      "post": {
+        "tags": [
+          "CajaMovimiento"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CajaMovimiento"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CajaMovimiento"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CajaMovimiento"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/CajaMovimiento/{id}": {
+      "delete": {
+        "tags": [
+          "CajaMovimiento"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
     "/api/Categorias/{IdEmpresa}": {
+      "get": {
+        "tags": [
+          "Categorias"
+        ],
+        "parameters": [
+          {
+            "name": "IdEmpresa",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Categorias"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Categorias"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Categorias"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Categorias/GetCategoriaVenta/{IdEmpresa}": {
       "get": {
         "tags": [
           "Categorias"
@@ -302,6 +1599,9 @@
                   "IsActiva": {
                     "type": "boolean"
                   },
+                  "TipoOperacion": {
+                    "type": "string"
+                  },
                   "IdEmpresa": {
                     "type": "integer",
                     "format": "int32"
@@ -323,6 +1623,9 @@
                   "style": "form"
                 },
                 "IsActiva": {
+                  "style": "form"
+                },
+                "TipoOperacion": {
                   "style": "form"
                 },
                 "IdEmpresa": {
@@ -365,6 +1668,9 @@
                   "IsActiva": {
                     "type": "boolean"
                   },
+                  "TipoOperacion": {
+                    "type": "string"
+                  },
                   "IdEmpresa": {
                     "type": "integer",
                     "format": "int32"
@@ -386,6 +1692,9 @@
                   "style": "form"
                 },
                 "IsActiva": {
+                  "style": "form"
+                },
+                "TipoOperacion": {
                   "style": "form"
                 },
                 "IdEmpresa": {
@@ -1498,6 +2807,232 @@
         }
       }
     },
+    "/api/CuentaFinanciera/{idEmpresa}": {
+      "get": {
+        "tags": [
+          "CuentaFinanciera"
+        ],
+        "parameters": [
+          {
+            "name": "idEmpresa",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CuentaFinanciera"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CuentaFinanciera"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CuentaFinanciera"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/CuentaFinanciera/GetById/{id}": {
+      "get": {
+        "tags": [
+          "CuentaFinanciera"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/CuentaFinanciera"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CuentaFinanciera"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CuentaFinanciera"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/CuentaFinanciera/Balance/{idCuentaFinanciera}": {
+      "get": {
+        "tags": [
+          "CuentaFinanciera"
+        ],
+        "parameters": [
+          {
+            "name": "idCuentaFinanciera",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "number",
+                  "format": "double"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "number",
+                  "format": "double"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "number",
+                  "format": "double"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/CuentaFinanciera": {
+      "post": {
+        "tags": [
+          "CuentaFinanciera"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CuentaFinanciera"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CuentaFinanciera"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CuentaFinanciera"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/CuentaFinanciera/{id}": {
+      "put": {
+        "tags": [
+          "CuentaFinanciera"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CuentaFinanciera"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CuentaFinanciera"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CuentaFinanciera"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "CuentaFinanciera"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
     "/api/DescuentoAreaDetalle/Header/{idHeader}": {
       "get": {
         "tags": [
@@ -2554,142 +4089,6 @@
         }
       }
     },
-    "/api/dgii-test/leer-excel": {
-      "get": {
-        "tags": [
-          "DgiiTest"
-        ],
-        "parameters": [
-          {
-            "name": "path",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Success"
-          }
-        }
-      }
-    },
-    "/api/dgii-test/consultar-track": {
-      "get": {
-        "tags": [
-          "DgiiTest"
-        ],
-        "parameters": [
-          {
-            "name": "trackId",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Success"
-          }
-        }
-      }
-    },
-    "/api/dgii-test/rfce-enviar-por-encf": {
-      "get": {
-        "tags": [
-          "DgiiTest"
-        ],
-        "parameters": [
-          {
-            "name": "path",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "encf",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Success"
-          }
-        }
-      }
-    },
-    "/api/dgii-test/rfce-validar": {
-      "get": {
-        "tags": [
-          "DgiiTest"
-        ],
-        "parameters": [
-          {
-            "name": "path",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Success"
-          }
-        }
-      }
-    },
-    "/api/dgii-test/rfce-enviar": {
-      "get": {
-        "tags": [
-          "DgiiTest"
-        ],
-        "parameters": [
-          {
-            "name": "path",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Success"
-          }
-        }
-      }
-    },
-    "/api/dgii-test/autenticar": {
-      "get": {
-        "tags": [
-          "DgiiTest"
-        ],
-        "responses": {
-          "200": {
-            "description": "Success"
-          }
-        }
-      }
-    },
-    "/api/dgii-test/enviar-xml-local": {
-      "get": {
-        "tags": [
-          "DgiiTest"
-        ],
-        "responses": {
-          "200": {
-            "description": "Success"
-          }
-        }
-      }
-    },
     "/api/Empleado/empresa/{idEmpresa}": {
       "get": {
         "tags": [
@@ -3247,6 +4646,9 @@
                   },
                   "Longitude": {
                     "type": "string"
+                  },
+                  "NombrePlan": {
+                    "type": "string"
                   }
                 }
               },
@@ -3334,11 +4736,118 @@
                 },
                 "Longitude": {
                   "style": "form"
+                },
+                "NombrePlan": {
+                  "style": "form"
                 }
               }
             }
           }
         },
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/Empresa/ActualizarEstadoEmpresa/{empresaId}": {
+      "post": {
+        "tags": [
+          "Empresa"
+        ],
+        "parameters": [
+          {
+            "name": "empresaId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/Empresa/PuedeOperar/{empresaId}": {
+      "get": {
+        "tags": [
+          "Empresa"
+        ],
+        "parameters": [
+          {
+            "name": "empresaId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/Empresa/ActualizarEstado": {
+      "post": {
+        "tags": [
+          "Empresa"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/Empresa/MarcarPago/{empresaId}": {
+      "post": {
+        "tags": [
+          "Empresa"
+        ],
+        "parameters": [
+          {
+            "name": "empresaId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/Empresa/MarcarPendiente/{empresaId}": {
+      "post": {
+        "tags": [
+          "Empresa"
+        ],
+        "parameters": [
+          {
+            "name": "empresaId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Success"
@@ -3790,14 +5299,14 @@
         }
       }
     },
-    "/api/FacturaDetalle/{id}": {
+    "/api/FacturaDetalle/precio/{idDetalle}": {
       "put": {
         "tags": [
           "FacturaDetalle"
         ],
         "parameters": [
           {
-            "name": "id",
+            "name": "idDetalle",
             "in": "path",
             "required": true,
             "schema": {
@@ -3810,42 +5319,21 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "string"
+                "$ref": "#/components/schemas/UpdatePrecioDto"
               }
             },
             "text/json": {
               "schema": {
-                "type": "string"
+                "$ref": "#/components/schemas/UpdatePrecioDto"
               }
             },
             "application/*+json": {
               "schema": {
-                "type": "string"
+                "$ref": "#/components/schemas/UpdatePrecioDto"
               }
             }
           }
         },
-        "responses": {
-          "200": {
-            "description": "Success"
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "FacturaDetalle"
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "Success"
@@ -3861,6 +5349,29 @@
         "parameters": [
           {
             "name": "IdFactDetalle",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/FacturaDetalle/{id}": {
+      "delete": {
+        "tags": [
+          "FacturaDetalle"
+        ],
+        "parameters": [
+          {
+            "name": "id",
             "in": "path",
             "required": true,
             "schema": {
@@ -3989,7 +5500,55 @@
         ],
         "parameters": [
           {
-            "name": "IdMesa",
+            "name": "IdEmpresa",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FacturaHeaderDto"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FacturaHeaderDto"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FacturaHeaderDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/FacturaHeader/GetAllFacturas": {
+      "get": {
+        "tags": [
+          "FacturaHeader"
+        ],
+        "parameters": [
+          {
+            "name": "IdEmpresa",
             "in": "query",
             "schema": {
               "type": "integer",
@@ -4209,6 +5768,37 @@
         }
       }
     },
+    "/api/FacturaHeader/ProcesarFactura": {
+      "post": {
+        "tags": [
+          "FacturaHeader"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FacturaDirectaDTO"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FacturaDirectaDTO"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/FacturaDirectaDTO"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
     "/api/FacturaHeader/InsertFactura": {
       "post": {
         "tags": [
@@ -4236,6 +5826,70 @@
         "responses": {
           "200": {
             "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/FacturaHeader/GetAllOrdenesByFecha": {
+      "get": {
+        "tags": [
+          "FacturaHeader"
+        ],
+        "parameters": [
+          {
+            "name": "IdEmpresa",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "fechaDesde",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "fechaHasta",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FacturaHeaderDto"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FacturaHeaderDto"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FacturaHeaderDto"
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -4287,6 +5941,52 @@
             }
           }
         },
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/FacturaHeader/ticket-lavador/{idFactura}": {
+      "get": {
+        "tags": [
+          "FacturaHeader"
+        ],
+        "parameters": [
+          {
+            "name": "idFactura",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/FacturaHeader/factura-cliente/{idFactura}": {
+      "get": {
+        "tags": [
+          "FacturaHeader"
+        ],
+        "parameters": [
+          {
+            "name": "idFactura",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Success"
@@ -4359,23 +6059,22 @@
         }
       }
     },
-    "/api/FacturaHeader/UpdateFact/{IdFact}": {
-      "get": {
+    "/api/FacturaHeader/AnularFactura": {
+      "post": {
         "tags": [
           "FacturaHeader"
         ],
         "parameters": [
           {
             "name": "IdFact",
-            "in": "path",
-            "required": true,
+            "in": "query",
             "schema": {
               "type": "integer",
               "format": "int32"
             }
           },
           {
-            "name": "IdEmpresa",
+            "name": "idEmpresa",
             "in": "query",
             "schema": {
               "type": "integer",
@@ -4543,6 +6242,29 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/api/FacturaHeader/RePrintLavador/{IdFact}": {
+      "get": {
+        "tags": [
+          "FacturaHeader"
+        ],
+        "parameters": [
+          {
+            "name": "IdFact",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
           }
         }
       }
@@ -4815,6 +6537,36 @@
         }
       }
     },
+    "/api/FacturaHeader/GetIngresosCajaAbierta": {
+      "get": {
+        "tags": [
+          "FacturaHeader"
+        ],
+        "parameters": [
+          {
+            "name": "idEmpresa",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "idUsuario",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
     "/api/FacturaHeader/GetCuentasPorCobrar/{idEmpresa}": {
       "get": {
         "tags": [
@@ -4825,6 +6577,44 @@
             "name": "idEmpresa",
             "in": "path",
             "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/FacturaHeader/Reporte607": {
+      "get": {
+        "tags": [
+          "FacturaHeader"
+        ],
+        "parameters": [
+          {
+            "name": "desde",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "hasta",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "idEmpresa",
+            "in": "query",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -5772,6 +7562,44 @@
         }
       }
     },
+    "/api/Ingresos/ingresos-por-linea": {
+      "get": {
+        "tags": [
+          "Ingresos"
+        ],
+        "parameters": [
+          {
+            "name": "idEmpresa",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "fechaInicio",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "fechaFin",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
     "/api/Ingresos/GetIngresosByFecha/{IdEmpresa}/{fechaInicio}/{fechaFin}": {
       "get": {
         "tags": [
@@ -5923,6 +7751,286 @@
         }
       }
     },
+    "/api/LavadorConsumo/Registrar": {
+      "post": {
+        "tags": [
+          "LavadorConsumo"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LavadorConsumoCreateDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LavadorConsumoCreateDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/LavadorConsumoCreateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/LavadorConsumo/DashboardLavador": {
+      "get": {
+        "tags": [
+          "LavadorConsumo"
+        ],
+        "parameters": [
+          {
+            "name": "idEmpleado",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "idEmpresa",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "desde",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "hasta",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/LavadorConsumo/Abonar": {
+      "post": {
+        "tags": [
+          "LavadorConsumo"
+        ],
+        "parameters": [
+          {
+            "name": "idConsumo",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "monto",
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "format": "double"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/LavadorConsumo/Balance": {
+      "get": {
+        "tags": [
+          "LavadorConsumo"
+        ],
+        "parameters": [
+          {
+            "name": "idEmpleado",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "idEmpresa",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/LavadorConsumo/Pendientes": {
+      "get": {
+        "tags": [
+          "LavadorConsumo"
+        ],
+        "parameters": [
+          {
+            "name": "idEmpleado",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "idEmpresa",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/LavadorConsumo/Historial": {
+      "get": {
+        "tags": [
+          "LavadorConsumo"
+        ],
+        "parameters": [
+          {
+            "name": "idEmpleado",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "idEmpresa",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "desde",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "hasta",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/LavadorConsumo/Listado": {
+      "get": {
+        "tags": [
+          "LavadorConsumo"
+        ],
+        "parameters": [
+          {
+            "name": "idEmpresa",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/LavadorConsumo/Saldar": {
+      "post": {
+        "tags": [
+          "LavadorConsumo"
+        ],
+        "parameters": [
+          {
+            "name": "idConsumo",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/LavadorConsumo/{id}": {
+      "delete": {
+        "tags": [
+          "LavadorConsumo"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
     "/api/Login/login": {
       "post": {
         "tags": [
@@ -5943,6 +8051,40 @@
             "application/*+json": {
               "schema": {
                 "$ref": "#/components/schemas/LoginDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/Login/logout": {
+      "post": {
+        "tags": [
+          "Login"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "integer",
+                "format": "int32"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "type": "integer",
+                "format": "int32"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "type": "integer",
+                "format": "int32"
               }
             }
           }
@@ -6162,6 +8304,235 @@
       "delete": {
         "tags": [
           "Mesas"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/MetodoPagoCuenta/{idEmpresa}": {
+      "get": {
+        "tags": [
+          "MetodoPagoCuenta"
+        ],
+        "parameters": [
+          {
+            "name": "idEmpresa",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MetodoPagoCuenta"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MetodoPagoCuenta"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MetodoPagoCuenta"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/MetodoPagoCuenta/ByMetodo": {
+      "get": {
+        "tags": [
+          "MetodoPagoCuenta"
+        ],
+        "parameters": [
+          {
+            "name": "idEmpresa",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "metodoPago",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/MetodoPagoCuenta"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MetodoPagoCuenta"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MetodoPagoCuenta"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/MetodoPagoCuenta/GetById/{id}": {
+      "get": {
+        "tags": [
+          "MetodoPagoCuenta"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/MetodoPagoCuenta"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MetodoPagoCuenta"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MetodoPagoCuenta"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/MetodoPagoCuenta": {
+      "post": {
+        "tags": [
+          "MetodoPagoCuenta"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MetodoPagoCuenta"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MetodoPagoCuenta"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/MetodoPagoCuenta"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/MetodoPagoCuenta/{id}": {
+      "put": {
+        "tags": [
+          "MetodoPagoCuenta"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MetodoPagoCuenta"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MetodoPagoCuenta"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/MetodoPagoCuenta"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "MetodoPagoCuenta"
         ],
         "parameters": [
           {
@@ -6436,6 +8807,879 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/api/MovimientoFinanciero/{idEmpresa}": {
+      "get": {
+        "tags": [
+          "MovimientoFinanciero"
+        ],
+        "parameters": [
+          {
+            "name": "idEmpresa",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MovimientoFinanciero"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MovimientoFinanciero"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MovimientoFinanciero"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/MovimientoFinanciero/ByCuenta/{idCuentaFinanciera}": {
+      "get": {
+        "tags": [
+          "MovimientoFinanciero"
+        ],
+        "parameters": [
+          {
+            "name": "idCuentaFinanciera",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MovimientoFinanciero"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MovimientoFinanciero"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MovimientoFinanciero"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/MovimientoFinanciero/ByFecha": {
+      "get": {
+        "tags": [
+          "MovimientoFinanciero"
+        ],
+        "parameters": [
+          {
+            "name": "idEmpresa",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "desde",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "hasta",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MovimientoFinanciero"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MovimientoFinanciero"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MovimientoFinanciero"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/MovimientoFinanciero/GetById/{id}": {
+      "get": {
+        "tags": [
+          "MovimientoFinanciero"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/MovimientoFinanciero"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MovimientoFinanciero"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MovimientoFinanciero"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/MovimientoFinanciero/Entrada": {
+      "post": {
+        "tags": [
+          "MovimientoFinanciero"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EntradaFinancieraDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EntradaFinancieraDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/EntradaFinancieraDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/MovimientoFinanciero/Salida": {
+      "post": {
+        "tags": [
+          "MovimientoFinanciero"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SalidaFinancieraDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SalidaFinancieraDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SalidaFinancieraDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/MovimientoFinanciero/Transferencia": {
+      "post": {
+        "tags": [
+          "MovimientoFinanciero"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TransferenciaFinancieraDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TransferenciaFinancieraDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/TransferenciaFinancieraDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/MovimientoFinanciero/{id}": {
+      "delete": {
+        "tags": [
+          "MovimientoFinanciero"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/MovimientosInventario": {
+      "get": {
+        "tags": [
+          "MovimientosInventario"
+        ],
+        "parameters": [
+          {
+            "name": "idEmpresa",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MovimientosInventario"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MovimientosInventario"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MovimientosInventario"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/MovimientosInventario/FiltrarHistorial": {
+      "get": {
+        "tags": [
+          "MovimientosInventario"
+        ],
+        "parameters": [
+          {
+            "name": "idEmpresa",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "desde",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "hasta",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "tipoMovimiento",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "motivo",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "idUsuario",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/MovimientosInventario/GetById/{id}": {
+      "get": {
+        "tags": [
+          "MovimientosInventario"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/MovimientosInventario/GuardarMovimiento": {
+      "post": {
+        "tags": [
+          "MovimientosInventario"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MovimientosInventario"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MovimientosInventario"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/MovimientosInventario"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/MovimientosInventario/{id}": {
+      "delete": {
+        "tags": [
+          "MovimientosInventario"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/MovimientosInventario/FiltrarPorFecha": {
+      "get": {
+        "tags": [
+          "MovimientosInventario"
+        ],
+        "parameters": [
+          {
+            "name": "idEmpresa",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "desde",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "hasta",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/MovimientosInventario/ValidarStock": {
+      "get": {
+        "tags": [
+          "MovimientosInventario"
+        ],
+        "parameters": [
+          {
+            "name": "idProducto",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "cantidad",
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "format": "double"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/MovimientosInventario/KardexProducto": {
+      "get": {
+        "tags": [
+          "MovimientosInventario"
+        ],
+        "parameters": [
+          {
+            "name": "idProducto",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "desde",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "hasta",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/MovimientosInventario/ProductosStockBajo": {
+      "get": {
+        "tags": [
+          "MovimientosInventario"
+        ],
+        "parameters": [
+          {
+            "name": "idEmpresa",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/MovimientosInventario/ActualizarStock": {
+      "put": {
+        "tags": [
+          "MovimientosInventario"
+        ],
+        "parameters": [
+          {
+            "name": "idProducto",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "nuevoStock",
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "format": "double"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/NCF_Secuencias/{IdEmpresa}": {
+      "get": {
+        "tags": [
+          "NCF_Secuencias"
+        ],
+        "parameters": [
+          {
+            "name": "IdEmpresa",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SecuenciaECF"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SecuenciaECF"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SecuenciaECF"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/NCF_Secuencias/GetById/{id}": {
+      "get": {
+        "tags": [
+          "NCF_Secuencias"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/SecuenciaECF"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SecuenciaECF"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SecuenciaECF"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/NCF_Secuencias": {
+      "post": {
+        "tags": [
+          "NCF_Secuencias"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SecuenciaECF"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SecuenciaECF"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SecuenciaECF"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/NCF_Secuencias/{id}": {
+      "put": {
+        "tags": [
+          "NCF_Secuencias"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SecuenciaECF"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SecuenciaECF"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SecuenciaECF"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "NCF_Secuencias"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/NCF_Secuencias/Generar": {
+      "post": {
+        "tags": [
+          "NCF_Secuencias"
+        ],
+        "parameters": [
+          {
+            "name": "idEmpresa",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "tipoNCF",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
           }
         }
       }
@@ -6728,6 +9972,101 @@
             }
           }
         ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/PagoEmpresa/SubirPago": {
+      "post": {
+        "tags": [
+          "PagoEmpresa"
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "IdEmpresa": {
+                    "type": "integer",
+                    "format": "int32"
+                  },
+                  "Monto": {
+                    "type": "number",
+                    "format": "double"
+                  },
+                  "Imagen": {
+                    "type": "string",
+                    "format": "binary"
+                  },
+                  "ArchivoUrl": {
+                    "type": "string"
+                  }
+                }
+              },
+              "encoding": {
+                "IdEmpresa": {
+                  "style": "form"
+                },
+                "Monto": {
+                  "style": "form"
+                },
+                "Imagen": {
+                  "style": "form"
+                },
+                "ArchivoUrl": {
+                  "style": "form"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/PagoEmpresa/ObtenerPagos": {
+      "get": {
+        "tags": [
+          "PagoEmpresa"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/PagoEmpresa/ValidarPago": {
+      "post": {
+        "tags": [
+          "PagoEmpresa"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ValidarPagoDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ValidarPagoDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ValidarPagoDto"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Success"
@@ -7635,172 +10974,45 @@
         }
       }
     },
-    "/api/Planes": {
+    "/api/PlanesCloud/GetPlanes": {
       "get": {
         "tags": [
-          "Planes"
+          "PlanesCloud"
         ],
-        "responses": {
-          "200": {
-            "description": "Success",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/PlanSuscripcion"
-                  }
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/PlanSuscripcion"
-                  }
-                }
-              },
-              "text/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/PlanSuscripcion"
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "Planes"
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PlanSuscripcion"
-              }
-            },
-            "text/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PlanSuscripcion"
-              }
-            },
-            "application/*+json": {
-              "schema": {
-                "$ref": "#/components/schemas/PlanSuscripcion"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Success",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/PlanSuscripcion"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PlanSuscripcion"
-                }
-              },
-              "text/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PlanSuscripcion"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/Planes/{id}": {
-      "get": {
-        "tags": [
-          "Planes"
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Success",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/PlanSuscripcion"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PlanSuscripcion"
-                }
-              },
-              "text/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PlanSuscripcion"
-                }
-              }
-            }
-          }
-        }
-      },
-      "put": {
-        "tags": [
-          "Planes"
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PlanSuscripcion"
-              }
-            },
-            "text/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PlanSuscripcion"
-              }
-            },
-            "application/*+json": {
-              "schema": {
-                "$ref": "#/components/schemas/PlanSuscripcion"
-              }
-            }
-          }
-        },
         "responses": {
           "200": {
             "description": "Success"
           }
         }
-      },
-      "delete": {
+      }
+    },
+    "/api/PlanesCloud/empresa/{idEmpresa}": {
+      "get": {
         "tags": [
-          "Planes"
+          "PlanesCloud"
+        ],
+        "parameters": [
+          {
+            "name": "idEmpresa",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/PlanesCloud/GetPlan/{id}": {
+      "get": {
+        "tags": [
+          "PlanesCloud"
         ],
         "parameters": [
           {
@@ -7813,6 +11025,37 @@
             }
           }
         ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/PlanesCloud/CambiarPlan": {
+      "post": {
+        "tags": [
+          "PlanesCloud"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CambiarPlanDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CambiarPlanDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CambiarPlanDto"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Success"
@@ -7821,6 +11064,55 @@
       }
     },
     "/api/Productos/GetListadoProductos/{IdEmpresa}": {
+      "get": {
+        "tags": [
+          "Productos"
+        ],
+        "parameters": [
+          {
+            "name": "IdEmpresa",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Productos"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Productos"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Productos"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Productos/GetListadoProductosVenta/{IdEmpresa}": {
       "get": {
         "tags": [
           "Productos"
@@ -7996,6 +11288,9 @@
                     "type": "integer",
                     "format": "int32"
                   },
+                  "EsServicio": {
+                    "type": "boolean"
+                  },
                   "nombre": {
                     "type": "string"
                   },
@@ -8015,8 +11310,8 @@
                     "type": "number",
                     "format": "double"
                   },
-                  "SeCompra": {
-                    "type": "boolean"
+                  "TipoOperacion": {
+                    "type": "string"
                   },
                   "isproductobelleza": {
                     "type": "boolean"
@@ -8064,6 +11359,9 @@
                 "IdArea": {
                   "style": "form"
                 },
+                "EsServicio": {
+                  "style": "form"
+                },
                 "nombre": {
                   "style": "form"
                 },
@@ -8079,7 +11377,7 @@
                 "costo": {
                   "style": "form"
                 },
-                "SeCompra": {
+                "TipoOperacion": {
                   "style": "form"
                 },
                 "isproductobelleza": {
@@ -8144,6 +11442,9 @@
                     "type": "integer",
                     "format": "int32"
                   },
+                  "EsServicio": {
+                    "type": "boolean"
+                  },
                   "nombre": {
                     "type": "string"
                   },
@@ -8163,8 +11464,8 @@
                     "type": "number",
                     "format": "double"
                   },
-                  "SeCompra": {
-                    "type": "boolean"
+                  "TipoOperacion": {
+                    "type": "string"
                   },
                   "isproductobelleza": {
                     "type": "boolean"
@@ -8212,6 +11513,9 @@
                 "IdArea": {
                   "style": "form"
                 },
+                "EsServicio": {
+                  "style": "form"
+                },
                 "nombre": {
                   "style": "form"
                 },
@@ -8227,7 +11531,7 @@
                 "costo": {
                   "style": "form"
                 },
-                "SeCompra": {
+                "TipoOperacion": {
                   "style": "form"
                 },
                 "isproductobelleza": {
@@ -8559,6 +11863,67 @@
             "schema": {
               "type": "integer",
               "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/rnc/{rnc}": {
+      "get": {
+        "tags": [
+          "Rnc"
+        ],
+        "parameters": [
+          {
+            "name": "rnc",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClienteDgiiDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClienteDgiiDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClienteDgiiDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/RncCLienteDGII/{rnc}": {
+      "get": {
+        "tags": [
+          "RncCLienteDGII"
+        ],
+        "parameters": [
+          {
+            "name": "rnc",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
             }
           }
         ],
@@ -8922,6 +12287,13 @@
           },
           "isActivo": {
             "type": "boolean"
+          },
+          "idAreaNegocio": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "areaNegocio": {
+            "$ref": "#/components/schemas/AreaNegocio"
           }
         },
         "additionalProperties": false
@@ -8954,6 +12326,48 @@
         },
         "additionalProperties": false
       },
+      "AreaNegocio": {
+        "required": [
+          "nombre"
+        ],
+        "type": "object",
+        "properties": {
+          "idAreaNegocio": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "nombre": {
+            "maxLength": 100,
+            "minLength": 0,
+            "type": "string"
+          },
+          "descripcion": {
+            "maxLength": 250,
+            "minLength": 0,
+            "type": "string",
+            "nullable": true
+          },
+          "activo": {
+            "type": "boolean"
+          },
+          "idEmpresa": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "fechaCreacion": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "areasOperativas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Area"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "AsignarPerfilModulosDto": {
         "type": "object",
         "properties": {
@@ -8968,12 +12382,294 @@
         },
         "additionalProperties": false
       },
+      "CajaApertura": {
+        "type": "object",
+        "properties": {
+          "idCajaApertura": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "idEmpresa": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "idUsuario": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "fechaApertura": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "montoInicial": {
+            "type": "number",
+            "format": "double"
+          },
+          "estado": {
+            "type": "string",
+            "nullable": true
+          },
+          "observacion": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "CajaCierre": {
+        "type": "object",
+        "properties": {
+          "idCajaCierre": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "idCajaApertura": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "idEmpresa": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "idUsuario": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "fechaCierre": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "totalEfectivo": {
+            "type": "number",
+            "format": "double"
+          },
+          "totalTarjeta": {
+            "type": "number",
+            "format": "double"
+          },
+          "totalTransferenciaPopular": {
+            "type": "number",
+            "format": "double"
+          },
+          "totalTransferenciaBHD": {
+            "type": "number",
+            "format": "double"
+          },
+          "totalTransferenciaReservas": {
+            "type": "number",
+            "format": "double"
+          },
+          "totalCredito": {
+            "type": "number",
+            "format": "double"
+          },
+          "totalGeneral": {
+            "type": "number",
+            "format": "double"
+          },
+          "montoRealCaja": {
+            "type": "number",
+            "format": "double"
+          },
+          "diferencia": {
+            "type": "number",
+            "format": "double"
+          },
+          "observacion": {
+            "type": "string",
+            "nullable": true
+          },
+          "cajaApertura": {
+            "$ref": "#/components/schemas/CajaApertura"
+          }
+        },
+        "additionalProperties": false
+      },
+      "CajaListadoDto": {
+        "type": "object",
+        "properties": {
+          "idCajaApertura": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "idCajaCierre": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "idEmpresa": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "idUsuario": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "fechaApertura": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "fechaCierre": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "montoInicial": {
+            "type": "number",
+            "format": "double"
+          },
+          "totalEfectivo": {
+            "type": "number",
+            "format": "double"
+          },
+          "totalTarjeta": {
+            "type": "number",
+            "format": "double"
+          },
+          "totalTransferenciaPopular": {
+            "type": "number",
+            "format": "double"
+          },
+          "totalTransferenciaBHD": {
+            "type": "number",
+            "format": "double"
+          },
+          "totalTransferenciaReservas": {
+            "type": "number",
+            "format": "double"
+          },
+          "totalCredito": {
+            "type": "number",
+            "format": "double"
+          },
+          "totalGeneral": {
+            "type": "number",
+            "format": "double"
+          },
+          "montoRealCaja": {
+            "type": "number",
+            "format": "double"
+          },
+          "diferencia": {
+            "type": "number",
+            "format": "double"
+          },
+          "estado": {
+            "type": "string",
+            "nullable": true
+          },
+          "observacion": {
+            "type": "string",
+            "nullable": true
+          },
+          "usuarioApertura": {
+            "type": "string",
+            "nullable": true
+          },
+          "usuarioCierre": {
+            "type": "string",
+            "nullable": true
+          },
+          "productosVendidos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CajaProductoDto"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "CajaMovimiento": {
+        "type": "object",
+        "properties": {
+          "idCajaMovimiento": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "idCajaApertura": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "idEmpresa": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "idUsuario": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "fechaMovimiento": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "tipoMovimiento": {
+            "type": "string",
+            "nullable": true
+          },
+          "categoria": {
+            "type": "string",
+            "nullable": true
+          },
+          "descripcion": {
+            "type": "string",
+            "nullable": true
+          },
+          "monto": {
+            "type": "number",
+            "format": "double"
+          },
+          "cajaApertura": {
+            "$ref": "#/components/schemas/CajaApertura"
+          }
+        },
+        "additionalProperties": false
+      },
+      "CajaProductoDto": {
+        "type": "object",
+        "properties": {
+          "idProducto": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "producto": {
+            "type": "string",
+            "nullable": true
+          },
+          "cantidadVendida": {
+            "type": "number",
+            "format": "double"
+          },
+          "existenciaActual": {
+            "type": "number",
+            "format": "double"
+          },
+          "totalVendido": {
+            "type": "number",
+            "format": "double"
+          }
+        },
+        "additionalProperties": false
+      },
       "CambiarEstadoCitaDto": {
         "type": "object",
         "properties": {
           "estado": {
             "type": "string",
             "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "CambiarPlanDto": {
+        "type": "object",
+        "properties": {
+          "idEmpresa": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "idPlan": {
+            "type": "integer",
+            "format": "int32"
           }
         },
         "additionalProperties": false
@@ -9060,6 +12756,10 @@
           "prioridad": {
             "type": "integer",
             "format": "int32"
+          },
+          "tipoOperacion": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -9253,6 +12953,32 @@
         },
         "additionalProperties": false
       },
+      "ClienteDgiiDto": {
+        "type": "object",
+        "properties": {
+          "rnc": {
+            "type": "string",
+            "nullable": true
+          },
+          "nombre": {
+            "type": "string",
+            "nullable": true
+          },
+          "nombreComercial": {
+            "type": "string",
+            "nullable": true
+          },
+          "estado": {
+            "type": "string",
+            "nullable": true
+          },
+          "regimen": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "ClienteDto": {
         "type": "object",
         "properties": {
@@ -9403,11 +13129,23 @@
       "ComisionesResultDto": {
         "type": "object",
         "properties": {
+          "idEmpleado": {
+            "type": "integer",
+            "format": "int32"
+          },
           "empleados": {
             "type": "string",
             "nullable": true
           },
-          "total": {
+          "totalComisiones": {
+            "type": "number",
+            "format": "double"
+          },
+          "totalConsumo": {
+            "type": "number",
+            "format": "double"
+          },
+          "netoPagar": {
             "type": "number",
             "format": "double"
           }
@@ -9436,6 +13174,63 @@
           "correo": {
             "type": "string",
             "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "CuentaFinanciera": {
+        "required": [
+          "nombre",
+          "tipoCuenta"
+        ],
+        "type": "object",
+        "properties": {
+          "idCuentaFinanciera": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "idEmpresa": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "nombre": {
+            "maxLength": 150,
+            "type": "string"
+          },
+          "tipoCuenta": {
+            "maxLength": 50,
+            "type": "string"
+          },
+          "banco": {
+            "maxLength": 100,
+            "type": "string",
+            "nullable": true
+          },
+          "numeroCuenta": {
+            "maxLength": 100,
+            "type": "string",
+            "nullable": true
+          },
+          "balanceInicial": {
+            "type": "number",
+            "format": "double"
+          },
+          "color": {
+            "maxLength": 30,
+            "type": "string",
+            "nullable": true
+          },
+          "icono": {
+            "maxLength": 50,
+            "type": "string",
+            "nullable": true
+          },
+          "activa": {
+            "type": "boolean"
+          },
+          "fechaCreacion": {
+            "type": "string",
+            "format": "date-time"
           }
         },
         "additionalProperties": false
@@ -10196,6 +13991,10 @@
           "longitude": {
             "type": "string",
             "nullable": true
+          },
+          "nombrePlan": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -10240,46 +14039,6 @@
         },
         "additionalProperties": false
       },
-      "EmpresaPlan": {
-        "required": [
-          "empresaId"
-        ],
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "empresaId": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "precioBaseUSD": {
-            "type": "number",
-            "format": "double"
-          },
-          "usuariosIncluidos": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "activo": {
-            "type": "boolean"
-          },
-          "fechaInicio": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "fechaFin": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
-          },
-          "empresa": {
-            "$ref": "#/components/schemas/Empresas"
-          }
-        },
-        "additionalProperties": false
-      },
       "Empresas": {
         "type": "object",
         "properties": {
@@ -10291,9 +14050,31 @@
             "type": "integer",
             "format": "int32"
           },
-          "idPlanes": {
+          "pagadoServicio": {
+            "type": "boolean"
+          },
+          "fechaUltimoPago": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "fechaProximoPago": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "estadoServicio": {
+            "maxLength": 20,
+            "type": "string",
+            "nullable": true
+          },
+          "idPlan": {
             "type": "integer",
             "format": "int32",
+            "nullable": true
+          },
+          "apiPrint": {
+            "type": "string",
             "nullable": true
           },
           "nombreComercial": {
@@ -10327,6 +14108,9 @@
           "estado": {
             "type": "boolean"
           },
+          "politicasAceptadas": {
+            "type": "boolean"
+          },
           "fechaTerminacion": {
             "type": "string",
             "format": "date-time"
@@ -10348,6 +14132,14 @@
             "nullable": true
           },
           "longitude": {
+            "type": "string",
+            "nullable": true
+          },
+          "municipio": {
+            "type": "string",
+            "nullable": true
+          },
+          "provincia": {
             "type": "string",
             "nullable": true
           },
@@ -10433,12 +14225,22 @@
             },
             "nullable": true
           },
-          "empresaPlanes": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/EmpresaPlan"
-            },
+          "fechaInicioPlan": {
+            "type": "string",
+            "format": "date-time",
             "nullable": true
+          },
+          "fechaVencimientoPlan": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "estadoPlan": {
+            "type": "string",
+            "nullable": true
+          },
+          "plan": {
+            "$ref": "#/components/schemas/PlanesCloud"
           },
           "certificadosDigitales": {
             "type": "array",
@@ -10464,6 +14266,36 @@
         },
         "additionalProperties": false
       },
+      "EntradaFinancieraDto": {
+        "type": "object",
+        "properties": {
+          "idEmpresa": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "idUsuario": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "idCuentaDestino": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "monto": {
+            "type": "number",
+            "format": "double"
+          },
+          "motivo": {
+            "type": "string",
+            "nullable": true
+          },
+          "observacion": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "FacturaCierreDTO": {
         "type": "object",
         "properties": {
@@ -10478,6 +14310,9 @@
           "idCliente": {
             "type": "integer",
             "format": "int32"
+          },
+          "imprimirFactura": {
+            "type": "boolean"
           },
           "detallePagos": {
             "type": "array",
@@ -10558,11 +14393,30 @@
             "format": "int32",
             "nullable": true
           },
+          "printLavador": {
+            "type": "boolean"
+          },
           "productos": {
             "$ref": "#/components/schemas/Productos"
           },
           "facturaHeader": {
             "$ref": "#/components/schemas/FacturaHeaders"
+          },
+          "nombreEmpleadoComision": {
+            "type": "string",
+            "nullable": true
+          },
+          "tipoMasa": {
+            "type": "string",
+            "nullable": true
+          },
+          "tipoRelleno": {
+            "type": "string",
+            "nullable": true
+          },
+          "libras": {
+            "type": "number",
+            "format": "double"
           }
         },
         "additionalProperties": false
@@ -10602,6 +14456,34 @@
             "type": "number",
             "format": "double"
           },
+          "descripcion": {
+            "type": "string",
+            "nullable": true
+          },
+          "precio": {
+            "type": "number",
+            "format": "double"
+          },
+          "total": {
+            "type": "number",
+            "format": "double"
+          },
+          "tipoMasa": {
+            "type": "string",
+            "nullable": true
+          },
+          "tipoRelleno": {
+            "type": "string",
+            "nullable": true
+          },
+          "libras": {
+            "type": "number",
+            "format": "double"
+          },
+          "notaDetalle": {
+            "type": "string",
+            "nullable": true
+          },
           "idEmpleadoComision": {
             "type": "integer",
             "format": "int32",
@@ -10639,6 +14521,22 @@
         },
         "additionalProperties": false
       },
+      "FacturaDirectaDTO": {
+        "type": "object",
+        "properties": {
+          "header": {
+            "$ref": "#/components/schemas/FacturaHeaderDto"
+          },
+          "pagos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PagoDTO"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "FacturaHeaderDto": {
         "type": "object",
         "properties": {
@@ -10651,6 +14549,22 @@
             "format": "int32"
           },
           "plazo": {
+            "type": "string",
+            "nullable": true
+          },
+          "rnc": {
+            "type": "string",
+            "nullable": true
+          },
+          "nombreEmpresa": {
+            "type": "string",
+            "nullable": true
+          },
+          "cliente": {
+            "type": "string",
+            "nullable": true
+          },
+          "celular": {
             "type": "string",
             "nullable": true
           },
@@ -10691,6 +14605,10 @@
           "idMesa": {
             "type": "integer",
             "format": "int32"
+          },
+          "tipoPago": {
+            "type": "string",
+            "nullable": true
           },
           "idTipoDocumentos": {
             "type": "integer",
@@ -10756,6 +14674,14 @@
             "type": "string",
             "nullable": true
           },
+          "tipoDocumento": {
+            "type": "string",
+            "nullable": true
+          },
+          "tipoComprobante": {
+            "type": "string",
+            "nullable": true
+          },
           "pagado": {
             "type": "number",
             "format": "double"
@@ -10766,6 +14692,28 @@
           },
           "hora": {
             "type": "string",
+            "nullable": true
+          },
+          "fechaEntrega": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "horaEntrega": {
+            "type": "string",
+            "nullable": true
+          },
+          "abono": {
+            "type": "number",
+            "format": "double"
+          },
+          "balance": {
+            "type": "number",
+            "format": "double"
+          },
+          "facturaOrigenId": {
+            "type": "integer",
+            "format": "int32",
             "nullable": true
           },
           "ajustadoInventario": {
@@ -10785,8 +14733,33 @@
           "mesas": {
             "$ref": "#/components/schemas/Mesas"
           },
+          "empresa": {
+            "type": "string",
+            "nullable": true
+          },
+          "idUsuario": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "telefonoEmpresa": {
+            "type": "string",
+            "nullable": true
+          },
+          "rncEmpresa": {
+            "type": "string",
+            "nullable": true
+          },
+          "direccionEmpresa": {
+            "type": "string",
+            "nullable": true
+          },
           "clientes": {
             "$ref": "#/components/schemas/ClienteDto"
+          },
+          "numeroDocumento": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -10805,6 +14778,24 @@
           "idFacturaHeader": {
             "type": "integer",
             "format": "int32"
+          },
+          "rnc": {
+            "type": "string",
+            "nullable": true
+          },
+          "idCajaCierre": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "idUsuario": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "nombreEmpresa": {
+            "type": "string",
+            "nullable": true
           },
           "printLavador": {
             "type": "boolean",
@@ -10990,6 +14981,23 @@
           "tipoOrden": {
             "type": "string",
             "nullable": true
+          },
+          "fechaEntrega": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "horaEntrega": {
+            "type": "string",
+            "nullable": true
+          },
+          "abono": {
+            "type": "number",
+            "format": "double"
+          },
+          "balance": {
+            "type": "number",
+            "format": "double"
           }
         },
         "additionalProperties": false
@@ -11263,11 +15271,40 @@
             "format": "int32",
             "nullable": true
           },
+          "estaAnulado": {
+            "type": "boolean"
+          },
           "nota": {
             "maxLength": 500,
             "minLength": 0,
             "type": "string",
             "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "LavadorConsumoCreateDto": {
+        "type": "object",
+        "properties": {
+          "idEmpleado": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "idConsumo": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "idEmpresa": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "concepto": {
+            "type": "string",
+            "nullable": true
+          },
+          "monto": {
+            "type": "number",
+            "format": "double"
           }
         },
         "additionalProperties": false
@@ -11334,6 +15371,37 @@
         },
         "additionalProperties": false
       },
+      "MetodoPagoCuenta": {
+        "required": [
+          "metodoPago"
+        ],
+        "type": "object",
+        "properties": {
+          "idMetodoPagoCuenta": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "idEmpresa": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "metodoPago": {
+            "maxLength": 100,
+            "type": "string"
+          },
+          "idCuentaFinanciera": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "activo": {
+            "type": "boolean"
+          },
+          "cuentaFinanciera": {
+            "$ref": "#/components/schemas/CuentaFinanciera"
+          }
+        },
+        "additionalProperties": false
+      },
       "Modulo": {
         "type": "object",
         "properties": {
@@ -11370,6 +15438,205 @@
               "$ref": "#/components/schemas/EmpresaModulo"
             },
             "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "MovimientoFinanciero": {
+        "required": [
+          "tipoMovimiento"
+        ],
+        "type": "object",
+        "properties": {
+          "idMovimientoFinanciero": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "idEmpresa": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "idUsuario": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "idCuentaOrigen": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "idCuentaDestino": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "tipoMovimiento": {
+            "maxLength": 50,
+            "type": "string"
+          },
+          "categoria": {
+            "maxLength": 100,
+            "type": "string",
+            "nullable": true
+          },
+          "referenciaId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "referenciaTipo": {
+            "maxLength": 50,
+            "type": "string",
+            "nullable": true
+          },
+          "monto": {
+            "type": "number",
+            "format": "double"
+          },
+          "balanceAnteriorOrigen": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "balanceNuevoOrigen": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "balanceAnteriorDestino": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "balanceNuevoDestino": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "motivo": {
+            "maxLength": 250,
+            "type": "string",
+            "nullable": true
+          },
+          "observacion": {
+            "type": "string",
+            "nullable": true
+          },
+          "fechaMovimiento": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "cuentaOrigen": {
+            "$ref": "#/components/schemas/CuentaFinanciera"
+          },
+          "cuentaDestino": {
+            "$ref": "#/components/schemas/CuentaFinanciera"
+          }
+        },
+        "additionalProperties": false
+      },
+      "MovimientosInventario": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "tipoMovimiento": {
+            "type": "string",
+            "nullable": true
+          },
+          "motivo": {
+            "type": "string",
+            "nullable": true
+          },
+          "usuario": {
+            "$ref": "#/components/schemas/Usuarios"
+          },
+          "referencia": {
+            "type": "string",
+            "nullable": true
+          },
+          "observacion": {
+            "type": "string",
+            "nullable": true
+          },
+          "fecha": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "idUsuario": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "idEmpresa": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "activo": {
+            "type": "boolean"
+          },
+          "detalles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MovimientosInventarioDetalle"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "MovimientosInventarioDetalle": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "idMovimientoInventario": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "movimientoInventario": {
+            "$ref": "#/components/schemas/MovimientosInventario"
+          },
+          "idProducto": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "producto": {
+            "$ref": "#/components/schemas/Productos"
+          },
+          "cantidad": {
+            "type": "number",
+            "format": "double"
+          },
+          "stockAnterior": {
+            "type": "number",
+            "format": "double"
+          },
+          "stockNuevo": {
+            "type": "number",
+            "format": "double"
+          },
+          "precio": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "subTotal": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "observacion": {
+            "type": "string",
+            "nullable": true
+          },
+          "fecha": {
+            "type": "string",
+            "format": "date-time"
           }
         },
         "additionalProperties": false
@@ -11476,6 +15743,48 @@
           "monto": {
             "type": "number",
             "format": "double"
+          }
+        },
+        "additionalProperties": false
+      },
+      "PagoEncargoDto": {
+        "type": "object",
+        "properties": {
+          "idEncargo": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "idEmpresa": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "monto": {
+            "type": "number",
+            "format": "double"
+          },
+          "itbis": {
+            "type": "number",
+            "format": "double"
+          },
+          "totalPago": {
+            "type": "number",
+            "format": "double"
+          },
+          "formaPago": {
+            "type": "string",
+            "nullable": true
+          },
+          "tipoComprobante": {
+            "type": "string",
+            "nullable": true
+          },
+          "rnc": {
+            "type": "string",
+            "nullable": true
+          },
+          "nombreEmpresa": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -11704,7 +16013,7 @@
         },
         "additionalProperties": false
       },
-      "PlanSuscripcion": {
+      "PlanesCloud": {
         "type": "object",
         "properties": {
           "idPlan": {
@@ -11715,24 +16024,17 @@
             "type": "string",
             "nullable": true
           },
-          "precioUSD": {
-            "type": "number",
-            "format": "double"
-          },
-          "cantidadUsuarios": {
+          "cantEquipos": {
             "type": "integer",
             "format": "int32"
           },
-          "descripcion": {
-            "type": "string",
-            "nullable": true
+          "limiteFacturacion": {
+            "type": "number",
+            "format": "double"
           },
-          "activo": {
-            "type": "boolean"
-          },
-          "fechaCreacion": {
-            "type": "string",
-            "format": "date-time"
+          "precioUSD": {
+            "type": "number",
+            "format": "double"
           }
         },
         "additionalProperties": false
@@ -11808,9 +16110,20 @@
             "type": "number",
             "format": "double"
           },
+          "movimientosInventarioDetalle": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MovimientosInventarioDetalle"
+            },
+            "nullable": true
+          },
           "idUnidadMedida": {
             "type": "integer",
             "format": "int32",
+            "nullable": true
+          },
+          "tipoOperacion": {
+            "type": "string",
             "nullable": true
           },
           "idCategoria": {
@@ -12002,6 +16315,22 @@
         },
         "additionalProperties": false
       },
+      "RequestBizcochoEncargoDto": {
+        "type": "object",
+        "properties": {
+          "encargo": {
+            "$ref": "#/components/schemas/FacturaHeaderDto"
+          },
+          "pagos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PagoDTO"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "ResetPasswordDto": {
         "type": "object",
         "properties": {
@@ -12016,11 +16345,37 @@
         },
         "additionalProperties": false
       },
+      "SalidaFinancieraDto": {
+        "type": "object",
+        "properties": {
+          "idEmpresa": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "idUsuario": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "idCuentaOrigen": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "monto": {
+            "type": "number",
+            "format": "double"
+          },
+          "motivo": {
+            "type": "string",
+            "nullable": true
+          },
+          "observacion": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "SecuenciaECF": {
-        "required": [
-          "idEmpresa",
-          "tipoECF"
-        ],
         "type": "object",
         "properties": {
           "idSecuencia": {
@@ -12031,28 +16386,31 @@
             "type": "integer",
             "format": "int32"
           },
-          "tipoECF": {
-            "maxLength": 5,
-            "type": "string"
+          "tipoNCF": {
+            "type": "string",
+            "nullable": true
           },
-          "prefijo": {
-            "maxLength": 10,
+          "serie": {
             "type": "string",
             "nullable": true
           },
           "secuenciaActual": {
             "type": "integer",
-            "format": "int64"
-          },
-          "secuenciaInicial": {
-            "type": "integer",
-            "format": "int64"
+            "format": "int32"
           },
           "secuenciaFinal": {
             "type": "integer",
-            "format": "int64"
+            "format": "int32"
           },
-          "activa": {
+          "fechaVencimiento": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "stockMinimo": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "activo": {
             "type": "boolean"
           },
           "fechaCreacion": {
@@ -12288,6 +16646,40 @@
         },
         "additionalProperties": false
       },
+      "TransferenciaFinancieraDto": {
+        "type": "object",
+        "properties": {
+          "idEmpresa": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "idUsuario": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "idCuentaOrigen": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "idCuentaDestino": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "monto": {
+            "type": "number",
+            "format": "double"
+          },
+          "motivo": {
+            "type": "string",
+            "nullable": true
+          },
+          "observacion": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "UnidadMedidas": {
         "type": "object",
         "properties": {
@@ -12298,6 +16690,64 @@
           "descripcion": {
             "type": "string",
             "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "UpdateBizcochoEncargoDto": {
+        "type": "object",
+        "properties": {
+          "idFacturaHeader": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "idEmpresa": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "total": {
+            "type": "number",
+            "format": "double"
+          },
+          "abono": {
+            "type": "number",
+            "format": "double"
+          },
+          "pagado": {
+            "type": "number",
+            "format": "double"
+          },
+          "pendiente": {
+            "type": "number",
+            "format": "double"
+          },
+          "nota": {
+            "type": "string",
+            "nullable": true
+          },
+          "fechaEntrega": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "horaEntrega": {
+            "type": "string",
+            "nullable": true
+          },
+          "fechaBencimiento": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "UpdatePrecioDto": {
+        "type": "object",
+        "properties": {
+          "precio": {
+            "type": "number",
+            "format": "double"
           }
         },
         "additionalProperties": false
@@ -12332,6 +16782,117 @@
           },
           "activo": {
             "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Usuarios": {
+        "required": [
+          "passwordHash",
+          "userName"
+        ],
+        "type": "object",
+        "properties": {
+          "idUsuario": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "puedeEliminarOrden": {
+            "type": "boolean"
+          },
+          "idEmpresa": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "empresa": {
+            "$ref": "#/components/schemas/Empresas"
+          },
+          "idEmpleado": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "empleado": {
+            "$ref": "#/components/schemas/Empleados"
+          },
+          "idPerfil": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "perfil": {
+            "$ref": "#/components/schemas/Perfiles"
+          },
+          "userName": {
+            "maxLength": 100,
+            "type": "string"
+          },
+          "correo": {
+            "maxLength": 150,
+            "type": "string",
+            "nullable": true
+          },
+          "passwordHash": {
+            "type": "string"
+          },
+          "puedeEliminarItemCarrito": {
+            "type": "boolean"
+          },
+          "puedeDisminuirCantidadCarrito": {
+            "type": "boolean"
+          },
+          "dispositivo": {
+            "maxLength": 150,
+            "type": "string",
+            "nullable": true
+          },
+          "token": {
+            "maxLength": 500,
+            "type": "string",
+            "nullable": true
+          },
+          "tokenRecuperacion": {
+            "maxLength": 150,
+            "type": "string",
+            "nullable": true
+          },
+          "tokenExpira": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "estado": {
+            "type": "boolean"
+          },
+          "fechaCreacion": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "ultimoAcceso": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ValidarPagoDto": {
+        "type": "object",
+        "properties": {
+          "idPago": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "estado": {
+            "type": "string",
+            "nullable": true
+          },
+          "observacion": {
+            "type": "string",
+            "nullable": true
+          },
+          "usuarioValida": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false

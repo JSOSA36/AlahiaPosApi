@@ -10,7 +10,14 @@ namespace AlahiaPos.Entities.Domain
     {
         [Key]
         public new int IdEmpresa { get; set; }
+        public bool PagadoServicio { get; set; } = false;
 
+        public DateTime? FechaUltimoPago { get; set; }
+
+        public DateTime? FechaProximoPago { get; set; }
+
+        [MaxLength(20)]
+        public string EstadoServicio { get; set; } = "ACTIVO";
         public int? IdPlan { get; set; }
         public string? ApiPrint { get; set; }
         public string? NombreComercial { get; set; } = "";
@@ -21,7 +28,7 @@ namespace AlahiaPos.Entities.Domain
         public string? CorreElectronico { get; set; } = "";
         public string? Nota { get; set; } = "";
         public bool Estado { get; set; }
-
+        public bool PoliticasAceptadas { get; set; }
         public DateTime FechaTerminacion { get; set; }
 
         public string? PrimaryColor { get; set; }
@@ -30,7 +37,9 @@ namespace AlahiaPos.Entities.Domain
 
         public string? Latitude { get; set; }
         public string? Longitude { get; set; }
+        public string? Municipio { get; set; }
 
+        public string? Provincia { get; set; }
         public string? UrlCatalogo { get; set; }
         public string? UrlCitas { get; set; }
 

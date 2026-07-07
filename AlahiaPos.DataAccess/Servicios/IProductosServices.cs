@@ -48,6 +48,30 @@ namespace AlahiaPos.DataAccess.Servicios
         {
             return await Repository.GetAllByExpresionAsync(c => c.IdEmpresa == IdEmpresa);
         }
+        public async Task<IEnumerable<Productos>> GetAllProductosVenta(int IdEmpresa)
+        {
+            return await Repository
+.GetAllByExpresionAsync(
+
+    c =>
+
+        c.IdEmpresa
+        == IdEmpresa
+
+        &&
+
+        (
+
+            c.TipoOperacion
+            == "VENTA"
+
+            ||
+
+            c.TipoOperacion
+            == "AMBAS"
+        )
+);
+        }
 
         public async Task<Productos> GetAllProductosById(int IdProductos)
         {
@@ -74,7 +98,16 @@ namespace AlahiaPos.DataAccess.Servicios
             Repository.Update(Id, Productos);
         }
 
+        // 🚀 SERVICIO GENÉRICO BIZCOCHO ENCARGO
+        public async Task<Productos?> GetServicioBizcochoEncargo(int idEmpresa)
+        {
+            return await Repository.GetByExpresionAsync(x =>
+                x.IdEmpresa == idEmpresa &&
+                x.EsServicio == true &&
+                x.Descripcion == "Bizcocho Encargo"
+            );
+        }
         // 🚀 Nuevo método: traer solo servicios por área
-       
+
     }
 }

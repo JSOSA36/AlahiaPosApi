@@ -55,6 +55,7 @@ namespace AlahiaPos.DataAccess.Servicios
             {
                 IdEmpleado = dto.IdEmpleado,
                 IdEmpresa = dto.IdEmpresa,
+                IdConsumo=dto.IdConsumo,
                 Fecha = DateTime.Now,
                 Concepto = dto.Concepto,
                 Monto = dto.Monto,
@@ -112,7 +113,15 @@ namespace AlahiaPos.DataAccess.Servicios
                 c.IdEmpresa == idEmpresa
             );
         }
+        public async Task EliminarConsumo(int idConsumo)
+        {
+            var consumo = _repository.GetById(idConsumo);
 
+            if (consumo == null)
+                return;
+
+            _repository.Delete(idConsumo);
+        }
         // ⭐ Saldar consumo completo
         public async Task SaldarConsumo(int idConsumo)
         {
@@ -163,6 +172,7 @@ namespace AlahiaPos.DataAccess.Servicios
                     .Select(c => new LavadorConsumoDetalleDto
                     {
                         Fecha = c.Fecha,
+                        IdConsumo = c.IdConsumo,
                         Concepto = c.Concepto,
                         Monto = c.Monto
                     }).ToList();

@@ -1,6 +1,7 @@
 ﻿using AlahiaPos.DataAccess.Data;
 using AlahiaPos.Entities.Domain;
 using AlahiaPos.Entities.Interfaces;
+using DocumentFormat.OpenXml.InkML;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
 using System.Linq;
@@ -26,7 +27,11 @@ namespace AlahiaPos.DataAccess.Servicios
         // ============================
         // 🔹 LECTURA
         // ============================
-
+        public async Task<Usuarios?> GetByUserName(string userName)
+        {
+            return await _usuarioRepo
+                .GetByExpresionAsync(u => u.UserName == userName);
+        }
         public async Task<IEnumerable<Usuarios>> ObtenerPorEmpresa(int empresaId)
         {
             return await _usuarioRepo.GetAllByExpresionAsync(

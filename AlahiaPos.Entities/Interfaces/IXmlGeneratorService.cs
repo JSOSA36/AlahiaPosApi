@@ -9,6 +9,6 @@ namespace AlahiaPos.Entities.Interfaces
 {
     public interface IXmlGeneratorService
     {
-        string GenerarXml(EcfDto dto);
+        string GenerarXml(object dto);
     }
 }

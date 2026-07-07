@@ -11,6 +11,8 @@ namespace AlahiaPos.Entities.Interfaces
     public interface IProductos
     {
         Task<IEnumerable<Productos>> GetAllProductos(int IdEmpresa);
+        Task<IEnumerable<Productos>> GetAllProductosVenta(int IdEmpresa);
+        Task<Productos?> GetServicioBizcochoEncargo(int idEmpresa);
         Task<IEnumerable<Productos>> GetAllProductosByIdCategoria(int IdCategoria, int IdEmpresa);
         Task<Productos> GetProductByBarcCode(string BarCode, int IdEmpresa);
         Task<IEnumerable<Productos>> GetServiciosByArea(int idArea, int idEmpresa);

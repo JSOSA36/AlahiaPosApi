@@ -13,7 +13,11 @@ namespace AlahiaPos.Entities.Interfaces
         Task<decimal> TotalGastosDelMes(int IdEmpresa);
         Task<Gastos> GetGastosById(int id);
         Task InsertGastos(Gastos Gastos);
-
+        Task CerrarGastosPendientes(
+    int idEmpresa,
+    int idUsuario,
+    int idCajaCierre
+);
         void UpdateGastos(Gastos Gastos);
 
         void DeleteGastos(int id);

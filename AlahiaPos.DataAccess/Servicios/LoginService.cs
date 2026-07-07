@@ -30,21 +30,13 @@ namespace AlahiaPos.DataAccess.Servicios
         // 🔐 LOGIN
         // =====================================================
         public async Task<LoginResponse> Login(
-            string userName,
-            string password,
-            string deviceId
-        )
+        Usuarios usuario,
+        string password
+    )
         {
             var passwordHash = Utility.EncriptarPassword(password);
-            
 
-            var usuario = await _usuarioRepository.GetByExpresionAsync(
-                u => u.UserName == userName && u.Estado,
-                "Empleado,Perfil"
-            );
-            
-
-            if (usuario == null || usuario.PasswordHash != passwordHash)
+            if (usuario.PasswordHash != passwordHash)
                 throw new Exception("Usuario o contraseña inválidos");
 
             var empresa = await _empresaRepository.GetByIdAsync(usuario.IdEmpresa);
@@ -52,32 +44,14 @@ namespace AlahiaPos.DataAccess.Servicios
             if (empresa == null || !empresa.Estado)
                 throw new Exception("Empresa suspendida");
 
-            // 🔒 Validar dispositivo
-            //if (!string.IsNullOrEmpty(usuario.Dispositivo) &&
-                //usuario.Dispositivo != deviceId)
-            //{
-                //throw new Exception("Este usuario está asignado a otro dispositivo");
-            //}
-
-            if (string.IsNullOrEmpty(usuario.Dispositivo))
-            {
-                usuario.Dispositivo = deviceId;
-            }
-
-            usuario.UltimoAcceso = DateTime.Now;
-            _usuarioRepository.Update(usuario.IdUsuario, usuario);
-
-            // 📦 Módulos por perfil
             var modulos = await _perfilRolesService
                 .ObtenerModulos(usuario.IdPerfil, usuario.IdEmpresa);
 
-
-            var response = new LoginResponse
+            return new LoginResponse
             {
                 Usuario = usuario,
                 Token = usuario.Token,
                 PuedeEliminarOrden = usuario.PuedeEliminarOrden,
-
                 Modulos = modulos.Select(m => new UsuarioModulo
                 {
                     ModuloId = m.Id,
@@ -85,11 +59,7 @@ namespace AlahiaPos.DataAccess.Servicios
                     Nombre = m.Nombre,
                 }).ToList()
             };
-
-            // 🔎 mirar aquí en debug
-            return response;
         }
-
         // =====================================================
         // 🔑 GENERAR TOKEN DE RECUPERACIÓN
         // =====================================================

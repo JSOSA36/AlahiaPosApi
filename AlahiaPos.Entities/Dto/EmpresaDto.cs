@@ -45,6 +45,7 @@ namespace AlahiaPos.Entities.Dto
         public string? titleColor { get; set; }
         public string? TokenNotificacion { get; set; }
         public string? Longitude { get; set; }
+        public string? NombrePlan { get; set; }
     }
 
 }

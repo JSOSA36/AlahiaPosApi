@@ -17,6 +17,22 @@
   },
   {
     "ContainingType": "PrinterApi.Controllers.PrinterController",
+    "Method": "PrintFacturaPDF",
+    "RelativePath": "api/Printer/facturaPDF/{idFactura}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idFactura",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "PrinterApi.Controllers.PrinterController",
     "Method": "PrintLavador",
     "RelativePath": "api/Printer/lavador/{idFacturaHeader}",
     "HttpMethod": "GET",

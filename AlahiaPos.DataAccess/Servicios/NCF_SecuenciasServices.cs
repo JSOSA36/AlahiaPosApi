@@ -66,30 +66,107 @@ namespace AlahiaPos.DataAccess.Servicios
         }
 
         // 🔥 Generar siguiente NCF
-        public async Task<string> GenerarNCF(int idEmpresa, string tipoNCF)
+        public async Task<string> GenerarNCF(
+      int idEmpresa,
+      string tipoNCF
+  )
         {
-            var secuencia = (await _repository.GetAllByExpresionAsync(
-                x => x.IdEmpresa == idEmpresa &&
-                     x.TipoNCF == tipoNCF &&
-                     x.Activo
-            )).FirstOrDefault();
+            /* =====================================
+            🔥 OBTENER SECUENCIA
+            ====================================== */
+
+            var secuencia =
+                (await _repository
+                .GetAllByExpresionAsync(
+
+                    x =>
+
+                        x.IdEmpresa == idEmpresa
+
+                        &&
+
+                        x.TipoNCF == tipoNCF
+
+                        &&
+
+                        x.Activo
+                )).FirstOrDefault();
 
             if (secuencia == null)
-                throw new Exception("No hay secuencia activa para este tipo de NCF");
+            {
+                throw new Exception(
+                    "No hay secuencia activa para este tipo de NCF"
+                );
+            }
 
-            // 🚨 Validación de límite
-            if (secuencia.SecuenciaActual >= secuencia.SecuenciaFinal)
-                throw new Exception("La secuencia de comprobantes ha llegado a su límite");
+            /* =====================================
+            🔥 VALIDAR LÍMITE
+            ====================================== */
 
-            // 🔥 Generar número
-            var nuevoNumero = secuencia.SecuenciaActual + 1;
+            if (
+                secuencia.SecuenciaActual >=
+                secuencia.SecuenciaFinal
+            )
+            {
+                throw new Exception(
+                    "La secuencia ha llegado a su límite"
+                );
+            }
 
-            var ncf = $"{secuencia.Serie}{nuevoNumero.ToString().PadLeft(8, '0')}";
+            /* =====================================
+            🔥 SIGUIENTE SECUENCIA
+            ====================================== */
 
-            // 💾 Actualizar secuencia
-            secuencia.SecuenciaActual = nuevoNumero;
+            var nuevoNumero =
+                secuencia.SecuenciaActual + 1;
 
-            _repository.Update(secuencia.IdSecuencia, secuencia);
+            /* =====================================
+            🔥 FORMATEAR
+            B01 + 8 DÍGITOS
+            EJ:
+            B0100000150
+            ====================================== */
+
+            var numeroFormateado =
+                nuevoNumero
+                .ToString()
+                .PadLeft(8, '0');
+
+            /* =====================================
+            🔥 NCF FINAL
+            ====================================== */
+
+            var ncf =
+                $"{secuencia.Serie}{numeroFormateado}";
+
+            /* =====================================
+            🔥 VALIDAR LONGITUD
+            ====================================== */
+
+            if (ncf.Length != 11)
+            {
+                throw new Exception(
+                    $"NCF inválido: {ncf}"
+                );
+            }
+
+            /* =====================================
+            🔥 ACTUALIZAR SECUENCIA
+            ====================================== */
+
+            secuencia.SecuenciaActual =
+                nuevoNumero;
+
+            _repository.Update(
+
+                secuencia.IdSecuencia,
+
+                secuencia
+            );
+
+            /* =====================================
+            🔥 RETORNAR
+            ====================================== */
 
             return ncf;
         }

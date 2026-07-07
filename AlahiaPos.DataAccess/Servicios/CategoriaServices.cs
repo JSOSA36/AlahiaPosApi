@@ -22,7 +22,14 @@ namespace AlahiaPos.DataAccess.Servicios
         {
             _repository.Delete(IdCategorias);
         }
-
+        public async Task<IEnumerable<Categorias>> GetAllCategoriasVentas(int idEmpresa)
+        {
+            return await _repository.GetAllByExpresionAsync(c =>
+                c.IdEmpresa == idEmpresa &&
+                (c.TipoOperacion == "VENTA" || c.TipoOperacion == "AMBAS") &&
+                c.IsActiva
+            );
+        }
         public async Task<IEnumerable<Categorias>> GetAllCategorias(int IdEmpresa)
         {
             return await _repository.GetAllByExpresionAsync(c => c.Tipo != "Categoria de Compra" 

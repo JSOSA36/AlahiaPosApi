@@ -46,6 +46,10 @@ namespace AlahiaPos.Entities.Domain
         [Required]
         public string PasswordHash { get; set; } = string.Empty;
 
+        public bool PuedeEliminarItemCarrito { get; set; }
+
+        public bool PuedeDisminuirCantidadCarrito { get; set; }
+
         // ============================
         // 🔒 SEGURIDAD / LICENCIA
         // ============================

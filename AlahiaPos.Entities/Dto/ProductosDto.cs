@@ -11,22 +11,22 @@ namespace AlahiaPos.Entities.Dto
     public class ProductosDto:BaseEntity
     {
         public int idProducto { get; set; }
-        public int idcategoria { get; set; }
-        public int IdArea { get; set; }
-        public bool EsServicio { get; set; }
+        public int? idcategoria { get; set; }
+        public int? IdArea { get; set; }
+        public bool? EsServicio { get; set; }
         public string? nombre { get; set; } = "";
-        public decimal cantidad { get; set; }
-        public decimal stockminimo { get; set; }
-        public decimal precio { get; set; }
-        public decimal costo { get; set; }
-        public bool SeCompra { get; set; }
+        public decimal? cantidad { get; set; }
+        public decimal? stockminimo { get; set; }
+        public decimal? precio { get; set; }
+        public decimal? costo { get; set; }
+        public string? TipoOperacion { get; set; }
         public bool? isproductobelleza { get; set; }
         public bool ControlarStock { get; set; }
         public IFormFile? Imagen { get; set; }  // Cambiado a IFormFile
-        public bool isActiva { get; set; }
-        public int DuracionServicio { get; set; } = 60; // minutos por defecto
-        public bool DisponibleEnCitas { get; set; } = true;
-        public string CodigoBarra { get; set; }
-        public bool Itbis { get; set; }
+        public bool? isActiva { get; set; }
+        public int? DuracionServicio { get; set; } = 60; // minutos por defecto
+        public bool? DisponibleEnCitas { get; set; } = true;
+        public string? CodigoBarra { get; set; }
+        public bool? Itbis { get; set; }
     }
 }

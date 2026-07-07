@@ -10,9 +10,8 @@ namespace AlahiaPos.Entities.Interfaces
     public interface ILoginService
     {
         Task<LoginResponse> Login(
-            string userName,
-            string password,
-            string deviceId
+    Usuarios usuario,
+    string password
         );
         Task<string> GenerarTokenRecuperacion(string correo);
         Task<Usuarios?> ValidarTokenRecuperacion(string token);

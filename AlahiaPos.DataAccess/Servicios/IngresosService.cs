@@ -45,6 +45,102 @@ namespace AlahiaPos.DataAccess.Servicios
 
             return ingreso != null;
         }
+        public async Task<List<CierreCajaDto>>
+GetIngresosEncargosPorFecha(
+
+    int idEmpresa,
+
+    DateTime fechaInicio,
+
+    DateTime fechaFin
+)
+        {
+            var ingresos =
+
+                await _repository
+                .GetAllByExpresionAsync(i =>
+
+                    i.IdEmpresa == idEmpresa
+
+                    &&
+
+                    i.FechaRegistro.Date >=
+                    fechaInicio.Date
+
+                    &&
+
+                    i.FechaRegistro.Date <=
+                    fechaFin.Date
+
+                    &&
+
+                    i.EstaAnulado == false
+
+                    &&
+
+                    (
+
+                        i.Categoria == "Abono Encargo"
+
+                        ||
+
+                        i.Categoria == "Pago Encargo"
+                    )
+                );
+
+            var resultado =
+
+                ingresos
+
+                .GroupBy(i => i.FormaPago)
+
+                .Select(g =>
+
+                    new CierreCajaDto
+                    {
+                        FormaPago = g.Key,
+
+                        Total = g.Sum(x => x.Monto)
+                    })
+
+                .OrderBy(x => x.FormaPago)
+
+                .ToList();
+
+            return resultado;
+        }
+        public async Task<List<CajaMetodoPagoDto>>
+   GetIngresosPendientesCaja(
+       int idEmpresa,
+       int idUsuario
+   )
+        {
+            var ingresos =
+                await _repository.GetAllByExpresionAsync(x =>
+
+                    x.IdEmpresa == idEmpresa &&
+
+                    x.IdUsuario == idUsuario &&
+
+                    x.EstaAnulado == false &&
+
+                    x.EstaCerrada == false
+                );
+
+            return ingresos
+
+                .GroupBy(x => x.FormaPago)
+
+                .Select(g => new CajaMetodoPagoDto
+                {
+                    FormaPago = g.Key,
+                    Total = g.Sum(x => x.Monto)
+                })
+
+                .OrderBy(x => x.FormaPago)
+
+                .ToList();
+        }
 
         // 🔹 Obtener todos los ingresos por empresa
         public async Task<IEnumerable<Ingresos>> GetAllIngresos(int IdEmpresa)
@@ -63,6 +159,46 @@ namespace AlahiaPos.DataAccess.Servicios
         {
             ingreso.FechaRegistro = DateTime.Now;
             await _repository.Save(ingreso);
+        }
+        /* ==========================================
+🔹 CERRAR INGRESOS EXTRAORDINARIOS
+========================================== */
+
+        public async Task CerrarIngresosPendientes(
+            int idEmpresa,
+            int idUsuario,
+            int idCajaCierre
+        )
+        {
+            var ingresos =
+                await _repository
+                .GetAllByExpresionAsync(x =>
+
+                    x.IdEmpresa == idEmpresa
+
+                    && x.IdUsuario == idUsuario
+
+                    && x.EstaAnulado == false
+
+                    && x.EstaCerrada != true
+
+                    // Solo ingresos extraordinarios
+                    && x.IdFacturaHeader == null
+                );
+
+            foreach (var ingreso in ingresos)
+            {
+                ingreso.EstaCerrada = true;
+
+                ingreso.IdCajaCierre = idCajaCierre;
+
+                _repository.Update(
+
+                    ingreso.IdIngreso,
+
+                    ingreso
+                );
+            }
         }
         public async Task<List<CierreCajaDto>> GetIngresosByFechaCaja(
     int idEmpresa,
@@ -132,16 +268,24 @@ namespace AlahiaPos.DataAccess.Servicios
         }
 
         // 🔹 Filtrar ingresos por rango de fechas
-        public async Task<IEnumerable<Ingresos>> GetIngresosByFecha(int IdEmpresa, DateTime fechaInicio, DateTime fechaFin)
+        public async Task<IEnumerable<Ingresos>> GetIngresosByFecha(
+    int IdEmpresa,
+    DateTime fechaInicio,
+    DateTime fechaFin)
         {
             var lista = await _repository.GetAllByExpresionAsync(x =>
-                x.IdEmpresa == IdEmpresa &&
-                x.FechaRegistro >= fechaInicio &&
-                x.FechaRegistro <= fechaFin
-                && x.EstaAnulado==false
+
+                x.IdEmpresa == IdEmpresa
+
+                && x.FechaRegistro.Date >= fechaInicio.Date
+
+                && x.FechaRegistro.Date <= fechaFin.Date
+
+                && x.EstaAnulado == false
             );
 
-            return lista.OrderByDescending(x => x.FechaRegistro);
+            return lista
+                .OrderByDescending(x => x.FechaRegistro);
         }
 
         // ==========================================
@@ -170,6 +314,7 @@ namespace AlahiaPos.DataAccess.Servicios
                       && h.FechaInseccion <= fechaFin
                       && h.EstaCancelada == false
                       && i.EstaAnulado == false
+                      
 
                 // 🔥 total de la factura
                 let totalFactura = h.Total
@@ -255,6 +400,95 @@ namespace AlahiaPos.DataAccess.Servicios
                 .ToList();
 
             return agrupado;
+        }
+     public async Task<List<CajaMetodoPagoDto>>
+GetIngresosByCajaCierre(
+    int idCajaCierre
+)
+        {
+            /* =====================================
+            🔥 FACTURAS DEL CIERRE
+            ===================================== */
+
+            var facturas =
+                await _facturaHeaderRepository
+                .GetAllByExpresionAsync(x =>
+
+                    x.IdCajaCierre == idCajaCierre
+
+                    &&
+
+                    x.EstaCancelada == false
+                );
+
+            var idsFacturas =
+
+                facturas
+                .Select(x => x.IdFacturaHeader)
+                .ToList();
+
+            /* =====================================
+            🔥 INGRESOS DE FACTURAS
+            ===================================== */
+
+            var ingresosFacturas =
+                await _repository
+                .GetAllByExpresionAsync(x =>
+
+                    idsFacturas.Contains((int)x.IdFacturaHeader)
+
+                    &&
+
+                    x.EstaAnulado == false
+                );
+
+            /* =====================================
+            🔥 INGRESOS EXTRAORDINARIOS
+            ===================================== */
+
+            var ingresosExtra =
+                await _repository
+                .GetAllByExpresionAsync(x =>
+
+                    x.IdCajaCierre == idCajaCierre
+
+                    &&
+
+                    x.IdFacturaHeader == null
+
+                    &&
+
+                    x.EstaAnulado == false
+                );
+
+            /* =====================================
+            🔥 UNIR
+            ===================================== */
+
+            var ingresos =
+
+                ingresosFacturas
+                .Concat(ingresosExtra)
+                .ToList();
+
+            /* =====================================
+            🔥 AGRUPAR
+            ===================================== */
+
+            return ingresos
+
+                .GroupBy(x => x.FormaPago)
+
+                .Select(g => new CajaMetodoPagoDto
+                {
+                    FormaPago = g.Key,
+
+                    Total = g.Sum(x => x.Monto)
+                })
+
+                .OrderBy(x => x.FormaPago)
+
+                .ToList();
         }
     }
 }

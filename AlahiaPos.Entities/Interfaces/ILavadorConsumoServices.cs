@@ -11,7 +11,7 @@ namespace AlahiaPos.Entities.Interfaces
         // ⭐ registrar consumo (fiado del lavador)
         decimal GetConsumoLavador(DateTime desde, DateTime hasta, int idEmpleado, int idEmpresa);
         Task RegistrarConsumo(LavadorConsumoCreateDto dto);
-
+        Task EliminarConsumo(int idConsumo);
         // ⭐ abonar a un consumo específico
         Task AbonarConsumo(int idConsumo, decimal montoAbono);
 

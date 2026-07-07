@@ -11,8 +11,8 @@ namespace AlahiaPos.Entities.Interfaces
     {
         //Task<DtoRespuestaDgii> ProcesarFactura(int IdFacturaHeader, int IdEmpresa);
 
-        Task<DtoRespuestaDgii> ReenviarECF(int IdECF, int IdEmpresa);
+        Task<object> ReenviarECF(int IdECF, int IdEmpresa);
 
-        Task<DtoRespuestaDgii> ConsultarEstado(string TrackId, int IdEmpresa);
+        Task<object> ConsultarEstado(string TrackId, int IdEmpresa);
     }
 }

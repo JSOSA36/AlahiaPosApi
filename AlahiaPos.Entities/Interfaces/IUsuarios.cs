@@ -9,6 +9,7 @@ namespace AlahiaPos.Entities.Interfaces
         // ============================
         // 🔹 CRUD BÁSICO
         // ============================
+        Task<Usuarios?> GetByUserName(string userName);
         Task<IEnumerable<Usuarios>> ObtenerPorEmpresa(int idEmpresa);
         Task<Usuarios?> ObtenerPorId(int idUsuario);
         Task<int> CountByEmpresa(int idEmpresa);

@@ -1,4 +1,5 @@
 ﻿using AlahiaPos.Entities.Domain;
+using AlahiaPos.Entities.Dto;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,5 +14,12 @@ namespace AlahiaPos.Entities.Interfaces
         Task<Empresas> GetEmpresaByGUID(Guid Id);
         void UpdateEmpresas(int Id,Empresas empresas);
         Task InsertEmpresas(Empresas empresas);
+        Task MarcarPago(int empresaId);
+
+        Task MarcarPendiente(int empresaId);
+        AlertaPagoDto ObtenerAlertaPago(Empresas empresa);
+        Task ActualizarEstadoAutomatico();
+        Task ActualizarEstadoEmpresa(int empresaId);
+        bool PuedeOperar(Empresas empresa);
     }
 }

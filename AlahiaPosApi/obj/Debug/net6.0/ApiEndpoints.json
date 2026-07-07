@@ -210,6 +210,690 @@
     ]
   },
   {
+    "ContainingType": "AlahiaPosApi.Controllers.BizcochoEncargoController",
+    "Method": "GetAll",
+    "RelativePath": "api/BizcochoEncargo",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idEmpresa",
+        "Type": "System.Int32",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.BizcochoEncargoController",
+    "Method": "Create",
+    "RelativePath": "api/BizcochoEncargo",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "AlahiaPos.Entities.Dto.RequestBizcochoEncargoDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.BizcochoEncargoController",
+    "Method": "GetById",
+    "RelativePath": "api/BizcochoEncargo/{id}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      },
+      {
+        "Name": "idEmpresa",
+        "Type": "System.Int32",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.BizcochoEncargoController",
+    "Method": "Update",
+    "RelativePath": "api/BizcochoEncargo/{id}",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      },
+      {
+        "Name": "dto",
+        "Type": "AlahiaPos.Entities.Dto.UpdateBizcochoEncargoDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.BizcochoEncargoController",
+    "Method": "Delete",
+    "RelativePath": "api/BizcochoEncargo/{id}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      },
+      {
+        "Name": "idEmpresa",
+        "Type": "System.Int32",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.BizcochoEncargoController",
+    "Method": "Buscar",
+    "RelativePath": "api/BizcochoEncargo/buscar",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idEmpresa",
+        "Type": "System.Int32",
+        "IsRequired": false
+      },
+      {
+        "Name": "filtro",
+        "Type": "System.String",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.BizcochoEncargoController",
+    "Method": "Entregar",
+    "RelativePath": "api/BizcochoEncargo/entregar",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idEncargo",
+        "Type": "System.Int32",
+        "IsRequired": false
+      },
+      {
+        "Name": "idEmpresa",
+        "Type": "System.Int32",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.BizcochoEncargoController",
+    "Method": "GetFacturas",
+    "RelativePath": "api/BizcochoEncargo/facturas",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idEmpresa",
+        "Type": "System.Int32",
+        "IsRequired": false
+      },
+      {
+        "Name": "desde",
+        "Type": "System.DateTime",
+        "IsRequired": false
+      },
+      {
+        "Name": "hasta",
+        "Type": "System.DateTime",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.BizcochoEncargoController",
+    "Method": "GetPorFecha",
+    "RelativePath": "api/BizcochoEncargo/fecha",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idEmpresa",
+        "Type": "System.Int32",
+        "IsRequired": false
+      },
+      {
+        "Name": "fecha",
+        "Type": "System.DateTime",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.BizcochoEncargoController",
+    "Method": "GetCierreDelDia",
+    "RelativePath": "api/BizcochoEncargo/GetCierreDelDia",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idEmpresa",
+        "Type": "System.Int32",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.BizcochoEncargoController",
+    "Method": "GetPagadosHoy",
+    "RelativePath": "api/BizcochoEncargo/pagados-hoy",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idEmpresa",
+        "Type": "System.Int32",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.BizcochoEncargoController",
+    "Method": "Pagar",
+    "RelativePath": "api/BizcochoEncargo/pagar",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "dto",
+        "Type": "AlahiaPos.Entities.Dto.PagoEncargoDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.BizcochoEncargoController",
+    "Method": "GetPendientes",
+    "RelativePath": "api/BizcochoEncargo/pendientes",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idEmpresa",
+        "Type": "System.Int32",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.BizcochoEncargoController",
+    "Method": "GetEncargoPrint",
+    "RelativePath": "api/BizcochoEncargo/print",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idFacturaHeader",
+        "Type": "System.Int32",
+        "IsRequired": false
+      },
+      {
+        "Name": "idEmpresa",
+        "Type": "System.Int32",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.BizcochoEncargoController",
+    "Method": "GetTotalHoy",
+    "RelativePath": "api/BizcochoEncargo/total-hoy",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idEmpresa",
+        "Type": "System.Int32",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.CajaAperturaController",
+    "Method": "Get",
+    "RelativePath": "api/CajaApertura",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idEmpresa",
+        "Type": "System.Int32",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "System.Collections.Generic.IEnumerable\u00601[[AlahiaPos.Entities.Domain.CajaApertura, AlahiaPos.Entities, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.CajaAperturaController",
+    "Method": "GetById",
+    "RelativePath": "api/CajaApertura/{id}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "AlahiaPos.Entities.Domain.CajaApertura",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.CajaAperturaController",
+    "Method": "Delete",
+    "RelativePath": "api/CajaApertura/{id}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "System.Void",
+        "MediaTypes": [],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.CajaAperturaController",
+    "Method": "AbrirCaja",
+    "RelativePath": "api/CajaApertura/Abrir",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "model",
+        "Type": "AlahiaPos.Entities.Domain.CajaApertura",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.CajaAperturaController",
+    "Method": "CajaAbierta",
+    "RelativePath": "api/CajaApertura/CajaAbierta",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idEmpresa",
+        "Type": "System.Int32",
+        "IsRequired": false
+      },
+      {
+        "Name": "idUsuario",
+        "Type": "System.Int32",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "AlahiaPos.Entities.Domain.CajaApertura",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.CajaAperturaController",
+    "Method": "CerrarCaja",
+    "RelativePath": "api/CajaApertura/Cerrar/{idCaja}",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idCaja",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.CajaCierreController",
+    "Method": "Get",
+    "RelativePath": "api/CajaCierre",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": [
+      {
+        "Type": "System.Collections.Generic.IEnumerable\u00601[[CajaListadoDto, AlahiaPos.Entities, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.CajaCierreController",
+    "Method": "GetById",
+    "RelativePath": "api/CajaCierre/{id}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "AlahiaPos.Entities.Domain.CajaCierre",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.CajaCierreController",
+    "Method": "Delete",
+    "RelativePath": "api/CajaCierre/{id}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "System.Void",
+        "MediaTypes": [],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.CajaCierreController",
+    "Method": "GetByFecha",
+    "RelativePath": "api/CajaCierre/GetByFecha",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idEmpresa",
+        "Type": "System.Int32",
+        "IsRequired": false
+      },
+      {
+        "Name": "desde",
+        "Type": "System.DateTime",
+        "IsRequired": false
+      },
+      {
+        "Name": "hasta",
+        "Type": "System.DateTime",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "System.Collections.Generic.IEnumerable\u00601[[CajaListadoDto, AlahiaPos.Entities, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.CajaCierreController",
+    "Method": "ImprimirCierre",
+    "RelativePath": "api/CajaCierre/ImprimirCierre/{idCajaCierre}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idCajaCierre",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.CajaCierreController",
+    "Method": "Procesar",
+    "RelativePath": "api/CajaCierre/Procesar",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "model",
+        "Type": "AlahiaPos.Entities.Domain.CajaCierre",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.CajaCierreController",
+    "Method": "UltimoCierre",
+    "RelativePath": "api/CajaCierre/UltimoCierre",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idEmpresa",
+        "Type": "System.Int32",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "AlahiaPos.Entities.Domain.CajaCierre",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.CajaMovimientoController",
+    "Method": "Get",
+    "RelativePath": "api/CajaMovimiento",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": [
+      {
+        "Type": "System.Collections.Generic.IEnumerable\u00601[[AlahiaPos.Entities.Domain.CajaMovimiento, AlahiaPos.Entities, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.CajaMovimientoController",
+    "Method": "Delete",
+    "RelativePath": "api/CajaMovimiento/{id}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "System.Void",
+        "MediaTypes": [],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.CajaMovimientoController",
+    "Method": "GetByCaja",
+    "RelativePath": "api/CajaMovimiento/ByCaja/{idCaja}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idCaja",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "System.Collections.Generic.IEnumerable\u00601[[AlahiaPos.Entities.Domain.CajaMovimiento, AlahiaPos.Entities, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.CajaMovimientoController",
+    "Method": "Entrada",
+    "RelativePath": "api/CajaMovimiento/Entrada",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "model",
+        "Type": "AlahiaPos.Entities.Domain.CajaMovimiento",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.CajaMovimientoController",
+    "Method": "Salida",
+    "RelativePath": "api/CajaMovimiento/Salida",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "model",
+        "Type": "AlahiaPos.Entities.Domain.CajaMovimiento",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
     "ContainingType": "AlahiaPosApi.Controllers.CategoriasController",
     "Method": "Post",
     "RelativePath": "api/Categorias",
@@ -235,6 +919,11 @@
       {
         "Name": "IsActiva",
         "Type": "System.Boolean",
+        "IsRequired": false
+      },
+      {
+        "Name": "TipoOperacion",
+        "Type": "System.String",
         "IsRequired": false
       },
       {
@@ -282,6 +971,11 @@
       {
         "Name": "IsActiva",
         "Type": "System.Boolean",
+        "IsRequired": false
+      },
+      {
+        "Name": "TipoOperacion",
+        "Type": "System.String",
         "IsRequired": false
       },
       {
@@ -368,6 +1062,32 @@
     "ReturnTypes": [
       {
         "Type": "AlahiaPos.Entities.Domain.Categorias",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.CategoriasController",
+    "Method": "GetCategoriaVenta",
+    "RelativePath": "api/Categorias/GetCategoriaVenta/{IdEmpresa}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "IdEmpresa",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "System.Collections.Generic.IEnumerable\u00601[[AlahiaPos.Entities.Domain.Categorias, AlahiaPos.Entities, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
         "MediaTypes": [
           "text/plain",
           "application/json",
@@ -1089,6 +1809,137 @@
     ]
   },
   {
+    "ContainingType": "AlahiaPosApi.Controllers.CuentaFinancieraController",
+    "Method": "Post",
+    "RelativePath": "api/CuentaFinanciera",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "entity",
+        "Type": "AlahiaPos.Entities.Dto.CuentaFinanciera",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.CuentaFinancieraController",
+    "Method": "Put",
+    "RelativePath": "api/CuentaFinanciera/{id}",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      },
+      {
+        "Name": "entity",
+        "Type": "AlahiaPos.Entities.Dto.CuentaFinanciera",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.CuentaFinancieraController",
+    "Method": "Delete",
+    "RelativePath": "api/CuentaFinanciera/{id}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.CuentaFinancieraController",
+    "Method": "Get",
+    "RelativePath": "api/CuentaFinanciera/{idEmpresa}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idEmpresa",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "System.Collections.Generic.IEnumerable\u00601[[AlahiaPos.Entities.Dto.CuentaFinanciera, AlahiaPos.Entities, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.CuentaFinancieraController",
+    "Method": "GetBalance",
+    "RelativePath": "api/CuentaFinanciera/Balance/{idCuentaFinanciera}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idCuentaFinanciera",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "System.Decimal",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.CuentaFinancieraController",
+    "Method": "GetById",
+    "RelativePath": "api/CuentaFinanciera/GetById/{id}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "AlahiaPos.Entities.Dto.CuentaFinanciera",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
     "ContainingType": "AlahiaPosApi.Controllers.DescuentoAreaDetalleController",
     "Method": "Post",
     "RelativePath": "api/DescuentoAreaDetalle",
@@ -1690,143 +2541,6 @@
     ]
   },
   {
-    "ContainingType": "AlahiaPosApi.Controllers.DgiiTestController",
-    "Method": "Autenticar",
-    "RelativePath": "api/dgii-test/autenticar",
-    "HttpMethod": "GET",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "AlahiaPosApi.Controllers.DgiiTestController",
-    "Method": "ConsultarTrack",
-    "RelativePath": "api/dgii-test/consultar-track",
-    "HttpMethod": "GET",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [
-      {
-        "Name": "trackId",
-        "Type": "System.String",
-        "IsRequired": false
-      }
-    ],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "AlahiaPosApi.Controllers.DgiiTestController",
-    "Method": "EnviarExcel",
-    "RelativePath": "api/dgii-test/enviar-excel",
-    "HttpMethod": "POST",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [
-      {
-        "Name": "file",
-        "Type": "Microsoft.AspNetCore.Http.IFormFile",
-        "IsRequired": false
-      },
-      {
-        "Name": "rnc",
-        "Type": "System.String",
-        "IsRequired": false
-      }
-    ],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "AlahiaPosApi.Controllers.DgiiTestController",
-    "Method": "EnviarExcel",
-    "RelativePath": "api/dgii-test/enviar-xml-local",
-    "HttpMethod": "GET",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [
-      {
-        "Name": "file",
-        "Type": "Microsoft.AspNetCore.Http.IFormFile",
-        "IsRequired": false
-      },
-      {
-        "Name": "rnc",
-        "Type": "System.String",
-        "IsRequired": false
-      }
-    ],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "AlahiaPosApi.Controllers.DgiiTestController",
-    "Method": "LeerExcel",
-    "RelativePath": "api/dgii-test/leer-excel",
-    "HttpMethod": "GET",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [
-      {
-        "Name": "path",
-        "Type": "System.String",
-        "IsRequired": false
-      }
-    ],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "AlahiaPosApi.Controllers.DgiiTestController",
-    "Method": "GenerarFirmarYEnviarRfce",
-    "RelativePath": "api/dgii-test/rfce-enviar",
-    "HttpMethod": "GET",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [
-      {
-        "Name": "path",
-        "Type": "System.String",
-        "IsRequired": false
-      }
-    ],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "AlahiaPosApi.Controllers.DgiiTestController",
-    "Method": "EnviarRfcePorEncf",
-    "RelativePath": "api/dgii-test/rfce-enviar-por-encf",
-    "HttpMethod": "GET",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [
-      {
-        "Name": "path",
-        "Type": "System.String",
-        "IsRequired": false
-      },
-      {
-        "Name": "encf",
-        "Type": "System.String",
-        "IsRequired": false
-      }
-    ],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "AlahiaPosApi.Controllers.DgiiTestController",
-    "Method": "GenerarYValidarRfce",
-    "RelativePath": "api/dgii-test/rfce-validar",
-    "HttpMethod": "GET",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [
-      {
-        "Name": "path",
-        "Type": "System.String",
-        "IsRequired": false
-      }
-    ],
-    "ReturnTypes": []
-  },
-  {
     "ContainingType": "AlahiaPosApi.Controllers.EmpleadoController",
     "Method": "CrearEmpleado",
     "RelativePath": "api/Empleado",
@@ -2179,6 +2893,11 @@
         "Name": "Longitude",
         "Type": "System.String",
         "IsRequired": false
+      },
+      {
+        "Name": "NombrePlan",
+        "Type": "System.String",
+        "IsRequired": false
       }
     ],
     "ReturnTypes": []
@@ -2208,6 +2927,32 @@
         "StatusCode": 200
       }
     ]
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.EmpresaController",
+    "Method": "ActualizarEstado",
+    "RelativePath": "api/Empresa/ActualizarEstado",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.EmpresaController",
+    "Method": "ActualizarEstadoEmpresa",
+    "RelativePath": "api/Empresa/ActualizarEstadoEmpresa/{empresaId}",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "empresaId",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
   },
   {
     "ContainingType": "AlahiaPosApi.Controllers.EmpresaController",
@@ -2271,6 +3016,54 @@
     "Parameters": [
       {
         "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.EmpresaController",
+    "Method": "MarcarPago",
+    "RelativePath": "api/Empresa/MarcarPago/{empresaId}",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "empresaId",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.EmpresaController",
+    "Method": "MarcarPendiente",
+    "RelativePath": "api/Empresa/MarcarPendiente/{empresaId}",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "empresaId",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.EmpresaController",
+    "Method": "PuedeOperar",
+    "RelativePath": "api/Empresa/PuedeOperar/{empresaId}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "empresaId",
         "Type": "System.Int32",
         "IsRequired": true
       }
@@ -2611,13 +3404,7 @@
         "IsRequired": true
       }
     ],
-    "ReturnTypes": [
-      {
-        "Type": "System.Void",
-        "MediaTypes": [],
-        "StatusCode": 200
-      }
-    ]
+    "ReturnTypes": []
   },
   {
     "ContainingType": "AlahiaPosApi.Controllers.FacturaHeaderController",
@@ -2873,6 +3660,42 @@
   },
   {
     "ContainingType": "AlahiaPosApi.Controllers.FacturaHeaderController",
+    "Method": "GetAllOrdenesByFecha",
+    "RelativePath": "api/FacturaHeader/GetAllOrdenesByFecha",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "IdEmpresa",
+        "Type": "System.Int32",
+        "IsRequired": false
+      },
+      {
+        "Name": "fechaDesde",
+        "Type": "System.DateTime",
+        "IsRequired": false
+      },
+      {
+        "Name": "fechaHasta",
+        "Type": "System.DateTime",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "System.Collections.Generic.IEnumerable\u00601[[AlahiaPos.Entities.Dto.FacturaHeaderDto, AlahiaPos.Entities, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.FacturaHeaderController",
     "Method": "GetComisiones",
     "RelativePath": "api/FacturaHeader/GetComisiones/{_Desde}/{_Hasta}/{IdEmpresa}",
     "HttpMethod": "GET",
@@ -3008,6 +3831,27 @@
   },
   {
     "ContainingType": "AlahiaPosApi.Controllers.FacturaHeaderController",
+    "Method": "GetIngresosCajaAbierta",
+    "RelativePath": "api/FacturaHeader/GetIngresosCajaAbierta",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idEmpresa",
+        "Type": "System.Int32",
+        "IsRequired": false
+      },
+      {
+        "Name": "idUsuario",
+        "Type": "System.Int32",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.FacturaHeaderController",
     "Method": "GetOrdenes",
     "RelativePath": "api/FacturaHeader/GetOrdenes/{IdEmpresa}",
     "HttpMethod": "GET",
@@ -3134,6 +3978,32 @@
   },
   {
     "ContainingType": "AlahiaPosApi.Controllers.FacturaHeaderController",
+    "Method": "Reporte607",
+    "RelativePath": "api/FacturaHeader/Reporte607",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "desde",
+        "Type": "System.DateTime",
+        "IsRequired": false
+      },
+      {
+        "Name": "hasta",
+        "Type": "System.DateTime",
+        "IsRequired": false
+      },
+      {
+        "Name": "idEmpresa",
+        "Type": "System.Int32",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.FacturaHeaderController",
     "Method": "RePrintLavador",
     "RelativePath": "api/FacturaHeader/RePrintLavador/{IdFact}",
     "HttpMethod": "GET",
@@ -3246,13 +4116,7 @@
         "IsRequired": true
       }
     ],
-    "ReturnTypes": [
-      {
-        "Type": "System.Void",
-        "MediaTypes": [],
-        "StatusCode": 200
-      }
-    ]
+    "ReturnTypes": []
   },
   {
     "ContainingType": "AlahiaPosApi.Controllers.GastosController",
@@ -3948,6 +4812,22 @@
   },
   {
     "ContainingType": "AlahiaPosApi.Controllers.LavadorConsumoController",
+    "Method": "Delete",
+    "RelativePath": "api/LavadorConsumo/{id}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.LavadorConsumoController",
     "Method": "AbonarConsumo",
     "RelativePath": "api/LavadorConsumo/Abonar",
     "HttpMethod": "POST",
@@ -4153,6 +5033,22 @@
   },
   {
     "ContainingType": "AlahiaPosApi.Controllers.LoginController",
+    "Method": "Logout",
+    "RelativePath": "api/Login/logout",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idUsuario",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.LoginController",
     "Method": "ResetPassword",
     "RelativePath": "api/Login/reset-password",
     "HttpMethod": "POST",
@@ -4271,6 +5167,142 @@
     "ReturnTypes": [
       {
         "Type": "System.Collections.Generic.IEnumerable\u00601[[AlahiaPos.Entities.Domain.Mesas, AlahiaPos.Entities, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.MetodoPagoCuentaController",
+    "Method": "Post",
+    "RelativePath": "api/MetodoPagoCuenta",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "entity",
+        "Type": "AlahiaPos.Entities.Dto.MetodoPagoCuenta",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.MetodoPagoCuentaController",
+    "Method": "Put",
+    "RelativePath": "api/MetodoPagoCuenta/{id}",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      },
+      {
+        "Name": "entity",
+        "Type": "AlahiaPos.Entities.Dto.MetodoPagoCuenta",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.MetodoPagoCuentaController",
+    "Method": "Delete",
+    "RelativePath": "api/MetodoPagoCuenta/{id}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.MetodoPagoCuentaController",
+    "Method": "Get",
+    "RelativePath": "api/MetodoPagoCuenta/{idEmpresa}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idEmpresa",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "System.Collections.Generic.IEnumerable\u00601[[AlahiaPos.Entities.Dto.MetodoPagoCuenta, AlahiaPos.Entities, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.MetodoPagoCuentaController",
+    "Method": "GetByMetodo",
+    "RelativePath": "api/MetodoPagoCuenta/ByMetodo",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idEmpresa",
+        "Type": "System.Int32",
+        "IsRequired": false
+      },
+      {
+        "Name": "metodoPago",
+        "Type": "System.String",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "AlahiaPos.Entities.Dto.MetodoPagoCuenta",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.MetodoPagoCuentaController",
+    "Method": "GetById",
+    "RelativePath": "api/MetodoPagoCuenta/GetById/{id}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "AlahiaPos.Entities.Dto.MetodoPagoCuenta",
         "MediaTypes": [
           "text/plain",
           "application/json",
@@ -4439,6 +5471,409 @@
         "StatusCode": 200
       }
     ]
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.MovimientoFinancieroController",
+    "Method": "Delete",
+    "RelativePath": "api/MovimientoFinanciero/{id}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.MovimientoFinancieroController",
+    "Method": "Get",
+    "RelativePath": "api/MovimientoFinanciero/{idEmpresa}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idEmpresa",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "System.Collections.Generic.IEnumerable\u00601[[AlahiaPos.Entities.Dto.MovimientoFinanciero, AlahiaPos.Entities, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.MovimientoFinancieroController",
+    "Method": "GetByCuenta",
+    "RelativePath": "api/MovimientoFinanciero/ByCuenta/{idCuentaFinanciera}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idCuentaFinanciera",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "System.Collections.Generic.IEnumerable\u00601[[AlahiaPos.Entities.Dto.MovimientoFinanciero, AlahiaPos.Entities, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.MovimientoFinancieroController",
+    "Method": "GetByFecha",
+    "RelativePath": "api/MovimientoFinanciero/ByFecha",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idEmpresa",
+        "Type": "System.Int32",
+        "IsRequired": false
+      },
+      {
+        "Name": "desde",
+        "Type": "System.DateTime",
+        "IsRequired": false
+      },
+      {
+        "Name": "hasta",
+        "Type": "System.DateTime",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "System.Collections.Generic.IEnumerable\u00601[[AlahiaPos.Entities.Dto.MovimientoFinanciero, AlahiaPos.Entities, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.MovimientoFinancieroController",
+    "Method": "RegistrarEntrada",
+    "RelativePath": "api/MovimientoFinanciero/Entrada",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "dto",
+        "Type": "AlahiaPos.Entities.Dto.EntradaFinancieraDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.MovimientoFinancieroController",
+    "Method": "GetById",
+    "RelativePath": "api/MovimientoFinanciero/GetById/{id}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "AlahiaPos.Entities.Dto.MovimientoFinanciero",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.MovimientoFinancieroController",
+    "Method": "RegistrarSalida",
+    "RelativePath": "api/MovimientoFinanciero/Salida",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "dto",
+        "Type": "AlahiaPos.Entities.Dto.SalidaFinancieraDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.MovimientoFinancieroController",
+    "Method": "RegistrarTransferencia",
+    "RelativePath": "api/MovimientoFinanciero/Transferencia",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "dto",
+        "Type": "AlahiaPos.Entities.Dto.TransferenciaFinancieraDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.MovimientosInventarioController",
+    "Method": "Get",
+    "RelativePath": "api/MovimientosInventario",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idEmpresa",
+        "Type": "System.Int32",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "System.Collections.Generic.IEnumerable\u00601[[AlahiaPos.Entities.Domain.MovimientosInventario, AlahiaPos.Entities, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.MovimientosInventarioController",
+    "Method": "Delete",
+    "RelativePath": "api/MovimientosInventario/{id}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.MovimientosInventarioController",
+    "Method": "ActualizarStock",
+    "RelativePath": "api/MovimientosInventario/ActualizarStock",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idProducto",
+        "Type": "System.Int32",
+        "IsRequired": false
+      },
+      {
+        "Name": "nuevoStock",
+        "Type": "System.Decimal",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.MovimientosInventarioController",
+    "Method": "FiltrarHistorial",
+    "RelativePath": "api/MovimientosInventario/FiltrarHistorial",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idEmpresa",
+        "Type": "System.Int32",
+        "IsRequired": false
+      },
+      {
+        "Name": "desde",
+        "Type": "System.Nullable\u00601[[System.DateTime, System.Private.CoreLib, Version=6.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "hasta",
+        "Type": "System.Nullable\u00601[[System.DateTime, System.Private.CoreLib, Version=6.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "tipoMovimiento",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "motivo",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "idUsuario",
+        "Type": "System.Nullable\u00601[[System.Int32, System.Private.CoreLib, Version=6.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.MovimientosInventarioController",
+    "Method": "FiltrarPorFecha",
+    "RelativePath": "api/MovimientosInventario/FiltrarPorFecha",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idEmpresa",
+        "Type": "System.Int32",
+        "IsRequired": false
+      },
+      {
+        "Name": "desde",
+        "Type": "System.DateTime",
+        "IsRequired": false
+      },
+      {
+        "Name": "hasta",
+        "Type": "System.DateTime",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.MovimientosInventarioController",
+    "Method": "GetById",
+    "RelativePath": "api/MovimientosInventario/GetById/{id}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.MovimientosInventarioController",
+    "Method": "GuardarMovimiento",
+    "RelativePath": "api/MovimientosInventario/GuardarMovimiento",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "value",
+        "Type": "AlahiaPos.Entities.Domain.MovimientosInventario",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.MovimientosInventarioController",
+    "Method": "KardexProducto",
+    "RelativePath": "api/MovimientosInventario/KardexProducto",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idProducto",
+        "Type": "System.Int32",
+        "IsRequired": false
+      },
+      {
+        "Name": "desde",
+        "Type": "System.Nullable\u00601[[System.DateTime, System.Private.CoreLib, Version=6.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "hasta",
+        "Type": "System.Nullable\u00601[[System.DateTime, System.Private.CoreLib, Version=6.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.MovimientosInventarioController",
+    "Method": "ProductosStockBajo",
+    "RelativePath": "api/MovimientosInventario/ProductosStockBajo",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idEmpresa",
+        "Type": "System.Int32",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.MovimientosInventarioController",
+    "Method": "ValidarStock",
+    "RelativePath": "api/MovimientosInventario/ValidarStock",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idProducto",
+        "Type": "System.Int32",
+        "IsRequired": false
+      },
+      {
+        "Name": "cantidad",
+        "Type": "System.Decimal",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
   },
   {
     "ContainingType": "AlahiaPosApi.Controllers.NCF_SecuenciasController",
@@ -4754,6 +6189,63 @@
         "StatusCode": 200
       }
     ]
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.PagoEmpresaController",
+    "Method": "ObtenerPagos",
+    "RelativePath": "api/PagoEmpresa/ObtenerPagos",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.PagoEmpresaController",
+    "Method": "SubirPago",
+    "RelativePath": "api/PagoEmpresa/SubirPago",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "IdEmpresa",
+        "Type": "System.Int32",
+        "IsRequired": false
+      },
+      {
+        "Name": "Monto",
+        "Type": "System.Decimal",
+        "IsRequired": false
+      },
+      {
+        "Name": "Imagen",
+        "Type": "Microsoft.AspNetCore.Http.IFormFile",
+        "IsRequired": false
+      },
+      {
+        "Name": "ArchivoUrl",
+        "Type": "System.String",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.PagoEmpresaController",
+    "Method": "ValidarPago",
+    "RelativePath": "api/PagoEmpresa/ValidarPago",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "dto",
+        "Type": "AlahiaPos.Entities.Dto.ValidarPagoDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
   },
   {
     "ContainingType": "AlahiaPosApi.Controllers.PagoFacturasClientesController",
@@ -5338,7 +6830,7 @@
   },
   {
     "ContainingType": "AlahiaPosApi.Controllers.ProductosController",
-    "Method": "Post",
+    "Method": "GuardarProducto",
     "RelativePath": "api/Productos",
     "HttpMethod": "POST",
     "IsController": true,
@@ -5351,17 +6843,17 @@
       },
       {
         "Name": "idcategoria",
-        "Type": "System.Int32",
+        "Type": "System.Nullable\u00601[[System.Int32, System.Private.CoreLib, Version=6.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
         "IsRequired": false
       },
       {
         "Name": "IdArea",
-        "Type": "System.Int32",
+        "Type": "System.Nullable\u00601[[System.Int32, System.Private.CoreLib, Version=6.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
         "IsRequired": false
       },
       {
         "Name": "EsServicio",
-        "Type": "System.Boolean",
+        "Type": "System.Nullable\u00601[[System.Boolean, System.Private.CoreLib, Version=6.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
         "IsRequired": false
       },
       {
@@ -5371,27 +6863,27 @@
       },
       {
         "Name": "cantidad",
-        "Type": "System.Decimal",
+        "Type": "System.Nullable\u00601[[System.Decimal, System.Private.CoreLib, Version=6.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
         "IsRequired": false
       },
       {
         "Name": "stockminimo",
-        "Type": "System.Decimal",
+        "Type": "System.Nullable\u00601[[System.Decimal, System.Private.CoreLib, Version=6.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
         "IsRequired": false
       },
       {
         "Name": "precio",
-        "Type": "System.Decimal",
+        "Type": "System.Nullable\u00601[[System.Decimal, System.Private.CoreLib, Version=6.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
         "IsRequired": false
       },
       {
         "Name": "costo",
-        "Type": "System.Decimal",
+        "Type": "System.Nullable\u00601[[System.Decimal, System.Private.CoreLib, Version=6.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
         "IsRequired": false
       },
       {
-        "Name": "SeCompra",
-        "Type": "System.Boolean",
+        "Name": "TipoOperacion",
+        "Type": "System.String",
         "IsRequired": false
       },
       {
@@ -5411,17 +6903,17 @@
       },
       {
         "Name": "isActiva",
-        "Type": "System.Boolean",
+        "Type": "System.Nullable\u00601[[System.Boolean, System.Private.CoreLib, Version=6.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
         "IsRequired": false
       },
       {
         "Name": "DuracionServicio",
-        "Type": "System.Int32",
+        "Type": "System.Nullable\u00601[[System.Int32, System.Private.CoreLib, Version=6.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
         "IsRequired": false
       },
       {
         "Name": "DisponibleEnCitas",
-        "Type": "System.Boolean",
+        "Type": "System.Nullable\u00601[[System.Boolean, System.Private.CoreLib, Version=6.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
         "IsRequired": false
       },
       {
@@ -5431,7 +6923,7 @@
       },
       {
         "Name": "Itbis",
-        "Type": "System.Boolean",
+        "Type": "System.Nullable\u00601[[System.Boolean, System.Private.CoreLib, Version=6.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
         "IsRequired": false
       },
       {
@@ -5445,13 +6937,7 @@
         "IsRequired": false
       }
     ],
-    "ReturnTypes": [
-      {
-        "Type": "System.Void",
-        "MediaTypes": [],
-        "StatusCode": 200
-      }
-    ]
+    "ReturnTypes": []
   },
   {
     "ContainingType": "AlahiaPosApi.Controllers.ProductosController",
@@ -5468,17 +6954,17 @@
       },
       {
         "Name": "idcategoria",
-        "Type": "System.Int32",
+        "Type": "System.Nullable\u00601[[System.Int32, System.Private.CoreLib, Version=6.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
         "IsRequired": false
       },
       {
         "Name": "IdArea",
-        "Type": "System.Int32",
+        "Type": "System.Nullable\u00601[[System.Int32, System.Private.CoreLib, Version=6.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
         "IsRequired": false
       },
       {
         "Name": "EsServicio",
-        "Type": "System.Boolean",
+        "Type": "System.Nullable\u00601[[System.Boolean, System.Private.CoreLib, Version=6.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
         "IsRequired": false
       },
       {
@@ -5488,27 +6974,27 @@
       },
       {
         "Name": "cantidad",
-        "Type": "System.Decimal",
+        "Type": "System.Nullable\u00601[[System.Decimal, System.Private.CoreLib, Version=6.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
         "IsRequired": false
       },
       {
         "Name": "stockminimo",
-        "Type": "System.Decimal",
+        "Type": "System.Nullable\u00601[[System.Decimal, System.Private.CoreLib, Version=6.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
         "IsRequired": false
       },
       {
         "Name": "precio",
-        "Type": "System.Decimal",
+        "Type": "System.Nullable\u00601[[System.Decimal, System.Private.CoreLib, Version=6.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
         "IsRequired": false
       },
       {
         "Name": "costo",
-        "Type": "System.Decimal",
+        "Type": "System.Nullable\u00601[[System.Decimal, System.Private.CoreLib, Version=6.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
         "IsRequired": false
       },
       {
-        "Name": "SeCompra",
-        "Type": "System.Boolean",
+        "Name": "TipoOperacion",
+        "Type": "System.String",
         "IsRequired": false
       },
       {
@@ -5528,17 +7014,17 @@
       },
       {
         "Name": "isActiva",
-        "Type": "System.Boolean",
+        "Type": "System.Nullable\u00601[[System.Boolean, System.Private.CoreLib, Version=6.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
         "IsRequired": false
       },
       {
         "Name": "DuracionServicio",
-        "Type": "System.Int32",
+        "Type": "System.Nullable\u00601[[System.Int32, System.Private.CoreLib, Version=6.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
         "IsRequired": false
       },
       {
         "Name": "DisponibleEnCitas",
-        "Type": "System.Boolean",
+        "Type": "System.Nullable\u00601[[System.Boolean, System.Private.CoreLib, Version=6.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
         "IsRequired": false
       },
       {
@@ -5548,7 +7034,7 @@
       },
       {
         "Name": "Itbis",
-        "Type": "System.Boolean",
+        "Type": "System.Nullable\u00601[[System.Boolean, System.Private.CoreLib, Version=6.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
         "IsRequired": false
       },
       {
@@ -5627,6 +7113,32 @@
     "ContainingType": "AlahiaPosApi.Controllers.ProductosController",
     "Method": "GetListadoProductos",
     "RelativePath": "api/Productos/GetListadoProductos/{IdEmpresa}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "IdEmpresa",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "System.Collections.Generic.IEnumerable\u00601[[AlahiaPos.Entities.Domain.Productos, AlahiaPos.Entities, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.ProductosController",
+    "Method": "GetListadoProductosVenta",
+    "RelativePath": "api/Productos/GetListadoProductosVenta/{IdEmpresa}",
     "HttpMethod": "GET",
     "IsController": true,
     "Order": 0,
@@ -5879,6 +7391,22 @@
         "StatusCode": 200
       }
     ]
+  },
+  {
+    "ContainingType": "AlahiaPosApi.Controllers.RncCLienteDGIIController",
+    "Method": "Consultar",
+    "RelativePath": "api/RncCLienteDGII/{rnc}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "rnc",
+        "Type": "System.String",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
   },
   {
     "ContainingType": "AlahiaPosApi.Controllers.UsuariosController",

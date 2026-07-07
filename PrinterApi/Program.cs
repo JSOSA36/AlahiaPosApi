@@ -26,7 +26,9 @@ builder.Services.AddCors(options =>
         .AllowCredentials(); // 🔥 ESTA ES LA CLAVE
     });
 });
-
+builder.WebHost.UseUrls(
+    "http://0.0.0.0:5045"
+);
 var app = builder.Build();
 
 // =============================

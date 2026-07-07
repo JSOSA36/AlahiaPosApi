@@ -28,6 +28,29 @@
         }
       }
     },
+    "/api/Printer/facturaPDF/{idFactura}": {
+      "get": {
+        "tags": [
+          "Printer"
+        ],
+        "parameters": [
+          {
+            "name": "idFactura",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/Printer/lavador/{idFacturaHeader}": {
       "get": {
         "tags": [

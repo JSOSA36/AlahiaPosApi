@@ -117,5 +117,11 @@ namespace AlahiaPosApi.Controllers
 
             return Ok("Consumo saldado correctamente");
         }
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete(int id)
+        {
+            await _lavadorConsumo.EliminarConsumo(id);
+            return Ok();
+        }
     }
 }

@@ -1,4 +1,4 @@
-﻿using AlahiaPos.Entities.Dto;
+﻿using AlahiaPos.Entities.Dto.Invoice;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -23,16 +23,16 @@ namespace AlahiaPos.Entities.Interfaces
         // ============================================
 
         // Enviar e-CF firmado
-        Task<DtoRespuestaDgii> EnviarECF(string xmlFirmado);
+        Task<object> EnviarECF(string xmlFirmado);
 
         // Enviar RFCE (resumen facturas consumo)
-        Task<DtoRespuestaDgii> EnviarRFCE(string xmlFirmado);
+        Task<object> EnviarRFCE(string xmlFirmado);
 
         // ============================================
         // 🔎 CONSULTAS
         // ============================================
 
         // Consultar estado documento
-        Task<DtoRespuestaDgii> ConsultarResultado(string trackId);
+        Task<object> ConsultarResultado(string trackId);
     }
 }

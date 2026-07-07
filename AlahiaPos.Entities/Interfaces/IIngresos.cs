@@ -11,6 +11,23 @@ namespace AlahiaPos.Entities.Interfaces
         /// Retorna todos los ingresos registrados en una empresa.
         /// </summary>
         /// 
+        Task<List<CajaMetodoPagoDto>> GetIngresosByCajaCierre(
+     int idCajaCierre
+ );
+        Task CerrarIngresosPendientes(
+    int idEmpresa,
+    int idUsuario,
+    int idCajaCierre
+);
+        Task<List<CierreCajaDto>>
+GetIngresosEncargosPorFecha(
+
+    int idEmpresa,
+
+    DateTime fechaInicio,
+
+    DateTime fechaFin
+);
         Task<bool> ExisteIngreso(int idFactura, string metodo);
         Task<IEnumerable<IngresosPorLineaNegocioDto>> GetIngresosPorLineaNegocio(
        int idEmpresa,
@@ -42,7 +59,10 @@ namespace AlahiaPos.Entities.Interfaces
         /// Elimina un ingreso del sistema.
         /// </summary>
         void DeleteIngreso(int IdIngreso);
-
+        Task<List<CajaMetodoPagoDto>> GetIngresosPendientesCaja(
+    int idEmpresa,
+    int idUsuario
+);
         /// <summary>
         /// Retorna los ingresos registrados dentro de un rango de fechas.
         /// </summary>

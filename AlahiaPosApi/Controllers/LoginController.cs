@@ -53,36 +53,68 @@ namespace AlahiaPosApi.Controllers
 
             try
             {
-                var loginResponse = await _loginService.Login(
-                    dto.UserName,
-                    dto.Password,
-                    dto.DeviceId
-                );
+                // 🔍 Usuario
+                var usuarioDb = await _usuariosService.GetByUserName(dto.UserName);
+                // 🔒 VALIDAR SESIÓN ACTIVA
+                //if (!string.IsNullOrEmpty(usuarioDb.Token) &&
+                // !string.IsNullOrEmpty(usuarioDb.Dispositivo))
+                //{
+                //    return Ok(new
+                //    {
+                //        errorSesion = true,
+                //        mensaje = "Este usuario ya tiene una sesión activa en otro dispositivo."
+                //    });
+                //}
+                if (usuarioDb == null)
+                    return Unauthorized("Usuario no encontrado");
+
+                // 🔐 Validar credenciales
+                var loginResponse = await _loginService.Login(usuarioDb, dto.Password);
 
                 // 🔍 Empresa
-                var empresa = await _empresasService.GetEmpresaById(
-                    loginResponse.Usuario.IdEmpresa
-                );
+                var empresa = await _empresasService.GetEmpresaById(usuarioDb.IdEmpresa);
 
                 if (empresa == null)
                     return Unauthorized("Empresa no encontrada");
 
-                // 🔴 Estado general
-                if (!empresa.Estado)
-                    return Unauthorized("El servicio se encuentra suspendido por falta de pago.");
+                // 🔥 Actualizar estado automático
+                await _empresasService.ActualizarEstadoEmpresa(empresa.IdEmpresa);
 
-                // 🔍 Plan (fallback por si viene null)
-               
+                // 🔄 Refrescar empresa después del update
+                empresa = await _empresasService.GetEmpresaById(usuarioDb.IdEmpresa);
 
-               
-               
-                    var plan = await _lanesCloud.GetPlanById((int)empresa.IdPlan);
-               
+                // 🔔 Obtener alerta con la empresa actualizada
+                var alertaPago = _empresasService.ObtenerAlertaPago(empresa);
+
+                // 🔴 Validar si puede operar
+                //if (!_empresasService.PuedeOperar(empresa))
+                //{
+                //    return StatusCode(403, new
+                //    {
+                //        bloqueado = true,
+                //        mensaje = "Tu servicio está suspendido. Debes renovar tu plan para continuar.",
+                //        estadoServicio = empresa.EstadoServicio,
+                //        empresa = new
+                //        {
+                //            idEmpresa = empresa.IdEmpresa,
+                //            nombreComercial = empresa.NombreComercial
+                //        }
+                //    });
+                //}
+
+                // 🔍 Plan
+                var plan = await _lanesCloud.GetPlanById((int)empresa.IdPlan);
 
                 if (plan == null)
-                    return Unauthorized("La empresa no tiene un plan válido asignado.");
+                    return StatusCode(403, "La empresa no tiene un plan válido asignado.");
 
-                // 🔥 RANGO DEL MES
+                // 🔥 Validar demo
+                if (plan.PrecioUSD == 0 && empresa.FechaTerminacion.Date < DateTime.Now.Date)
+                {
+                    return StatusCode(403, "El período de prueba ha finalizado.");
+                }
+
+                // 🔥 Facturación del mes
                 var fechaInicio = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
                 var fechaFin = fechaInicio.AddMonths(1).AddSeconds(-1);
 
@@ -93,37 +125,13 @@ namespace AlahiaPosApi.Controllers
                     ? listadoIngresos.Sum(x => x.Monto)
                     : 0;
 
-                // 🟡 DEMO
-                if (plan.PrecioUSD == 0)
-                {
-                    if (empresa.FechaTerminacion.Date < DateTime.Now.Date)
-                    {
-                        return Unauthorized("El período de prueba ha finalizado.");
-                    }
-                }
-                
-
-                // 🔥 ALERTA 80%
-                string alertaPlan = null;
-
-                //if (plan.LimiteFacturacion > 0)
-                //{
-                //    var porcentajeUso = (totalFacturado / plan.LimiteFacturacion) * 100;
-
-                //    if (porcentajeUso >= 80 && porcentajeUso < 100)
-                //    {
-                //        alertaPlan = $"Has consumido el {Math.Round(porcentajeUso, 0)}% de tu plan.";
-                //    }
-                //}
-
-                // 🔴 BLOQUEO LOGIN
+                // 🔴 Validar límite del plan
                 if (plan.LimiteFacturacion > 0 && totalFacturado >= plan.LimiteFacturacion)
                 {
                     return Ok(new
                     {
                         requiereUpgrade = true,
                         mensaje = "Has alcanzado el límite de facturación de tu plan.",
-
                         empresa = new
                         {
                             idEmpresa = empresa.IdEmpresa,
@@ -131,34 +139,69 @@ namespace AlahiaPosApi.Controllers
                         }
                     });
                 }
-                // ✅ OK
+
+                // ✅ AHORA SÍ → CREAR SESIÓN
+                usuarioDb.Token = Guid.NewGuid().ToString();
+                usuarioDb.Dispositivo = dto.DeviceId;
+                usuarioDb.UltimoAcceso = DateTime.Now;
+
+                await _usuariosService.Actualizar(usuarioDb);
+
+                // ✅ RESPUESTA FINAL
                 return Ok(new
                 {
                     usuario = new
                     {
-                        idUsuario = loginResponse.Usuario.IdUsuario,
-                        userName = loginResponse.Usuario.UserName,
-                        idEmpresa = loginResponse.Usuario.IdEmpresa,
-                        dispositivo = loginResponse.Usuario.Dispositivo,
+                        idUsuario = usuarioDb.IdUsuario,
+                        userName = usuarioDb.UserName,
+                        idEmpresa = usuarioDb.IdEmpresa,
+                        dispositivo = dto.DeviceId,
                         puedeEliminarOrden = loginResponse.PuedeEliminarOrden,
+                        PuedeEliminarItemCarrito =usuarioDb.PuedeDisminuirCantidadCarrito,
+                        PuedeDisminuirCantidadCarrito= usuarioDb.PuedeDisminuirCantidadCarrito
+
+
                     },
                     empresa = new
                     {
                         idEmpresa = empresa.IdEmpresa,
                         nombreComercial = empresa.NombreComercial,
                         apiPrint = empresa.ApiPrint,
-                        idPlan = empresa.IdPlan, // 🔥 corregido
-                        fechaTerminacion = empresa.FechaTerminacion
+                        idPlan = empresa.IdPlan,
+                        nombrePlan = plan.Nombre,
+                        fechaTerminacion = empresa.FechaTerminacion,
+                        estadoServicio = empresa.EstadoServicio,
+                        pagadoServicio = empresa.PagadoServicio,
+                        PoliticasAceptadas=empresa.PoliticasAceptadas
                     },
                     modulos = loginResponse.Modulos,
-                    token = loginResponse.Token,
-                    alertaPlan = alertaPlan
+                    token = usuarioDb.Token,
+                    alertaPlan = new
+                    {
+                        tipo = alertaPago.Tipo,
+                        mensaje = alertaPago.Mensaje,
+                    }
                 });
             }
             catch (Exception ex)
             {
-                return Unauthorized(ex.Message);
+                return StatusCode(500, $"Error interno: {ex.Message}");
             }
+        }
+        [HttpPost("logout")]
+        public async Task<IActionResult> Logout([FromBody] int idUsuario)
+        {
+            var usuario = await _usuariosService.ObtenerPorId(idUsuario);
+
+            if (usuario == null)
+                return NotFound();
+
+            usuario.Token = null;
+            usuario.Dispositivo = null;
+
+            await _usuariosService.Actualizar(usuario);
+
+            return Ok("Sesión cerrada correctamente");
         }
         // =====================================================
         // 🔑 SOLICITAR RECUPERACIÓN DE CONTRASEÑA

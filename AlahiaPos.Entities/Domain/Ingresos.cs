@@ -1,4 +1,5 @@
-﻿using System;
+﻿using AlahiaPos.Entities.Interfaces;
+using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -36,8 +37,13 @@ namespace AlahiaPos.Entities.Domain
 
         [StringLength(100)]
         public string Referencia { get; set; } = string.Empty; // número de comprobante o referencia de pago
+        public bool EstaCerrada { get; set; }
 
-        public int? IdUsuario { get; set; } // quien registró el ingreso
+        public int? IdCajaCierre { get; set; }
+        public int? IdUsuario { get; set; }
+
+        [ForeignKey(nameof(IdUsuario))]
+        public virtual Usuarios? Usuario { get; set; }
 
         // 🧾 Relaciones opcionales
         public int? IdFacturaHeader { get; set; } // si viene de una factura

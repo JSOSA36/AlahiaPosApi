@@ -1,4 +1,5 @@
 ﻿using AlahiaPos.Entities.Domain;
+using AlahiaPos.Entities.Dto;
 using Microsoft.EntityFrameworkCore;
 
 namespace AlahiaPos.DataAccess.Data
@@ -14,6 +15,8 @@ namespace AlahiaPos.DataAccess.Data
         // ==============================
 
         public DbSet<Mesas> Mesas { get; set; }
+        public DbSet<BizcochoEncargo> BizcochoEncargo { get; set; }
+        public DbSet<PagoEmpresa> PagosEmpresa { get; set; }
         public DbSet<Cocinas> Cocinas { get; set; }
         public DbSet<Zonas> Zonas { get; set; }
         public DbSet<ClientesDGII> ClientesDGII { get; set; }
@@ -42,9 +45,23 @@ namespace AlahiaPos.DataAccess.Data
         public DbSet<EmpresaModulo> Empresa_Modulos { get; set; }
         public DbSet<Modulo> Modulos { get; set; }
         public DbSet<PlanesCloud> PlanesCloud { get; set; }
+        public DbSet<MovimientosInventario>
+         MovimientosInventario
+        { get; set; }
+
+        public DbSet<MovimientosInventarioDetalle>
+            MovimientosInventarioDetalle
+        { get; set; }
         public DbSet<Usuarios> Usuarios { get; set; }
         public DbSet<Perfiles> Perfiles { get; set; }
         public DbSet<PerfilRoles> PerfilRoles { get; set; }
+        public DbSet<CuentaFinanciera> CuentaFinanciera { get; set; }
+        public DbSet<MovimientoFinanciero> MovimientoFinanciero { get; set; }
+        public DbSet<MetodoPagoCuenta> MetodoPagoCuenta { get; set; }
+        public DbSet<CajaCierre> CajaCierre { get; set; }
+        public DbSet<CajaApertura> CajaApertura { get; set; }
+        public DbSet<CajaMovimiento> CajaMovimiento { get; set; }
+        public DbSet<SecuenciaDocumentos> SecuenciaDocumentos { get; set; }
 
         // ==============================
         // 🔥 FACTURACIÓN ELECTRÓNICA

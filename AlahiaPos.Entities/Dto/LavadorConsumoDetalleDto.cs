@@ -8,6 +8,7 @@ namespace AlahiaPos.Entities.Dto
 {
     public class LavadorConsumoDetalleDto
     {
+        public int IdConsumo { get; set; }
         public DateTime Hora { get; set; }
         public bool EstaSaldado {  get; set; }
         public DateTime Fecha {  get; set; }

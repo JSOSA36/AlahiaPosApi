@@ -23,9 +23,12 @@ namespace AlahiaPos.Entities.Domain
         public decimal Cantidad { get; set; }
         public decimal Stock { get; set; }
         public decimal PrecioVenta { get; set; }
-
+        public virtual ICollection<MovimientosInventarioDetalle>
+        MovimientosInventarioDetalle
+        { get; set; }
+        = new List<MovimientosInventarioDetalle>();
         public int? IdUnidadMedida { get; set; }
-
+        public string? TipoOperacion { get; set; }
         public int? IdCategoria { get; set; }
 
         public int? IdAlmacen { get; set; }

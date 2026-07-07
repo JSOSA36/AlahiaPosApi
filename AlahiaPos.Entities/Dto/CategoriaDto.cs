@@ -14,6 +14,7 @@ namespace AlahiaPos.Entities.Dto
         public string? Nombre { get; set; }
         public IFormFile? Imagen { get; set; }  // Cambiado a IFormFile
         public bool IsActiva { get; set; }
+        public string? TipoOperacion { get; set; }
 
     }
 }

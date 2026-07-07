@@ -43,4 +43,8 @@ public class FacturaDetalles : BaseEntity
      
     [NotMapped]
     public string? NombreEmpleadoComision { get; set; }
+    // 🔥 PERSONALIZACIÓN DE PRODUCTO (BIZCOCHO)
+    public string? TipoMasa { get; set; }
+    public string? TipoRelleno { get; set; }
+    public decimal Libras { get; set; }
 }

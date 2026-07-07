@@ -35,6 +35,12 @@ namespace AlahiaPosApi.Controllers
         {
              return await _services.GetAllCategorias(IdEmpresa);
         }
+        [HttpGet]
+        [Route("GetCategoriaVenta/{IdEmpresa}")]
+        public async Task<IEnumerable<Categorias>> GetCategoriaVenta(int IdEmpresa)
+        {
+            return await _services.GetAllCategoriasVentas(IdEmpresa);
+        }
 
         // GET api/<CategoriasController>/5
         [HttpGet]
@@ -53,6 +59,7 @@ namespace AlahiaPosApi.Controllers
             c.Prioridad = 0;
             c.IdEmpresa = value.IdEmpresa;
             c.IsActiva = value.IsActiva;
+            c.TipoOperacion = value.TipoOperacion;
 
             if (value.Imagen != null)
             {
@@ -97,7 +104,14 @@ namespace AlahiaPosApi.Controllers
             _Cat.Nombre = value.Nombre;
 
             _Cat.IsActiva = value.IsActiva;
-            
+
+
+            _Cat.Nombre = value.Nombre;
+            _Cat.Prioridad = 0;
+            _Cat.IdEmpresa = value.IdEmpresa;
+            _Cat.IsActiva = value.IsActiva;
+            _Cat.TipoOperacion = value.TipoOperacion;
+
             _services.UpdateCategorias(value.IdCategoria, _Cat);
         }
 

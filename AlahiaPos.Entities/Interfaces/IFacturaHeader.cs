@@ -10,7 +10,42 @@ namespace AlahiaPos.Entities.Interfaces
 {
     public interface IFacturaHeader
     {
-        Task<bool> EliminarFacturaCompleta(int idFactura);
+
+
+        Task<List<CierreCajaDto>> GetIngresosCajaAbierta(
+   int idEmpresa,
+   int idUsuario
+);
+        Task<
+    List<CajaProductoDto>>
+    GetProductosPorCajaCierre(
+
+  int idEmpresa,
+
+    int idUsuario,
+
+    int idCajaCierre
+    );
+         Task<bool> EliminarFacturaCompleta(int idFactura);
+        Task
+CerrarFacturasPendientes(
+
+   int idEmpresa,
+
+   int idUsuario,
+
+   int idCajaCierre
+);
+         Task<IEnumerable<FacturaHeaders>> GetAllOrdenesByFecha(
+         int IdEmpresa,
+         DateTime fechaDesde,
+         DateTime fechaHasta);
+        Task<IEnumerable<Reporte607Dto>>
+        GetReporte607Async(
+        DateTime desde,
+        DateTime hasta,
+        int IdEmpresa
+        );
         Task<TicketFacturaClienteDto?> GetFacturaClienteById(int idFacturaHeader);
         Task<IEnumerable<FacturaHeaders>> GetAllFacturas(int IdEmpresa);
         Task<List<TicketLavadorDto>> GetTicketsLavadorByFactura(int idFacturaHeader);
@@ -40,6 +75,15 @@ namespace AlahiaPos.Entities.Interfaces
 
         public Task<IEnumerable<ServicioRankingDto>> GetTopServiciosDelMes(int IdEmpresa);
         public Task<IEnumerable<CuentaPorCobrarDto>> GetCuentasPorCobrar(int IdEmpresa);
+        Task<
+List<CajaProductoDto>>
+GetProductosPendientesCierre(
+
+    int idEmpresa,
+
+    int idUsuario
+    
+);
 
     }
 }

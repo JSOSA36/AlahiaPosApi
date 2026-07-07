@@ -1,20 +1,59 @@
 ﻿using AlahiaPos.Entities.Domain;
 using AlahiaPos.Entities.Interfaces;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace AlahiaPos.DataAccess.Servicios
 {
     public class GastosServices : IGastos
     {
-        IRepository<Gastos> _services;
+        private readonly IRepository<Gastos> _services;
 
-        public GastosServices(IRepository<Gastos> services)
+        public GastosServices(
+            IRepository<Gastos> services
+        )
         {
             _services = services;
+        }
+
+        /* =====================================
+        🔥 CERRAR GASTOS PENDIENTES
+        ====================================== */
+
+        public async Task CerrarGastosPendientes(
+            int idEmpresa,
+            int idUsuario,
+            int idCajaCierre
+        )
+        {
+            var gastos =
+                await _services
+                .GetAllByExpresionAsync(x =>
+
+                    x.IdEmpresa == idEmpresa
+
+                    && x.IdUsuario == idUsuario
+
+                    && x.EstaAnulado == false
+
+                    && x.EstaCerrada != true
+
+                    && x.FormaPago != null
+
+                    && x.FormaPago.ToUpper() == "EFECTIVO"
+                );
+
+            foreach (var gasto in gastos)
+            {
+                gasto.EstaCerrada = true;
+
+                gasto.IdCajaCierre = idCajaCierre;
+
+                _services.Update(
+
+                    gasto.IdGasto,
+
+                    gasto
+                );
+            }
         }
 
         public void DeleteGastos(int id)
@@ -22,40 +61,55 @@ namespace AlahiaPos.DataAccess.Servicios
             _services.Delete(id);
         }
 
-        public Task<IEnumerable<Gastos>> GetAllGastos(int IdEmpresa)
+        public Task<IEnumerable<Gastos>> GetAllGastos(
+            int IdEmpresa
+        )
         {
-            return _services.GetAllByExpresionAsync(c=>c.IdEmpresa==IdEmpresa);
+            return _services
+                .GetAllByExpresionAsync(c =>
+                    c.IdEmpresa == IdEmpresa);
         }
 
         public Task<Gastos> GetGastosById(int id)
         {
-           return _services.GetByIdAsync(id);
+            return _services.GetByIdAsync(id);
         }
 
-        public Task InsertGastos(Gastos Gastos)
+        public Task InsertGastos(Gastos gastos)
         {
-            return _services.Save(Gastos);
+            return _services.Save(gastos);
         }
 
-        public async Task<decimal> TotalGastosDelMes(int IdEmpresa)
+        public async Task<decimal> TotalGastosDelMes(
+            int IdEmpresa
+        )
         {
-            var result = await  _services.GetAllByExpresionAsync(c =>
-             c.FechaInseccion.Year == DateTime.Now.Year
-              && c.FechaInseccion.Month == DateTime.Now.Month &&
-              c.IdEmpresa == IdEmpresa);
-            if (result != null)
-            {
-                return result.Sum(c => c.Monto);
-            }
-            else
-            {
-                return 0;
-            }
+            var result =
+                await _services
+                .GetAllByExpresionAsync(c =>
+
+                    c.FechaInseccion.Year == DateTime.Now.Year
+
+                    &&
+
+                    c.FechaInseccion.Month == DateTime.Now.Month
+
+                    &&
+
+                    c.IdEmpresa == IdEmpresa
+                );
+
+            return result?.Sum(c => c.Monto) ?? 0;
         }
 
-        public void UpdateGastos(Gastos Gastos)
+        public void UpdateGastos(
+            Gastos gastos
+        )
         {
-            throw new NotImplementedException();
+            _services.Update(
+                gastos.IdGasto,
+                gastos
+            );
         }
     }
 }

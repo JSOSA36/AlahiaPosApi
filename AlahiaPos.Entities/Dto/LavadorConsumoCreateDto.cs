@@ -9,6 +9,7 @@ namespace AlahiaPos.Entities.Dto
     public class LavadorConsumoCreateDto
     {
         public int IdEmpleado { get; set; }
+        public int IdConsumo { get; set; }
 
         public int IdEmpresa { get; set; }
 

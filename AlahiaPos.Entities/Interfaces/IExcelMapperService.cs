@@ -11,7 +11,7 @@ namespace AlahiaPos.Entities.Interfaces
     
         public interface IExcelMapperService
         {
-            Task<List<EcfDto>> Mapear(Stream excelStream, int tipoeCF);
+            Task<List<object>> Mapear(Stream excelStream, int tipoeCF);
         }
     }
 

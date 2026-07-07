@@ -10,7 +10,7 @@ namespace AlahiaPos.Entities.Interfaces
     public interface ICategorias
     {
         Task<IEnumerable<Categorias>> GetAllCategorias(int IdEmpresa);
-        
+        Task<IEnumerable<Categorias>> GetAllCategoriasVentas(int idEmpresa);
         Task<Categorias> GetAllCategoriasById(int IdCategorias);
         void UpdateCategorias(int Id, Categorias Categorias);
         Task InsertCategorias(Categorias Categorias);
