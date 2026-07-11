@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("AlahiaPos.Entities")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+71ac49769ad1975cc9a63c5f8f72658ecddc3371")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+15e8b1093a8f3b9c0d377614d47cf10611248d12")]
 [assembly: System.Reflection.AssemblyProductAttribute("AlahiaPos.Entities")]
 [assembly: System.Reflection.AssemblyTitleAttribute("AlahiaPos.Entities")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

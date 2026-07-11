@@ -72,7 +72,11 @@ namespace AlahiaPosApi.Controllers
                 UserName = dto.Correo,
                 PasswordHash = Utility.EncriptarPassword(dto.Password),
                 Estado = dto.Activo,
-                FechaCreacion = DateTime.Now
+                FechaCreacion = DateTime.Now,
+                PuedeEliminarOrden = dto.PuedeEliminarOrden,
+                PuedeEliminarItemCarrito = dto.PuedeEliminarItemCarrito,
+                PuedeDisminuirCantidadCarrito = dto.PuedeDisminuirCantidadCarrito,
+                PuedeEditarPrecioCarrito = dto.PuedeEditarPrecioCarrito
             };
 
             await _usuarios.Crear(usuario);
@@ -105,6 +109,10 @@ namespace AlahiaPosApi.Controllers
             usuario.Correo = dto.Correo;
             usuario.UserName = dto.Correo;
             usuario.Estado = dto.Activo;
+            usuario.PuedeEliminarOrden = dto.PuedeEliminarOrden;
+            usuario.PuedeEliminarItemCarrito = dto.PuedeEliminarItemCarrito;
+            usuario.PuedeDisminuirCantidadCarrito = dto.PuedeDisminuirCantidadCarrito;
+            usuario.PuedeEditarPrecioCarrito = dto.PuedeEditarPrecioCarrito;
 
             // 🔐 3. Solo actualizar password si viene nuevo
             if (!string.IsNullOrWhiteSpace(dto.Password))

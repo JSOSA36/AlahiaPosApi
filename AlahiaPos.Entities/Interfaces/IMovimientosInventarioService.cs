@@ -42,7 +42,9 @@ namespace AlahiaPos.Entities.Interfaces
 
     string? motivo,
 
-    int? idUsuario
+    int? idUsuario,
+
+    int? idProducto
 );
 
         // =========================================

@@ -44,18 +44,24 @@ namespace AlahiaPos.DataAccess.Servicios
 
         public async Task<Usuarios?> ObtenerPorId(int idUsuario)
         {
-            return await _usuarioRepo.GetByExpresionAsync(
-                u => u.IdUsuario == idUsuario,
-                "Empleado,Perfil"
-            );
+            return (
+                await _usuarioRepo.GetAllByExpresionAsync(
+                    u => u.IdUsuario == idUsuario,
+                    "Empleado",
+                    "Perfil"
+                )
+            ).FirstOrDefault();
         }
 
         public async Task<Usuarios?> ObtenerPorUserName(string userName)
         {
-            return await _usuarioRepo.GetByExpresionAsync(
-                u => u.UserName == userName && u.Estado,
-                "Empleado,Perfil"
-            );
+            return (
+                await _usuarioRepo.GetAllByExpresionAsync(
+                    u => u.UserName == userName && u.Estado,
+                    "Empleado",
+                    "Perfil"
+                )
+            ).FirstOrDefault();
         }
 
         // ============================

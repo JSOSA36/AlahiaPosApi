@@ -24,7 +24,15 @@ namespace AlahiaPos.Entities.Dto
   
         public string? Password { get; set; }
 
-        public bool Activo { get; set; }
+        public bool Activo { get; set; } = true;
+
+        public bool PuedeEliminarOrden { get; set; }
+
+        public bool PuedeEliminarItemCarrito { get; set; }
+
+        public bool PuedeDisminuirCantidadCarrito { get; set; }
+
+        public bool PuedeEditarPrecioCarrito { get; set; }
     }
 
 }

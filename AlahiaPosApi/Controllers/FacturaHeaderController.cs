@@ -144,6 +144,58 @@ namespace AlahiaPosApi.Controllers
 
             return _Mapper.Map<FacturaHeaderDto[]>(listaReturn);
         }
+
+        [HttpGet]
+        [Route("GetAllCotizaciones")]
+        public async Task<IEnumerable<FacturaHeaderDto>> GetAllCotizaciones(int IdEmpresa)
+        {
+            var listaReturn = new List<FacturaHeaders>();
+
+            var headers = await _facturaHeader.GetAllCotizaciones(IdEmpresa);
+
+            if (headers == null || !headers.Any())
+                return new List<FacturaHeaderDto>();
+
+            foreach (var item in headers)
+            {
+                var detalles = await _facturaDetalle.GetOrdenesByHeader(item.IdFacturaHeader);
+
+                if (detalles == null || !detalles.Any())
+                    continue;
+
+                var listaDetalles = new List<FacturaDetalles>();
+
+                foreach (var d in detalles)
+                {
+                    if (d.StatuItem == false)
+                    {
+                        var producto = await _Productos.GetAllProductosById(d.IdProducto);
+                        d.Productos = producto;
+
+                        if (d.IdEmpleadoComision != null)
+                        {
+                            var emp = await _IEmpleado.GetEmpleadoById((int)d.IdEmpleadoComision);
+                            d.NombreEmpleadoComision = emp?.Nombre;
+                        }
+                        else
+                        {
+                            d.NombreEmpleadoComision = "No asignado";
+                        }
+
+                        listaDetalles.Add(d);
+                    }
+                }
+
+                if (listaDetalles.Any())
+                {
+                    item.FacturaDetalles = listaDetalles;
+                    listaReturn.Add(item);
+                }
+            }
+
+            return _Mapper.Map<FacturaHeaderDto[]>(listaReturn);
+        }
+
         [HttpGet()]
         [Route("GetAllFacturas")]
         public async Task<IEnumerable<FacturaHeaderDto>> GetAllFacturas(int IdEmpresa)
@@ -552,7 +604,10 @@ namespace AlahiaPosApi.Controllers
 
                 Header.PrintLavador = false;
                 Header.IdUsuario = _GetEmpleado.IdUsuario;
-                Header.IdTipoDocumentos = 10;
+                Header.IdTipoDocumentos =
+                    value.IdTipoDocumentos is 2 or 10
+                        ? value.IdTipoDocumentos
+                        : 10;
 
                 // =========================================
                 // 🔥 DETALLES
@@ -625,13 +680,28 @@ namespace AlahiaPosApi.Controllers
                 Header.SubTotal =
                     Total - TotalIbits;
 
-                Header.Total =
-                    Total;
-
                 Header.PrintAcount = true;
 
                 Header.TotalItbis =
                     TotalIbits;
+
+                Header.TotalDescuento =
+                    value.TotalDescuento < 0
+                        ? 0
+                        : value.TotalDescuento;
+
+                if (Header.TotalDescuento > Total)
+                    Header.TotalDescuento = Total;
+
+                Header.Total =
+                    Total - Header.TotalDescuento;
+
+                Header.NumeroDocumento =
+                    await _secuenciaDocumentoService
+                        .GenerarDocumentoAsync(
+                            Header.IdEmpresa,
+                            (int)Header.IdTipoDocumentos
+                        );
 
                 // =========================================
                 // 🔥 INSERTAR
@@ -643,7 +713,10 @@ namespace AlahiaPosApi.Controllers
 
                 return Ok(new
                 {
-                    idFacturaHeader = Header.IdFacturaHeader
+                    idFacturaHeader = Header.IdFacturaHeader,
+                    numeroDocumento = Header.NumeroDocumento,
+                    totalDescuento = Header.TotalDescuento,
+                    total = Header.Total
                 });
             }
             catch (Exception ex)

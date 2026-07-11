@@ -1,5 +1,6 @@
 ﻿using AlahiaPos.Entities.Domain;
 using AlahiaPos.Entities.Interfaces;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -10,115 +11,124 @@ namespace AlahiaPos.DataAccess.Servicios
     {
         private readonly IRepository<PagosFacturasClientes> _repository;
         private readonly IRepository<FacturaHeaders> _facturaRepository;
-        private readonly IRepository<Ingresos> _IngresosServices;
+        private readonly IIngresos _ingresosService;
+        private readonly IMetodoPagoCuentaService _metodoPagoCuentaService;
+        private readonly IMovimientoFinancieroService _movimientoFinancieroService;
+
         public PagosFacturasClientesService(
             IRepository<PagosFacturasClientes> repository,
-            IRepository<FacturaHeaders> facturaRepository, IRepository<Ingresos> Ingresos)
+            IRepository<FacturaHeaders> facturaRepository,
+            IIngresos ingresosService,
+            IMetodoPagoCuentaService metodoPagoCuentaService,
+            IMovimientoFinancieroService movimientoFinancieroService)
         {
             _repository = repository;
             _facturaRepository = facturaRepository;
-            _IngresosServices=Ingresos; 
+            _ingresosService = ingresosService;
+            _metodoPagoCuentaService = metodoPagoCuentaService;
+            _movimientoFinancieroService = movimientoFinancieroService;
         }
 
-        /// <summary>
-        /// Obtiene todos los pagos de facturas realizados por los clientes de una empresa.
-        /// </summary>
         public async Task<IEnumerable<PagosFacturasClientes>> GetAllPagosFacturasClientes(int IdEmpresa)
         {
             return await _repository.GetAllByExpresionAsync(p => p.IdEmpresa == IdEmpresa);
         }
 
-        /// <summary>
-        /// Obtiene un pago específico de factura por su identificador.
-        /// </summary>
         public async Task<PagosFacturasClientes> GetPagosFacturasClientesById(int IdPago)
         {
             return await _repository.GetByIdAsync(IdPago);
         }
 
-        /// <summary>
-        /// Obtiene todos los pagos asociados a una factura específica.
-        /// </summary>
         public async Task<IEnumerable<PagosFacturasClientes>> GetPagosByFacturaId(int IdFactura)
         {
             var pagos = await _repository.GetAllByExpresionAsync(p => p.IdFacturaHeader == IdFactura);
             return pagos.OrderByDescending(p => p.FechaInseccion);
         }
 
-        /// <summary>
-        /// Inserta un nuevo registro de pago de factura de cliente.
-        /// </summary>
         public async Task InsertPagosFacturasClientes(PagosFacturasClientes pago)
         {
             pago.FechaInseccion = DateTime.Now;
             await _repository.Save(pago);
         }
 
-        /// <summary>
-        /// Registra un nuevo pago en una factura y actualiza los montos correspondientes.
-        /// </summary>
         public async Task RegistrarPagoFactura(int IdFactura, PagosFacturasClientes pago)
         {
-            // 🔹 Buscar la factura
+            if (pago == null)
+                throw new ArgumentException("Datos del pago inválidos");
+
+            if (pago.Monto <= 0)
+                throw new ArgumentException("El monto del pago debe ser mayor a cero");
+
             var factura = await _facturaRepository.GetByIdAsync(IdFactura);
             if (factura == null)
-                throw new Exception($"No se encontró la factura con ID {IdFactura}");
+                throw new KeyNotFoundException($"No se encontró la factura con ID {IdFactura}");
 
-            factura.Clientes = null;
-            // 🔹 Completar datos del pago
+            var pendienteActual = factura.Total - factura.Pagado;
+            if (pago.Monto > pendienteActual)
+                throw new ArgumentException("El monto ingresado excede el pendiente de la factura.");
+
+            var formaPago = string.IsNullOrWhiteSpace(pago.FormaPago)
+                ? "Efectivo"
+                : pago.FormaPago;
+
             pago.IDCliente = factura.IDCliente;
             pago.FechaInseccion = DateTime.Now;
             pago.IdEmpresa = factura.IdEmpresa;
+            pago.IdFacturaHeader = IdFactura;
+            pago.FormaPago = formaPago;
 
-            // 1️⃣ Guardar el pago
+            if (string.IsNullOrWhiteSpace(pago.NumeroDocumento))
+                pago.NumeroDocumento = factura.NumeroDocumento ?? string.Empty;
+
             await _repository.Save(pago);
 
-            // 2️⃣ Actualizar la factura
+            factura.Clientes = null;
             factura.Pagado += pago.Monto;
             factura.Pendiente = factura.Total - factura.Pagado;
             factura.Estado = factura.Pendiente > 0 ? "Pendiente" : "Pagada";
 
             _facturaRepository.Update(IdFactura, factura);
 
-            // 3️⃣ Determinar el tipo de ingreso
-            string categoria = factura.Pendiente == 0 ? "Saldo de Factura de Crédito" : "Abono a Factura";
-            string descripcion = factura.Pendiente == 0
-                ? $"Pago completo de factura #{factura.IdFacturaHeader}"
-                : $"Abono a factura #{factura.IdFacturaHeader}";
+            var categoria = factura.Pendiente == 0
+                ? "Saldo de Factura de Crédito"
+                : "Abono a Crédito";
 
-            // 4️⃣ Registrar el ingreso contable asociado al pago
-            var ingreso = new Ingresos
+            var descripcion = factura.Pendiente == 0
+                ? $"Pago completo de factura #{factura.IdFacturaHeader}"
+                : $"Abono - Factura #{factura.IdFacturaHeader}";
+
+            await _ingresosService.InsertIngreso(new Ingresos
             {
                 IdEmpresa = factura.IdEmpresa,
                 FechaRegistro = DateTime.Now,
                 Descripcion = descripcion,
                 Categoria = categoria,
-                Origen = factura.Clientes?.NombreComercial ?? "Cliente desconocido",
+                Origen = "Cliente crédito",
                 Monto = pago.Monto,
-                FormaPago = pago.FormaPago ?? "Efectivo",
+                FormaPago = formaPago,
                 Referencia = $"Factura #{factura.IdFacturaHeader}",
                 IdFacturaHeader = factura.IdFacturaHeader,
                 IdCliente = factura.IDCliente,
-                IdUsuario=factura.IdEmpleados,
+                IdUsuario = factura.IdEmpleados,
                 Nota = pago.Nota
+            });
 
+            var metodoConfigurado = await _metodoPagoCuentaService
+                .GetByMetodoAsync(factura.IdEmpresa, formaPago);
 
-
-
-
-
-
-            };
-
-            // 5️⃣ Guardar el ingreso
-            await _IngresosServices.Save(ingreso);
+            if (metodoConfigurado != null &&
+                metodoConfigurado.IdCuentaFinanciera > 0)
+            {
+                await _movimientoFinancieroService.RegistrarEntradaAsync(
+                    factura.IdEmpresa,
+                    factura.IdEmpleados ?? 0,
+                    metodoConfigurado.IdCuentaFinanciera,
+                    pago.Monto,
+                    $"Factura #{factura.IdFacturaHeader}",
+                    $"Ingreso automático desde cobro a cliente ({formaPago})");
+            }
         }
 
-
-
-        /// <summary>
-        /// Elimina un pago de factura del registro.
-        /// </summary>
         public void DeletePagosFacturasClientes(int IdPago)
         {
             _repository.Delete(IdPago);

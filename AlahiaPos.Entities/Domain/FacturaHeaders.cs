@@ -20,6 +20,7 @@ namespace AlahiaPos.Entities.Domain
             get;
             set;
         }
+       
         public int? IdUsuario { get; set; }
         public string? NombreEmpresa { get; set; }
         public bool? PrintLavador { get; set; }

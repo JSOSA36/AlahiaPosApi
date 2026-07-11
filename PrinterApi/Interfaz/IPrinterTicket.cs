@@ -15,5 +15,9 @@
         Task GenerateTicketBizcocho(
     int idFacturaHeader,
     int idEmpresa);
+
+        Task GenerateTicketNotaCredito(
+            int idNotaCredito,
+            int idEmpresa);
     }
 }

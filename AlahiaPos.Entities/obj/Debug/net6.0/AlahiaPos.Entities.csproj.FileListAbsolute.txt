@@ -47,3 +47,6 @@ C:\Users\USUARIO\Documents\GitHub\AlahiaPosApi\AlahiaPos.Entities\obj\Debug\net6
 C:\Users\USUARIO\Documents\GitHub\AlahiaPosApi\AlahiaPos.Entities\obj\Debug\net6.0\refint\AlahiaPos.Entities.dll
 C:\Users\USUARIO\Documents\GitHub\AlahiaPosApi\AlahiaPos.Entities\obj\Debug\net6.0\AlahiaPos.Entities.pdb
 C:\Users\USUARIO\Documents\GitHub\AlahiaPosApi\AlahiaPos.Entities\obj\Debug\net6.0\ref\AlahiaPos.Entities.dll
+C:\Users\USUARIO\Documents\GitHub\AlahiaPosApi\_build_check\AlahiaPos.Entities.deps.json
+C:\Users\USUARIO\Documents\GitHub\AlahiaPosApi\_build_check\AlahiaPos.Entities.dll
+C:\Users\USUARIO\Documents\GitHub\AlahiaPosApi\_build_check\AlahiaPos.Entities.pdb

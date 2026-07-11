@@ -21,15 +21,15 @@ namespace AlahiaPos.DataAccess.Data
 
             SqlConnectionStringBuilder sqlString = new SqlConnectionStringBuilder()
             {
-                DataSource = @"144.126.143.154\SQLEXPRESS",
+                //DataSource = @"144.126.143.154\SQLEXPRESS",
                 //DataSource = @"DESKTOP-HI2GLCG\SQLEXPRESS",
                 //DataSource = @"DESKTOP-BDUBGRR\SQLEXPRESS",
 
                 //InitialCatalog = "AlahiaPosFastFood",
                 //InitialCatalog = "BarraErickDb",
-                InitialCatalog = "AlahiaBeautySalonProd",
-                UserID = "sa",         //Username  
-                Password = "JoelAriel8787", //Password  
+                //InitialCatalog = "AlahiaBeautySalonProd",
+                //UserID = "sa",         //Username  
+                //Password = "JoelAriel8787", //Password  
                                               //UserID = "sa",         //Username  
                                               //Password = "JoelAriel8787@@",  //Password  
                                               //IntegratedSecurity=true

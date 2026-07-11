@@ -50,6 +50,8 @@ namespace AlahiaPos.Entities.Domain
 
         public bool PuedeDisminuirCantidadCarrito { get; set; }
 
+        public bool PuedeEditarPrecioCarrito { get; set; }
+
         // ============================
         // 🔒 SEGURIDAD / LICENCIA
         // ============================

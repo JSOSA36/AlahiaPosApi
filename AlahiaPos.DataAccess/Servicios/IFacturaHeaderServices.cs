@@ -75,6 +75,23 @@ namespace AlahiaPos.DataAccess.Servicios
                     "FacturaDetalles"
                 );
         }
+
+        public async Task<IEnumerable<FacturaHeaders>> GetAllCotizaciones(
+            int IdEmpresa
+        )
+        {
+            return await _repository
+                .GetAllByExpresionAsync(c =>
+
+                    c.IdTipoDocumentos == 2
+                    &&
+
+                    c.IdEmpresa == IdEmpresa,
+
+                    "Clientes",
+                    "FacturaDetalles"
+                );
+        }
         public async Task<IEnumerable<FacturaHeaders>> GetAllFacturas(int IdEmpresa)
         {
             DateTime fechaDesde = DateTime.Now.AddDays(-30);
@@ -805,20 +822,25 @@ namespace AlahiaPos.DataAccess.Servicios
 
             // 🔹 Paso 5: Agrupar los servicios vendidos por producto
             var ranking = detalles
-                .GroupBy(d => d.IdProducto)
-                .Select(g =>
-                {
-                    var producto = productos.FirstOrDefault(p => p.IdProducto == g.Key);
-                    return new ServicioRankingDto
-                    {
-                        NombreServicio = producto?.Nombre ?? "Desconocido",
-                        Veces = g.Count(),
-                        TotalFacturado = g.Sum(x => x.SubTotal)
-                    };
-                })
-                .OrderByDescending(x => x.Veces)
-                .Take(5)
-                .ToList();
+    .GroupBy(d => d.IdProducto)
+    .Select(g =>
+    {
+        var producto = productos.FirstOrDefault(p => p.IdProducto == g.Key);
+
+        return new ServicioRankingDto
+        {
+            NombreServicio = producto?.Nombre ?? "Desconocido",
+
+            // 🔥 Total de unidades vendidas
+            Veces = (int)g.Sum(x => x.Cantidad),
+
+            // 🔥 Total facturado
+            TotalFacturado = g.Sum(x => x.SubTotal)
+        };
+    })
+    .OrderByDescending(x => x.Veces)
+    .Take(5)
+    .ToList();
 
             return ranking;
         }

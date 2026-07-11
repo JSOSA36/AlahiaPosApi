@@ -54,7 +54,9 @@ namespace AlahiaPosApi.Controllers
             try
             {
                 // 🔍 Usuario
-                var usuarioDb = await _usuariosService.GetByUserName(dto.UserName);
+                var usuarioDb =
+                    await _usuariosService
+                    .ObtenerPorUserName(dto.UserName);
                 // 🔒 VALIDAR SESIÓN ACTIVA
                 //if (!string.IsNullOrEmpty(usuarioDb.Token) &&
                 // !string.IsNullOrEmpty(usuarioDb.Dispositivo))
@@ -154,13 +156,21 @@ namespace AlahiaPosApi.Controllers
                     {
                         idUsuario = usuarioDb.IdUsuario,
                         userName = usuarioDb.UserName,
+                        nombre =
+                            usuarioDb.Empleado != null
+                            &&
+                            !string.IsNullOrWhiteSpace(
+                                usuarioDb.Empleado.Nombre)
+                            ?
+                            usuarioDb.Empleado.Nombre.Trim()
+                            :
+                            usuarioDb.UserName,
                         idEmpresa = usuarioDb.IdEmpresa,
                         dispositivo = dto.DeviceId,
                         puedeEliminarOrden = loginResponse.PuedeEliminarOrden,
-                        PuedeEliminarItemCarrito =usuarioDb.PuedeDisminuirCantidadCarrito,
-                        PuedeDisminuirCantidadCarrito= usuarioDb.PuedeDisminuirCantidadCarrito
-
-
+                        puedeEliminarItemCarrito = usuarioDb.PuedeEliminarItemCarrito,
+                        puedeDisminuirCantidadCarrito = usuarioDb.PuedeDisminuirCantidadCarrito,
+                        puedeEditarPrecioCarrito = usuarioDb.PuedeEditarPrecioCarrito
                     },
                     empresa = new
                     {

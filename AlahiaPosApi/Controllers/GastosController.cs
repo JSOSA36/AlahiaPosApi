@@ -92,6 +92,34 @@ namespace AlahiaPosApi.Controllers
                 value.FechaInseccion = DateTime.Now;
                 value.IdProveedor = 1;
 
+                if (string.IsNullOrWhiteSpace(value.TipoGasto))
+                {
+                    return Ok(new
+                    {
+                        success = false,
+                        message = "Debe seleccionar un tipo de gasto."
+                    });
+                }
+
+                if (value.Monto <= 0)
+                {
+                    return Ok(new
+                    {
+                        success = false,
+                        message = "Debe ingresar un monto válido."
+                    });
+                }
+
+                if (string.IsNullOrWhiteSpace(value.FormaPago))
+                {
+                    value.FormaPago = "EFECTIVO";
+                }
+
+                if (string.IsNullOrWhiteSpace(value.Orien))
+                {
+                    value.Orien = value.FormaPago;
+                }
+
                 // =========================================
                 // 🔥 OBTENER CUENTA FINANCIERA
                 // =========================================
@@ -205,14 +233,80 @@ namespace AlahiaPosApi.Controllers
         // ======================================================
 
         [HttpPut("{id}")]
-        public void Put(
+        public async Task<IActionResult> Put(
             int id,
-
-            [FromBody]
-            string value
+            [FromBody] Gastos value
         )
         {
+            try
+            {
+                var gastoExistente =
+                    await _IGastos.GetGastosById(id);
 
+                if (gastoExistente == null)
+                {
+                    return Ok(new
+                    {
+                        success = false,
+                        message = "El gasto no existe."
+                    });
+                }
+
+                if (string.IsNullOrWhiteSpace(value.TipoGasto))
+                {
+                    return Ok(new
+                    {
+                        success = false,
+                        message = "Debe seleccionar un tipo de gasto."
+                    });
+                }
+
+                if (value.Monto <= 0)
+                {
+                    return Ok(new
+                    {
+                        success = false,
+                        message = "Debe ingresar un monto válido."
+                    });
+                }
+
+                if (string.IsNullOrWhiteSpace(value.FormaPago))
+                {
+                    value.FormaPago = gastoExistente.FormaPago ?? "EFECTIVO";
+                }
+
+                if (string.IsNullOrWhiteSpace(value.Orien))
+                {
+                    value.Orien = value.FormaPago;
+                }
+
+                gastoExistente.IdGasto = id;
+                gastoExistente.TipoGasto = value.TipoGasto;
+                gastoExistente.Monto = value.Monto;
+                gastoExistente.Orien = value.Orien;
+                gastoExistente.Detalle = value.Detalle;
+                gastoExistente.FormaPago = value.FormaPago;
+                gastoExistente.Referencia = value.Referencia;
+                gastoExistente.IdEmpleado = value.IdEmpleado;
+                gastoExistente.IdUsuario = value.IdUsuario;
+                gastoExistente.IdCuentaFinanciera = value.IdCuentaFinanciera;
+
+                _IGastos.UpdateGastos(gastoExistente);
+
+                return Ok(new
+                {
+                    success = true,
+                    message = "Gasto actualizado correctamente."
+                });
+            }
+            catch (Exception ex)
+            {
+                return Ok(new
+                {
+                    success = false,
+                    message = ex.Message
+                });
+            }
         }
 
         // ======================================================

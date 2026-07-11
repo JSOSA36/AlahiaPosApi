@@ -472,7 +472,7 @@ namespace AlahiaPos.DataAccess.Servicios
                 return null;
 
             var _Empresa = _RepositoryEmpresa.GetById(x.IdEmpresa);
-
+           
 
             // 🔥 CLIENTE
             Clientes? cliente = null;
@@ -535,7 +535,7 @@ namespace AlahiaPos.DataAccess.Servicios
                 IdEmpresa = x.IdEmpresa,
                 IDCliente = x.IDCliente,
                 IdTipoDocumentos = x.IdTipoDocumentos,
-
+                Politicas=_Empresa.Politicas,
                 NumeroDocumento = x.NumeroDocumento,
                 NombreEmpresa = x.NombreEmpresa,
                 TipoFactura = x.TipoFactura,

@@ -68,10 +68,21 @@ namespace AlahiaPosApi.Controllers
                 {
                     var parametro = _Mapper.Map<Parametros>(p);
 
-                    var existente = await _ParametrosService.GetParametro(
-                        parametro.IdEmpresa,
-                        parametro.Clave
-                    );
+                    Parametros? existente = null;
+
+                    if (!string.IsNullOrWhiteSpace(parametro.CodigoPOS))
+                    {
+                        existente = await _ParametrosService.GetParametroPOS(
+                            parametro.IdEmpresa,
+                            parametro.CodigoPOS,
+                            parametro.Clave);
+                    }
+                    else
+                    {
+                        existente = await _ParametrosService.GetParametro(
+                            parametro.IdEmpresa,
+                            parametro.Clave);
+                    }
 
                     if (existente != null)
                     {

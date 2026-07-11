@@ -1272,6 +1272,18 @@ namespace AlahiaPos.DataAccess.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<bool>("PuedeDisminuirCantidadCarrito")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("PuedeEditarPrecioCarrito")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("PuedeEliminarItemCarrito")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("PuedeEliminarOrden")
+                        .HasColumnType("bit");
+
                     b.Property<string>("Token")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");

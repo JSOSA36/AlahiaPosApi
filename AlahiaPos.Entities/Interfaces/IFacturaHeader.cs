@@ -69,7 +69,7 @@ CerrarFacturasPendientes(
         public Task InsertFacturaHeader(FacturaHeaders FacturaHeader);
         public Task<FacturaHeaders> GetFacturaHeaderById(int IdFacturaHeader, int IdEmpresa);
         public Task<IEnumerable<FacturaHeaders>> GetAllOrdenes(int IdEmpresa);
-       
+        public Task<IEnumerable<FacturaHeaders>> GetAllCotizaciones(int IdEmpresa);
         public Task<IEnumerable<FacturaHeaders>> GetFacturasXCobrar(DateTime? Desde,
            DateTime? Hasta, int IdCliente, int IdEmpresa);
 

@@ -22,7 +22,7 @@ namespace AlahiaPos.DataAccess.Servicios
         {
             var result = await _repository.GetAllByExpresionAsync(p =>
                 p.IdEmpresa == idEmpresa &&
-                string.IsNullOrEmpty(p.CodigoPOS));
+                (p.CodigoPOS == null || p.CodigoPOS == ""));
 
             return result.ToList();
         }
@@ -43,7 +43,7 @@ namespace AlahiaPos.DataAccess.Servicios
             return await _repository.GetByExpresionAsync(p =>
                 p.IdEmpresa == idEmpresa &&
                 p.Clave == clave &&
-                string.IsNullOrEmpty(p.CodigoPOS));
+                (p.CodigoPOS == null || p.CodigoPOS == ""));
         }
 
         // 🔹 Obtener parámetro específico del POS

@@ -187,6 +187,43 @@ namespace PrinterApi.Controllers
             }
         }
 
+        [HttpGet("nota-credito/{idNotaCredito}/{idEmpresa}")]
+        public async Task<IActionResult> PrintNotaCredito(
+            int idNotaCredito,
+            int idEmpresa)
+        {
+            if (idNotaCredito <= 0)
+            {
+                return BadRequest("IdNotaCredito inválido");
+            }
+
+            if (idEmpresa <= 0)
+            {
+                return BadRequest("IdEmpresa inválido");
+            }
+
+            try
+            {
+                await _printer.GenerateTicketNotaCredito(
+                    idNotaCredito,
+                    idEmpresa);
+
+                return Ok(new
+                {
+                    success = true,
+                    message = "Nota de crédito enviada a imprimir"
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    success = false,
+                    message = ex.Message
+                });
+            }
+        }
+
         // ============================
         // 🔹 PRINT CIERRE CAJA
         // ============================

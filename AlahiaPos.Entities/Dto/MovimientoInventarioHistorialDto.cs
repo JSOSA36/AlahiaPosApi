@@ -27,6 +27,19 @@ namespace AlahiaPos.Entities.Dto
         public string Usuario { get; set; }
             = string.Empty;
 
+        public string NombreUsuario { get; set; }
+            = string.Empty;
+
+        public int? IdAlmacen { get; set; }
+
+        public string NombreAlmacen { get; set; }
+            = string.Empty;
+
+        public int? IdAlmacenDestino { get; set; }
+
+        public string NombreAlmacenDestino { get; set; }
+            = string.Empty;
+
         public List<
             MovimientoInventarioDetalleDto>
             Detalles

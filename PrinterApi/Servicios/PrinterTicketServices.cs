@@ -1,6 +1,7 @@
 ﻿using ESCPOS_NET;
 using ESCPOS_NET.Emitters;
 using ESCPOS_NET.Utilities;
+using AlahiaPos.Entities.Dto;
 using PrinterApi.Dto;
 using PrinterApi.Dto.PrinterApi.Dto;
 using PrinterApi.Interfaz;
@@ -219,6 +220,7 @@ public async Task GenerateTicketBizcocho(int idFacturaHeader, int idEmpresa)
 
             bool esEncargo = factura.IdTipoDocumentos == 14;
             bool esOrden = factura.IdTipoDocumentos == 10;
+            bool esCotizacion = factura.IdTipoDocumentos == 2;
             bool esFacturaFinal = factura.IdTipoDocumentos == 1;
 
             var emitter = new EPSON();
@@ -306,6 +308,8 @@ public async Task GenerateTicketBizcocho(int idFacturaHeader, int idEmpresa)
                 CenterLine("FACTURA");
             else if (esOrden)
                 CenterLine("ORDEN");
+            else if (esCotizacion)
+                CenterLine("COTIZACION");
             else
                 CenterLine("ENCARGO BIZCOCHO");
             
@@ -321,9 +325,12 @@ public async Task GenerateTicketBizcocho(int idFacturaHeader, int idEmpresa)
             
 
 
-            if (esOrden)
+            if (esOrden || esCotizacion)
             {
-                LeftLine($"#Orden     :0000 {factura.IdFacturaHeader}");
+                LeftLine(
+                    esCotizacion
+                        ? $"#Cotizacion :0000 {factura.IdFacturaHeader}"
+                        : $"#Orden     :0000 {factura.IdFacturaHeader}");
                 
                 LeftLine($"Fecha      : {DateTime.Now:dd/MM/yyyy}");
                 LeftLine($"Hora : {DateTime.Now:hh:mm} {hora}");
@@ -443,8 +450,22 @@ public async Task GenerateTicketBizcocho(int idFacturaHeader, int idEmpresa)
 
         bytes.AddRange(emitter.CenterAlign());
         Line("GRACIAS POR SU PREFERENCIA");
+            Separator();
+            if (factura.IdTipoDocumentos == 1 &&
+     !string.IsNullOrWhiteSpace(factura.Politicas))
+            {
+                bytes.AddRange(emitter.CenterAlign());
+                bytes.AddRange(emitter.SetStyles(PrintStyle.Bold));
+                Line("POLITICAS CORPORATIVAS");
+                bytes.AddRange(emitter.SetStyles(PrintStyle.None));
 
-        bytes.AddRange(emitter.FeedLines(4));
+                Separator();
+
+                WrappedLeft(factura.Politicas, 32);
+                Separator();
+            }
+
+            bytes.AddRange(emitter.FeedLines(4));
         bytes.AddRange(emitter.CashDrawerOpenPin2());
         bytes.AddRange(emitter.FullCut());
 
@@ -611,6 +632,106 @@ public async Task GenerateTicketFacturaCliente(int idFactura)
         catch (Exception ex)
         {
             Console.WriteLine($"Error factura: {ex.Message}");
+        }
+    }
+
+    public async Task GenerateTicketNotaCredito(
+        int idNotaCredito,
+        int idEmpresa)
+    {
+        try
+        {
+            var nota = await _http.GetFromJsonAsync<TicketNotaCreditoDto>(
+                $"{_baseUrl}/api/NotasCredito/ticket/{idNotaCredito}/{idEmpresa}");
+
+            if (nota == null)
+            {
+                Console.WriteLine("Nota de crédito no encontrada.");
+                return;
+            }
+
+            var emitter = new EPSON();
+            var bytes = new List<byte>();
+
+            bytes.AddRange(emitter.Initialize());
+            bytes.AddRange(emitter.CenterAlign());
+            bytes.AddRange(emitter.SetStyles(
+                PrintStyle.Bold | PrintStyle.DoubleWidth));
+            bytes.AddRange(emitter.PrintLine(nota.NombreEmpresa));
+            bytes.AddRange(emitter.SetStyles(PrintStyle.None));
+            bytes.AddRange(emitter.PrintLine(nota.DireccionEmpresa));
+            bytes.AddRange(emitter.PrintLine($"Tel: {nota.TelefonoEmpresa}"));
+            bytes.AddRange(emitter.PrintLine("--------------------------------"));
+            bytes.AddRange(emitter.CenterAlign());
+            bytes.AddRange(emitter.SetStyles(PrintStyle.Bold));
+            bytes.AddRange(emitter.PrintLine("NOTA DE CREDITO"));
+            bytes.AddRange(emitter.SetStyles(PrintStyle.None));
+            bytes.AddRange(emitter.PrintLine("--------------------------------"));
+            bytes.AddRange(emitter.LeftAlign());
+            bytes.AddRange(emitter.PrintLine($"No. NC  : {nota.NumeroDocumento}"));
+
+            if (!string.IsNullOrWhiteSpace(nota.NCF))
+            {
+                bytes.AddRange(emitter.PrintLine($"NCF NC  : {nota.NCF}"));
+            }
+
+            if (!string.IsNullOrWhiteSpace(nota.NCFModificado))
+            {
+                bytes.AddRange(emitter.PrintLine(
+                    $"NCF Mod.: {nota.NCFModificado}"));
+            }
+
+            bytes.AddRange(emitter.PrintLine(
+                $"Factura : {nota.NumeroFactura}"));
+            bytes.AddRange(emitter.PrintLine(
+                $"Fecha   : {nota.Fecha:dd/MM/yyyy HH:mm}"));
+            bytes.AddRange(emitter.PrintLine(
+                $"Cliente : {nota.Cliente}"));
+
+            if (!string.IsNullOrWhiteSpace(nota.RNC))
+            {
+                bytes.AddRange(emitter.PrintLine(
+                    $"RNC     : {nota.RNC}"));
+            }
+
+            bytes.AddRange(emitter.PrintLine("--------------------------------"));
+            bytes.AddRange(emitter.PrintLine("CANT   DESCRIPCION"));
+
+            foreach (var det in nota.Detalles)
+            {
+                bytes.AddRange(emitter.SetStyles(PrintStyle.Bold));
+                bytes.AddRange(emitter.PrintLine(
+                    $"{det.Cantidad}   {det.Descripcion}"));
+                bytes.AddRange(emitter.SetStyles(PrintStyle.None));
+                bytes.AddRange(emitter.PrintLine(
+                    $"       RD$ {det.SubTotal:N2}"));
+            }
+
+            bytes.AddRange(emitter.PrintLine("--------------------------------"));
+            bytes.AddRange(emitter.PrintLine(
+                $"SubTotal RD$ {nota.SubTotal:N2}"));
+            bytes.AddRange(emitter.PrintLine(
+                $"ITBIS    RD$ {nota.TotalItbis:N2}"));
+            bytes.AddRange(emitter.CenterAlign());
+            bytes.AddRange(emitter.SetStyles(
+                PrintStyle.Bold | PrintStyle.DoubleWidth));
+            bytes.AddRange(emitter.PrintLine(
+                $"TOTAL RD$ {nota.Total:N2}"));
+            bytes.AddRange(emitter.SetStyles(PrintStyle.None));
+            bytes.AddRange(emitter.PrintLine("--------------------------------"));
+            bytes.AddRange(emitter.CenterAlign());
+            bytes.AddRange(emitter.PrintLine("DEVOLUCION DE MERCANCIA"));
+            bytes.AddRange(emitter.FeedLines(4));
+            bytes.AddRange(emitter.FullCut());
+
+            RawPrinterHelper.SendBytesToPrinter(
+                _printerFactura,
+                bytes.ToArray());
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(
+                $"Error nota credito: {ex.Message}");
         }
     }
     

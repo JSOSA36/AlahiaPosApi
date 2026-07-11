@@ -79,7 +79,9 @@ namespace AlahiaPosApi.Controllers
 
             string? motivo,
 
-            int? idUsuario
+            int? idUsuario,
+
+            int? idProducto
         )
         {
 
@@ -100,7 +102,9 @@ namespace AlahiaPosApi.Controllers
 
                         motivo,
 
-                        idUsuario
+                        idUsuario,
+
+                        idProducto
                     );
 
                 return Ok(result);

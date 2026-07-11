@@ -60,19 +60,41 @@ namespace AlahiaPosApi.Controllers
             if (pago == null)
                 return BadRequest("Datos del pago inválidos");
 
-            await _pagosService.RegistrarPagoFactura(IdFactura, pago);
-            return Ok(new { message = "Pago registrado y factura actualizada correctamente" });
+            try
+            {
+                await _pagosService.RegistrarPagoFactura(IdFactura, pago);
+                return Ok(new { message = "Pago registrado y factura actualizada correctamente" });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
         }
 
         // 🔹 PUT: api/PagoFacturasClientes/5
         [HttpPut("{IdFacturaHeader}")]
-        public IActionResult Put(int IdFacturaHeader, [FromBody] PagosFacturasClientes pago)
+        public async Task<IActionResult> Put(int IdFacturaHeader, [FromBody] PagosFacturasClientes pago)
         {
             if (pago == null)
                 return BadRequest("Datos inválidos");
 
-            _pagosService.RegistrarPagoFactura(IdFacturaHeader, pago);
-            return NoContent();
+            try
+            {
+                await _pagosService.RegistrarPagoFactura(IdFacturaHeader, pago);
+                return NoContent();
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
         }
 
         // 🔹 DELETE: api/PagoFacturasClientes/5

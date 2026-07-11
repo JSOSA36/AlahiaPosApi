@@ -90,6 +90,12 @@ namespace AlahiaPosApi.Mapper
             CreateMap<Parametros, ParametrosDto>();
             CreateMap<ParametrosDto, Parametros>();
 
+            CreateMap<PlantillasDocumentosClinicos, PlantillaDocumentoClinicoDto>();
+            CreateMap<PlantillaDocumentoClinicoDto, PlantillasDocumentosClinicos>();
+
+            CreateMap<DocumentosClinicos, DocumentoClinicoDto>();
+            CreateMap<DocumentoClinicoDto, DocumentosClinicos>();
+
 
         }
     }

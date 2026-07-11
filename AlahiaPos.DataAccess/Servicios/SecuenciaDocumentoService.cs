@@ -9,6 +9,8 @@ namespace AlahiaPos.DataAccess.Servicios
     public class SecuenciaDocumentoService
         : ISecuenciaDocumentoService
     {
+        private const int DigitosSecuencia = 4;
+
         private readonly IRepository<SecuenciaDocumentos>
             _repository;
 
@@ -57,12 +59,10 @@ namespace AlahiaPos.DataAccess.Servicios
             // =====================================================
 
             string numeroDocumento =
-
-                $"{secuencia.Prefijo}" +
-
+                $"{NormalizarPrefijo(secuencia.Prefijo)}" +
                 secuencia.SecuenciaActual
-                .ToString()
-                .PadLeft(4, '0');
+                    .ToString()
+                    .PadLeft(DigitosSecuencia, '0');
 
             // =====================================================
             // 🔥 UPDATE
@@ -78,6 +78,31 @@ namespace AlahiaPos.DataAccess.Servicios
             // =====================================================
 
             return numeroDocumento;
+        }
+
+        private static string NormalizarPrefijo(string? prefijo)
+        {
+            if (string.IsNullOrWhiteSpace(prefijo))
+            {
+                return string.Empty;
+            }
+
+            prefijo = prefijo.Trim();
+
+            var lastDash = prefijo.LastIndexOf('-');
+            if (lastDash < 0)
+            {
+                return prefijo;
+            }
+
+            var suffix = prefijo[(lastDash + 1)..];
+
+            if (suffix.Length > 0 && suffix.All(c => c == '0'))
+            {
+                return prefijo[..(lastDash + 1)];
+            }
+
+            return prefijo;
         }
     }
 }

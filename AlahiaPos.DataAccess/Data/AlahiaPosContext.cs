@@ -76,6 +76,12 @@ namespace AlahiaPos.DataAccess.Data
         public DbSet<Parametros> Parametros { get; set; }
         public DbSet<LavadorConsumo> LavadorConsumo { get; set; }
         public DbSet<AreaNegocio> AreaNegocio { get; set; }
+        public DbSet<Almacen> Almacenes { get; set; }
+        public DbSet<AlmacenExistencia> AlmacenExistencia { get; set; }
+        public DbSet<NotasCredito> NotasCredito { get; set; }
+        public DbSet<NotasCreditoDetalle> NotasCreditoDetalle { get; set; }
+        public DbSet<PlantillasDocumentosClinicos> PlantillasDocumentosClinicos { get; set; }
+        public DbSet<DocumentosClinicos> DocumentosClinicos { get; set; }
 
         // ==============================
         // 🔧 CONFIGURACIONES RELACIONES
@@ -122,6 +128,13 @@ namespace AlahiaPos.DataAccess.Data
             modelBuilder.Entity<SecuenciaECF>()
                 .HasIndex(s => new { s.IdEmpresa, s.TipoNCF })
                 .IsUnique();
+
+            // 🔥 Documentos clínicos → Cliente (PK: IDCliente)
+            modelBuilder.Entity<DocumentosClinicos>()
+                .HasOne(d => d.Cliente)
+                .WithMany()
+                .HasForeignKey(d => d.IdCliente)
+                .HasPrincipalKey(c => c.IDCliente);
         }
     }
 }

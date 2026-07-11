@@ -14,7 +14,7 @@ namespace AlahiaPos.Entities.Dto
         public int IdEmpresa { get; set; }
         public string? Plazo { get; set; } = "";
         public string? RNC { get; set; }
-
+        public string? Politicas { get; set; }
         public string? NombreEmpresa { get; set; }
         public string? cliente { get; set; }
         public string? celular { get; set; }

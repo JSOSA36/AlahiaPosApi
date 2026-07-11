@@ -51,6 +51,8 @@ builder.Services.AddScoped<ICocinas, CocinaServices>();
 builder.Services.AddScoped<IParametroConfig, IParametroCOnfigServices>();
 builder.Services.AddScoped<IValidateIMpuesto, ValidateImpuestos>();
 builder.Services.AddScoped<IAreas, AreaServices>();
+builder.Services.AddScoped<IAlmacenes, AlmacenesServices>();
+builder.Services.AddScoped<IAlmacenExistencia, AlmacenExistenciaServices>();
 builder.Services.AddScoped<IEmpleadoAreaComisionService, EmpleadoAreaComisionService>();
 builder.Services.AddScoped<ICitas, CitaServices>();
 builder.Services.AddScoped<IHorariosEstilista, HorarioEstilistaServices>();
@@ -79,12 +81,15 @@ builder.Services.AddScoped<IMetodoPagoCuentaService, MetodoPagoCuentaService>();
 builder.Services.AddScoped<
     IMovimientosInventarioService,
     MovimientosInventarioServices>();
+builder.Services.AddScoped<INotasCredito, NotasCreditoServices>();
 builder.Services.AddScoped<IUsuarios, UsuariosService>();
 builder.Services.AddScoped<IPerfiles, PerfilesService>();
 builder.Services.AddScoped<IPerfilRoles, PerfilRolesService>();
 builder.Services.AddScoped<ILoginService, LoginService>();
 builder.Services.AddScoped<IEmpleados, EmpleadosService>();
 builder.Services.AddScoped<IParametrosService, ParametrosService>();
+builder.Services.AddScoped<IPlantillasDocumentosClinicos, PlantillasDocumentosClinicosService>();
+builder.Services.AddScoped<IDocumentosClinicos, DocumentosClinicosService>();
 builder.Services.AddScoped<IPrinterTicket, PrinterTicketServices>();
 
 

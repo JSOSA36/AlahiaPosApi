@@ -29,6 +29,8 @@ public class FacturaDetalles : BaseEntity
 
     public decimal PrecioOferta { get; set; }
 
+    public decimal CantidadDevuelta { get; set; }
+
     public int? IdEmpleadoComision { get; set; }
 
     public bool PrintLavador { get; set; }

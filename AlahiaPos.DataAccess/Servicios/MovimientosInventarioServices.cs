@@ -21,6 +21,15 @@ namespace AlahiaPos.DataAccess.Servicios
         IRepository<Productos>
             _productos;
 
+        IAlmacenExistencia
+            _almacenExistencia;
+
+        IAlmacenes
+            _almacenes;
+
+        IRepository<Usuarios>
+            _usuarios;
+
         // ======================================================
         // 🔥 CONSTRUCTOR
         // ======================================================
@@ -32,7 +41,13 @@ namespace AlahiaPos.DataAccess.Servicios
             IRepository<MovimientosInventarioDetalle>
                 detalleRepository,
 
-            IRepository<Productos> productos
+            IRepository<Productos> productos,
+
+            IAlmacenExistencia almacenExistencia,
+
+            IAlmacenes almacenes,
+
+            IRepository<Usuarios> usuarios
         )
         {
             _repository = repository;
@@ -40,6 +55,39 @@ namespace AlahiaPos.DataAccess.Servicios
             _detalleRepository = detalleRepository;
 
             _productos = productos;
+
+            _almacenExistencia = almacenExistencia;
+
+            _almacenes = almacenes;
+
+            _usuarios = usuarios;
+        }
+
+        private static string ResolverNombreUsuario(
+            Usuarios? usuario)
+        {
+            if (usuario == null)
+            {
+                return "Usuario";
+            }
+
+            if (
+                usuario.Empleado != null
+                &&
+                !string.IsNullOrWhiteSpace(
+                    usuario.Empleado.Nombre)
+            )
+            {
+                return usuario.Empleado.Nombre.Trim();
+            }
+
+            if (!string.IsNullOrWhiteSpace(
+                usuario.UserName))
+            {
+                return usuario.UserName.Trim();
+            }
+
+            return "Usuario";
         }
 
         // ======================================================
@@ -66,6 +114,58 @@ namespace AlahiaPos.DataAccess.Servicios
                 {
                     throw new Exception(
                         "Debe agregar productos.");
+                }
+
+                if (!movimiento.IdAlmacen.HasValue ||
+                    movimiento.IdAlmacen.Value <= 0)
+                {
+                    var principal =
+                        await _almacenes.GetAlmacenPrincipal(
+                            movimiento.IdEmpresa
+                        );
+
+                    if (principal == null)
+                    {
+                        throw new Exception(
+                            "Debe seleccionar un almacén.");
+                    }
+
+                    movimiento.IdAlmacen =
+                        principal.IdAlmacen;
+                }
+
+                var esTransferencia =
+                    movimiento.TipoMovimiento
+                    == "TRANSFERENCIA";
+
+                if (esTransferencia)
+                {
+                    if (
+                        !movimiento.IdAlmacenDestino.HasValue
+                        ||
+                        movimiento.IdAlmacenDestino.Value <= 0
+                    )
+                    {
+                        throw new Exception(
+                            "Debe seleccionar el almacén destino.");
+                    }
+
+                    if (
+                        movimiento.IdAlmacenDestino.Value
+                        ==
+                        movimiento.IdAlmacen.Value
+                    )
+                    {
+                        throw new Exception(
+                            "El almacén origen y destino deben ser diferentes.");
+                    }
+
+                    if (string.IsNullOrWhiteSpace(
+                        movimiento.Motivo))
+                    {
+                        movimiento.Motivo =
+                            "TRANSFERENCIA";
+                    }
                 }
 
                 // =============================================
@@ -102,77 +202,84 @@ namespace AlahiaPos.DataAccess.Servicios
                             $"Producto no encontrado: {item.IdProducto}");
                     }
 
-                    // =========================================
-                    // 🔥 STOCK ACTUAL
-                    // =========================================
+                    var existencia =
+                        await _almacenExistencia.GetExistencia(
+                            movimiento.IdAlmacen.Value,
+                            item.IdProducto,
+                            movimiento.IdEmpresa
+                        );
 
-                    decimal stockActual =
-                        Convert.ToDecimal(
-                            producto.Cantidad);
+                    decimal stockAlmacen =
+                        existencia?.Cantidad ?? 0;
 
-                    // =========================================
-                    // 🔥 STOCK ANTERIOR
-                    // =========================================
+                    decimal stockTotal =
+                        await _almacenExistencia.GetTotalPorProducto(
+                            item.IdProducto,
+                            movimiento.IdEmpresa
+                        );
 
-                    item.StockAnterior =
-                        stockActual;
+                    item.StockAnterior = stockTotal;
 
-                    // =========================================
-                    // 🔥 ENTRADA
-                    // =========================================
-
-                    if (
-                        movimiento.TipoMovimiento
-                        == "ENTRADA"
-                    )
+                    if (esTransferencia)
                     {
-
-                        producto.Cantidad =
-                            stockActual
-                            +
-                            item.Cantidad;
-                    }
-
-                    // =========================================
-                    // 🔥 SALIDA
-                    // =========================================
-
-                    else if (
-                        movimiento.TipoMovimiento
-                        == "SALIDA"
-                    )
-                    {
-
-                        decimal nuevoStock =
-                            stockActual
-                            -
-                            item.Cantidad;
-
-                        // =====================================
-                        // 🔥 VALIDAR NEGATIVO
-                        // =====================================
-
-                        if (nuevoStock < 0)
+                        if (
+                            stockAlmacen - item.Cantidad < 0
+                        )
                         {
                             throw new Exception(
-                                $"Stock insuficiente para: {producto.Nombre}");
+                                $"Stock insuficiente en el almacén origen para: {producto.Nombre}");
                         }
 
-                        producto.Cantidad =
-                            nuevoStock;
+                        await _almacenExistencia.AjustarExistencia(
+                            movimiento.IdAlmacen.Value,
+                            item.IdProducto,
+                            movimiento.IdEmpresa,
+                            -item.Cantidad
+                        );
+
+                        await _almacenExistencia.AjustarExistencia(
+                            movimiento.IdAlmacenDestino.Value,
+                            item.IdProducto,
+                            movimiento.IdEmpresa,
+                            item.Cantidad
+                        );
+
+                        item.StockNuevo =
+                            await _almacenExistencia.GetTotalPorProducto(
+                                item.IdProducto,
+                                movimiento.IdEmpresa
+                            );
+                    }
+                    else
+                    {
+                    decimal delta =
+                        movimiento.TipoMovimiento == "ENTRADA"
+                            ? item.Cantidad
+                            : -item.Cantidad;
+
+                    if (
+                        movimiento.TipoMovimiento == "SALIDA"
+                        &&
+                        stockAlmacen - item.Cantidad < 0
+                    )
+                    {
+                        throw new Exception(
+                            $"Stock insuficiente en el almacén para: {producto.Nombre}");
                     }
 
-                    // =========================================
-                    // 🔥 STOCK NUEVO
-                    // =========================================
+                    await _almacenExistencia.AjustarExistencia(
+                        movimiento.IdAlmacen.Value,
+                        item.IdProducto,
+                        movimiento.IdEmpresa,
+                        delta
+                    );
 
                     item.StockNuevo =
-                        Convert.ToDecimal(
-                            producto.Cantidad);
-
-                    // =========================================
-                    // 🔥 SUBTOTAL
-                    // =========================================
+                        await _almacenExistencia.GetTotalPorProducto(
+                            item.IdProducto,
+                            movimiento.IdEmpresa
+                        );
+                    }
 
                     item.SubTotal =
                         Convert.ToDecimal(
@@ -180,14 +287,6 @@ namespace AlahiaPos.DataAccess.Servicios
                         )
                         *
                         item.Cantidad;
-
-                    // =========================================
-                    // 🔥 UPDATE PRODUCTO
-                    // =========================================
-
-                    _productos.Update(
-                        producto.IdProducto,
-                        producto);
                 }
 
                 // =============================================
@@ -248,7 +347,9 @@ namespace AlahiaPos.DataAccess.Servicios
 
      string? motivo,
 
-     int? idUsuario
+     int? idUsuario,
+
+     int? idProducto
  )
         {
 
@@ -312,6 +413,20 @@ namespace AlahiaPos.DataAccess.Servicios
 
                             x.IdUsuario
                             == idUsuario
+                        )
+
+                        &&
+
+                        (
+                            !idProducto.HasValue
+                            ||
+                            idProducto.Value <= 0
+                            ||
+                            x.Detalles.Any(
+                                d =>
+                                    d.IdProducto
+                                    == idProducto.Value
+                            )
                         ),
 
                     // =====================================
@@ -319,6 +434,7 @@ namespace AlahiaPos.DataAccess.Servicios
                     // =====================================
 
                     "Usuario",
+                    "Usuario.Empleado",
                     "Detalles",
                     "Detalles.Producto"
                 );
@@ -327,13 +443,68 @@ namespace AlahiaPos.DataAccess.Servicios
             // 🔥 DTO
             // =============================================
 
-            return result
+            var almacenes =
+                (await _almacenes.GetAllAlmacenes(idEmpresa))
+                .ToDictionary(
+                    x => x.IdAlmacen,
+                    x => x.Nombre
+                );
 
+            var lista =
+                result
                 .OrderByDescending(x => x.Fecha)
+                .ToList();
 
+            var idsUsuarios =
+                lista
+                .Where(
+                    x =>
+                        x.IdUsuario.HasValue
+                        &&
+                        x.IdUsuario.Value > 0
+                )
+                .Select(x => x.IdUsuario!.Value)
+                .Distinct()
+                .ToList();
+
+            var mapaUsuarios =
+                new Dictionary<int, string>();
+
+            if (idsUsuarios.Any())
+            {
+                var usuariosDb =
+                    await _usuarios
+                    .GetAllByExpresionAsync(
+                        u =>
+                            idsUsuarios.Contains(
+                                u.IdUsuario
+                            ),
+                        "Empleado"
+                    );
+
+                mapaUsuarios =
+                    usuariosDb.ToDictionary(
+                        u => u.IdUsuario,
+                        ResolverNombreUsuario
+                    );
+            }
+
+            return lista
                 .Select(x =>
+                {
+                    var nombreUsuario =
+                        x.IdUsuario.HasValue
+                        &&
+                        mapaUsuarios.TryGetValue(
+                            x.IdUsuario.Value,
+                            out var nombreMapa
+                        )
+                        ?
+                        nombreMapa
+                        :
+                        ResolverNombreUsuario(x.Usuario);
 
-                    new MovimientoInventarioHistorialDto
+                    return new MovimientoInventarioHistorialDto
                     {
                         Id =
                             x.Id,
@@ -357,9 +528,38 @@ namespace AlahiaPos.DataAccess.Servicios
                             x.IdUsuario,
 
                         Usuario =
-                            x.Usuario != null
+                            nombreUsuario,
+
+                        NombreUsuario =
+                            nombreUsuario,
+
+                        IdAlmacen =
+                            x.IdAlmacen,
+
+                        NombreAlmacen =
+                            x.IdAlmacen.HasValue
+                            &&
+                            almacenes.TryGetValue(
+                                x.IdAlmacen.Value,
+                                out var nombreAlmacen
+                            )
                             ?
-                            x.Usuario.UserName
+                            nombreAlmacen
+                            :
+                            "",
+
+                        IdAlmacenDestino =
+                            x.IdAlmacenDestino,
+
+                        NombreAlmacenDestino =
+                            x.IdAlmacenDestino.HasValue
+                            &&
+                            almacenes.TryGetValue(
+                                x.IdAlmacenDestino.Value,
+                                out var nombreDestino
+                            )
+                            ?
+                            nombreDestino
                             :
                             "",
 
@@ -397,9 +597,9 @@ namespace AlahiaPos.DataAccess.Servicios
                                 }
 
                             ).ToList()
-                    }
-
-                ).ToList();
+                    };
+                })
+                .ToList();
         }
         public async Task<MovimientosInventario?>
             ObtenerPorId(int id)

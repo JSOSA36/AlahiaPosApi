@@ -13,7 +13,7 @@ namespace AlahiaPos.Entities.Domain
         public bool PagadoServicio { get; set; } = false;
 
         public DateTime? FechaUltimoPago { get; set; }
-
+        public string? Politicas { get; set; }
         public DateTime? FechaProximoPago { get; set; }
 
         [MaxLength(20)]
