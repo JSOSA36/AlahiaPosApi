@@ -1,0 +1,852 @@
+
+
+===== PAGE 1/49 =====
+
+Instructivo para el uso del Facturador 
+Gratuito de Facturación Electrónica (FE)
+FACTURACIÓN ELECTRÓNICA
+REPÚBLICA DOMINICANA
+Versión 2.0
+Julio 2026
+
+===== PAGE 2/49 =====
+
+GLOSARIO
+PROPÓSITO  
+I. SOLICITUD Y USO DEL FACTURADOR GRATUITO DE FACTURACIÓN ELECTRÓNICA (FE) 
+II. SOLICITUD DE CERTIFICADO DIGITAL GRATUITO 
+III. USO DEL FACTURADOR GRATUITO
+IV. EMISIÓN DE UN COMPROBANTE FISCAL ELECTRÓNICO (e-CF) 
+V. CONSULTAS EN EL FACTURADOR GRATUITO DE FE 
+3
+6
+8
+17
+28
+31
+42
+CONTENIDO
+
+===== PAGE 3/49 =====
+
+3
+Certificado Digital: es un documento emitido y firmado digitalmente por una entidad 
+de certificación, que identifica a un suscriptor durante el periodo de vigencia del 
+certificado y que se constituye en prueba de que dicho suscriptor es fuente u 
+originador del contenido de un documento digital o mensaje de datos que incorpore 
+su certificado asociado.
+Código de Seguridad: corresponde a los primeros seis (6) dígitos del hash generado 
+en el SignatureValue de la firma digital del e-CF.
+Código QR (en inglés “Quick Response”, “respuesta rápida”): este es colocado en el 
+lado inferior izquierdo de la Representación Impresa (RI) de un Comprobante Fiscal 
+Electrónico (e-CF), a través del cual se puede validar un e-CF, utilizando un lector de 
+códigos QR.
+Comprobante Fiscal Electrónico (e-CF): es el documento electrónico firmado 
+digitalmente que acredita la transferencia de bienes, entrega en uso o la prestación de 
+servicios, debiendo cumplir siempre con los requisitos establecidos en la normativa 
+dispuesta para estos fines.
+Delegación: es la asignación que hace un contribuyente a una persona física, 
+autorizándolo a realizar acciones en su nombre respecto a la Facturación Electrónica.  
+Delegado: es la persona física a la cual se le asigna un rol de Facturación Electrónica. 
+Estado en DGII: es la respuesta de validación de Impuestos Internos para el emisor del 
+e-CF, que permiten identificar su validez para fines tributarios.
+Facturador Gratuito (FG) de Facturación Electrónica (FE): es la herramienta que 
+permite la emisión de e-CF, conforme el modelo operativo de Facturación Electrónica 
+establecido en República Dominicana, la cual es proporcionada por Impuestos Internos 
+de manera gratuita a aquellos contribuyentes que deseen facturar electrónicamente, 
+operando desde su computador con servicios de internet.
+FE: Facturación Electrónica.
+GLOSARIO
+
+===== PAGE 4/49 =====
+
+4
+Hash: cadena de caracteres con una longitud fija que identifica o representa datos 
+(clave, texto, documento, foto) que fueron transformados mediante una función 
+informática.
+ID Extranjero: corresponde al número de identificación cuando el comprador es 
+extranjero y no tiene RNC/Cédula.
+Menú de Facturación Electrónica: es el menú habilitado en la Oficina Virtual (OFV) 
+para el contribuyente autorizado como Emisor Electrónico o el delegado poder realizar 
+acciones y/o consultas conforme a su perfil. 
+Número de Comprobante Fiscal Electrónico (e-NCF): es la secuencia autorizada por 
+la DGII según el tipo de e-CF a la que corresponda.  
+Recepción de e/uni2010CF: servicio web responsable de recibir un e/uni2010CF tentativo (XML firmado 
+digitalmente) y un token asociado a una sesión válida y en respuesta retornar un 
+objeto que contiene un string denominado TrackId a modo de acuse de recibo, con el 
+cual, el contribuyente podrá consultar el estado de su validación. 
+ 
+Representación Impresa (RI): es la versión impresa en papel del formato XML de un 
+e-CF, que será entregada a receptores no electrónicos para que puedan reportar sus 
+transacciones de compras ante la DGII, sustentar crédito fiscal y conservar dichos 
+documentos según lo establece la legislación vigente, y a quienes lo requieran por 
+tener ventas de bienes que incluyen transportación. A tales fines, esta debe contener 
+todos los campos establecidos como obligatorios por el Decreto 254- 06, según las 
+especificaciones de la Norma General 06-2018. 
+Representante: es la persona autorizada para acceder a las informaciones y 
+transacciones disponibles para la cuenta de OFV del contribuyente y previamente 
+registrado. 
+RNC Empresa: para fines de acceder al portal del Facturador Gratuito, este 
+corresponde al RNC de la persona física o jurídica que ha sido autorizada al uso de 
+esta herramienta.
+RNC/Cédula delegado: para fines de acceder al portal del Facturador Gratuito, este 
+corresponde al RNC o Cédula de la persona física que se le ha asignado este rol.
+Rol de Administrador: este rol permite al delegado contar con la autorización para 
+realizar delegaciones a través de la OFV de su empresa. 
+
+===== PAGE 5/49 =====
+
+Rol de Aprobador Comercial: este rol permite al delegado contar con la autorización 
+para poder aceptar las Aprobaciones Comerciales recibidas de terceros, respecto a 
+e-CF que les han emitido a su empresa. 
+Rol de Facturación Electrónica: los roles existentes respecto a Facturación Electrónica 
+son de Solicitante, Firmante, Aprobador Comercial y de Administrador, conforme sea 
+requerido. 
+Rol de Solicitante: este rol permite al delegado solicitar las secuencias de los 
+comprobantes fiscales electrónicos de la empresa desde su oficina virtual. 
+Rol de Firmante: este rol permite al delegado contar con la autorización para firmar 
+los e-CF de su empresa. 
+Servicio Web (Web Service, en inglés): es un sistema de software que permite el 
+intercambio de datos en redes de ordenadores como internet, mediante el uso de un 
+conjunto de protocolos y estándares.
+SignatureValue: elemento dentro de una firma digital que contiene su valor real 
+codificado en Base64 tomando como referencia los parámetros especificados en el 
+elemento SignedInfo.
+XML: es un lenguaje estándar que estructura el intercambio de información entre 
+diferentes plataformas, permitiendo la organización y el etiquetado de documentos. 
+Algunos de sus campos de aplicación son las bases de datos, los documentos de texto, 
+las hojas de cálculo y las páginas web.
+5
+
+===== PAGE 6/49 =====
+
+El presente documento ha sido elaborado con el fin de instruir a los contribuyentes 
+acerca de las funcionalidades y uso que posee la herramienta Facturador Gratuito de 
+Facturación Electrónica, desde su solicitud hasta la generación de su certificado 
+digital, así como la manera correcta de realizar las acciones requeridas en la misma, 
+por parte de sus usuarios. 
+PROPÓSITO 
+6
+
+===== PAGE 7/49 =====
+
+7
+REQUISITOS PARA OPTAR POR EL USO DEL FACTURADOR 
+GRATUITO DE FACTURACIÓN ELECTRÓNICA
+Estar inscrito en el Registro Nacional de Contribuyentes (RNC).
+Tener autorización para emitir Números de Comprobantes Fiscales (Alta NCF).
+Poseer clave de acceso a la Oficina Virtual (OFV).
+Disponer de un computador con servicio de internet.
+No haber sido autorizado para emitir e-CF a través de un sistema diferente al FG.
+Disponer certificado digital para procesos tributarios.
+
+===== PAGE 8/49 =====
+
+SOLICITUD Y USO DEL FACTURADOR GRATUITO DE
+FACTURACIÓN ELECTRÓNICA (FE)
+8
+I  SOLICITUD FACTURADOR GRATUITO
+Paso 1. Ingrese a su Oficina Virtual, diríjase al menú “Solicitudes” y seleccione 
+“Facturador Gratuito”. Una vez allí complete el formulario de solicitud con los 
+datos de su RNC y de su representante1, este actuará ante esta Dirección 
+General como: administrador de contribuyente, firmante autorizado y/o 
+aprobador comercial2.
+1 El formulario de solicitud solo puede ser completado por un contribuyente jurídico o una persona física residente legal
+en República Dominicana, no está habilitado para extranjeros. Un extranjero sí puede ser representante de un contribuyente.
+El representante a colocar en la solicitud debe tener alguna de estas relaciones: Socio, Socio domiciliado en el exterior, 
+administrador, accionista, miembro, gestor fiduciario, socio gestor y/o usuario administrador de e-CF.
+2 En caso de que el formulario este completado correctamente y los datos sean verificados por el sistema, procede con el
+paso 2, de lo contrario revisar y enviar nuevamente.
+
+
+===== PAGE 9/49 =====
+
+9
+Paso 2. El Representante seleccionado debe ingresar a su Oficina Virtual para 
+proceder a aceptar los Roles que le asignaron en el formulario de solicitud.
+2.1 En caso de que el contribuyente sea persona física y se haya seleccionado 
+como su propio representante, los roles se colocan de manera automática sin 
+necesidad de aceptarlos, por lo que debe continuar al paso 4.
+2.2 En caso de que el contribuyente sea persona jurídica, en el Buzón OFV del 
+Representante, debe seleccionar los mensajes con el asunto: “Delegación de Rol 
+de Facturación Electrónica”, para Aceptar o Rechazar el rol de administrador de 
+contribuyente, firmante autorizado y/o aprobador comercial.
+
+
+===== PAGE 10/49 =====
+
+10
+
+
+===== PAGE 11/49 =====
+
+11
+Paso 3. Posterior a la aceptación de los roles de Administrador y Firmante, el 
+representante debe a ingresar a su Buzón OFV y seleccionar el mensaje con el 
+asunto: “Solicitud de Creación de Credenciales Facturador Gratuito” y dar clic en 
+el enlace: “Click aquí para crear el usuario”, este redirecciona al portal web del 
+Facturador Gratuito donde procederá con la creación de usuario.
+
+
+===== PAGE 12/49 =====
+
+12
+Importante: En caso de que el Representante ya cuente con acceso previo a la 
+herramienta (por ejemplo, por representar a otro contribuyente), recibirá un 
+mensaje informativo notificándole que se ha relacionado un nuevo contribuyente a 
+su usuario, pudiendo acceder a la información de este con las mismas credenciales 
+previamente asignadas.
+
+===== PAGE 13/49 =====
+
+Tener 8 caracteres o más.
+Incluir letras y números.
+No ser igual al usuario o RNC.
+Al menos una letra mayúscula.
+Al menos un carácter especial (ej: @, #, $, *).
+Algunos caracteres especiales no son permitidos.
+Paso 4. Haciendo uso de los datos de registro, el contribuyente debe ingresar a 
+su sesión en el Facturador Gratuito de Facturación Electrónica (FE) y debe 
+proceder en aceptar los términos y condiciones del uso del Facturador Gratuito.
+13
+Instrucciones para crear la contraseña para uso del Facturador Gratuito
+Requisitos de la Contraseña
+
+===== PAGE 14/49 =====
+
+14
+En caso de que los representantes de los contribuyentes necesiten generar sus 
+credenciales por primera vez, así como aquellos cuyo enlace haya caducado, 
+pueden utilizar la opción “¿No recibiste cómo crear tus accesos?” en el Login de la 
+Herramienta del Facturador Gratuito DGII.
+En caso de que no pueda visualizar los botones “Revisar más tarde” y “Aceptar” 
+en su pantalla, proceda a reducir el zoom de su navegador para visualizarlos 
+correctamente.
+Nota:
+
+===== PAGE 15/49 =====
+
+15
+Existen dos alternativas para gestionar la contraseña: 
+“¿No recibiste cómo crear tus accesos?”  Para generar las credenciales por 
+primera vez y para aquellos cuyo enlace haya caducado.
+“¿Has olvidado tu contraseña?”.
+Para la recuperación de la contraseña.
+Cuando el usuario ya tiene sus credenciales, pero ha olvidado su contraseña, debe 
+dirigirse a la otra opción disponible ¿Has olvidado tu contraseña? y le presenta un mensaje 
+en el mensaje de “error” indicando lo siguiente:
+
+===== PAGE 16/49 =====
+
+16
+
+
+===== PAGE 17/49 =====
+
+2.1. El caso de que el representante sea extranjero actualmente recibirá el siguiente 
+mensaje al intentar continuar:
+17
+II.      SOLICITUD DE CERTIFICADO DIGITAL GRATUITO
+Paso 1. En caso de que el contribuyente no posea Certificado Digital, puede hacer 
+uso de la facilidad “Solicitar Certificado Digital”. Al seleccionarla, será redirigido al 
+portal correspondiente para dar inicio al proceso de solicitud. En caso de ya poseer 
+Certificado Digital para Procesos Tributarios, continue en el paso 1 del título III.
+Paso 2. Leer y aceptar los términos y condiciones del contrato para obtención de 
+Certificado Digital Gratuito 3.
+3 El uso del Certificado Digital que provee gratuitamente esta Dirección General es de uso exclusivo para 
+usuarios del Facturador Gratuito.
+
+===== PAGE 18/49 =====
+
+18
+No fue posible continuar con la solicitud, favor validar que su identificación sea 
+nacional y de necesitar asistencia adicional  escribirnos a 
+facturacionelectronica@dgii.gov.do
+Paso 3. Completar el formulario de solicitud con los datos del solicitante, 
+tomando en cuenta lo siguiente:
+A. Precarga de los datos del representante (Ciudadano desde la 
+Junta Central Electoral, JCE).
+B. Completar los datos restantes  “Teléfono”, “Correo”, 
+“Contraseña certificado” y “Repetición contraseña”.
+C. La contraseña deberá cumplir con el estándar de 8-18 caracteres 
+entre letras mayúsculas, minúsculas y números adicional no poseer 
+caracteres especiales.. 
+D. Alerta de preservación de contraseña ya que a partir del próximo 
+paso no podrá realizar cambio a la misma (contraseña).
+A.
+B.
+C.
+D.
+
+===== PAGE 19/49 =====
+
+19
+Paso 4. A continuación, se presenta el proceso de verificación de identidad. 
+Para completarlo, el solicitante deberá escanear el código QR haciendo uso de 
+un dispositivo móvil y seguir las instrucciones indicadas, que incluyen capturar 
+imágenes de la parte delantera y reverso de su cédula física, así como grabar 
+un video de su rostro siguiendo las direcciones señaladas.4
+4 Si el usuario actualiza la página, cierra sesión o sale del flujo de solicitud, al volver el flujo se mantendrá en el 
+paso donde quedo.
+
+
+===== PAGE 20/49 =====
+
+20
+
+
+===== PAGE 21/49 =====
+
+21
+Paso 5. Una vez se culmina de manera exitosa el proceso de verificación 
+de identidad, el solicitante deberá proceder con la firma del contrato de 
+solicitud de Certificado Digital, para esto debe agotar los siguientes 
+pasos:
+4.1. En caso de que así lo desee, es posible cancelar la solicitud previo 
+a completar la verificación de identidad del solicitante.
+
+
+===== PAGE 22/49 =====
+
+22
+Dar click en “Firma Contrato” y posteriormente dar click en “Starta)
+
+
+===== PAGE 23/49 =====
+
+23
+El contribuyente recibirá en el correo electrónico registrado en la 
+solicitud un código OTP de seis (6) dígitos, el cual deberá utilizar 
+como método de verificación para firmar electrónicamente el 
+contrato. Una vez completada esta acción, regresará 
+automáticamente al flujo de la herramienta para continuar con la 
+descarga del certificado.
+b)
+
+
+===== PAGE 24/49 =====
+
+24
+Visualiza una pantalla de espera mientras se encuentra 
+generándose el archivo correspondiente al certificado y una vez se 
+concluya la descarga del certificado, se podrá visualizar habilitado 
+el botón de descarga una vez la generación de este haya concluido.
+c)
+
+
+===== PAGE 25/49 =====
+
+25
+El usuario podrá concluir el proceso accionando el botón “Finalizar”, 
+lo cual lo redireccionará a la página principal del Facturador 
+Gratuito. En esta sección, podrá visualizar las informaciones 
+relacionadas con el certificado obtenido, tales como el “Titular”, 
+“Fecha de emisión”, “Fecha de expiración” y un botón habilitado 
+para volver a “Descargar el certificado”.
+d)
+El Certificado Digital proporcionado, debe utilizarse en el mismo formato en 
+que fue descargado (.p12), al momento de firmar un e-CF.
+Nota:
+Archivo formato .p12 que descarga:
+
+
+===== PAGE 26/49 =====
+
+26
+Para poder facturar electrónicamente, el contribuyente debe realizar la solicitud 
+de las secuencias de los números de comprobantes fiscales electrónicos 
+(e-NCF) en la Oficina Virtual (OFV).
+Nota:
+Carga del certificado en el Facturador Gratuito al momento de emitir sus e-CFs:
+Acción incorrecta sobre el archivo del certificado luego de descargado:
+
+
+===== PAGE 27/49 =====
+
+27
+Pasos para solicitar e-NCF por la OFV: 
+1. Ingrese con su usuario y clave a su Oficina Virtual.  
+2. En el menú Solicitudes, seleccione la opción Comprobantes Fiscales.
+3. Complete el formulario que le aparecerá en la pantalla y presione el botón 
+Agregar.
+4. Presione el botón Enviar Solicitud.
+5. Visualizará en pantalla un mensaje indicándole que su solicitud está 
+siendo validada y el número de la misma para fines de seguimiento.
+Tiempo de Respuesta: 24 horas
+
+===== PAGE 28/49 =====
+
+28
+Este sitio utiliza las 
+cookies del navegador 
+para su correcto 
+funcionamiento. Por 
+favor realizar clic en 
+Aceptar para confirmar.
+III. USO DEL FACTURADOR GRATUITO
+Paso 1. Ingrese al siguiente enlace: Facturador Gratuito.
+Paso 2. Digite “RNC Empresa”, “RNC/Cédula Delegado” y la “Contraseña”, luego pulse 
+el botón “Acceder”. 
+Paso 3.
+
+
+===== PAGE 29/49 =====
+
+1. Perfil: en esta opción podrá actualizar sus datos básicos, como son:
+El logotipo (debe ser en formato JPEG) 
+RNC/Cédula (no editable)
+Razón Social (no editable)
+Nombre Comercial
+Dirección
+Correo Electrónico
+Teléfono
+Provincia
+Municipio
+29
+Al finalizar, pulse “Actualizar”. Estas informaciones serán usadas al momento de 
+emitir un e-CF en el Facturador Gratuito.
+Cancelar: al dar clic sobre este botón, se cancelará todo tipo de modificación realizada 
+en los campos, siempre y cuando no haya dado clic al botón “Actualizar”.
+
+===== PAGE 30/49 =====
+
+30
+2. Cerrar sesión: al dar clic en esta opción, podrá dar por terminada la sesión. 
+Asimismo, en caso de que la sesión se encuentre inactiva por 60 segundos, se 
+mostrará una ventana emergente con una duración de 30 segundos, la cual 
+permitirá dar clic en “Continuar” o “Cerrar” la sesión si así lo desea:
+
+
+===== PAGE 31/49 =====
+
+31
+IV. EMISIÓN DE UN COMPROBANTE FISCAL ELECTRÓNICO (e-CF)
+Luego de haber actualizado sus datos básicos, podrá realizar los e-CF que desee, 
+llevando a cabo los siguientes pasos:
+Paso 1. Puede dar clic en “Emitir e-CF”, o en Emitir Comprobante Fiscal Electrónico 
+(e-CF): “Generar e-CF aquí”.
+Paso 2. Complete los campos requeridos de acuerdo con el tipo de Comprobante Fiscal 
+Electrónico que desea emitir, como se indica a continuación:
+a) IDENTIFICACIÓN DEL DOCUMENTO:
+
+
+===== PAGE 32/49 =====
+
+32
+En Tipo e-CF: seleccione el tipo de Comprobante Fiscal Electrónico requerido:
+El campo Fecha de Emisión, contiene por defecto la fecha en que se está 
+realizando el e-CF y podrá ser seleccionado tipo calendario para ser editado (si 
+aplica).
+Seleccione el Tipo de Ingreso, conforme a los valores que se encuentran en el 
+Formato de e-CF, permitiendo la selección de uno (1) por e-CF:
+
+
+===== PAGE 33/49 =====
+
+En el campo RNC/Cédula, coloque el RNC/Cédula del comprador. Cuando el tipo 
+de e-CF sea de Gastos Menores Electrónico y Pagos al Exterior Electrónico este 
+campo no estará habilitado, ya que no aplica.
+ID Extranjero: este campo deberá ser completado por el contribuyente, en caso 
+de emitir un e-CF tipo 32 (Factura de Consumo Electrónica) de monto mayor o 
+igual a DOP250 mil, así como también para las Notas de Crédito/Débito que 
+hagan referencia a ese tipo de e-CF y que el campo RNC/Cédula del comprador 
+no tenga datos.
+Coloque la Razón Social del comprador.
+De manera opcional, podrá completar los siguientes campos:
+33
+Teléfono
+Correo Electrónico
+Dirección
+Provincia
+Municipio
+b) DATOS DEL COMPRADOR:
+c) INFORMACIÓN DE REFERENCIA:
+
+
+===== PAGE 34/49 =====
+
+Esta sección se habilitará en caso de seleccionar uno de los tipos de e-CF 
+correspondientes a Nota de Crédito Electrónica y Nota de Débito Electrónica, para 
+indicar la secuencia del comprobante que está siendo modificado por uno de estos.
+Esta sección requerirá de los siguientes campos para su llenado:
+NCF Modificado: se refiere al e-NCF/NCF que va a ser modificado con la Nota de 
+Crédito/Débito Electrónica.
+Fecha NCF Modificado: se refiere a la fecha en que fue emitido el e-NCF/NCF que 
+va a ser modificado con la Nota de Crédito/Débito Electrónica.
+Código de Modificación: este campo contiene un listado desplegable para la 
+selección de uno de los siguientes códigos:
+1: Anula el NCF modificado 
+2: Corrige Texto del Comprobante Fiscal modificado 
+3: Corrige montos del NCF modificado
+Indicador Nota de Crédito: este campo contiene un listado desplegable, en donde 
+deberá ser completado sólo cuando se trate del tipo de e-CF Nota de Crédito 
+Electrónica, de acuerdo con los valores indicados en el Formato de e-CF de la 
+manera siguiente:
+a) Fecha de emisión del e-CF afectado ≤ 30 días calendario. 
+b) Fecha de emisión del e-CF afectado > 30 días calendario.
+34
+Esta sección corresponde a la información del ítem que se incluye en la facturación, en 
+donde se podrán agregar la cantidad de líneas  necesarias conforme se requiera, 
+conteniendo por defecto los siguientes campos:
+5
+  Enumeración secuencial que se visualiza en el lado izquierdo de esta sección, la cual identifica cada “Línea” 
+agregada en el e-CF.
+5
+d) DETALLE DE BIENES O SERVICIOS:
+
+
+===== PAGE 35/49 =====
+
+En Descripción coloque el nombre del producto o servicio, deberá ser completado 
+por el contribuyente de manera obligatoria.
+Indique si es Bien o Servicio para identificar el ítem, según corresponda.
+Coloque la Cantidad de ítems a ser facturados en una misma línea.
+Digite el Precio unitario del ítem.
+Seleccione la Tasa correspondiente del ITBIS, según aplique:
+18%
+16%
+0%
+Exento (E)
+En caso de que aplique, indique el Descuento ($)  correspondiente expresado en 
+monto y se habilitará una (1) vez por línea creada en un mismo e-CF. 
+Indique el ITBIS Retenido ($), en los casos que aplique. Este campo estará 
+deshabitado por defecto y será editable en los siguientes casos:
+1. Para el tipo de comprobante de Compras Electrónico (41).
+2. Que el campo “Tasa” sea “Exento (E)”, en cuyo caso, este campo deberá 
+tener un valor por defecto igual a cero (0) y el mismo no podrá ser editado.
+Indique el ISR Retenido ($), en los casos que aplique. Este campo estará 
+deshabitado por defecto y será editable en los siguientes casos:
+1. Para el tipo de comprobante Pagos al Exterior Electrónico (47).
+2. Para el tipo de comprobante de Compras Electrónico (41), siempre y cuando 
+el campo “Bien o Servicio” corresponda a “Servicio”.
+El campo Valor será autocompletado de manera automática ((Precio Unitario del 
+ítem * Cantidad) - Monto Descuento + Monto Recargo).
+6
+  No aplica para los tipos de e-CF de Gastos Menores Electrónica y Pagos al Exterior Electrónica.6 
+35
+
+===== PAGE 36/49 =====
+
+e) TOTALES:
+Esta sección comprende el área Totales y sus datos serán autocompletados de manera 
+automática, conteniendo los campos siguientes: 
+Monto Gravado 18%
+Monto Gravado 16%
+Monto Gravado 0%
+ITBIS 7% 
+ITBIS 16%
+ITBIS 8% 
+SubTotal Gravado
+SubTotal ITBIS
+SubTotal Exento  
+Total ITBIS Retenido
+Total ISR Retenido 
+Monto Total
+ 7
+7
+ 8
+ 9
+Asimismo, se visualizarán los botones siguientes:
+Remover: si se desea eliminar la línea seleccionada del e-CF que se esté 
+realizando.
+Agregar: si se desea agregar una línea adicional para continuar añadiendo más 
+ítems al e-CF que se esté realizando.
+No aplica para los tipos de e-CF: Gastos Menores Electrónico, Regímenes Especiales Electrónico, 
+Exportaciones Electrónico y Pagos al Exterior Electrónico.
+No aplica para los tipos de e-CF: Gastos Menores Electrónico, Regímenes Especiales Electrónico y 
+Pagos al Exterior Electrónico.
+No aplica para el tipo de e-CF correspondiente a Exportaciones Electrónico.
+7
+8
+9
+36
+En el Facturador Gratuito, las casillas de retenciones están habilitadas 
+exclusivamente para el Comprobante Electrónico de Compras (Tipo 41) y 
+Comprobante Electrónico para Pagos al Exterior (Tipo 47). Para los demás tipos 
+de comprobantes, emita su factura electrónica de forma habitual y solicite la 
+carta de retención a su cliente. Cabe precisar que estas retenciones tienen 
+carácter informativo y su inclusión en la factura no es obligatoria.
+Nota:
+
+===== PAGE 37/49 =====
+
+Generar y Mostrar: esta opción permite visualizar y validar el e-CF completado, 
+previo a la firma y envío a Impuestos Internos. Al dar clic sobre este botón se 
+mostrará una ventana emergente, en donde podrá seleccionar el Formato 
+deseado:
+1
+Representación Impresa: esta opción muestra la representación impresa del 
+e-CF, tipo borrador.
+XML: al dar clic en esta opción se visualizará el e-CF en formato XML a modo 
+de sólo lectura (no editable).
+a
+b
+37
+Paso 3. En la parte final, después del llenado de los campos correspondientes, 
+respecto al e-CF requerido, se muestran los siguientes botones, en los cuales deberá 
+dar clic, según lo requiera:
+
+
+===== PAGE 38/49 =====
+
+2 Descartar: sólo se habilitará a partir de haber dado clic encima del botón “Volver 
+Atrás”, donde se retornará a la pantalla principal para poder usarlo en caso de no 
+proceder con el e-CF realizado y borrar todo el contenido de la factura.
+Al dar clic en “Descartar”, se mostrará una ventana emergente con la pregunta de 
+confirmación “¿Desea descartar lo realizado hasta el momento para este tipo 
+de e-CF?”, en donde podrá seleccionar Sí o No.
+38
+Si pulsa el botón Sí, se retornará a la pantalla de “Emitir e-CF” con el tipo de e-CF que 
+había a completarse sin guardar las informaciones completadas hasta el momento.
+ 
+Si el contribuyente pulsa el botón No, la ventana emergente dejará de mostrarse y 
+quedará nuevamente en la pantalla que posee las opciones de “FIRMAR Y ENVIAR”, 
+“VOLVER ATRÁS” y “DESCARTAR”, conteniendo el e-CF que se ha realizado tal cual 
+estaba.
+Paso 4. Luego de completar y revisar los campos correspondientes al tipo de e-CF 
+seleccionado, pulse FIRMAR Y ENVIAR, en donde el usuario autorizado como firmante 
+podrá realizar el proceso de firmado digitalmente, por lo que, se mostrará una ventana 
+emergente con las siguientes opciones:
+
+
+===== PAGE 39/49 =====
+
+El certificado digital debe estar previamente descargado en su PC y listo para su uso.
+Certificado Digital de Personas Físicas para Procedimientos Tributarios.
+10
+11
+CERTIFICADO DIGITAL: en este campo deberá dar clic para seleccionar su 
+certificado digital y cargarlo por esta vía  .
+CLAVE PRIVADA DEL CERTIFICADO: en este campo deberá colocar su contraseña 
+o clave correspondiente al certificado digital que posee  .
+10
+11
+Luego de completadas las acciones de los campos anteriores, podrá dar clic en uno de 
+los siguientes botones:
+Firmar: al dar clic en este botón, el e-CF realizado quedará firmado digitalmente y 
+se enviará de manera automática a DGII para su validación. 
+En este proceso, el Facturador Gratuito asignará de manera automática el siguiente 
+e-NCF que encuentre disponible, correspondiente al RNC/Cédula logueado en el 
+Facturador Gratuito.
+Podrá dar clic al botón “Aceptar” y se mostrará la pantalla de la sección de 
+“Consultas”, permitiendo la verificación del estado en DGII y demás detalles por esa 
+vía. 
+39
+
+
+===== PAGE 40/49 =====
+
+CANCELAR: al dar clic en este botón, la ventana emergente dejará de mostrarse y 
+quedará nuevamente en la pantalla que posee las opciones de “FIRMAR Y ENVIAR”, 
+“VOLVER ATRÁS” y “DESCARTAR”, conteniendo el e-CF que se ha realizado tal cual 
+estaba.
+b) VOLVER ATRÁS: al dar clic en este botón, retornará a la pantalla de “Emitir e-CF” 
+conteniendo las informaciones del e-CF que se encuentra realizando,  cuando el e-CF 
+aún no ha sido firmado ni enviado a Impuestos Internos.
+c) DESCARTAR: al dar clic en este botón, en caso de no proceder con la firma del e-CF 
+realizado, se mostrará una ventana emergente con la pregunta de confirmación 
+“¿Desea descartar lo realizado hasta el momento para este tipo de e-CF?”, en donde 
+podrá seleccionar Sí o No. 
+40
+
+
+===== PAGE 41/49 =====
+
+41
+Visualización de la Representación Impresa Firmada:
+Número de 
+Comprobante 
+Fiscal 
+Electrónico 
+Código QR
+Código de Seguridad
+
+===== PAGE 42/49 =====
+
+42
+V. CONSULTAS EN EL FACTURADOR GRATUITO DE FE
+Esta sección permite al usuario del Facturador Gratuito de FE, consultar los 
+Comprobantes Fiscales Electrónicos que han sido manejados a través de esta 
+herramienta, tales como los e-CF Emitidos y Recibidos. 
+Para realizar consultas de sus e-CF, podrá hacerlo de acuerdo con los siguientes pasos:
+Paso 1. Dar clic en una de las opciones de "Consultas": “Consultar últimos e-CF 
+emitidos y recibidos aquí”, donde se habilitarán todos los campos creados para estos 
+fines.
+Paso 2. Con los campos de consulta habilitados, podrá completar aquellos que son 
+requeridos de acuerdo con lo que desea consultar o bien filtrar con las opciones 
+existentes. Los campos de consulta que posee esta sección son los siguientes y 
+pueden ser completados más de uno (1) de estos para obtener datos más específicos:
+
+
+===== PAGE 43/49 =====
+
+43
+Parámetros de búsqueda cuando se trata de la opción:
+a) Emitido: en esta opción podrá visualizar los e-CF que fueron emitidos por el 
+RNC/Cédula logueado, a través del Facturador Gratuito de FE.
+En esta opción se tendrán los siguientes campos adicionales que permitirá la 
+delimitación de consulta, conforme sea requerido:
+1)Tipo de e-CF: Al dar clic sobre este campo, se mostrará un listado desplegable para 
+que se pueda seleccionar un tipo de e-CF en particular, seguido podrá dar clic al botón 
+“Consultar” para obtener el resultado requerido (si aplica).
+2) e-NCF: en este campo podrá digitar una secuencia de e-CF y dar clic al botón 
+“Consultar”, para obtener el resultado de dicho e-NCF en particular.
+3) Fecha Emisión Desde: en este campo tipo calendario tiene seleccionada por 
+defecto la fecha de cinco (5) días anteriores a la fecha actual de uso de la herramienta; 
+sin embargo, podrá seleccionar la fecha de inicio que desee para delimitar la búsqueda 
+y dar clic al botón “Consultar”, para obtener el resultado requerido.
+4) Fecha Emisión Hasta: este campo tipo calendario tiene seleccionada por defecto la 
+fecha actual de cuando se esté usando la herramienta, además podrá elegir la fecha 
+final que desee para delimitar la búsqueda y dar clic al botón “Consultar”, para 
+obtener el resultado requerido.
+5) Estado en DGII: este campo contiene una lista desplegable con las diferentes 
+opciones a elegir, conforme sea requerido:
+Tipo Consulta: en este campo se muestra una lista desplegable con las opciones de 
+Emitido y Recibido, el cual podrá ser editado conforme la información deseada, 
+conteniendo parámetros de búsqueda dependiendo de su selección.
+
+===== PAGE 44/49 =====
+
+44
+6) RNC Comprador: en este campo podrá digitar el RNC/Cédula a quien le ha emitido 
+el/los e-CF que desea consultar.
+7) Id Extranjero: en este campo podrá digitar el identificador del extranjero a quien le 
+ha emitido el/los e-CF que desea consultar.
+Paso 3. A partir de haber seleccionado cualquier parámetro de búsqueda requerido 
+para ser consultado, podrá dar clic en el botón “Consultar”. 
+A partir de haber dado clic al botón “Consultar”, se mostrará el detalle de las 
+siguientes columnas de datos conforme aplique y de no tener información, le indicará 
+el mensaje “No hay datos que mostrar”:
+Todos: esta opción permite consultar todos los Estados en DGII que posean sus 
+e-CF emitidos en el Facturador Gratuito, los cuales son “Aceptado”, “Rechazado”, En 
+proceso” y “Aceptado Condicional”.
+Aceptado: indica que el e-CF recibido en la DGII es válido para fines tributarios.
+Rechazado: indica que el e-CF no es válido para fines tributarios, por lo tanto, no 
+se considera recibido en Impuestos Internos.
+En proceso: indica que el e-CF aún no ha sido validado por DGII, por lo que, deberá 
+consultarse de nuevo con un tiempo prudencial para conocer el resultado.
+Aceptado Condicional: indica la advertencia al Emisor Electrónico que, aunque el 
+documento tiene validez para fines tributarios porque ha sido aceptado por DGII, 
+existe una irregularidad que no amerita el rechazo, pero que debe ser observada y 
+corregida para la emisión de futuros comprobantes.
+
+
+===== PAGE 45/49 =====
+
+El comprador debe ser Emisor Electrónico para estos fines, ya que este debe estar activo en el Directorio 
+de Facturadores Electrónicos.
+12
+b) Visualizar e-CF: 
+REPRESENTACIÓN IMPRESA: esta opción permite la visualización de la 
+representación impresa del e-CF, con las opciones de poder ser impresa, 
+descargada en formato pdf o enviada vía el Servicio Recepción de e-CF  al 
+comprador en formato XML.
+En caso de que el e-CF tenga Estado DGII “Rechazado”, la RI tendrá una marca de 
+agua indicando: “e-CF sin valor fiscal”, ya que no podrá ser usada para fines 
+fiscales.
+VER XML: al dar clic en esta opción se visualizará el e-CF en formato XML a modo 
+de sólo lectura (no editable).
+ENVIAR XML AL COMPRADOR: esta opción permite el envío del XML del e-CF vía 
+el Servicio Recepción de e-CF  al comprador y sólo se habilita cuando el e-CF 
+posee los estados de “Aceptado” y “Aceptado condicional”. 
+8
+12
+45
+Asimismo, sólo en caso de que el e-CF tenga “Estado DGII” de “Rechazado” o “Aceptado 
+Condicional”, podrá dar clic sobre el estado y se mostrará una ventana emergente con 
+el motivo correspondiente.
+Acciones: en esta columna podrá colocar el cursor encima de los íconos que posee y 
+presentarán los siguientes nombres, que al dar clic en cualquiera de ellos permitirán 
+las acciones de consulta correspondientes:
+a) Ver más:  esta opción se habilitará en caso de generarse más informaciones para 
+mostrar.
+e-NCF
+RNC Comprador
+Razón Social Comprador 
+Fecha Emisión
+Monto Total
+Total ITBIS 
+Estado en DGII: en esta columna se presentará el estado que posee el e-CF que 
+desea verificar. De colocarse encima del estado se mostrará un dato informativo 
+que dice: “Ver mensajes de Estado del e-CF”.
+
+===== PAGE 46/49 =====
+
+c) Enviar e-CF al Comprador Electrónico: esta opción permitirá que pueda enviarse el 
+XML del e-CF vía el Servicio Recepción de e-CF al comprador y sólo se habilita 
+cuando el e-CF posee los estados de “Aceptado” y “Aceptado condicional”.
+Al dar clic en esta opción, se mostrará una ventana emergente con la pregunta si 
+¿Desea enviar el comprobante al comprador?, con dos botones llamados “Aceptar” y 
+“Cancelar”, conforme requiera en ese momento.
+Al dar clic en esta opción, se mostrará una ventana emergente con la pregunta si 
+¿Desea enviar el comprobante al comprador?, con dos botones llamados 
+“Aceptar” y “Cancelar”, conforme requiera en ese momento.
+VOLVER ATRÁS: al dar clic en este botón, retornará a la pantalla de la sección de 
+“Consultas”.
+Adicional, en la visualización de la RI, se encuentra una barra encima de esta en 
+donde se tienen opciones de búsqueda dentro del contenido de esta, de ajustar 
+tamaño de vista, la opción de “Imprimir” y de “Descargar”, que podrán ser de 
+gran utilidad.
+8
+46
+
+
+===== PAGE 47/49 =====
+
+Paso 1. En esta opción podrá seleccionar cualquiera de los siguientes campos  
+permitiendo la delimitación de su consulta, conforme sea requerido:
+13
+Tipo e-CF
+e-NCF
+Fecha Emisión Desde
+Fecha Emisión Hasta
+RNC Emisor: en este campo podrá digitar el RNC/Cédula de quien le ha emitido 
+el/los e-CF a consultar. 
+Estado en DGII
+Estos campos tendrán la misma funcionalidad que poseen sus homólogos en el Tipo Consulta de 
+Emitido, excepto el campo “RNC Emisor”.
+13
+47
+Parámetros de búsqueda cuando se trata de la opción:
+b) Recibido: al dar clic en este tipo de consulta, podrá visualizar los e-CF que fueron 
+recibidos por el RNC/Cédula logueado, a través del Facturador Gratuito de FE.
+
+
+===== PAGE 48/49 =====
+
+48
+Paso 2. Dar clic al botón “Consultar”, en donde se mostrará el detalle de las siguientes 
+columnas de datos conforme aplique y de no tener información, le indicará el mensaje 
+“No hay datos que mostrar”:
+e-NCF*
+RNC Emisor*
+Razón Social Emisor
+Fecha Emisión*
+Monto Total
+Total ITBIS
+Estado DGII*
+Acciones
+Los datos de las columnas marcadas con un asterisco (*) pueden ser organizados 
+en orden ascendente y descendente, solo deberá colocarse encima de una de ellas 
+y al mostrarse una flecha, podrá dar clic sobre ella para estos fines.
+En la parte final de la pantalla de la sección “Consultas”, se encuentran las opciones 
+para el manejo de cantidad de líneas de información que desea visualizar por página y 
+la página que desea consultar pudiendo dar clic a las flechas que posee, conforme lo 
+requiera.
+Adicionalmente, al lado del botón “Consultar” se encuentra un botón con el signo más 
+(+), que al dar clic en este, la pantalla se dirigirá a la sección de “Emitir e-CF”, donde 
+podrá continuar realizando más Comprobantes Fiscales Electrónicos en ese momento, 
+si desea.
+
+===== PAGE 49/49 =====
+
+IMPUESTOS INTERNOS
+Julio 2026
+@DGIIRD
+Publicación informativa sin validez legal
+dgii.gov.do
+Facturación Electrónica
+Centro de Contacto: (809) 689-3444, opción 4
+Contacto Directo: (809) 287-2009 
+Correo: facturacionelectronica@dgii.gov.do
+                                                                                                                                  En el portal web DGII - Comunidad de Ayuda,                                                                                                                                      categoría “Facturación Electrónica”

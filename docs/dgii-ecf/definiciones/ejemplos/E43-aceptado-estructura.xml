@@ -1,0 +1,35 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ECF>
+  <Encabezado>
+    <Version>1.0</Version>
+    <IdDoc>
+      <TipoeCF>43</TipoeCF>
+      <eNCF>E430000500101</eNCF>
+      <FechaVencimientoSecuencia>31-12-2028</FechaVencimientoSecuencia>
+      <TipoPago>1</TipoPago>
+    </IdDoc>
+    <Emisor>
+      <RNCEmisor>133524899</RNCEmisor>
+      <RazonSocialEmisor>Flawless Laundry</RazonSocialEmisor>
+      <DireccionEmisor>Calle Principal 1</DireccionEmisor>
+      <FechaEmision>19-07-2026</FechaEmision>
+    </Emisor>
+    <Totales>
+      <MontoExento>500.00</MontoExento>
+      <MontoTotal>500.00</MontoTotal>
+    </Totales>
+  </Encabezado>
+  <DetallesItems>
+    <Item>
+      <NumeroLinea>1</NumeroLinea>
+      <IndicadorFacturacion>4</IndicadorFacturacion>
+      <NombreItem>Gasto menor prueba E43</NombreItem>
+      <IndicadorBienoServicio>1</IndicadorBienoServicio>
+      <CantidadItem>1.00</CantidadItem>
+      <UnidadMedida>43</UnidadMedida>
+      <PrecioUnitarioItem>500.00</PrecioUnitarioItem>
+      <MontoItem>500.00</MontoItem>
+    </Item>
+  </DetallesItems>
+  <FechaHoraFirma>19-07-2026 10:27:21</FechaHoraFirma>
+</ECF>

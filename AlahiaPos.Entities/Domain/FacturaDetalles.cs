@@ -49,4 +49,12 @@ public class FacturaDetalles : BaseEntity
     public string? TipoMasa { get; set; }
     public string? TipoRelleno { get; set; }
     public decimal Libras { get; set; }
+
+    // Fotografía fiscal línea (Sprint A)
+    public decimal? TasaItbis { get; set; }
+    public byte? IndicadorFacturacion { get; set; }
+    public decimal MontoGravadoLinea { get; set; }
+    public decimal MontoExentoLinea { get; set; }
+    public decimal DescuentoAfectaBase { get; set; }
+    public decimal ItbisCalculado { get; set; }
 }

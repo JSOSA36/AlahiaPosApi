@@ -1,0 +1,12 @@
+---
+description: Solo base de datos de desarrollo (AlahiaPos_Dev); Prod requiere autorización explícita
+alwaysApply: true
+---
+
+# Base de datos: solo Desarrollo
+
+- **Default:** todos los cambios de datos, scripts SQL, consultas `sqlcmd`, migraciones y pruebas van contra **`AlahiaPos_Dev`**.
+- **Prohibido** conectar, modificar o consultar **`AlahiaPos_Prod`** (ni otras bases de producción) salvo que el usuario lo **autorice de forma explícita** en ese mensaje.
+- La connection string de la API local debe apuntar a `AlahiaPos_Dev` (`appsettings.json` / `appsettings.Development.json`).
+- Si hace falta tocar Prod: detenerse, pedir autorización clara y no ejecutar hasta tenerla.
+- Cambios de código frontend/backend están bien; el riesgo es **datos y DDL** en el servidor SQL de producción.

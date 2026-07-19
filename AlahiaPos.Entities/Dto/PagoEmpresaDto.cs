@@ -21,5 +21,9 @@ namespace AlahiaPos.Entities.Dto
 
         public DateTime? FechaValidacion { get; set; }
         public string UsuarioValida { get; set; }
+        public DateTime? FechaPago { get; set; }
+        public string? Banco { get; set; }
+        public string? Referencia { get; set; }
+        public int? IdCiclo { get; set; }
     }
 }

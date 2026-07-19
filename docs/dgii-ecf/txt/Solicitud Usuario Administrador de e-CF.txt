@@ -1,0 +1,116 @@
+
+
+===== PAGE 1/5 =====
+
+Solicitud Usuario 
+Administrador de e-CF
+GERENCIA DE FACTURACIÓN
+REPÚBLICA DOMINICANA
+Mayo 2026
+
+===== PAGE 2/5 =====
+
+Solicitud Usuario Administrador de e-CF
+El Usuario Administrador de e-CF es el contribuyente que actúa en nombre propio o 
+persona que actúa por cuenta de éste, para ingresar y mantener en el sitio web de la 
+DGII la identificación de los signatarios o firmantes autorizados para efectuar acciones 
+relacionadas con los comprobantes fiscales electrónicos (e-CF).
+Los contribuyentes inscritos al RNC, deberán informar a la DGII, los datos de la perso-
+na física responsable de firmar electrónicamente y del Usuario Administrador de e-CF. 
+En el caso de nuevos contribuyentes, deberán hacer constar estas informaciones desde 
+su inscripción al RNC.
+La designación del Usuario Administrador de e-CF, puede ser solicitada de manera 
+presencial o virtual:
+Depositando en el Centro de Asistencia Presencial (CAP) de la Sede Central o en el área 
+de información de las administraciones locales, los siguientes documentos:
+1.Carta de solicitud firmada (en el caso de Personas Jurídicas debe estar 
+timbrada, firmada y sellada), que contenga los datos de la persona física que 
+se le asignará la relación de Usuario Administrador de e-CF. Quien firme esta 
+solicitud debe figurar en el RNC con al menos una de las siguientes relaciones: 
+Representante, Socio, Contador, Socio Domiciliado en el Exterior, Administrador, 
+Apoderado, Accionista, Responsable por la Solicitud, Miembro, Gestor Fiduciario, Benef 
+Final Ctrl Efectivo, Benef Final Ctrl Accionario, Beneficiario Final, Socio Gestor, Usuario 
+Administrador de e-CF o Firmante de e-CF
+Indicar a la persona a ser designado como Usuario Administrador de e-CF, que este 
+debe figurar en el Registro Nacional del Contribuyente con unas de las relaciones 
+permitidas.
+En caso de que la persona a ser designada no figure en el RNC, deberá anexar una 
+carta firmada según lo indicado en el punto 1. De no optar por la actualización al RNC, 
+podrá designar a otra persona que sí posea una relación que figure bajo su RNC, 
+conforme lo indicado en el párrafo anterior.
+Presencial
+2.Copia del registro Mercantil actualizado (preferible).
+
+
+===== PAGE 3/5 =====
+
+Consideraciones importantes:
+Ingrese con su usuario y clave a la Oficina Virtual DGII.
+En el menú Solicitudes, seleccione la opción Actualización al RNC.
+Complete el formulario Declaración Jurada para la Actualización de Datos de 
+Sociedades, con los datos correspondientes a la modificación a realizar y 
+presione el botón Guardar Cambios, en el apartado que haya agregado 
+información.
+Coteje la opción Acepto Términos y Condiciones, luego seleccione Verificar y 
+Continuar.
+Adjunte los documentos requeridos según el tipo de modificación (en un solo 
+archivo en formato pdf, png o jpg) y presione Procesar Cambios.
+Visualizará en pantalla el número de solicitud para fines de seguimiento, pulse el 
+botón Aceptar.
+Oficina Virtual DGII
+Llevando a cabo los siguientes pasos:
+La solicitud de inclusión del Usuario Administrador de e-CF debe ser realizada previo 
+a la Solicitud de Autorización para ser Emisor Electrónico.
+Cuando se trate de un cambio del Usuario Administrador de e-CF, una vez excluida la 
+relación del Usuario Administrador de la persona saliente y de ser incluido el 
+entrante en los datos básicos del RNC, deberá notificar vía correo electrónico a la 
+cuenta facturacionelectronica@dgii.gov.do especificando nombre y cédula de ambos, 
+para su actualización en los roles de Facturación Electrónica. 
+El Usuario Administrador de e-CF designado debe mantener su Registro Nacional de 
+Contribuyentes (RNC) actualizado, poseer clave de acceso a la Oficina Virtual (OFV) y 
+contar con un Certificado Digital para Procedimiento Tributario, emitido por una 
+prestadora de servicios de confianza autorizada por el INDOTEL. Actualmente existen
+tres entidades de certificación que emiten estos tipos de certificados: Viafirma, 
+Digifirma y Novofirma .
+• Viafirma https://www.viafirma.com/es/
+• Digifirma https://digi.camarasantodomingo.do/
+• Novofirma https://novofirma.com/
+
+===== PAGE 4/5 =====
+
+Durante el proceso de solicitud del certificado digital ante las entidades de certifi-
+cación autorizadas, la persona designada por el contribuyente deberá acreditar una de 
+las relaciones permitidas ante la Dirección General de Impuestos Internos (DGII), según 
+consta en el Registro Nacional de Contribuyentes. Estas relaciones incluyen:
+Asimismo, se requiere que la persona designada presente la documentación 
+correspondiente conforme a su nacionalidad ante la entidad de certificación:
+• En caso de ser ciudadano dominicano, deberá presentar la cédula de identidad y 
+electoral vigente.
+• Si se trata de un ciudadano extranjero, deberá proporcionar el número de pas-
+aporte correspondiente.
+1 REPRESENTANTE
+2 SOCIO
+3 CONTADOR
+4 SOCIO DOMICILIADO EN EL EXTERIOR
+5 ADMINISTRADOR
+6 APODERADO
+7 ACCIONISTA
+8 RESPONSABLE POR LA SOLICITUD
+9 MIEMBRO
+10 GESTOR FIDUCIARIO
+11 BENEF FINAL CTRL EFECTIVO
+12 BENEF FINAL CTRL ACCIONARIO
+13 BENEFICIARIO FINAL
+14 SOCIO GESTOR
+15 USUARIO ADMINISTRADOR DE E-CF
+16 FIRMANTE DE E-CF
+
+===== PAGE 5/5 =====
+
+(809) 689-3444 desde cualquier parte del país.
+informacion@dgii.gov.do
+IMPUESTOS INTERNOS
+Mayo 2026
+dgii.gov.do
+Publicación informativa sin validez legal
+@DGIIRD

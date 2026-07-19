@@ -1,4 +1,5 @@
 ﻿using AlahiaPos.Entities.Domain;
+using AlahiaPos.Entities.Dto;
 using AlahiaPos.Entities.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
@@ -199,7 +200,11 @@ namespace AlahiaPosApi.Controllers
                         $"Gasto - {value.TipoGasto}",
 
                         value.Detalle ??
-                        "Salida automática por gasto"
+                        "Salida automática por gasto",
+
+                        categoria: "GASTO",
+
+                        referenciaTipo: "GASTO"
                     );
 
                 // =========================================
@@ -249,6 +254,15 @@ namespace AlahiaPosApi.Controllers
                     {
                         success = false,
                         message = "El gasto no existe."
+                    });
+                }
+
+                if (gastoExistente.EstaAnulado)
+                {
+                    return Ok(new
+                    {
+                        success = false,
+                        message = "No se puede editar un gasto anulado."
                     });
                 }
 
@@ -310,14 +324,62 @@ namespace AlahiaPosApi.Controllers
         }
 
         // ======================================================
-        // 🔥 DELETE
+        // 🔥 ANULAR
         // ======================================================
 
-        [HttpDelete("{id}")]
-        public void Delete(int id)
+        [HttpPost]
+        [Route("AnularGasto")]
+        public async Task<IActionResult> AnularGasto(
+            [FromBody] AnularGastoDto dto
+        )
         {
-            _IGastos
-            .DeleteGastos(id);
+            try
+            {
+                if (dto == null)
+                {
+                    return Ok(new
+                    {
+                        success = false,
+                        message = "Datos de anulación requeridos."
+                    });
+                }
+
+                if (string.IsNullOrWhiteSpace(dto.MotivoAnulacion))
+                {
+                    return Ok(new
+                    {
+                        success = false,
+                        message = "Debe indicar el motivo de anulación."
+                    });
+                }
+
+                var motivo = dto.MotivoAnulacion.Trim();
+
+                if (!string.IsNullOrWhiteSpace(dto.UsuarioAnulo))
+                {
+                    motivo = $"[{dto.UsuarioAnulo.Trim()}] {motivo}";
+                }
+
+                await _IGastos.AnularGastoAsync(
+                    dto.IdGasto,
+                    dto.IdEmpresa,
+                    motivo,
+                    dto.UsuarioAnulo);
+
+                return Ok(new
+                {
+                    success = true,
+                    message = "Gasto anulado correctamente."
+                });
+            }
+            catch (Exception ex)
+            {
+                return Ok(new
+                {
+                    success = false,
+                    message = ex.Message
+                });
+            }
         }
 
         // ======================================================

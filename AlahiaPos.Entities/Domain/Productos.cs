@@ -1,4 +1,5 @@
-﻿using System;
+﻿using AlahiaPos.Entities.Dto;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.ComponentModel.DataAnnotations;
@@ -39,6 +40,11 @@ namespace AlahiaPos.Entities.Domain
         public string? CodigoBarra { get; set; } = "";
         public string? TipoProducto { get; set; } = "";
 
+        /// <summary>
+        /// Comportamiento ERP: Inventario | Servicio | Gasto | ActivoFijo
+        /// </summary>
+        public string? TipoComportamiento { get; set; } = TipoComportamientoConstantes.Inventario;
+
         public decimal? Descuento { get; set; }
 
         public decimal Precio1 { get; set; }
@@ -54,16 +60,29 @@ namespace AlahiaPos.Entities.Domain
         public string? Imagen2 { get; set; } = "";
         public string? Imagen3 { get; set; } = "";
         public bool Itbis { get; set; }
+
+        /// <summary>
+        /// Default de captura para operaciones NUEVAS únicamente.
+        /// Nunca fuente oficial ni para recalcular histórico (foto en documento).
+        /// Null = usar ParametrosConfigs.ImpuestoItbis.
+        /// </summary>
+        public decimal? TasaItbis { get; set; }
+        /// <summary>Default sugerido al facturar; no recalcula histórico.</summary>
+        public byte? TipoIngresoDgiiDefault { get; set; }
+        public string? CodigoExencionDgii { get; set; }
+
         public string? Nota { get; set; } = "";
 
+        // No instanciar por defecto: el POS puede enviar Productos vacío en el detalle
+        // y Almacen.Nombre [Required] generaba 400 Bad Request.
         [NotMapped]
-        public virtual UnidadMedidas UnidadMedidas { get; set; } = new UnidadMedidas();
+        public virtual UnidadMedidas? UnidadMedidas { get; set; }
         [NotMapped]
-        public virtual Categorias Categorias { get; set; }=new Categorias();
+        public virtual Categorias? Categorias { get; set; }
         [NotMapped]
-        public virtual Almacen Almacen { get; set; } = new Almacen();
+        public virtual Almacen? Almacen { get; set; }
         [NotMapped]
-        public virtual Proveedores Proveedores { get; set; }=new Proveedores();
+        public virtual Proveedores? Proveedores { get; set; }
         
         public bool SeCompra { get; set; }
         public bool SeAlquila { get; set; }

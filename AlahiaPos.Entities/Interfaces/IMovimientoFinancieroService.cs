@@ -65,7 +65,15 @@ namespace AlahiaPos.Entities.Interfaces
 
             string motivo,
 
-            string? observacion
+            string? observacion,
+
+            string? categoria = null,
+
+            int? referenciaId = null,
+
+            string? referenciaTipo = null,
+
+            string? claveIdempotencia = null
         );
 
         Task RegistrarSalidaAsync(
@@ -80,7 +88,15 @@ namespace AlahiaPos.Entities.Interfaces
 
             string motivo,
 
-            string? observacion
+            string? observacion,
+
+            string? categoria = null,
+
+            int? referenciaId = null,
+
+            string? referenciaTipo = null,
+
+            string? claveIdempotencia = null
         );
 
         Task RegistrarTransferenciaAsync(
@@ -97,7 +113,9 @@ namespace AlahiaPos.Entities.Interfaces
 
             string motivo,
 
-            string? observacion
+            string? observacion,
+
+            string? claveIdempotencia = null
         );
     }
 }

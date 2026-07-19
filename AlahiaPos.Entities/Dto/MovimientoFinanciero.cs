@@ -83,6 +83,21 @@ namespace AlahiaPos.Entities.Dto
         public DateTime FechaMovimiento { get; set; }
             = DateTime.Now;
 
+        public int? IdMovimientoPar { get; set; }
+
+        [MaxLength(50)]
+        public string? NumeroComprobante { get; set; }
+
+        [MaxLength(20)]
+        public string Estado { get; set; } = "CONFIRMADO";
+
+        [MaxLength(120)]
+        public string? ClaveIdempotencia { get; set; }
+
+        public DateTime FechaRegistro { get; set; } = DateTime.Now;
+
+        public int? IdTesoreriaTipoDocumento { get; set; }
+
         /* =========================================
         🔥 RELACIONES
         ========================================= */
@@ -92,5 +107,11 @@ namespace AlahiaPos.Entities.Dto
 
         [ForeignKey(nameof(IdCuentaDestino))]
         public CuentaFinanciera? CuentaDestino { get; set; }
+
+        [ForeignKey(nameof(IdMovimientoPar))]
+        public MovimientoFinanciero? MovimientoPar { get; set; }
+
+        [ForeignKey(nameof(IdTesoreriaTipoDocumento))]
+        public TesoreriaTipoDocumento? TesoreriaTipoDocumento { get; set; }
     }
 }

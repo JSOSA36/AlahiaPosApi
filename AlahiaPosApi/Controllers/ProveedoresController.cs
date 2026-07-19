@@ -1,8 +1,7 @@
 ﻿using AlahiaPos.Entities.Domain;
+using AlahiaPos.Entities.Dto;
 using AlahiaPos.Entities.Interfaces;
 using Microsoft.AspNetCore.Mvc;
-
-// For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
 namespace AlahiaPosApi.Controllers
 {
@@ -10,45 +9,99 @@ namespace AlahiaPosApi.Controllers
     [ApiController]
     public class ProveedoresController : ControllerBase
     {
+        private readonly IProveedores _proveedores;
 
-        IProveedores _Iproveedores;
-
-        public ProveedoresController(IProveedores iproveedores)
+        public ProveedoresController(IProveedores proveedores)
         {
-            _Iproveedores = iproveedores;
+            _proveedores = proveedores;
         }
 
-
-        // GET: api/<ProveedoresController>
-        [HttpGet]
-        public async Task<IEnumerable<Proveedores>> Get()
+        [HttpGet("{idEmpresa}")]
+        public async Task<IEnumerable<Proveedores>> Get(int idEmpresa, [FromQuery] bool soloActivos = true)
         {
-            return await _Iproveedores.GetAllProveedores();
+            return await _proveedores.GetAllProveedores(idEmpresa, soloActivos);
         }
 
-        // GET api/<ProveedoresController>/5
-        [HttpGet("{id}")]
-        public string Get(int id)
+        [HttpGet("GetbyId/{id}/{idEmpresa}")]
+        public async Task<IActionResult> GetById(int id, int idEmpresa)
         {
-            return "value";
+            var proveedor = await _proveedores.GetProveedorById(id, idEmpresa);
+            if (proveedor == null)
+                return NotFound(new { message = "Proveedor no encontrado." });
+
+            return Ok(proveedor);
         }
 
-        // POST api/<ProveedoresController>
         [HttpPost]
-        public void Post([FromBody] string value)
+        public async Task<IActionResult> Post([FromBody] ProveedorDto dto)
         {
+            try
+            {
+                var proveedor = new Proveedores
+                {
+                    IdEmpresa = dto.IdEmpresa,
+                    RNC = dto.RNC,
+                    NombreComercial = dto.NombreComercial,
+                    Telefono = dto.Telefono,
+                    Direccion = dto.Direccion,
+                    Email = dto.Email,
+                    Nota = dto.Nota,
+                    IsActivo = true
+                };
+
+                var creado = await _proveedores.InsertProveedores(proveedor);
+                return Ok(creado);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { success = false, message = ex.Message });
+            }
         }
 
-        // PUT api/<ProveedoresController>/5
         [HttpPut("{id}")]
-        public void Put(int id, [FromBody] string value)
+        public async Task<IActionResult> Put(int id, [FromBody] ProveedorDto dto)
         {
+            try
+            {
+                var proveedor = new Proveedores
+                {
+                    RNC = dto.RNC,
+                    NombreComercial = dto.NombreComercial,
+                    Telefono = dto.Telefono,
+                    Direccion = dto.Direccion,
+                    Email = dto.Email,
+                    Nota = dto.Nota,
+                    IsActivo = dto.IsActivo
+                };
+
+                await _proveedores.UpdateProveedores(id, proveedor, dto.IdEmpresa);
+                return Ok(new { success = true, message = "Proveedor actualizado." });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { success = false, message = ex.Message });
+            }
         }
 
-        // DELETE api/<ProveedoresController>/5
-        [HttpDelete("{id}")]
-        public void Delete(int id)
+        [HttpPut("Desactivar/{id}/{idEmpresa}")]
+        public async Task<IActionResult> Desactivar(int id, int idEmpresa)
         {
+            try
+            {
+                await _proveedores.DesactivarProveedor(id, idEmpresa);
+                return Ok(new { success = true, message = "Proveedor desactivado." });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { success = false, message = ex.Message });
+            }
+        }
+
+        [HttpGet("TieneDocumentos/{id}")]
+        public async Task<IActionResult> TieneDocumentos(int id)
+        {
+            var tiene = await _proveedores.TieneDocumentosAsociados(id);
+            return Ok(new { tieneDocumentos = tiene });
         }
     }
 }

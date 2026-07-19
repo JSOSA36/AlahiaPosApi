@@ -1,0 +1,21 @@
+---
+description: Transmission Engine genérico + Providers (DGII hoy, otros mañana)
+globs: Alahia.eCF.Api/**/*,AlahiaPos.DataAccess/Servicios/FiscalGateway/**/Transmission/**/*,AlahiaPos.DataAccess/Servicios/FiscalGateway/DgiiDirecto/**/*,docs/dgii-ecf/Arquitectura-Transmission*.md
+alwaysApply: false
+---
+
+# Transmission Engine + Providers
+
+Pipeline: ERP → XML → Firma → **Engine genérico** → **ITransmissionProvider** (DGII hoy).
+
+## Engine (genérico)
+
+Cola, retry, idempotencia `(ProviderCode, TaxpayerId, DocumentId)`, auditoría, alertas, estados canónicos. **No** conoce DGII/SAT/SUNAT. **No** muta el payload. **No** use en API pública: `TrackId`, `eNCF`, `Rnc`, `RFCE`, `OFV`.
+
+## Provider
+
+Auth, send, query, mapear a `ProviderSendResult` canónico. Normativa RD (72 h, etc.) → `TransmissionProviders:DGII`, no al núcleo del Engine.
+
+## Docs
+
+`Arquitectura-Transmission-Providers.md` (acoplamientos + contratos) · `Arquitectura-Transmission-Engine.md` · contingencia = perfil DGII.

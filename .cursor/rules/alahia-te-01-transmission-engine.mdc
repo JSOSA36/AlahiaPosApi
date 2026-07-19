@@ -1,0 +1,20 @@
+---
+description: ALAHIA-TE-01 — Transmission Engine = entrega confiable a cualquier destino
+alwaysApply: true
+---
+
+# ALAHIA-TE-01 — Transmission Engine estratégico
+
+El Transmission Engine **no** es “el cliente de la DGII”.  
+Es el componente Alahia que garantiza **entrega confiable de documentos críticos a cualquier proveedor externo**.
+
+## Separación
+
+- **Engine:** cola, reintentos, idempotencia, auditoría, monitoreo, recuperación, alertas, workers, políticas genéricas.
+- **Providers:** auth, protocolos, endpoints, formatos, estados propios, normativa del destino.
+
+Nuevo destino ⇒ nuevo Provider + config. **No modificar el Engine.**
+
+DGII es solo el primer Provider. Normativa RD (72 h, trackId, RFCE) ⇒ perfil/Provider DGII, nunca el núcleo.
+
+Doc canónico: `docs/dgii-ecf/Principio-Transmission-Engine-Estrategico.md` (ALAHIA-TE-01).

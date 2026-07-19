@@ -1,7 +1,8 @@
-﻿using Alahia_Pos.Services;
+using Alahia_Pos.Services;
 using AlahiaPos.DataAccess.Data;
 using AlahiaPos.DataAccess.Repository;
 using AlahiaPos.DataAccess.Servicios;
+using AlahiaPos.DataAccess.Servicios.FiscalGateway;
 using AlahiaPos.Entities.Domain;
 using AlahiaPos.Entities.Interfaces;
 using AlahiaPos.Entities.Setting;
@@ -45,6 +46,10 @@ builder.Services.AddScoped<IZonas, IZonasServices>();
 builder.Services.AddScoped<IClientes, ClienteServices>();
 builder.Services.AddScoped<IProveedores, ProveedoresServices>();
 builder.Services.AddScoped<IOrdenCompraHeader, OrdenCompraHeaderServices>();
+builder.Services.AddScoped<IComprasService, ComprasService>();
+builder.Services.AddScoped<IActivosFijosService, ActivosFijosService>();
+builder.Services.AddScoped<IPoliticasServicioService, PoliticasServicioService>();
+builder.Services.AddScoped<IDashboardGerencialService, DashboardGerencialService>();
 builder.Services.AddScoped<IGastos, GastosServices>();
 builder.Services.AddScoped<IEmpresas, EmpresaServices>();
 builder.Services.AddScoped<ICocinas, CocinaServices>();
@@ -60,6 +65,8 @@ builder.Services.AddScoped<IRNCService, RNCService>();
 builder.Services.AddScoped<IDescuentoHeader, DescuentoHeaderServices>();
 builder.Services.AddScoped<IDescuentoDetalle, DescuentoDetalleServices>();
 builder.Services.AddScoped<IPagosFacturasClientes, PagosFacturasClientesService>();
+builder.Services.AddScoped<IAntiguedadSaldosService, AntiguedadSaldosService>();
+builder.Services.AddScoped<IConducesService, ConducesService>();
 builder.Services.AddScoped<IIngresos, IngresosService>();
 builder.Services.AddScoped<IDescuentoAreaDetalle, DescuentoAreaDetalleService>();
 builder.Services.AddScoped<INCF_Secuencias, NCF_SecuenciasServices>();
@@ -72,10 +79,58 @@ builder.Services.AddScoped<ICajaCierreService, CajaCierreServices>();
 builder.Services.AddScoped<ICajaAperturaService, CajaAperturaServices>();
 builder.Services.AddScoped<ICajaMovimientoService, CajaMovimientoServices>();
 builder.Services.AddScoped<ICuentaFinancieraService, CuentaFinancieraService>();
+builder.Services.AddScoped<ICuentaContableService, CuentaContableService>();
+builder.Services.AddScoped<IAsientoContableService, AsientoContableService>();
+builder.Services.AddScoped<IContabilidadLibrosService, ContabilidadLibrosService>();
+builder.Services.AddScoped<IContabilidadReportesService, ContabilidadReportesService>();
+builder.Services.AddScoped<IContabilidadCierreService, ContabilidadCierreService>();
+builder.Services.AddScoped<IContabilidadCatalogoService, ContabilidadCatalogoService>();
+builder.Services.AddScoped<IContabilidadIntegracionService, ContabilidadIntegracionService>();
+builder.Services.AddScoped<IContabilidadGatekeeper, ContabilidadGatekeeper>();
+builder.Services.AddScoped<IContabilidadConfiguracionService, ContabilidadConfiguracionService>();
+builder.Services.AddScoped<IContabilidadIntegracionLogService, ContabilidadIntegracionLogService>();
+builder.Services.AddScoped<IDomainEventPublisher, DomainEventPublisher>();
+builder.Services.AddScoped<IDomainEventDispatcher, DomainEventDispatcher>();
+builder.Services.AddScoped<IDomainEventHandler, ContabilidadEventHandler>();
+builder.Services.AddScoped<IDomainEventHandler, AlahiaPos.DataAccess.Servicios.Produccion.ProduccionEventHandler>();
+builder.Services.AddScoped<IProduccionConfiguracionService, AlahiaPos.DataAccess.Servicios.Produccion.ProduccionConfiguracionService>();
+builder.Services.AddScoped<IProduccionFlujoService, AlahiaPos.DataAccess.Servicios.Produccion.ProduccionFlujoService>();
+builder.Services.AddScoped<IProduccionTrabajoService, AlahiaPos.DataAccess.Servicios.Produccion.ProduccionTrabajoService>();
+builder.Services.AddScoped<IProduccionPosAdapter, AlahiaPos.DataAccess.Servicios.Produccion.ProduccionPosAdapter>();
+builder.Services.AddSingleton<IProduccionRealtime, AlahiaPosApi.Hubs.SignalRProduccionRealtime>();
+// DgiiFiscalEventHandler YA NO se registra en el pipeline s?ncrono (Sprint B.1 ? worker async)
+
+// Sprint B / B.1 ? capa fiscal DGII desacoplada
+builder.Services.AddMemoryCache();
+builder.Services.AddScoped<IFiscalFeatureService, AlahiaPos.DataAccess.Servicios.Dgii.FiscalFeatureService>();
+builder.Services.AddScoped<ITaxClassificationService, AlahiaPos.DataAccess.Servicios.Dgii.TaxClassificationService>();
+builder.Services.AddScoped<IFiscalDocumentSnapshotService, AlahiaPos.DataAccess.Servicios.Dgii.FiscalDocumentSnapshotService>();
+builder.Services.AddScoped<IDgiiFiscalService, AlahiaPos.DataAccess.Servicios.Dgii.DgiiFiscalService>();
+builder.Services.AddScoped<IFiscalWorkEnqueueService, AlahiaPos.DataAccess.Servicios.Dgii.FiscalWorkEnqueueService>();
+builder.Services.AddScoped<IFiscalOutboxProcessor, AlahiaPos.DataAccess.Servicios.Dgii.FiscalOutboxProcessor>();
+builder.Services.AddScoped<IFiscalReconciliacionService, AlahiaPos.DataAccess.Servicios.Dgii.FiscalReconciliacionService>();
+builder.Services.AddScoped<IDgiiConfigService, AlahiaPos.DataAccess.Servicios.Dgii.DgiiConfigService>();
+builder.Services.AddScoped<IDgiiFiscalAuthService, AlahiaPos.DataAccess.Servicios.Dgii.DgiiFiscalAuthService>();
+builder.Services.AddHostedService<AlahiaPosApi.Workers.FiscalOutboxBackgroundService>();
+
+// Facturaci?n Electr?nica ? m?dulo transversal
+builder.Services.AddScoped<ISecuenciaEcfService, AlahiaPos.DataAccess.Servicios.FacturacionElectronica.SecuenciaEcfService>();
+builder.Services.AddScoped<IDocumentoOrigenResolver, AlahiaPos.DataAccess.Servicios.FacturacionElectronica.PosDocumentoResolver>();
+builder.Services.AddScoped<IDocumentoOrigenResolver, AlahiaPos.DataAccess.Servicios.FacturacionElectronica.NotaCreditoDocumentoResolver>();
+builder.Services.AddScoped<IDocumentoOrigenResolverFactory, AlahiaPos.DataAccess.Servicios.FacturacionElectronica.DocumentoOrigenResolverFactory>();
+builder.Services.AddScoped<IFacturacionElectronicaService, AlahiaPos.DataAccess.Servicios.FacturacionElectronica.FacturacionElectronicaService>();
+
+// Gateway Fiscal — ERP solo conoce IFiscalGateway; proveedor = FiscalGateway:BaseUrl + ApiKey
+builder.Services.AddFiscalGateway(builder.Configuration);
+builder.Services.AddScoped<AlahiaPos.DataAccess.Servicios.FiscalGateway.EcfGatewayOutboxProcessor>();
+builder.Services.AddHostedService<AlahiaPosApi.Workers.EcfGatewayBackgroundService>();
+
 builder.Services.AddScoped<IMovimientoFinancieroService, MovimientoFinancieroService>();
 builder.Services.AddScoped<IMetodoPagoCuentaService, MetodoPagoCuentaService>();
+builder.Services.AddScoped<ITesoreriaConfiguracionService, TesoreriaConfiguracionService>();
+builder.Services.AddScoped<ITesoreriaCuentaContableMapeoService, TesoreriaCuentaContableMapeoService>();
 // ======================================================
-// 🔥 MOVIMIENTOS INVENTARIO
+// ?? MOVIMIENTOS INVENTARIO
 // ======================================================
 
 builder.Services.AddScoped<
@@ -90,11 +145,61 @@ builder.Services.AddScoped<IEmpleados, EmpleadosService>();
 builder.Services.AddScoped<IParametrosService, ParametrosService>();
 builder.Services.AddScoped<IPlantillasDocumentosClinicos, PlantillasDocumentosClinicosService>();
 builder.Services.AddScoped<IDocumentosClinicos, DocumentosClinicosService>();
+builder.Services.AddScoped<IHistorialServicios, HistorialServiciosService>();
 builder.Services.AddScoped<IPrinterTicket, PrinterTicketServices>();
 
 
 
 builder.Services.AddScoped<IPagoEmpresaService, PagoEmpresaService>();
+builder.Services.AddSignalR();
+builder.Services.AddScoped<ITicketsService, TicketsService>();
+
+// =============================
+// Alahia AI (multi-provider)
+// =============================
+builder.Services.Configure<AlahiaPos.DataAccess.Servicios.AlahiaAi.AlahiaAiOptions>(
+    builder.Configuration.GetSection(AlahiaPos.DataAccess.Servicios.AlahiaAi.AlahiaAiOptions.SectionName));
+builder.Services.AddHttpClient("AlahiaAi");
+builder.Services.AddScoped<AlahiaPos.Entities.Interfaces.AlahiaAi.IAiProvider>(sp =>
+{
+    var http = sp.GetRequiredService<IHttpClientFactory>().CreateClient("AlahiaAi");
+    var opts = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<AlahiaPos.DataAccess.Servicios.AlahiaAi.AlahiaAiOptions>>();
+    return new AlahiaPos.DataAccess.Servicios.AlahiaAi.Providers.OpenAiProvider(http, opts);
+});
+builder.Services.AddScoped<AlahiaPos.Entities.Interfaces.AlahiaAi.IAiProvider>(sp =>
+{
+    var http = sp.GetRequiredService<IHttpClientFactory>().CreateClient("AlahiaAi");
+    var opts = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<AlahiaPos.DataAccess.Servicios.AlahiaAi.AlahiaAiOptions>>();
+    return new AlahiaPos.DataAccess.Servicios.AlahiaAi.Providers.AzureOpenAiProvider(http, opts);
+});
+builder.Services.AddScoped<AlahiaPos.Entities.Interfaces.AlahiaAi.IAiProvider>(sp =>
+{
+    var http = sp.GetRequiredService<IHttpClientFactory>().CreateClient("AlahiaAi");
+    var opts = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<AlahiaPos.DataAccess.Servicios.AlahiaAi.AlahiaAiOptions>>();
+    return new AlahiaPos.DataAccess.Servicios.AlahiaAi.Providers.OllamaProvider(http, opts);
+});
+builder.Services.AddScoped<AlahiaPos.Entities.Interfaces.AlahiaAi.IAiProvider, AlahiaPos.DataAccess.Servicios.AlahiaAi.Providers.AnthropicProvider>();
+builder.Services.AddScoped<AlahiaPos.Entities.Interfaces.AlahiaAi.IAiProvider, AlahiaPos.DataAccess.Servicios.AlahiaAi.Providers.GeminiProvider>();
+builder.Services.AddScoped<AlahiaPos.Entities.Interfaces.AlahiaAi.IAiProviderFactory, AlahiaPos.DataAccess.Servicios.AlahiaAi.Providers.AiProviderFactory>();
+builder.Services.AddScoped<AlahiaPos.Entities.Interfaces.AlahiaAi.IAiPromptManager, AlahiaPos.DataAccess.Servicios.AlahiaAi.AiPromptManager>();
+builder.Services.AddScoped<AlahiaPos.Entities.Interfaces.AlahiaAi.IAiContextBuilder, AlahiaPos.DataAccess.Servicios.AlahiaAi.AiContextBuilder>();
+builder.Services.AddSingleton<AlahiaPos.Entities.Interfaces.AlahiaAi.IAiConversationHistory, AlahiaPos.DataAccess.Servicios.AlahiaAi.AiConversationHistoryService>();
+builder.Services.AddScoped<AlahiaPos.Entities.Interfaces.AlahiaAi.IAiPermissionService, AlahiaPos.DataAccess.Servicios.AlahiaAi.AiPermissionService>();
+builder.Services.AddSingleton<AlahiaPos.Entities.Interfaces.AlahiaAi.IAiUsageMonitor, AlahiaPos.DataAccess.Servicios.AlahiaAi.AiUsageMonitor>();
+builder.Services.AddScoped<AlahiaPos.Entities.Interfaces.AlahiaAi.IAlahiaAiErpGateway, AlahiaPos.DataAccess.Servicios.AlahiaAi.AlahiaAiErpGateway>();
+builder.Services.AddScoped<AlahiaPos.Entities.Interfaces.AlahiaAi.IAlahiaAiService, AlahiaPos.DataAccess.Servicios.AlahiaAi.AlahiaAiService>();
+
+builder.Services.AddScoped<INotificacionCentro, AlahiaPos.DataAccess.Servicios.Notificaciones.NotificacionCentroService>();
+builder.Services.AddScoped<INotificacionCanal, AlahiaPos.DataAccess.Servicios.Notificaciones.EmailNotificacionCanal>();
+builder.Services.AddScoped<INotificacionCanal, AlahiaPos.DataAccess.Servicios.Notificaciones.PushNotificacionCanalStub>();
+builder.Services.AddScoped<INotificacionCanal, AlahiaPos.DataAccess.Servicios.Notificaciones.WhatsAppNotificacionCanalStub>();
+builder.Services.AddSingleton<INotificacionRealtime, AlahiaPosApi.Hubs.SignalRNotificacionRealtime>();
+builder.Services.AddScoped<INotificacionSuscripcionCanal, AlahiaPos.DataAccess.Servicios.Suscripciones.EmailSuscripcionCanal>();
+builder.Services.AddScoped<INotificacionSuscripcionCanal, AlahiaPos.DataAccess.Servicios.Suscripciones.InAppSuscripcionCanal>();
+builder.Services.AddScoped<INotificacionSuscripcionCanal, AlahiaPos.DataAccess.Servicios.Suscripciones.WhatsAppSuscripcionCanalStub>();
+builder.Services.AddScoped<ISuscripcionCobroService, AlahiaPos.DataAccess.Servicios.Suscripciones.SuscripcionCobroService>();
+builder.Services.AddScoped<IEmpresaCargoRecurrenteService, AlahiaPos.DataAccess.Servicios.Suscripciones.EmpresaCargoRecurrenteService>();
+builder.Services.AddHostedService<AlahiaPosApi.Workers.SuscripcionBillingWorker>();
 builder.Services.AddScoped<IBizcochoEncargoService, BizcochoEncargoServices>();
 builder.Services.AddScoped<ILavadorConsumoServices, LavadorConsumoServices>();
 builder.Services.Configure<DgiiSettings>(builder.Configuration.GetSection("DGII"));
@@ -103,7 +208,7 @@ builder.Services.Configure<DgiiSettings>(builder.Configuration.GetSection("DGII"
 builder.Services.AddScoped<TwilioService>();
 
 // =============================
-// ✅ DGII / E-CF (lo nuevo)
+// ? DGII / E-CF (lo nuevo)
 // =============================
 
 
@@ -174,5 +279,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapHub<AlahiaPosApi.Hubs.NotificacionesHub>("/hubs/notificaciones");
+app.MapHub<AlahiaPosApi.Hubs.ProduccionHub>("/hubs/produccion");
 
 app.Run();

@@ -1,0 +1,103 @@
+
+
+===== PAGE 1/4 =====
+
+ 
+1 
+ 
+ 
+FACTURACIÓN ELECTRÓNICA 
+REPÚBLICA DOMINICANA 
+ 
+Versión 1.0 
+Enero 2020 
+APP FIRMA DIGITAL 
+
+
+===== PAGE 2/4 =====
+
+ 
+2 
+ 
+ÍNDICE. 
+ 
+Propósito. .......................................................................... 3 
+Requerimientos técnicos. .................................................. 3 
+Procedimiento de firmado. ................................................ 3 
+Funcionalidades adicionales .............................................. 4 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+  
+
+===== PAGE 3/4 =====
+
+ 
+3 
+ 
+Propósito. 
+El presente documento tiene por finalidad orientar a los contribuyentes sobre los 
+requerimientos necesarios para firmar un XML a través de la aplicación puesta en disposición 
+por la Dirección General de Impuestos Internos (DGII), así como el procedimiento a seguir en 
+la misma, de manera que sirva de insumo para cuando sea necesario utilizarlo en el proceso 
+de certificación como emisor electrónico.  
+Requerimientos técnicos. 
+• Certificado digital válido: archivo mediante el cual se identifica un usuario en Internet, 
+asociando en este caso una persona física a una serie de datos, siendo necesario un 
+tercero de confianza o entidad certificadora autorizada por Indotel que lo acredite. 
+• Clave privada del certi ficado: texto cifrado de autoría exclusiva del propietario del 
+certificado utilizado para verificar su identidad.  
+• Sistemas operativos (Windows) : sistema operativo  del computador que posibilita la 
+administración de los recursos de este. 
+• Framework: para la ejecución del aplicativo se necesita contar con un framework versión 
+3.5 en adelante. 
+Procedimiento de firmado. 
+1) Descargar la aplicación de firmado encontrada en el portal de la DGII:  
+a) Opción "Facturación" 
+b) Opción "Comprobantes Fiscales Electrónicos e-CF" 
+c) Opción "Herramientas recomendadas" 
+d) Opción "Descargar"  
+2) Descomprimir el archivo haciendo clic derecho sobre la aplicación y presionando "Extraer 
+aquí". 
+3) Ejecutar la aplicación "App Firma Digital". 
+4) Cargar el XML a firmar presionando el botón "Examinar". 
+5) Cargar el certificado digital presionando el botón "Examinar". 
+6) Introducir la clave privada del certificado. 
+
+===== PAGE 4/4 =====
+
+ 
+4 
+ 
+7) Elegir la carpeta o directorio en donde se guardará el XML firmado presionando el botón 
+"Descargar XML firmado". 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+Funcionalidades adicionales 
+• Limpiado de campos : archivo mediante el cual se identifica un usuario en Internet, 
+asociando en este caso una persona física a una serie de datos, siendo necesario un 
+tercero de confianza o entidad certificadora autorizada por Indotel que lo acredite. 
+• Ruta por defecto: software de comprensión de datos, para que permita descomprimir el 
+archivo en que se encuentra la aplicación. 
+Pantalla del aplicativo para firma digital. 

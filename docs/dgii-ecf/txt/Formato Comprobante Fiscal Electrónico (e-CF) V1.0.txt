@@ -1,0 +1,8056 @@
+
+
+===== PAGE 1/89 =====
+
+Formato Comprobante
+Fiscal Electrónico (e-CF)
+Versión 1.0 | Octubre 2025
+
+===== PAGE 2/89 =====
+
+ 
+Pág. 1 de 87 
+ 
+Bitácora  
+Versión 1.0 
+Actualizaciones al 30-08-2022  
+Modiﬁcaciones no implican cambio de versión.   
+         1. Se actualiza la tabla IV. Codiﬁcación Unidad de Medida, para agregar el po de medida "Bandeja". 
+ Actualizaciones al 06-05-2022  
+Modiﬁcaciones no implican cambio de versión.   
+1. Se actualiza la tabla IV. Codiﬁcación Unidad de Medida, para agregar los pos de medidas "Gross Register Tonnage (Toneladas de Registro Bruto)", "Pie cuadrado", 
+"Pasajero", "Pulgadas" y "Parqueo Barcos en Muelle". 
+ Actualizaciones al 19-11-2021  
+Modiﬁcaciones no implican cambio de versión.  
+ 1. Se actualizan en el Área Comprador <Comprador> los códigos de obligatoriedad de 1 a 2, correspondiente a los pos de e-CF Nota de Crédito Electrónica y Nota de 
+Débito Electrónica de la sección Encabezado.  
+Actualizaciones al 04-11-2021 
+Modiﬁcaciones no implican cambio de versión.  
+1. Se actualiza la tabla IV. Codiﬁcación Unidad de Medida, para agregar el po de medida "Quintal". 
+ Actualizaciones al 29-06-2021:  
+Modiﬁcaciones no implican cambio de versión. 
+ 1. Se actualiza la ‘Tabla III. Codiﬁcación Provincias y Municipios’, para separar por columnas los códigos de las Provincias y Municipios.   
+Actualizaciones al 10-11-2020:  
+Modiﬁcaciones no implican cambio de versión. 
+ 1. Se actualizan los tags <Liquidacion> y <Mineria> de la sección Detalle de Bienes o Servicios, para eliminar acentos. 
+2. Se actualiza la descripción de los campos ‘Tabla de Distribución de Subrecargo’ y ‘Tipo Subrecargo’, de la sección Detalle de Bienes o Servicios. 
+3. Se actualiza el tag <DescripcionDescuentooRecargo> de la sección Descuentos o Recargos. 
+ 
+Actualizaciones al 28-07-2020 
+Modiﬁcaciones no implican cambio de versión.  
+Se modiﬁcan los campos <TotalITBISRetenido> y <TotalISRRetencion> de la sección Encabezado para que sean aceptados valores numéricos igual a cero (0). 
+ Actualizaciones al 17-09-2024 
+Modiﬁcaciones no implican cambio de versión.
+1.
+2.
+ana" y “Peso Mexicano"
+ctárea", "Mililitro", "Miligramo", "Onzas" y "Onzas Troy".
+Actualizaciones al 09-10-2025 
+Modiﬁcaciones no implican cambio de versión.
+1. Se actualiza la tabla II. Codiﬁcación Monedas, para agregar el tipo de moneda “Peso Colombiano"
+
+===== PAGE 3/89 =====
+
+ 
+Pág. 2 de 87 
+ 
+1. Introducción 
+En este documento se describe el contenido de los Comprob antes Fiscales Electrónicos (e-CF), tanto las definiciones desde el punto de vista 
+tributario como desde el punto de vista comercial.  
+Desde la perspectiva de este razonamiento, este documento tiene como obj etivo ser un instrumento adecuado para el respaldo de la 
+transacción entre las partes, y abarcar la información que se requiere para el uso del régimen de Factura Electrónica en República Dominicana. 
+Esta información considera las especificaciones para la transacción necesaria entre el emisor y comprador. 
+A continuación, se describe el formato electrónico de los tipos de e-CF: 
+ 
+TIPO DE COMPROBANTE 
+TIPO e-CF 
+31 Factura de Crédito Fiscal Electrónica 
+32 Factura de Consumo Electrónica 
+33 Nota de Débito Electrónica 
+34 Nota de Crédito Electrónica 
+41 Compras Electrónico 
+43 Gastos Menores Electrónico 
+44 Regímenes Especiales Electrónico 
+45 Gubernamental Electrónico 
+46 Comprobante de Exportaciones Electrónico  
+47 Comprobante para Pagos al Exterior Electrónico 
+ 
+ 
+ 
+  
+ 
+
+===== PAGE 4/89 =====
+
+ 
+Pág. 3 de 87 
+ 
+2. Contenido del e-CF 
+De acuerdo con lo dispuesto en el D ecreto No. 254-06 que establece el Reglamento para la Regulación de la Impresión, Emisión y Entrega de 
+Comprobantes Fiscales, la Dirección General de Impuestos Internos podrá autorizar comprobantes fiscales  que reúnan los requisitos exigidos 
+por la Ley y el Reglamento. Sobre la base de esta disposición , se define el formato de los documentos electrónicos y la obligatoriedad de los 
+datos contenidos en ellos. Los documentos electrónicos tienen un formato único, en que la principal diferencia radica en la obligatoriedad o no 
+de algunos datos. 
+Todo e-CF que se emita debe contener una firma digital, la que permite autenticar su origen y certificar su integridad.  
+ 
+2.1. Composición del e-CF 
+En el e-CF se distinguen las siguientes partes: 
+ 
+A. Encabezado: Corresponde a la identificación del e-CF, donde contiene los datos del emisor, comprador y datos tributarios. 
+ 
+B. Detalle de Bienes o Servicios: En esta sección se debe detallar una línea por cada ítem. 
+ 
+C. Subtotales Informativos: Estos subtotales no aumentan ni disminuyen la base del impuesto, ni modifican los campos totalizadores; 
+solo son campos informativos. 
+ 
+D. Descuentos o Recargos: Esta sección se utiliza para especificar descuentos o recargos globales que afectan al total del e-CF. No se 
+requiere especificar ítem por ítem.  
+ 
+E. Paginación: En esta sección se indica la cantidad de páginas del e -CF en la Representación Impresa y cuales ítems estarán en cada 
+una. Esta deberá repetirse para el total de páginas especificadas. 
+ 
+F. Información de Referencia: En esta sección se deben detallar los e-CF modificados por Nota de Crédito o Débito Electrónica y los e-
+CF emitidos por motivo de reemplazo de un comprobante emitido en contingencia. 
+ 
+G. Fecha y Hora de la firma digital. 
+ 
+H. Firma Digital sobre toda la información anterior para garantizar la integridad del e-CF. 
+ 
+
+===== PAGE 5/89 =====
+
+ 
+Pág. 4 de 87 
+ 
+La obligatoriedad de cada una de las partes de e-CF se especifica en el siguiente cuadro: 
+ 
+Contenido del e-CF 
+Sección 
+Fact. Créd. 
+Fiscal 
+Electr. 
+31 
+Fact. 
+Consum. 
+Electr. 
+32 
+Nota 
+Déb. 
+Electr. 
+33 
+Nota 
+Créd. 
+Electr. 
+34 
+Compras 
+Electr. 
+ 
+41 
+Gastos 
+Menor. 
+Electr. 
+43 
+Regí. 
+Espec. 
+Electr. 
+ 
+44 
+Guber. 
+Electr. 
+45 
+Export. 
+Electr. 
+ 
+46 
+Pagos 
+Exterior 
+Electr. 
+ 
+47 
+Encabezado 1 1 1 1 1 1 1 1 1 1 
+Detalle de Bienes o Servicios 1 1 1 1 1 1 1 1 1 1 
+Subtotales Informativos 3 3 3 3 3 3 3 3 3 3 
+Descuentos o Recargos1 2 2 2 2 2 2 2 2 2 2 
+Paginación 2 2 2 2 2 2 2 2 2 2 
+Información de Referencia 2 2 1 1 2 2 2 2 2 2 
+Fecha y Hora de la firma digital 1 1 1 1 1 1 1 1 1 1 
+Firma Digital 1 1 1 1 1 1 1 1 1 1 
+ 
+Códigos de Obligatoriedad: 
+0: No corresponde. Significa que el dato no debe ir en un determinado documento.  
+1: Dato obligatorio. El dato siempre debe estar en el documento, independiente de las características de la transacción.  
+2: Dato condicional. El dato no es obligatorio en todos los documentos, pero pasa a serlo en determinadas operaciones si se cumple una 
+determinada condición. Ejemplo: Si e xisten descuentos recargos que afectan el total del e -CF, se debe incluir  la sección Descuentos o 
+Recargos, de lo contrario se descuadrará el monto total.  
+3: Opcional. El dato es opcional. 
+ 
+ 
+ 
+ 
+1 Sujeto a que exista un descuento o recargo global. 
+
+===== PAGE 6/89 =====
+
+ 
+Pág. 5 de 87 
+ 
+2.2. Detalle por sección 
+El contenido de cada sección contendrá el formato y sus códigos de obligatoriedad según el tipo de e-CF. A continuación, se especifican: 
+ 
+➢ Largo Máximo: Tamaño máximo del campo. El largo indicado será el largo máximo. 
+ 
+➢ Tipo de Documento: Podrá ser alfa (ALFA), numérica (NUM) o alfanumérica (ALFANUM). En la información tipo numérica, los decimales 
+se separan con punto. No debe separarse los miles con otro tipo de carácter. 
+➢ Columna I: Indica si el dato debe estar en la representación impresa (RI) del documento. Debajo de cada campo se incluye el nombre 
+del tag XML que tiene asociado. Ejemplo: <TipoeCF>.  
+En la columna ‘I’ se pueden tener los siguientes valores: 
+• N: La impresión de este campo no es obligatoria. 
+• I: Impresión del dato es obligatoria. 
+• P: El dato debe estar impreso en palabras. Por ejemplo: si el tipo de e-CF está codificado, en la representación impresa debe 
+estar palabras (Factura Crédito Fiscal Electrónica, Nota de Crédito Electrónica, etc.). 
+ 
+
+===== PAGE 7/89 =====
+
+ Pág. 6 de 87 
+ 
+ 
+A. ENCABEZADO 
+ 
+CAMPOS DESCRIPCIÓN 
+ 
+Largo 
+Max 
+Tipo Validación 
+ 
+ 
+I 
+OBLIGATORIEDAD 
+Fact. Créd. 
+Fiscal 
+Electr. 
+ 
+31 
+Fact. 
+Consum. 
+Electr. 
+ 
+32 
+Nota 
+Déb. 
+Electr. 
+ 
+33 
+Nota Créd. 
+Electr. 
+ 
+34 
+Compras 
+Electr. 
+ 
+41 
+Gastos 
+Menor. 
+Electr. 
+ 
+43 
+Regím. 
+Espec. 
+Electr. 
+ 
+44 
+Guber. 
+Electr. 
+ 
+45 
+Export. 
+Electr. 
+ 
+46 
+Pagos 
+Exterior 
+Electr. 
+ 
+47 
+ ÁREA 
+<Encabezado> ENCABEZADO     1 1 1 1 1 1 1 1 1 1 
+1 VERSIÓN Versión del formato utilizado. 3 ALFA
+NUM Valor: 1.0 N 1 1 1 1 1 1 1 1 1 1 
+  ÁREA 
+<IdDoc> IDENTIFICACIÓN DEL DOCUMENTO     1 1 1 1 1 1 1 1 1 1 
+2 
+Tipo Comprobante 
+Fiscal Electrónico 
+<TipoeCF> 
+Indica si el documento es: 
+Código Tipo: 
+ 
+31: Factura de Crédito Fiscal 
+Electrónica 
+32: Factura de Consumo Electrónica 
+33: Nota de Débito Electrónica 
+34: Nota de Crédito Electrónica 
+41: Compras Electrónico 
+43: Gastos Menores Electrónico 
+44: Regímenes Especiales Electrónica 
+45: Gubernamental Electrónico 
+46: Comprobante para 
+Exportaciones Electrónico 
+47: Comprobante para Pagos al 
+Exterior Electrónico  
+2 NUM 
+a) De acuerdo a la 
+codificación del campo de 
+Descripción. 
+ 
+P 1 1 1 1 1 1 1 1 1 1 
+3 e-NCF 
+<eNCF> Secuencia autorizada por la DGII. 13 ALFA
+NUM 
+a) Validar con No. Secuencia 
+autorizada por DGII.  I 1 1 1 1 1 1 1 1 1 1 
+4 
+Fecha Vencimiento 
+<FechaVencimientoSecuenci
+a> 
+Fecha de vencimiento de la secuencia 
+de e-NCF. 
+ 
+10 ALFA
+NUM 
+Fecha válida:  
+  a) Formato 
+(dd-MM-AAAA) 
+b) Validar con fecha de 
+vencimiento de la 
+autorización de la secuencia.  
+I 1 0 1 0 1 1 1 
+ 
+1 
+ 
+1 1 
+ 
+ 
+ 
+
+===== PAGE 8/89 =====
+
+ 
+Pág. 7 de 87 
+ 
+ 
+CAMPOS DESCRIPCIÓN 
+Largo 
+Max Tipo Validación 
+ 
+ 
+I 
+OBLIGATORIEDAD 
+Fact. Créd. 
+Fiscal Electr. 
+ 
+31 
+Fact. 
+Cons. 
+Electr. 
+ 
+32 
+Nota 
+Déb. 
+Electr. 
+ 
+33 
+Nota 
+Créd. 
+Electr. 
+ 
+34 
+Compras 
+Electr. 
+ 
+41 
+Gastos 
+Menor. 
+Electr. 
+ 
+43 
+Regím. 
+Espec. 
+Electr. 
+ 
+44 
+Guber. 
+Electr. 
+ 
+45 
+Export. 
+Electr. 
+ 
+46 
+Pagos 
+Exterior 
+Electr. 
+ 
+47 
+5 
+Indicador Nota de Crédito 
+mayor a 30 días 
+<IndicadorNotaCredito> 
+Sólo para Notas de Crédito que no 
+tienen derecho a rebajar ITBIS .El 
+indicador tomará valor 1 si la fecha 
+es mayor a 30 días calendario de la 
+emisión del e-CF afectado. 
+ 
+1 NUM 
+a) Valor 0 si fecha de emisión del 
+e-CF afectado es ≤ 30 días 
+calendario.  
+b) Valor 1 si fecha de emisión del 
+e-CF afectado es > 30 días 
+calendario. 
+  
+N 0 0 0 1 0 0 0 0 0 0 
+6 Indicador Envío Diferido 
+<IndicadorEnvioDiferido> 
+Identifica a los contribuyentes que 
+han sido previamente autorizados 
+a tener ventas a través de 
+dispositivos móviles offline, tales 
+como ventas con Handheld, entre 
+otros.  
+  
+Condicional a que se encuentre 
+autorizado hacer envíos diferidos. 
+1 NUM 
+a) Código 1: Envío diferido 
+autorizado.  
+  
+b) Valida contribuyente 
+(RNC/Cédula) está autorizado a 
+realizar envíos diferidos. 
+N 2 2 2 2 0 0 2 2 2 0 
+7 
+Indicador Monto Gravado 
+<IndicadorMontoGravado> 
+ 
+Indica si en la línea de detalle, el 
+monto se encuentra con ITBIS 
+incluido (impuestos adicionales 
+no están incluidos en el precio 
+del item).  
+Condicional a que el bien o 
+servicio sea gravado con ITBIS. 
+ 
+1 NUM 
+a) Valor 0 si los montos en las 
+líneas sección B “Detalle de 
+Bienes o Servicios” no tienen 
+ITBIS incluido. 
+ 
+b) Valor 1 si los montos en las 
+líneas sección B “Detalle de 
+Bienes o Servicios” se 
+encuentran con ITBIS incluido.  
+N 2 2 2 2 2 0 0 2 0 0 
+8 Tipo de Ingresos 
+<TipoIngresos> 
+Indica el tipo de ingreso recibido, 
+según clasificación del formato  de 
+envío de ventas de Bienes o 
+Servicios. 
+ 
+ 
+2 NUM 
+  a) Código Tipo: 
+01: Ingresos por operaciones (No 
+financieros). 
+02: Ingresos Financieros 
+03: Ingresos Extraordinarios 
+04: Ingresos por Arrendamientos 
+05: Ingresos por Venta de Activo 
+Depreciable 
+06: Otros Ingresos 
+N 1 1 1 1 0 0 1 1 1 0 
+ 
+ 
+
+===== PAGE 9/89 =====
+
+ 
+Pág. 8 de 87 
+ 
+ 
+ 
+CAMPOS DESCRIPCIÓN 
+ 
+Largo 
+Max 
+Tipo Validación 
+ 
+ 
+I 
+OBLIGATORIEDAD 
+Fact. 
+Créd. 
+Fiscal 
+Electr. 
+ 
+31 
+Fact. 
+Cons. 
+Electr. 
+ 
+32 
+Nota 
+Déb. 
+Electr. 
+ 
+33 
+Nota 
+Créd. 
+Electr. 
+ 
+34 
+Compras 
+Electr. 
+ 
+41 
+Gastos 
+Menor. 
+Electr. 
+ 
+43 
+Regím. 
+Espec. 
+Electr. 
+ 
+44 
+Guber. 
+Electr. 
+ 
+45 
+Export. 
+Electr. 
+ 
+46 
+Pagos 
+Exterior 
+Electr. 
+ 
+47 
+9 Tipo de Pago 
+<TipoPago> 
+Indica el tipo de pago del cliente.  
+Las facturas por entrega gratuita 
+(código 3), no son válidas para 
+crédito fiscal. 
+1 NUM 
+a) Código Tipo: 
+1: Contado 
+2: Crédito 
+3: Gratuito  
+N 1 1 1 1 1 3 1 1 1 3 
+10 Fecha Límite de Pago 
+<FechaLimitePago> 
+Solo para facturas a crédito. 
+Condicional a que el tipo de pago sea 
+a crédito. 
+10 ALFA 
+NUM 
+Fecha válida: 
+a) Formato 
+dd-MM-AAAA 
+b) Fecha límite de pago debe ser ≥ 
+Fecha de emisión. 
+N 2 2 2 2 2 0 2 2 2 3 
+11 Término de Pago 
+<TerminoPago> 
+Indica el tiempo establecido para el 
+pago de la factura y se debe 
+especificar si el mismo es en horas, 
+días, semanas, meses u otro. 
+Ejemplo:  
+1) 72 horas 
+2) 120 días 
+3) 1 semana 
+4) 3 meses 
+15 ALFA 
+NUM 
+a) Sin Validación. 
+ N 3 3 3 0 3 0 3 3 3 3 
+  
+TABLA DE FORMAS DE 
+PAGO 
+<TablaFormasPago>2 
+Hasta 07 repeticiones. 
+Contiene los dos campos siguientes.     3 3 3 0 3 0 3 3 3 3 
+12 Forma de Pago 
+<FormaPago> 
+Indica el método en que se pagará la 
+factura. 
+ 
+2 NUM 
+a) Código Forma: 
+1: Efectivo 
+2: Cheque/Transferencia/ 
+Depósito 
+3: Tarjeta de Débito/Crédito 
+4: Venta a Crédito 
+5: Bonos o Certificados de regalo 
+6: Permuta 
+7: Nota de crédito 
+8: Otras Formas de pago 
+ 
+Si la forma de pago corresponde al tipo 
+5 el e-CF debe ser tipo 32. 
+N 3 3 3 0 3 0 3 3 3 3 
+ 
+2 Por definición del XML, para cada elemento debe existir un tag contenedor que agrupe los campos contenidos en una tabla. Ej: en el caso de la <TablaFormasPago> se agrupan dentro del tag <FormaDePago> por cada par <FormaPago> 
+y <MontoPago> especificado. 
+
+===== PAGE 10/89 =====
+
+ 
+Pág. 9 de 87 
+ 
+ 
+CAMPOS 
+ 
+DESCRIPCIÓN 
+ 
+Largo 
+Max 
+ 
+Tipo 
+ 
+Validación 
+ 
+ 
+I 
+OBLIGATORIEDAD 
+Fact. Créd. 
+Fiscal 
+Electr. 
+ 
+31 
+Fact. 
+Consum. 
+Electr. 
+ 
+32 
+Nota 
+Déb. 
+Electr. 
+ 
+33 
+Nota 
+Créd. 
+Electr. 
+ 
+34 
+Compras 
+Electr. 
+ 
+41 
+Gastos 
+Menor. 
+Electr. 
+ 
+43 
+Regím. 
+Espec. 
+Electr. 
+ 
+44 
+Guber. 
+Electr. 
+ 
+45 
+Export. 
+Electr. 
+ 
+46 
+Pagos 
+Exterior 
+Electr. 
+ 
+47 
+13 Monto de Pago 
+<MontoPago> 
+Indica el monto asociado para cada 
+forma de pago. Condicional a que 
+exista una forma de pago. 
+18 NUM 
+a) Valor numérico de 16 
+enteros, 2 decimales;  ≥ 0 
+(Debe ser positivo) 
+N 2 2 2 0 2 0 2 2 2 3 
+ FIN TABLA    
+14 Tipo Cuenta de Pago3 
+<TipoCuentaPago> 
+Cuenta de origen de la transferencia o 
+del cheque.  2 ALFA 
+ Código Tipo: 
+ CT: Cta. Corriente 
+ AH: Ahorro 
+ OT: Otra  
+N 3 3 3 0 3 0 3 3 3 3 
+15 Cuenta de Pago 
+<NumeroCuentaPago> 
+Número de la cuenta si la forma de 
+pago es por cheque o transferencia 
+bancaria.  
+28 ALFA 
+NUM a) Sin validación N 3 3 3 0 3 0 3 3 3 3 
+16 Banco de Pago 
+<BancoPago> Banco de la Cuenta. 75 ALFA 
+NUM a) Sin validación  N 3 3 
+ 
+3 
+ 
+0 3 0 3 3 3 3 
+17 Fecha desde 
+<FechaDesde> 
+Período de facturación para Servicios 
+Periódicos Ej. Energía eléctrica, 
+telefónica, otros. 
+Fecha desde 
+(Fecha inicial del servicio facturado). 
+ 
+10 ALFA 
+NUM 
+Fecha válida: 
+a) Formato 
+dd-MM-AAAA  
+b) Menor o igual que 
+“Fecha hasta”. 
+De acuerdo al Formato 
+del campo de 
+descripción. 
+N 3 3 
+ 
+3 
+ 
+3 0 0 3 3 3 3 
+18 Fecha hasta 
+<FechaHasta> 
+Período de facturación para Servicios 
+Periódicos. Fecha hasta 
+(Fecha final del servicio facturado). 
+ 
+10 ALFA 
+NUM 
+Fecha válida:  
+a) Formato  
+dd-MM-AAAA  
+b) Mayor o igual a “Fecha 
+desde”. 
+De acuerdo al Formato 
+del campo de 
+Descripción. 
+N 3 3 
+ 
+3 
+ 
+3 0 0 3 3 3 3 
+ 
+ 
+ 
+ 
+3 En los casos donde exista más de una forma de pago cheque/transferencia/depósito sólo colocar un tipo cuenta de pago. 
+
+===== PAGE 11/89 =====
+
+ 
+Pág. 10 de 87 
+ 
+ 
+CAMPOS 
+ 
+DESCRIPCIÓN 
+ 
+Largo 
+Max 
+ 
+Tipo 
+ 
+Validación 
+ 
+ 
+I 
+OBLIGATORIEDAD 
+Fact. 
+Créd. 
+Fiscal 
+Electr. 
+ 
+31 
+Fact. 
+Consum. 
+Electr. 
+ 
+32 
+Nota Déb. 
+Electr. 
+ 
+33 
+Nota 
+Créd. 
+Electr. 
+ 
+34 
+Compras 
+Electr. 
+ 
+41 
+Gastos 
+Menor. 
+Electr. 
+ 
+43 
+Regím. 
+Espec. 
+Electr. 
+ 
+44 
+Guber. 
+Electr. 
+ 
+45 
+Export. 
+Electr. 
+ 
+46 
+Pagos 
+Exterior 
+Electr. 
+ 
+47 
+19 Total Páginas 
+<TotalPaginas> 
+Indica el total de páginas en la que será 
+impreso el e-CF. 
+ 
+Cuenta las veces que se repite el campo 
+Página No. de la sección Paginación.  
+ 
+Condicional a que exista paginación. 
+3 NUM 
+a) Valor numérico hasta 3 
+enteros, > 1 (Debe ser positivo). 
+ 
+b) Total de veces que se repite el 
+campo ‘Página No.’ de la sección 
+Paginación. 
+I 2 2 2 2 2 2 2 2 2 2 
+ FIN ÁREA IDENTIFICACIÓN DEL DOCUMENTO   
+ 
+ 
+ÁREA 
+<Emisor> EMISOR     1 1 1 1 1 1 1 1 1 1 
+20 RNC Emisor 
+<RNCEmisor> 
+Corresponde al RNC del emisor. 
+ 9 u 11 NUM 
+Validar en el Registro Nacional 
+de contribuyentes.  
+Se tiene que validar: 
+a) RNC cumpla con estructura 
+de formato. 
+b) RNC esté autorizado como 
+Facturador Electrónico. 
+c) RNC se encuentre en estatus 
+“Activo”. 
+d) RNC no posea marcas de 
+bloqueos.  
+I 1 1 1 1 1 1 1 1 1 1 
+21 
+Nombre o Razón Social 
+Emisor 
+<RazonSocialEmisor> 
+Nombre o Razón Social del emisor. 150 ALFA 
+NUM a) Sin validación I 1 1 1 1 1 1 1 1 1 1 
+22 Nombre Comercial 
+<NombreComercial> Nombre Comercial. 150 ALFA 
+NUM a) Sin validación I 3 3 3 3 3 3 3 3 3 3 
+23 Sucursal 
+<Sucursal> 
+Indica nombre de la sucursal que emite 
+el e -CF. Corresponde a un dato 
+administrado por el emisor. 
+20 ALFA 
+NUM a) Sin validación I 3 3 3 3 3 3 3 3 3 3 
+24 Dirección de Emisor 
+<DireccionEmisor> 
+Datos correspondientes a Domicilio de 
+operación del Emisor. 100 ALFA 
+NUM a) Sin validación I 1 1 1 1 1 1 1 1 1 1 
+ 
+ 
+ 
+
+===== PAGE 12/89 =====
+
+ 
+Pág. 11 de 87 
+ 
+ 
+CAMPOS 
+ 
+DESCRIPCIÓN 
+ 
+Largo 
+Max 
+ 
+Tipo 
+ 
+Validación 
+ 
+ 
+I 
+OBLIGATORIEDAD 
+Fact. 
+Créd. 
+Fiscal 
+Electr. 
+ 
+31 
+Fact. 
+Consum. 
+Electr. 
+ 
+32 
+Nota Déb. 
+Electr. 
+ 
+33 
+Nota 
+Créd. 
+Electr. 
+ 
+34 
+Compras 
+Electr. 
+ 
+41 
+Gastos 
+Menor. 
+Electr. 
+ 
+43 
+Regím. 
+Espec. 
+Electr. 
+ 
+44 
+Guber. 
+Electr. 
+ 
+45 
+Export. 
+Electr. 
+ 
+46 
+Pagos 
+Exterior 
+Electr. 
+ 
+47 
+25 Municipio 
+<Municipio> 
+Dato correspondiente al domicilio de 
+operación del Emisor.  6 NUM 
+a) Validar con código de la 
+Tabla III (Codificación 
+Provincias Y Municipios) 
+P 3 3 3 3 3 3 3 3 3 3 
+26 Provincia 
+<Provincia> 
+Dato correspondiente al domicilio de 
+operación del Emisor. 6 NUM 
+a) Validar con código de la 
+Tabla III (Codificación 
+Provincias Y Municipios 
+P 3 3 3 3 3 3 3 3 3 3 
+ Tabla de Teléfono Emisor 
+<TablaTelefonoEmisor> Se pueden incluir 3 repeticiones.      3 3 3 3 3 3 3 3 3 3 
+27 Teléfono Emisor 
+<TelefonoEmisor> 
+Dato correspondiente al teléfono de 
+contacto del emisor. 12 ALFA 
+NUM 
+Formato válido: 
+Estructura de teléfono 
+(xxx-xxx-xxxx) 
+N 3 3 3 3 3 3 3 3 3 3 
+ FIN TABLA TELÉFONO EMISOR    
+28 Correo Electrónico Emisor 
+<CorreoEmisor> 
+Dato correspondiente al correo 
+electrónico del emisor. 80 
+ 
+ALFA 
+NUM 
+Formato válido: Estructura de 
+correo electrónico 
+(xxxxx@xxx.xx) 
+N 3 3 3 3 3 3 3 3 3 3 
+29 WebSite 
+<WebSite> 
+Dato correspondiente a la página web 
+del emisor. 50 
+ 
+ALFA 
+NUM 
+a) Sin validación N 3 3 3 3 3 3 3 3 3 3 
+30 Actividad Económica Emisor 
+<ActividadEconomica> 
+Dato correspondiente a la actividad 
+económica del Emisor (se puede incluir 
+sólo la actividad económica que 
+corresponde a la transacción). 
+100 ALFA 
+NUM a) Sin validación N 3 3 3 3 3 3 3 3 3 3 
+31 Código del Vendedor 
+<CodigoVendedor> Identificador del Vendedor. 60 ALFA 
+NUM a) Sin validación N 3 3 3 3 0 0 3 3 3 0 
+32 Número Factura Interna 
+<NumeroFacturaInterna> 
+Corresponde al número interno de la 
+factura. 20 ALFA 
+NUM a) Sin validación N 3 3 3 3 3 3 3 3 3 3 
+33 Número pedido Interno 
+<NumeroPedidoInterno> 
+Corresponde al número de pedido 
+interno asignado a la factura. 20 NUM a) Sin validación N 3 3 3 3 3 3 3 3 3 3 
+34 Zona de Venta 
+<ZonaVenta> 
+Corresponde a la zona de venta del 
+vendedor. 20 ALFA 
+NUM a) Sin validación. N 3 3 3 3 0 0 3 3 3 0 
+ 
+ 
+ 
+
+===== PAGE 13/89 =====
+
+ 
+Pág. 12 de 87 
+ 
+ 
+CAMPOS 
+ 
+DESCRIPCIÓN 
+ 
+Largo 
+Max 
+ 
+Tipo 
+ 
+Validación 
+ 
+ 
+I 
+OBLIGATORIEDAD 
+Fact. 
+Créd. 
+Fiscal 
+Electr. 
+ 
+31 
+Fact. 
+Consum. 
+Electr. 
+ 
+32 
+Nota Déb. 
+Electr. 
+ 
+33 
+Nota 
+Créd. 
+Electr. 
+ 
+34 
+Compras 
+Electr. 
+ 
+41 
+Gastos 
+Menor. 
+Electr. 
+ 
+43 
+Regím. 
+Espec. 
+Electr. 
+ 
+44 
+Guber. 
+Electr. 
+ 
+45 
+Export. 
+Electr. 
+ 
+46 
+Pagos 
+Exterior 
+Electr. 
+ 
+47 
+35 Ruta de Venta 
+<RutaVenta> 
+Corresponde a la ruta de venta del 
+vendedor. 20  ALFA 
+NUM a) Sin validación N 3 3 3 3 0 0 3 3 3 0 
+36 Información adicional Emisor 
+<InformacionAdicionalEmisor> Otra información relativa al Emisor. 250 ALFA 
+NUM a) Sin validación N 3 3 3 3 3 3 3 3 3 3 
+37 Fecha Emisión 
+<FechaEmision> Fecha de emisión del e-CF. 10 ALFA 
+NUM 
+Fecha válida: 
+a) Formato 
+dd-MM-AAAA  
+b) Validar fecha de inicio como 
+facturador electrónico. 
+  
+I 1 1 1 1 1 1 1 1 1 1 
+ FIN ÁREA EMISOR    
+ ÁREA 
+<Comprador> COMPRADOR     1 1 2 2 1 0 1 1 1 3 
+38 RNC Comprador 
+<RNCComprador> 
+Corresponde al RNC del comprador. 
+ 
+Condicional a que el monto total del e -
+CF tipo 32 sea igual o superiores a DOP$ 
+250M.4  
+ 
+En caso de que e l e-CF sea tipo 46, el 
+campo es condicional a que  la Zona 
+Franca Comercial (Aeropuertos y 
+Puertos) realice transferencia de bienes 
+a Residentes y el campo ‘ Identificador 
+Extranjero’ esté vacío.  
+9 u 11 NUM 
+a) Validar estructura. 
+ 
+b) Si el e -CF es tipo 32 y el 
+monto total es ≥ 
+DOP$250,000.00 se debe 
+identificar RNC Comprador. 
+ 
+c) Si el e -CF tipo 33 y tipo 34 
+modifica un e -CF tipo 32 con 
+monto total ≥ DOP$250,000.00 
+se debe identificar el RNC 
+Comprador.  
+ 
+d) Si el e -CF es tipo 32 y el 
+comprador es extranjero, este 
+campo puede ir en blanco y 
+completar el campo 
+Identificador Extranjero. 
+ 
+I 1 2 2 2 1 0 25 1 26 0 
+ 
+4 Si el monto total de la factura de consumo electrónica es menor a DOP$250 mil, el campo ‘RNC Comprador’ sera completado de manera opcional. 
+5 Condicional a que el comprador tenga RNC/Cédula. Si el comprador es extranjero (diplomático), el campo ‘RNC Comprador’ debe ir en blanco y completar el campo ‘Identificador Extranjero’. 
+6 Según lo establecido en el Art. 10 de la Norma General 05-19, en caso de que las Zonas Francas Comerciales (Aeropuertos y Puertos) realicen transferencias de bienes a Residentes, se deberá completar el campo ‘RNC Comprador’. 
+
+===== PAGE 14/89 =====
+
+ 
+Pág. 13 de 87 
+ 
+ 
+CAMPOS DESCRIPCIÓN 
+Largo 
+Max Tipo Validación 
+ 
+ 
+I 
+OBLIGATORIEDAD 
+ 
+Fact. 
+Créd. 
+Fiscal 
+Electr. 
+ 
+31 
+Fact. 
+Consum. 
+Electr. 
+ 
+32 
+Nota Déb. 
+Electr. 
+ 
+33 
+Nota 
+Créd. 
+Electr. 
+ 
+34 
+Compras 
+Electr. 
+ 
+41 
+Gastos 
+Menor. 
+Electr. 
+ 
+43 
+Regím. 
+Espec. 
+Electr. 
+ 
+44 
+Guber. 
+Electr. 
+ 
+45 
+Export. 
+Electr. 
+ 
+46 
+Pagos 
+Exterior 
+Electr. 
+ 
+47 
+39 Identificador Extranjero 
+<IdentificadorExtranjero>7 
+Corresponde al número de 
+identificación cuando el comprador 
+es extranjero y no tiene RNC/Cédula.  
+ 
+Condicional a que el e -CF es tipo 
+32>DOP$250,000.00 (aplica también 
+para las notas de crédito/débito que 
+hagan referencia a ese tipo de e -CF), y 
+el campo RNC Comprador esté vacío. 
+ 
+En caso de que el e -CF sea tipo 46, el 
+campo es condicional a que la Zona 
+Franca Comercial (Aeropuertos y 
+Puertos) realice transferencia de 
+bienes a No Residentes y el campo 
+‘RNC Comprador’ esté vacío. 
+20 ALFA 
+NUM 
+a) El e -CF de consumo 
+electrónica es > 
+DOP$250,000.00 (aplica 
+también para las notas de 
+crédito/débito que hagan 
+referencia a ese tipo de e-CF). 
+ 
+b) El campo RNC Comprador 
+está en blanco. 
+I 0 2 2 2 0 0 28 0 29 3 
+40 
+Nombre o Razón Social 
+Comprador 
+<RazonSocialComprador> 
+Nombre o Razón Social del comprador. 
+ 
+En caso de que el e -CF sea tipo 46, el 
+campo es condicional a que exista el 
+campo ‘RNC Comprador’ o 
+‘Identificador Extranjero’. 
+150 ALFA 
+NUM 
+a) Si el e -CF es tipo 32 y el 
+monto total es ≥ 
+DOP$250,000.00 se debe 
+indicar el nombre o razón 
+social comprador. 
+ 
+b) Si el e -CF tipo 33 y tipo 34 
+modifica un e -CF tipo 32 con 
+monto total ≥ 
+DOP$250,000.00, se debe 
+indicar nombre o razón social 
+comprador. 
+I 1 2 2 2 1 0 1 1 1 3 
+ 
+7 Este campo se completa si el e-CF es una factura de consumo electrónica > DOP$250,000 y el comprador no posee RNC/Cédula por ser extranjero. Lo mismo con las notas de crédito/débito electrónicas que afecten e-CF tipo 32 por valor 
+> DOP$250,000. Cuando exista Identidicador Extranjero se omitirá el campo RNC Comprador. 
+8 Condicional a que el comprador sea extranjero (diplomático). Si el campo ‘Identificador Extranjero’ es completado, el campo RNC comprador no deberá ser completado. 
+9 Según lo establecido en el Art. 10 de la Norma General 05-19, en caso de que las Zonas Francas Comerciales (Aeropuertos y Puertos) realicen transferencias de bienes a No Residentes, s e deberá completar el campo ‘Identificador 
+Extranjero’. 
+
+===== PAGE 15/89 =====
+
+ 
+Pág. 14 de 87 
+ 
+ 
+ 
+CAMPOS DESCRIPCIÓN 
+Largo 
+Max Tipo Validación 
+ 
+ 
+I 
+OBLIGATORIEDAD 
+ 
+Fact. Créd. 
+Fiscal 
+Electr. 
+ 
+31 
+Fact. 
+Consum. 
+Electr. 
+ 
+32 
+Nota 
+Déb. 
+Electr. 
+ 
+33 
+Nota 
+Créd. 
+Electr. 
+ 
+34 
+Compras 
+Electr. 
+ 
+41 
+Gastos 
+Menor. 
+Electr. 
+ 
+43 
+Regím. 
+Espec. 
+Electr. 
+ 
+44 
+Guber. 
+Electr. 
+ 
+45 
+Export. 
+Electr. 
+ 
+46 
+Pagos 
+Exterior 
+Electr. 
+ 
+47 
+41 Contacto Comprador 
+<ContactoComprador> 
+Nombre y teléfono de contacto del 
+comprador. 80 ALFA 
+NUM a) Sin validación N 3 3 3 3 3 0 3 3 3 0 
+42 Correo Comprador 
+<CorreoComprador> 
+Dato correspondiente al correo 
+electrónico del comprador. 80 ALFA 
+NUM 
+Formato válido: Estructura de 
+correo electrónico. 
+(xxxxx@xxx.xx) 
+ 
+N 3 3 3 3 3 0 3 3 3 0 
+43 Dirección Comprador 
+<DireccionComprador> Dirección del comprador. 100 ALFA 
+NUM a) Sin validación N 3 3 3 3 3 0 3 3 3 0 
+44 Municipio Comprador 
+<MunicipioComprador> 
+Dato correspondiente a dirección de 
+comprador. 6 NUM 
+a) Validar con código de la 
+Tabla III (Codificación 
+Provincias y Municipios) 
+N 3 3 3 3 3 0 3 3 3 0 
+45 Provincia Comprador 
+<ProvinciaComprador> 
+Dato correspondiente a dirección de 
+comprador. 6 NUM 
+a) Validar con código de la 
+Tabla III (Codificación 
+Provincias y Municipios) 
+N 3 3 3 3 3 0 3 3 3 0 
+46 País Comprador 
+<PaisComprador> 
+Dato correspondiente al país hacia el cual 
+se realiza la facturación. 60 ALFA a) Sin validación. P 0 0 0 0 0 0 0 0 3 0 
+47 Fecha Entrega 
+<FechaEntrega> Corresponde a la fecha de entrega del ítem. 10 ALFA 
+NUM 
+a) Fecha válida:  
+Formato (dd-MM-AAAA) N 3 3 3 3 0 0 3 3 3 0 
+48 Contacto de Entrega 
+<ContactoEntrega> 
+Dato de contacto donde será realizada la 
+entrega o envio del ítem (distinto al 
+comprador). 
+100 ALFA 
+NUM a) Sin validación N 3 3 3 3 0 0 3 3 3 0 
+49 Dirección de Entrega 
+<DireccionEntrega> 
+Corresponde a la dirección o destino del 
+contacto de entrega. 100 ALFA 
+NUM a) Sin validación N 3 3 3 3 0 0 3 3 3 0 
+50 Telefóno  
+<TelefonoAdicional> 
+Dato del teléfono correspondiente al 
+contacto de entrega.  12 ALFA 
+NUM 
+a)Formato válido: 
+Estructura de teléfono 
+ (xxx-xxx-xxxx) 
+N 3 3 3 3 0 0 3 3 3 0 
+51 Fecha Orden de Compra 
+<FechaOrdenCompra> 
+Corresponde a la fecha de la orden de 
+compra. 
+ 
+10 ALFA 
+NUM 
+a)Fecha válida:  
+  Formato (dd-MM-AAAA) N 3 3 3 3 0 0 3 3 3 0 
+52 Número de Orden de Compra 
+<NumeroOrdenCompra> 
+Corresponde al número de orden de 
+compra.  20 ALFA 
+NUM 
+  
+a) Sin Validación N 3 3 3 3 0 0 3 3 3 0 
+ 
+
+===== PAGE 16/89 =====
+
+ 
+Pág. 15 de 87 
+ 
+ 
+CAMPOS DESCRIPCIÓN 
+ 
+Largo 
+Max 
+Tipo Validación 
+ 
+ 
+I 
+OBLIGATORIEDAD 
+Fact. Créd. 
+Fiscal 
+Electr. 
+ 
+31 
+Fact. 
+Consum. 
+Electr. 
+ 
+32 
+Nota Déb. 
+Electr. 
+ 
+33 
+Nota 
+Créd. 
+Electr. 
+ 
+34 
+Compras 
+Electr. 
+ 
+41 
+Gastos 
+Menor. 
+Electr. 
+ 
+43 
+Regím. 
+Espec. 
+Electr. 
+ 
+44 
+Guber. 
+Electr. 
+ 
+45 
+Export. 
+Electr. 
+ 
+46 
+Pagos 
+Exterior 
+Electr. 
+ 
+47 
+53 
+Código Interno del 
+Comprador 
+<CodigoInternoComprador> 
+Para identificación interna del 
+comprador, por ejemplo, código del 
+cliente, número de medidor, etc. 
+20 
+ALFA 
+NUM 
+a) Sin validación N 3 3 3 3 3 0 3 3 3 0 
+54 Responsable de pago 
+<ResponsablePago> 
+Corresponde a la identificación del 
+que realiza el pago del documento. 20 ALFA a) Sin validación N 3 3 3 3 3 0 3 3 3 0 
+55 
+Información Adicional 
+Comprador 
+<Informacionadicionalcomprad
+or> 
+Otra información relativa al 
+comprador. 
+150 
+ALFA 
+NUM 
+a) Sin validación N 3 3 3 3 3 0 3 3 3 0 
+ FIN ÁREA COMPRADOR    
+ ÁREA 
+<InformacionesAdicionales> INFORMACIONES ADICIONALES     3 3 3 3 0 0 3 3 3 0 
+56 Fecha Embarque 
+<FechaEmbarque> 
+Corresponde a la fecha del 
+embarque. 
+10 ALFA 
+NUM 
+a)Fecha válida:  
+Formato (dd-MM-AAAA) N 3 3 3 3 0 0 3 3 3 0 
+57 Número de Embarque 
+<NumeroEmbarque> 
+Dato correspondiente al número de 
+embarque. 
+25 ALFA 
+NUM 
+a) Sin validación  N 3 3 3 3 0 0 3 3 3 0 
+58 Número de Contenedor 
+<NumeroContenedor > 
+Dato correspondiente al número de 
+contenedor. 
+100 ALFA 
+NUM 
+a) Sin validación N 3 3 3 3 0 0 3 3 3 0 
+59 Número de Referencia 
+<NumeroReferencia> 
+Dato correspondiente al número de 
+referencia. 
+20 NUM a) Sin validación N 3 3 3 3 0 0 3 3 3 0 
+60 Nombre Puerto Embarque 
+<NombrePuertoEmbarque> 
+Nombre del puerto de  embarque de 
+la mercancía. 40 ALFA 
+NUM a) Sin validación N 0 0 0 0 0 0 0 0 3 0 
+61 Condiciones de Entrega 
+<CondicionesEntrega> 
+Se refiere a los términos comerciales 
+fijados por el comprador y el 
+vendedor referente a las condicones 
+de entrega de las mercancías y/o 
+productos. 
+ 
+Se indica si es CIF, FOB, etc. 
+3 ALFA a) Sin validación N 0 0 0 0 0 0 0 0 3 0 
+62 Total FOB 
+<TotalFob> 
+Corresponde a la suma del valor FOB 
+de todas las mercancías. 18 NUM a) Valor numérico de 16 
+enteros, 2 decimales; > 0 N 0 0 0 0 0 0 0 0 3 0 
+63 Seguro 
+<Seguro> 
+Corresponde al monto total de la 
+prima que figura en el documento de 
+embarque o el documento que 
+certifica el valor de la prima asignada 
+por la compañía aseguradora. 
+18 NUM a) Valor numérico de 16 
+enteros, 2 decimales; > 0 N 0 0 0 0 0 0 0 0 3 0 
+ 
+
+===== PAGE 17/89 =====
+
+ 
+Pág. 16 de 87 
+ 
+ 
+CAMPOS DESCRIPCIÓN 
+ 
+Largo 
+Max 
+Tipo Validación 
+ 
+ 
+I 
+OBLIGATORIEDAD 
+Fact. 
+Créd. 
+Fiscal 
+Electr. 
+ 
+31 
+Fact. 
+Consum. 
+Electr. 
+ 
+32 
+Nota 
+Déb. 
+Electr. 
+ 
+33 
+Nota 
+Créd. 
+Electr. 
+ 
+34 
+Compras 
+Electr. 
+ 
+41 
+Gastos 
+Menor. 
+Electr. 
+ 
+43 
+Regím. 
+Espec. 
+Electr. 
+ 
+44 
+Guber. 
+Electr. 
+ 
+45 
+Export. 
+Electr. 
+ 
+46 
+Pagos 
+Exterior 
+Electr. 
+ 
+47 
+64 
+Flete 
+<Flete> 
+Corresponde al importe pagado por el 
+traslado de la mercancía de puertos 
+dominicanos al extranjero. 
+18 NUM 
+a) Valor numérico de 16 enteros, 2 
+decimales; > 0 
+N 0 0 0 0 0 0 0 0 3 0 
+65 Otros Gastos 
+<OtrosGastos> 
+Importe sobre gastos por otros 
+servicios, hasta el transporte de las 
+mercancías en la aduana de destino. 
+18 NUM a) Valor numérico de 16 enteros, 2 
+decimales; > 0 N 0 0 0 0 0 0 0 0 3 0 
+66 
+Total CIF 
+<TotalCif> 
+Corresponde al valor FOB, Flete, 
+Seguro y otros gastos. 
+18 NUM 
+a) Valor numérico de 16 enteros, 2 
+decimales; > 0 
+ 
+N 0 0 0 0 0 0 0 0 3 0 
+67 
+Régimen Aduanero 
+<RegimenAduanero> 
+Corresponde al régimen aduanero al 
+que se acoge la mercancía exportada, 
+según se encuentra tipif icada en la 
+DGA10. 
+35 ALFA a) Sin validación  N 0 0 0 0 0 0 0 0 3 0 
+68 Nombre Puerto Salida 
+<NombrePuertoSalida> 
+Nombre del puerto de donde sale la  
+mercancía, distinto al puerto de 
+embarque. 
+40 ALFA 
+NUM a) Sin validación N 0 0 0 0 0 0 0 0 3 0 
+69 Nombre Puerto Desembarque 
+<NombrePuertoDesembarque> 
+Nombre del puerto de destino de la 
+mercancía. 40 ALFA 
+NUM a) Sin validación N 0 0 0 0 0 0 0 0 3 0 
+70 Peso Bruto 
+<PesoBruto> 
+Corresponde al peso bruto del 
+contenedor. 18 NUM 
+a) Valor numérico de 16 enteros, 2 
+decimales; > 0 (No puede ser 
+negativo) 
+N 3 3 3 3 0 0 3 3 3 0 
+71 Peso Neto 
+<PesoNeto> 
+Corresponde a peso neto del 
+contenedor. 18 NUM 
+a) Valor numérico de 16 enteros, 2 
+decimales; > 0 (No puede ser 
+negativo) 
+N 3 3 3 3 0 0 3 3 3 0 
+72 Unidad Peso Bruto 
+<UnidadPesoBruto> 
+Corresponde a la unidad de medida 
+en la que se encuentra el peso bruto 
+de la mercancía. 
+2 NUM a) Validar con la Tabla IV 
+(Codificación de Unidad de medida) N 3 3 3 3 0 0 3 3 3 0 
+73 Unidad Peso Neto 
+<UnidadPesoNeto> 
+Corresponde a la unidad de medida 
+en la que se encuentra el peso neto de 
+la mercancía. 
+2 NUM a) Validar con la Tabla IV 
+(Codificación de Unidad de medida) N 3 3 3 3 0 0 3 3 3 0 
+74 Cantidad de Bultos 
+<CantidadBulto> 
+Corresponde a la cantidad de bultos 
+que ampara el documento.   18 NUM a) Valor numérico de 16 enteros, 2 
+decimales; > 0 N 3 3 3 3 0 0 3 3 3 0 
+ 
+ 
+10 Dirección General de Aduanas. 
+
+===== PAGE 18/89 =====
+
+ 
+Pág. 17 de 87 
+ 
+ 
+CAMPOS DESCRIPCIÓN 
+ 
+Largo 
+Max 
+Tipo Validación 
+ 
+ 
+I 
+OBLIGATORIEDAD 
+Fact. 
+Créd. 
+Fiscal 
+Electr. 
+ 
+31 
+Fact. 
+Consum. 
+Electr. 
+ 
+32 
+Nota 
+Déb. 
+Electr. 
+ 
+33 
+Nota 
+Créd. 
+Electr. 
+ 
+34 
+Compras 
+Electr. 
+ 
+41 
+Gastos 
+Menor. 
+Electr. 
+ 
+43 
+Regím. 
+Espec. 
+Electr. 
+ 
+44 
+Guber. 
+Electr. 
+ 
+45 
+Export. 
+Electr. 
+ 
+46 
+Pagos 
+Exterior 
+Electr. 
+ 
+47 
+75 Unidad Bultos 
+<UnidadBulto> 
+Corresponde a la unidad de medida 
+en la que se encuentra los bultos. 2 NUM a) Validar con la Tabla IV 
+(Codificación de Unidad de medida) N 3 3 3 3 0 0 3 3 3 0 
+76 Volumen 
+<VolumenBulto> 
+Corresponde al volumen de los 
+bultos. 18 NUM a) Valor numérico de 16 enteros, 2 
+decimales; > 0 N 3 3 3 3 0 0 3 3 3 0 
+77 Unidad Volumen 
+<UnidadVolumen> 
+Corresponde a la unidad de medida 
+en la que se encuentra el volumen de 
+los bultos. 
+2 NUM a) Validar con la Tabla IV 
+(Codificación de Unidad de medida) N 3 3 3 3 0 0 3 3 3 0 
+ FIN ÁREA INFORMACIONES ADICIONALES  
+ ÁREA 
+<Transporte> TRANSPORTE     3 3 3 3 0 0 3 3 3 0 
+78 Vía Transporte 
+<ViaTransporte> 
+Se especifica si el transporte es vía 
+marítima, terrestre o aérea.  2 NUM 
+Se tiene que validar: 
+01: Terrestre 
+02: Marítimo 
+03: Aérea 
+N 0  0 0 0 0 0 0 0 3 0 
+79 País Origen 
+<PaisOrigen> 
+Corresponde al país de origen de la 
+mercancía. 60 ALFA  a) Sin validación N 0  0 0 0 0 0 0 0 3 0 
+80 Dirección Destino 
+<DireccionDestino> 
+Corresponde a la dirección de destino 
+donde sera realizado el envío del ítem 
+(distinto a la dirección del 
+comprador).  
+100 ALFA 
+NUM a) Sin validación N 0  0 0 0 0 0 0 0 3 0 
+81 País Destino 
+<PaisDestino> 
+Corresponde al país destino donde 
+sera realizado el envío del ítem 
+(distinto a país del comprador). 
+60 ALFA  a) Sin validación N 0  0 0 0 0 0 0 0 3 3 
+82 
+RNC o Identificación 
+Compañía Transportista 
+<RNCIdentificacionCompani
+aTransportista> 
+Corresponde al dato de RNC o de 
+Identificación de la compañía que 
+realiza el transporte. 
+20 ALFA 
+NUM a) Sin validación N 0  0 0 0 0 0 0 0 3 0 
+83 
+Nombre Compañía 
+Transportista 
+<NombreCompaniaTranspor
+tista> 
+Corresponde al dato del nombre o 
+razón social de la compañía que 
+realiza el transporte. 
+150 ALFA 
+NUM a) Sin validación N  0  0 0 0 0 0 0 0 3 0 
+84 Número de Viaje 
+<NumeroViaje> 
+Corresponde al número de viaje o el 
+número del vuelo. 20 ALFA 
+NUM a) Sin validación N 0  0 0 0 0 0 0 0 3 0 
+ 
+
+===== PAGE 19/89 =====
+
+ 
+Pág. 18 de 87 
+ 
+ 
+ 
+CAMPOS DESCRIPCIÓN 
+ 
+Largo 
+Max 
+Tipo Validación 
+ 
+ 
+I 
+OBLIGATORIEDAD 
+Fact. Créd. 
+Fiscal 
+Electr. 
+ 
+31 
+Fact. 
+Consum. 
+Electr. 
+ 
+32 
+Nota Déb. 
+Electr. 
+ 
+33 
+Nota 
+Créd. 
+Electr. 
+ 
+34 
+Compras 
+Electr. 
+ 
+41 
+Gastos 
+Menor. 
+Electr. 
+ 
+43 
+Regím. 
+Espec. 
+Electr. 
+ 
+44 
+Guber. 
+Electr. 
+ 
+45 
+Export. 
+Electr. 
+ 
+46 
+Pagos 
+Exterior 
+Electr. 
+ 
+47 
+85 
+Conductor 
+<Conductor> 
+Corresponde al código o nombre 
+del conductor. 
+20 
+ALFA 
+NUM 
+a) Sin validación N 3 3 3 3 0 0 3 3 3 0 
+86 
+Documento 
+<DocumentoTransporte> 
+Corresponde al documento de 
+transporte del conductor. 
+ 
+20 NUM a) Sin validación N 3 3 3 3 0 0 3 3 3 0 
+87 
+Ficha 
+<Ficha> 
+Corresponde a la ficha del 
+transporte. 
+ 
+10 
+ALFA 
+NUM 
+a) Sin validación N 3 3 3 3 0 0 3 3 3 0 
+88 
+Placa 
+<Placa> 
+Corresponde al número de 
+placa del vehículo del 
+transporte. 
+ 
+7 
+ALFA 
+NUM 
+a) Sin validación N 3 3 3 3 0 0 3 3 3 0 
+89 
+Ruta de Transporte 
+<RutaTransporte> 
+Corresponde a la ruta 
+establecida de transporte. 
+ 
+20 
+ALFA 
+NUM 
+a) Sin validación N 3 3 3 3 0 0 3 3 3 0 
+90 
+Zona de Tranporte 
+<ZonaTransporte> 
+Corresponde a la zona de 
+transporte. 
+ 
+20 
+ALFA 
+NUM 
+a) Sin validación N 3 3 3 3 0 0 3 3 3 0 
+91 
+Número Albarán 
+<NumeroAlbaran> 
+Corresponde al número de 
+albarán de entrega. 
+ 
+20 
+ALFA 
+NUM 
+a) Sin validación N 3 3 3 3 0 0 3 3 3 0 
+ FIN ÁREA TRANSPORTE               
+ ÁREA 
+<Totales> TOTALES     1 1 1 1 1 1 1 1 1 1 
+92 Monto Gravado Total11 
+<MontoGravadoTotal> 
+Total de la suma de valores de 
+monto gravado ITBIS a 
+diferentes tasas. 
+Condicional a que exista Monto 
+gravado1, y/o Monto gravado 2 
+y/o Monto gravado 3. 
+18 NUM 
+a) Valor numérico de 16 enteros, 2 
+decimales; ≥ 0 (No puede ser 
+negativo).  
+b) Valor numérico de la sumatoria del 
+total Monto gravado ITBIS Tasa1 + 
+Monto gravado ITBIS Tasa 2 + Monto 
+gravado ITBIS Tasa3. 
+I 2 2 2 2 2 0 0 2 2 0 
+ 
+11 En los campos donde existan valores numéricos de 16 enteros y 2 decimales, se debe aplicar la regla de redondeos. 
+
+===== PAGE 20/89 =====
+
+ 
+Pág. 19 de 87 
+ 
+93 Monto Gravado ITBIS Tasa 1 
+<MontoGravadoI1> 
+Total de la suma de valores de 
+Ítems gravados asignados a 
+ITBIS tasa 1 (tasa 18%), menos 
+descuentos más recargos. 12 
+Condicional a que en la línea de 
+detalle exista algún ítem 
+gravado a tasa ITBIS1. 
+18 NUM 
+a) Valor numérico de 16 enteros, 2 
+decimales; ≥ 0 (No puede ser 
+negativo). 
+ 
+b) Suma de valores del monto ítem 
+con indicador de facturación=1 13 , 
+menos descuentos más recargos.  
+ 
+c) Si el indicador monto gravado  es 
+=1, se debe dividir la suma de valores 
+del monto ítem con indicador de 
+facturación=1, entre (1+tasa ITBIS 
+tasa 1) , menos descuentos más 
+recargos.  
+ 
+d) Si el campo ‘Indicador de la norma  
+10-07’ es completado, se debe dividir 
+la suma de valores del monto ítem con 
+indicador de facturación=1, entre 
+(1+tasa ITBIS tasa 1+tasas de códigos 
+de impuestos adicionales 002 y 004, 
+asignados al ítem). Si existe 
+descuento, el monto de descuento 
+correspondiente  no se deberá rebajar 
+del monto gravado ITBIS tasa 1. 
+ 
+N 2 2 2 2 2 0 0 2 0 0 
+94 
+Monto Gravado ITBIS  
+Tasa 2 
+<MontoGravadoI2> 
+Total de la suma de valores de 
+Ítems gravados asignados a 
+ITBIS tasa 2(tasa 16%), menos 
+descuentos más recargos. 
+ 
+Condicional a que en la línea de 
+detalle exista algún ítem 
+gravado a tasa ITBIS2. 
+18 NUM 
+a) Valor numérico de 16 enteros, 2 
+decimales; ≥ 0 (No puede ser 
+negativo). 
+ 
+b) Suma de valores del monto ítem 
+con indicador de facturación=2, 
+menos descuentos más recargos.  
+ 
+c) Si el indicador monto gravado=1, se 
+debe dividir el resultado por (1+ ITBIS 
+tasa 2). 
+ 
+N 2 2 2 2 2 0 0 2 0 0 
+ 
+ 
+ 
+12 Se refiere al descuento o recargo global (Sección Descuentos o Recargos). Si el campo ‘Indicador Norma 10-07’ de la sección de Descuentos o Recargos es completado, dicho descuento no se deberá rebajar del monto gravado ITBIS Tasa 
+1 (18%). 
+13 El campo ‘Inidicador de Facturación’ se encuentra en la sección de Detalle de Bienes o Servicios. 
+
+===== PAGE 21/89 =====
+
+ 
+Pág. 20 de 87 
+ 
+ 
+ 
+CAMPOS 
+ 
+DESCRIPCIÓN 
+ 
+Largo 
+Max 
+ 
+Tipo 
+ 
+Validación 
+ 
+ 
+I 
+OBLIGATORIEDAD 
+Fact. 
+Créd. 
+Fiscal 
+Electr. 
+ 
+31 
+Fact. 
+Consum. 
+Electr. 
+ 
+32 
+Nota 
+Déb. 
+Electr. 
+ 
+33 
+Nota 
+Créd. 
+Electr. 
+ 
+34 
+Compras 
+Electr. 
+ 
+41 
+Gastos 
+Menor. 
+Electr. 
+ 
+43 
+Regím. 
+Espec. 
+Electr. 
+ 
+44 
+Gub. 
+Electr. 
+ 
+45 
+Export. 
+Electr. 
+ 
+46 
+Pagos 
+Exterior 
+Electr. 
+ 
+47 
+95 
+Monto Gravado ITBIS 
+Tasa 3 
+<MontoGravadoI3> 
+Total de la suma de valores de Ítems 
+gravados asignados a ITBIS tasa 3 (tasa 
+0%), menos descuentos más recargos. 
+ 
+Condicional a que en la línea de detalle 
+exista algún ítem gravado a tasa ITBIS3. 
+18 NUM 
+a) Valor numérico de 16 enteros, 2 
+decimales≥ 0 (No puede ser negativo). 
+ 
+b) Suma de valores del monto ítem con 
+indicador de facturación=3, menos 
+descuentos más recargos.  
+ 
+N 2 2 2 2 2 0 0 2 2 0 
+96 Monto Exento 
+<MontoExento> 
+Total de la suma de valores de ítems 
+exentos, menos descuentos más 
+recargos. 
+ 
+Condicional a que en la línea de detalle 
+exista algún ítem exento. 
+18 NUM 
+a) Valor numérico de 16 enteros, 2 
+decimales. ≥ 0 (No puede ser negativo). 
+ 
+b) Suma de valores del monto ítem con 
+indicador de facturación=4, menos 
+descuentos más recargos.  
+ 
+I 2 2 2 2 2 214 2 2 0 2 
+97 ITBIS Tasa 1 
+<ITBIS1> 
+Tasa de ITBIS 1 (18%). 
+Condicional a que en la línea de detalle 
+exista ítem gravado a tasa 1. 
+2 NUM a) 2 enteros en porcentaje Ej.: 18% 
+b) Existe ítem con indicador de facturación=1 N15 2 2 2 2 2 0 0 2 0 0 
+98 ITBIS Tasa 2 
+<ITBIS2> 
+Tasa de ITBIS 2 (16%). Condicional a 
+que en la línea de detalle exista ítem 
+gravado a tasa 2. 
+2 NUM a) 2 enteros en porcentaje Ej.: 16%. 
+b) Existe ítem con indicador de facturación=2. N 2 2 2 2 2 0 0 2 0 0 
+ 
+ 
+ 
+ 
+ 
+14 Los montos sustentados en Comprobantes de Gastos Menores Electrónicos, no podrán ser utilizados como adelanto del ITBIS. 
+15 La impresión puede ser parte del título del campo. 
+
+===== PAGE 22/89 =====
+
+ 
+Pág. 21 de 87 
+ 
+ 
+CAMPOS 
+ 
+DESCRIPCIÓN 
+ 
+Largo 
+Max 
+ 
+Tipo 
+ 
+Validación 
+ 
+ 
+I 
+OBLIGATORIEDAD   
+Fact. 
+Créd. 
+Fiscal 
+Electr. 
+ 
+31 
+Fact. 
+Consum. 
+Electr. 
+ 
+32 
+Nota 
+Déb. 
+Electr. 
+ 
+33 
+Nota 
+Créd. 
+Electr. 
+ 
+34 
+Compras 
+Electr. 
+ 
+41 
+Gastos 
+Menor. 
+Electr. 
+ 
+43 
+Regím. 
+Espec. 
+Electr. 
+ 
+44 
+Gub. 
+Electr. 
+ 
+45 
+Export. 
+Electr. 
+ 
+46 
+Pagos 
+Exterior 
+Electr. 
+ 
+47 
+99 ITBIS Tasa 3 
+<ITBIS3> 
+Tasa de ITBIS 3 (0%). 
+Condicional a que en la línea de detalle 
+exista ítem gravado a tasa 3. 
+2 NUM a) 1 entero en porcentaje Ej.: 0%. 
+b) Existe ítem con indicador de 
+facturación=3. 
+N 2 2 2 2 2 0 0 2 2 0 
+100 Total ITBIS 
+<TotalITBIS> 
+Total de la suma de valores de ITBIS a 
+diferentes tasas. Condicional a que 
+exista Total ITBIS Tasa 1, y/o Total ITBIS 
+Tasa 2 y/o Total ITBIS Tasa 3. 
+18 NUM 
+a) Valor numérico de 16 enteros, 2 
+decimales; ≥ 0 (No puede ser negativo). 
+b) Suma de Total ITBIS Tasa 1 + Total ITBIS 
+Tasa 2 + Total ITBIS Tasa 3. 
+I 2 2 2 2 2 0 0 2 2 0 
+101 
+Total ITBIS Tasa 1 
+<TotalITBIS1> 
+ 
+Valor numérico igual a Monto Gravado 
+ITBIS Tasa1  por la Tasa ITBIS 1.  
+Condicional a que exista Monto 
+Gravado tasa 1 y tasa ITBIS 1. 
+ 
+Si existen impuestos selectivos al 
+consumo que formen parte de la base 
+imponible del ITBIS, estos se sumaran al 
+monto gravado antes de multiplicarlo 
+por la tasa de ITBIS. 
+18 NUM 
+a) Valor numérico de 16 enteros, dos 
+decimales; ≥ 0 (No puede ser negativo). 
+b) Total ITBIS Tasa1= Monto Gravado ITBIS 
+tasa1 *ITBIS tasa .  
+ 
+Solo forman parte de la base imponible del 
+ITBIS los impuestos selectivos al consumo 
+con códigos desde 006 hasta 039 
+correspondientes a la Tabla de Codificación 
+de Tipos de Impuestos Adicionales. 
+ 
+N 2 2 2 2 2 0 0 2 0 0 
+102 
+Total ITBIS Tasa 2 
+<TotalITBIS2> 
+ 
+Valor numérico igual a Monto Gravado 
+ITBIS Tasa2*tasa ITBIS 2. 
+Condicional a que exista Monto 
+Gravado tasa 2 y tasa ITBIS 2. 
+18 NUM 
+a) Valor numérico de 16 enteros, dos 
+decimales; ≥ 0 (No puede ser negativo). 
+ 
+b) Total ITBIS Tasa2= Monto Gravado ITBIS 
+tasa2*ITBIS tasa 2. 
+ 
+N 2 2 2 2 2 0 0 2 0 0 
+103 
+Total ITBIS Tasa3 
+<TotalITBIS3> 
+ 
+Valor numérico igual a Monto gravado 
+ITBIS Tasa3*tasa ITBIS 3. 
+Condicional a que exista Monto Gravado 
+tasa 3 y tasa ITBIS 3. 
+18 NUM 
+ 
+a)Valor numérico de 16 enteros, dos 
+decimales; ≥ 0 (No puede ser negativo). 
+ 
+ 
+N 2 2 2 2 2 0 0 2 2 0 
+104 
+Monto del Impuesto 
+Adicional 
+<MontoImpuestoAdicional> 
+ 
+Sumatoria de los campos Monto 
+Impuesto Selectivo al Consumo 
+Específico, Monto Impuesto Selectivo 
+Ad Valorem y Monto Otros Impuestos 
+Adicionales. 
+18 NUM 
+a) Valor numérico de 16 enteros, dos 
+decimales; >0 (debe ser positivo). 
+ 
+b) Monto del Impuesto Adicional=  Monto 
+Impuesto Selectivo al Consumo Específico+ 
+ Monto Impuesto Selectivo Ad Valorem+ 
+Monto Otros Impuestos Adicionales. 
+I 2 2 2 2 0 0 216 2 0 0 
+ 
+16 Es condicional a que exista impuesto adicional con código desde 001 hasta 005 de la Tabla I  (Codificación Tipos de Impuestos Adicionales), es decir Otros Impuestos Adicionales. 
+
+===== PAGE 23/89 =====
+
+ 
+Pág. 22 de 87 
+ 
+ 
+CAMPOS 
+ 
+DESCRIPCIÓN 
+ 
+Largo 
+Max 
+ 
+Tipo 
+ 
+Validación 
+ 
+ 
+I 
+OBLIGATORIEDAD 
+Fact. 
+Créd. 
+Fiscal 
+Electr. 
+ 
+31 
+Fact. 
+Consum. 
+Electr. 
+ 
+32 
+Nota 
+Déb. 
+Electr. 
+ 
+33 
+Nota 
+Créd. 
+Electr. 
+ 
+34 
+Compras 
+Electr. 
+ 
+41 
+Gastos 
+Menor. 
+Electr. 
+ 
+43 
+Regím. 
+Espec. 
+Electr. 
+ 
+44 
+Gub. 
+Electr. 
+ 
+45 
+Export. 
+Electr. 
+ 
+46 
+Pagos 
+Exterior 
+Electr. 
+ 
+47 
+ 
+Tabla de 
+Impuestos Adicionales 
+<ImpuestosAdicionales>17 
+Se pueden incluir 20 repeticiones de 
+pares código – valor. Incluye los cinco 
+campos siguientes: 
+  a) Condicional a que exista otros(s) 
+impuesto(s) en la línea de detalle distinto(s) al 
+ITBIS. 
+ 
+2 2 2 2 0 0 218 2 0 0 
+105 
+Código de Impuesto 
+Adicional 
+<TipoImpuesto> 
+Dato correspondiente al Código del 
+impuesto adicional de acuerdo con la 
+Tabla I (Codificación Tipos de Impuestos 
+Adicionales). 
+3 NUM 
+a) Validar con Tabla I (Codificación Tipos de 
+Impuestos Adicionales). 
+ 
+N 2 2 2 2 0 0 219 2 0 0 
+106 Tasa de Impuesto Adicional 
+<TasaImpuestoAdicional> 
+Dato correspondiente a la Tasa del 
+Impuesto Adicional.  
+Se debe indicar la tasa de Impuesto. 20 
+ 
+5 NUM 
+a) Validar con Tabla I (Codificación Tipos de 
+Impuestos Adicionales). 
+ 
+b) Si la tasa corresponde a los códigos entre 
+006 hasta 022 de la Tabla I (Codificación Tipos 
+de Impuestos Adicionales), se debe validar que 
+coincide con la tasa vigente en el período al 
+que corresponda la fecha de emisión del e -CF 
+(campo fecha emision). 
+N21 2 2 2 2 0 0 2 2 0 0 
+107 
+Monto Impuesto Selectivo 
+al Consumo Específico22 
+<MontoImpuestoSelectivoCons
+umoEspecifico> 
+Valor del impuesto selectivo al consumo 
+(ISC) específico asociado al có digo de 
+impuesto adicional. Condicional a que  
+exista código del 006 al 02223. 
+El cálculo del monto del ISC específico 
+dependerá de la tasa correspondiente al 
+código del impuesto en la Tabla I 
+(Codificación Tipos de Impuestos 
+Adicionales). 
+18 NUM 
+a) Valor numérico de 16 enteros, dos 
+decimales; >0 (debe ser positivo). 
+ 
+b) Si el código del impuesto se encuentra entre 
+006 hasta 018 se debe verificar la unidad de 
+medida del ítem, si es a granel (código 18) no 
+se deberá calcular el Impuesto Selectivo al 
+Consumo Específico. 
+ 
+c) Para los ítems con códigos 006 al 018 de la 
+‘Tabla I (Codificación Tipos de Impuestos 
+N 2 2  2 2 0 0 0 2 0 0 
+ 
+17 Ver nota 2. 
+18 Ver nota 16. 
+19 Aplica solo para códigos de la Tabla de Codificación Tipos de Impuestos Adicionales desde 001 hasta 005. 
+20 En el caso del Impuesto Selectivo al Consumo Específico la tasa varía trimestralmente por ajustes de inflación, por lo que para este impuesto, el dato de este campo debe coincidir con la tasa válida en el período al que corresponda la 
+fecha de emisión del e-CF. 
+21 La tasa puede ser parte del título del campo impreso. 
+22 Este campo será completado cuando se refiera a la facturación de bienes cuya transferencia, a nivel de productor o fabricante, está gravada con Impuesto Selectivo al Consumo (aplica para los campos de Específico y Advalorem). 
+23 Si en la factura existen código s de Impuesto Adicional entre 006 al 039, se deberá siempre realizar el cálculo del campo Monto ISC Específico , exceptuando cuando la unidad de medida del ítem es a granel (código 18 de la tabla de 
+Codificación Unidad de Medida). Si existen estos códigos y el campo no viene, se rechaza la factura. 
+
+===== PAGE 24/89 =====
+
+ 
+Pág. 23 de 87 
+ 
+Adicionales) y unidad de medida distinta de 
+granel, se debe multiplicar la cantidad de 
+referencia por los grados de alcohol, por la 
+tasa del impuesto indicada en la ta bla para 
+dicho código, por la subcantidad y cantidad.  
+ 
+d) Para los códigos del 019 al 022, se debe 
+calcular multiplicando la cantidad por la 
+cantidad de referencia, por la tasa del 
+impuesto adicional indicado.  
+ 
+108 
+Monto Impuesto Selectivo 
+al Consumo 
+ Ad Valorem 
+<MontoImpuestoSelectivoCons
+umoAdvalorem> 
+Valor del impuesto selectivo al consumo 
+(ISC) ad valorem asociado al có digo de 
+impuesto adicional.  Condicional a que 
+exista código del 023 al 03924. 
+ 
+El cálculo del monto del ISC       ad valorem 
+dependerá de la tasa  correspondiente al 
+código del impuesto en la Tabla I 
+(Codificación Tipos de Impuestos 
+Adicionales).  
+18 NUM 
+a) Valor numérico de 16 enteros, dos 
+decimales; >0 (debe ser positivo). 
+ 
+b) Si el código del impuesto se encuentra entre 
+023 hasta 035 se debe verificar l a unidad de 
+medida del ítem, si es a granel (código 18) se 
+deberá calcular el Impuesto Selectivo Ad 
+Valorem incrementando en un treinta por 
+ciento (30%) el precio unitario del ítem 
+(equivalente al precio de lista) por la cantidad 
+ítem por la tasa del impue sto 
+correspondiente. 
+  
+c) Para los ítems con  código entre 023 -035 
+(ISC Ad valorem) 25 , y unidad de medida 
+distinta de granel,  se debe dividir el precio 
+unitario de referencia entre (1+tasa ITBIS tasa 
+1). Este resultado se debe restar del ISC 
+Especifico Unitario26 y este último resultado se 
+debe dividir entre (1+tasa del impuesto 
+adicional e specificado), esto dará como 
+resultado la base imponible del impuesto. Esta 
+base (ISC Ad Valorem unitario) se deberá 
+multiplicar por la cantidad, por la cantidad de 
+referencia y por la tasa del impuesto 
+correspondiente. 
+ 
+d) Cuando el código del impuesto adicional sea 
+N 2 2  2 2 0 0 0 2 0 0 
+ 
+24 Si en la factura existen códigos de Impuesto Adicional entre 023 al 039, se deberá siempre realizar el cálculo del campo Monto ISC Específico, exceptuando el ítem con unidad de medida 18. Si existen estos códigos y el campo no viene, 
+se rechaza la factura. Si la unidad de medida corresponde al código 18, se deberá calcular el Impuesto Selectivo al Consumo A d Valorem incrementando en un treinta por ciento (30%) el precio unitario del ítem (equivalente al precio de 
+lista). 
+25 Si el código del impuesto se encuentra entre 023 al 035 se deberá realizar primero el cálculo del Monto ISC Específico para luego realizar el del Monto ISC Ad Valorem, exc eptuando cuando la unidad de medida del ítem es a granel 
+(código 18 de la tabla de Codificación Unidad de Medida). 
+26 El ISC Especifico Unitario es igual al resultado del Monto ISC específico entre el resultado de la cantidad de ítem multiplicado por la cantidad de referencia. 
+
+===== PAGE 25/89 =====
+
+ 
+Pág. 24 de 87 
+ 
+entre 036-039 según la ‘Tabla de Codificación 
+Tipos de Impuestos Adicionales’ se debe 
+calcular el impuesto dividiendo el precio 
+unitario de referencia entre (1+tasa ITBIS tasa 
+1). Este resultado se debe restar la tasa del ISC 
+Específico y el resul tado se debe dividir entre 
+(1+tasa del impuesto adicional especificado); 
+esto dará como resultado la base imponible 
+para el ISC Ad Valorem. Esta base se debe 
+multiplicar por la cantidad, por la cantidad de 
+referencia y por la tasa del impuesto 
+correspondiente. 
+ 
+ 109 
+Monto Otros Impuestos 
+Adicionales 
+<OtrosImpuestosAdicionales> 
+Valor del impuesto adicional asociado al 
+código de impuesto adicional . 
+Condicional a que exista código del 001 
+al 005. 
+ 
+El cálculo del monto del impuesto 
+adicional dependerá de la tasa 
+correspondiente al código del impuesto 
+en la Tabla I (Codificación Tipos de 
+Impuestos Adicionales). 
+ 
+18 NUM 
+a) Valor numérico de 16 enteros, dos 
+decimales; >0 (debe ser positivo). 
+b)  Si el código del impuesto se encuentra 
+entre 001 al 005, se deben multip licar los 
+montos ítems por la tasa correspondiente al 
+código de impuesto adicional.  
+c) Para los códigos 001, 002 , 003 y 004, si el 
+indicador monto gravado=1, se debe dividir el 
+monto de ítem entre (1+ ITBIS tasa 1), y el 
+resultado multiplicar por la tasa 
+correspondiente al código de impuesto 
+adicional. 
+d) Para los códigos 002 y 004, si el campo 
+‘Indicador Norma 10 -07’ 27  de la sección 
+Descuentos o Recargos es completado, se 
+debe dividir la suma de los valores del monto 
+ítem con indicador de facturación=1, entre 
+(1+tasa ITBIS tasa 1+ tasa del código de 
+impuesto adicional 002 + tasa del código de 
+impuesto adicional 004), para  luego 
+multiplicar este resultado por la tasa 
+correspondiente al código de impuesto 
+adicional. 
+e) Si existe descuento global se debe 
+multiplicar el porcentaje del monto ítem por 
+línea28 por el Monto Descuento (global), esto 
+dará como resultado el monto de d escuento 
+aplicable para cada línea de detalle.  
+N
+ N 2 2  2 2 0 0 229 2 0 0 
+ 
+27 El campo ‘Indicador norma 10-07’ está incluido en la sección de Descuentos o Recargos. 
+28 Resultado de dividir el valor colocado en el campo ‘Monto Ítem’ de cada línea de la sección de Detalle de Bienes o Servicios entre la sumatoria de los montos ítems. 
+29 Ver nota 16. 
+
+===== PAGE 26/89 =====
+
+ 
+Pág. 25 de 87 
+ 
+Si el código del impuesto se encuentra entre 
+001, 002 , 003  y 004, se debe tomar la 
+sumatoria de los montos ítems asignados al 
+código y restar los montos de descuentos 
+aplicables al código indicado, para luego  
+multiplicar este resultado por la tasa del 
+código de  impuesto adicional, es decir: ( ∑
+montos ítems - ∑ montos descuentos 
+aplicable) *Tasa Código del Impuesto 
+Adicional.  
+Si el campo ‘Indicador Norma 10 -07’ de la 
+sección Descuentos o Recargos es 
+completado, el  monto de descuento 
+correspondiente no se deberá considerar. 
+f) Si existe recargo global se debe multiplicar el 
+porcentaje del monto ítem por línea 28 por el 
+Monto Recargo (global), esto dará como 
+resultado el monto de recargo aplicable para 
+cada línea de detalle.  
+Si el código del impuesto se encuentra entre 
+001, 002 y 004, se debe tomar la sumatoria de 
+los montos ítems asignados a los códigos y 
+sumar los montos de recargos aplicables al 
+código indicado, para luego multiplicar este 
+resultado por la tasa del código d e impuesto 
+adicional, es decir: ( ∑ montos ítems+ ∑
+montos recargos aplicable) *Tasa Código del 
+Impuesto Adicional. 
+ FIN TABLA IMPUESTOS ADICIONALES    
+ 
+          
+110 Monto Total 
+<MontoTotal> 
+ 
+ 
+ 
+Monto Gravado Total + Monto exento 
++Total ITBIS + Monto del Impuesto 
+adicional. 
+ 
+ 
+ 
+18 NUM 
+a) Valor numérico de 16 enteros, dos 
+decimales; ≥ 0 (No puede ser negativo) 
+ 
+b) Valor numérico de acuerdo con el total de la 
+sumatoria del campo de Descripción. 
+ 
+c)Si es completada la sección Paginación, el 
+monto total debe ser igual a la sumatoria del 
+campo ‘ Monto Subtotal Página ’ 
+correspondiente a la sección.  
+ 
+d) Si se emite un e -CF tipo 34, el monto total 
+deberá ser menor o igual al monto total del e-
+CF modificado.30 
+I 1 1 1 1 1 1 1 1 1 1 
+ 
+ 
+30 Si un e-CF es afectado por varias notas de crédito electrónicas, la sumatoria de los montos de las notas de crédito deberá ser menor o igual al monto total del e -CF que se afecta. 
+
+===== PAGE 27/89 =====
+
+ 
+Pág. 26 de 87 
+ 
+ 
+ 
+ 
+ 
+31 Si en la sección de Descuento o Recargo existe mas de una línea de descuento, se deberá colocar la sumatoria de los descuentos que tiene completado el ‘Indicador Norma 10 -07’. 
+ 
+CAMPOS DESCRIPCIÓN 
+ 
+Largo 
+Max 
+ 
+Tipo 
+ 
+Validación 
+ 
+ 
+I 
+OBLIGATORIEDAD 
+Fact. 
+Créd. 
+Fiscal 
+Electr. 
+ 
+31 
+Fact. 
+Consum. 
+Electr. 
+ 
+32 
+Nota 
+Déb. 
+Electr. 
+ 
+33 
+Nota 
+Créd. 
+Electr. 
+ 
+34 
+Compras 
+Electr. 
+ 
+41 
+Gastos 
+Menor. 
+Electr. 
+ 
+43 
+Regím. 
+Espec. 
+Electr. 
+ 
+44 
+Guber. 
+Electr. 
+ 
+45 
+Export. 
+Electr. 
+ 
+46 
+Pagos 
+Exterior 
+Electr. 
+ 
+47 
+111 Monto no Facturable 
+<MontoNoFacturable> 
+Total de la suma de montos de 
+bienes o servicios con 
+Indicador de facturación=0. 
+ 
+Condicional a que en la línea de 
+detalle exista algún ítem  con 
+indicador facturación igual a 
+cero (0). 
+18 NUM 
+a) Valor numérico de 16 enteros, dos 
+decimales. (Puede ser negativo) 
+ 
+b) Valor numérico de acuerdo con el total 
+sumatoria monto ítem con indicador de 
+facturación=0. 
+N 2 2 2 2 0 0 2 2 2 0 
+112 Monto Período 
+<MontoPeriodo> 
+Total de la suma de Monto 
+Total y Monto no Facturable. 18 NUM 
+a) Valor numérico de 16 enteros, dos 
+decimales. (Puede ser negativo) 
+ 
+b) Monto período= Monto Total+Monto 
+No Facturable. 
+N 3 3 3 3 3 3 3 3 3 3 
+113 Saldo Anterior 
+<SaldoAnterior> 
+Saldo Anterior. Se incluye sólo 
+con fines de ilustrar con 
+claridad el cobro. 
+18 NUM Valor numérico de 16 enteros, dos 
+decimales. (Puede ser negativo).  N 3 3 3 3 3 3 3 3 3 3 
+ 
+114 
+Monto Avance de pago 
+<MontoAvancePago> 
+Pago parcial por adelantado de 
+la factura que se emite. 18 NUM a) Valor numérico de 16 enteros, dos 
+decimales. >0 (No puede ser negativo) 
+N 3 3 3 3 3 3 3 3 3 3 
+ 
+115 
+Valor a pagar 
+<ValorPagar> Valor cobrado. 18 NUM 
+a)Valor numérico de 16 enteros, dos 
+decimales. (Puede ser negativo o cero)  
+ 
+b)Valor a pagar= Monto total -Monto 
+Avance de pago ± Saldo Anterior (± 
+atendiendo si el valor es positivo o 
+negativo). 
+ 
+c) Si el campo ‘Indicador Norma 10-07’ de 
+la sección Descuento o Recargo es 
+completado, entonces: 
+Valor a pagar= Monto total -Monto 
+descuento 31- Monto Avance de pago ± 
+Saldo Anterior (± atendiendo si el valor es 
+positivo o negativo). 
+ 
+N 3 3 3 3 3 3 3 3 3 3 
+
+===== PAGE 28/89 =====
+
+ 
+Pág. 27 de 87 
+ 
+ 
+ 
+CAMPOS 
+ 
+DESCRIPCIÓN 
+ 
+Largo 
+Max 
+ 
+Tipo 
+ 
+Validación 
+ 
+ 
+I 
+OBLIGATORIEDAD 
+Fact. 
+Créd. 
+Fiscal 
+Electr. 
+ 
+31 
+Fact. 
+Consum. 
+Electr. 
+ 
+32 
+Nota 
+Déb. 
+Electr. 
+ 
+33 
+Nota 
+Créd. 
+Electr. 
+ 
+34 
+Compras 
+Electr. 
+ 
+41 
+Gastos 
+Menor. 
+Electr. 
+ 
+43 
+Regím. 
+Espec. 
+Electr. 
+ 
+44 
+Guber. 
+Electr. 
+ 
+45 
+Export. 
+Electr. 
+ 
+46 
+Pagos 
+Exterior 
+Electr. 
+ 
+47 
+116 Total Monto ITBIS Retenido 
+<TotalITBISRetenido> 
+Monto del ITBIS correspondiente a la 
+retención que será realizada por el 
+comprador. Condicional a que en la 
+línea de detalle exista retención. 
+18 NUM 
+a) Valor numérico de 16 enteros, dos 
+decimales, ≥0 (No puede ser negativo) 
+ 
+b)  Campo Monto ITBIS Retenido de 
+la sección Detalle de B. o S. 
+ 
+N 2 0 2 2 2 0 0 0 0 0 
+ 
+117 
+Total Monto Retención Renta 
+<TotalISRRetencion> 
+Monto del Impuesto Sobre la Renta 
+correspondiente a la retención 
+realizada de la prestación o locación 
+de servicios. Condicional a que en la 
+línea de detalle exista retención. 
+ 
+18 NUM 
+a) Valor numérico de 16 enteros, dos 
+decimales, ≥0 (No puede ser negativo) 
+ 
+b)Monto Retención Renta de la 
+sección Detalle de B. o S.  
+N 2 0 2 2 2 0 0 0 0 2 
+118 Total Monto ITBIS Percibido32 
+<TotalITBISPercepcion> 
+Monto del ITBIS que el 
+contribuyente cobra 
+a terceros como adelanto del 
+impuesto que éste percibirá en sus 
+operaciones. Condicional a que en la 
+línea de detalle exista percepción. 
+ 
+18 NUM a)Valor numérico de 16 enteros, dos 
+decimales, >0 (No puede ser negativo) N 2 0 2 2 2 0 0 0 0 0 
+119 Total Monto Percepción Renta 
+<TotalISRPercepcion> 
+Monto del Impuesto Sobre la Renta 
+que el  contribuyente cobra a 
+terceros como  adelanto del 
+impuesto que éste percibirá en  sus 
+operaciones. Condicional a que en la 
+línea de detalle exista percepción. 
+ 
+18 NUM a) Valor numérico de 16 enteros, dos 
+decimales; >0 (No puede ser negativo) N 2 0 2 2 2 0 0 0 0 0 
+ FIN ÁREA TOTALES ENCABEZADO  
+ ÁREA 
+<OtraMoneda> OTRA MONEDA ENCABEZADO   Condicional a que la facturación sea en 
+Otra Moneda.  2 2 2 2 2 2 2 2 2 2 
+ 
+ 
+ 
+ 
+32 Régimen de percepción no está vigente. 
+
+===== PAGE 29/89 =====
+
+ 
+Pág. 28 de 87 
+ 
+ 
+CAMPOS DESCRIPCIÓN 
+ 
+Largo 
+Max 
+Tipo Validación 
+ 
+ 
+I 
+OBLIGATORIEDAD 
+Fact. 
+Créd. 
+Fiscal 
+Electr. 
+ 
+31 
+Fact. 
+Consum. 
+Electr. 
+ 
+32 
+Nota 
+Déb. 
+Electr. 
+ 
+33 
+Nota 
+Créd. 
+Electr. 
+ 
+34 
+Compras 
+Electr. 
+ 
+41 
+Gastos 
+Menor. 
+Electr. 
+ 
+43 
+Regím. 
+Espec. 
+Electr. 
+ 
+44 
+Guber. 
+Electr. 
+ 
+45 
+Export. 
+Electr. 
+ 
+46 
+Pagos 
+Exterior 
+Electr. 
+ 
+47 
+120 
+Código Otra moneda 
+<TipoMoneda> 
+Moneda alternativa en que se 
+expresan los Montos.  Condicional a 
+que la facturación sea realizada en 
+moneda extranjera.33 
+Este campo debe tener uno de los 
+valores indicados en la ‘T abla 
+Codificación Monedas’. Por ejemplo: 
+“USD” o “EUR”, etc. 
+3 ALFA 
+a) Validar con la Tabla II 
+(Codificación Monedas). 
+N 2 2 2 2 2 2 2 2 2 2 
+121 Tipo de Cambio 
+<TipoCambio> 
+Factor de conversión utilizado.  
+Condicional a que existan datos en 
+código otra moneda. 
+7 NUM 
+a) Valor numérico de 3 
+enteros y 4 decimales; > 0. 
+(Debe ser positivo) 
+ 
+N 2 2 2 2 2 2 2 2 2 2 
+122 
+Monto gravado total Otra 
+Moneda 
+<MontoGravadoTotalOtraMoneda> 
+Total de la s uma de valores de 
+Monto gravado ITBIS Otra Moneda 
+a diferentes tasas. 
+ 
+Condicional a que exista datos en 
+código otra moneda y Monto 
+gravado ITBIS en otra moneda a 
+distintas tasas (18%, 16% y 0%). 
+ 
+18 NUM 
+a) Valor numérico de 16 
+enteros, 2 decimales; ≥ 0 (No 
+puede ser negativo) 
+b) Valor numérico de la 
+sumatoria del total Monto 
+gravado ITBIS Tasa1 Otra 
+Moneda + Monto gravado 
+ITBIS Tasa 2  Otra Moneda 
++Monto gravado ITBIS Tasa3 
+Otra Moneda. 
+ 
+N34 2 2 2 2 2 0 0 2 2 0 
+ 
+ 
+ 
+ 
+ 
+ 
+33 La condición está sujeta a la especificación del contribuyente, es decir, si éste indica que la facturación es realizada en otra moneda. 
+34 La impresión de los campos en otra moneda es condicional a que existan transacciones en otras monedas. Si existen transacciones en otras monedas, dichos campos pueden ser impresos en la RI sin ser necesario incluir los de moneda 
+local, debido a que ambas informaciones se encuentran en el formato XML de e-CF. Aplicable a los campos en moneda extranjera. 
+
+===== PAGE 30/89 =====
+
+ 
+Pág. 29 de 87 
+ 
+ 
+CAMPOS DESCRIPCIÓN 
+ 
+Largo 
+Max 
+Tipo Validación 
+ 
+ 
+I 
+OBLIGATORIEDAD 
+Fact. Créd. 
+Fiscal 
+Electr. 
+ 
+31 
+Fact. 
+Consum. 
+Electr. 
+ 
+32 
+Nota 
+Déb. 
+Electr. 
+ 
+33 
+Nota Créd. 
+Electr. 
+ 
+34 
+Compras 
+Electr. 
+ 
+41 
+Gastos 
+Menor. 
+Electr. 
+ 
+43 
+Regím. 
+Espec. 
+Electr. 
+ 
+44 
+Guber. 
+Electr. 
+ 
+45 
+Export. 
+Electr. 
+ 
+46 
+Pagos 
+Exterior 
+Electr. 
+ 
+47 
+123 
+Monto gravado ITBIS Tasa 1 
+Otra Moneda 
+<MontoGravado1OtraMoneda> 
+Total de la s uma de valores de 
+Ítems gravados asignados a  
+ITBIS tasa 1 (tasa 18%), menos 
+descuentos en Otra Moneda  
+más recargos  en Otra 
+Moneda35. 
+(Asignados a ítem gravados en 
+Otra Moneda). 
+ 
+Condicional a que exista datos 
+en código otra moneda y el ítem 
+contenga indicador de 
+facturación igual a 1. 
+ 
+18 NUM 
+a) Valor numérico de 16 
+enteros, 2 decimales; ≥ 0 (No 
+puede ser negativo). 
+ 
+b) Suma de valores del 
+monto ítem con indicador de 
+facturación=1, menos 
+descuentos en Otra Moneda 
+más recargos en Otra 
+Moneda. 
+ 
+c) Si el indicador monto 
+gravado=1, se debe dividir el 
+resultado por (1+tasa ITBIS 
+tasa 1) 
+N 2 2 2 2 2 0 0 2 0 0 
+124 
+Monto gravado ITBIS Tasa 2 Otra 
+Moneda 
+<MontoGravado2OtraMoneda> 
+Total de la s uma de valores de 
+Ítems gravados asignados a  
+ITBIS tasa 2 en Otra Moneda 
+(tasa 16 %), menos descuentos  
+en Otra Moneda  más recargos  
+en Otra Moneda . (Asignados a 
+ítem gravados en Otra 
+Moneda). 
+ 
+Condicional a que exista datos 
+en código otra moneda y el ítem 
+contenga indicador de 
+facturación igual a 2. 
+ 
+18 NUM 
+a) Valor numérico de 16 
+enteros, 2 decimales; ≥ 0 (No 
+puede ser negativo). 
+ 
+b) Suma de valores del monto 
+ítem con indicador de 
+facturación=2, menos 
+descuentos en Otra Moneda 
+más recargos en Otra 
+Moneda. 
+ 
+N 2 2 2 2 2 0 0 2 0 0 
+ 
+ 
+ 
+ 
+35 Se refiere al descuento y recargo global (Sección Descuentos o Recargos). 
+
+===== PAGE 31/89 =====
+
+ 
+Pág. 30 de 87 
+ 
+ 
+CAMPOS DESCRIPCIÓN 
+ 
+Largo 
+Max 
+Tipo Validación 
+ 
+ 
+I 
+OBLIGATORIEDAD 
+Fact. 
+Créd. 
+Fiscal 
+Electr. 
+ 
+31 
+Fact. 
+Consum. 
+Electr. 
+ 
+32 
+Nota 
+Déb. 
+Electr. 
+ 
+33 
+Nota 
+Créd. 
+Electr. 
+ 
+34 
+Compras 
+Electr. 
+ 
+41 
+Gastos 
+Menor. 
+Electr. 
+ 
+43 
+Regím. 
+Espec. 
+Electr. 
+ 
+44 
+Guber. 
+Electr. 
+ 
+45 
+Export. 
+Electr. 
+ 
+46 
+Pagos 
+Exterior 
+Electr. 
+ 
+47 
+125 
+Monto gravado ITBIS Tasa 3 
+Otra Moneda 
+<MontoGravado3OtraMoneda> 
+Total de la suma de valores de Ítems 
+gravados asignados a ITBIS tasa 3 en 
+Otra Moneda (tasa 0 %), menos 
+descuentos en Otra Moneda  más 
+recargos en Otra Moneda . 
+(Asignados a ítem gravados en Otra 
+Moneda). 
+ 
+Condicional a que exista datos en 
+código otra moneda y el ítem 
+contenga indicador de facturación 
+igual a 3. 
+ 
+18 NUM 
+a) Valor numérico de 16 
+enteros, 2 decimales; ≥ 0 (No 
+puede ser negativo). 
+ 
+b) Suma de valores del 
+monto ítem con indicador de 
+facturación=3, menos 
+descuentos en Otra Moneda 
+más recargos en Otra 
+Moneda. 
+ 
+N 2 2 2 2 2 0 0 2 2 0 
+126 
+Monto exento en Otra 
+Moneda 
+<MontoExentoOtraMoneda> 
+Total de la suma de valores de ítems 
+exentos, menos descuentos en Otra 
+Moneda más recargos en Otra 
+Moneda (asignados a ítems exentos). 
+ 
+Condicional a que exista datos en 
+código otra moneda y el ítem 
+contenga indicador de facturación 
+igual a 4. 
+18 NUM 
+a) Valor numérico de 16 
+enteros, 2 decimales; ≥ 0 (No 
+puede ser negativo). 
+ 
+ Suma de valores del monto 
+ítem con indicador de 
+facturación=4, menos 
+descuentos en Otra Moneda 
+más recargos en Otra 
+Moneda. 
+N 2 2 2 2 2 236 2 2 0 2 
+127 Total ITBIS en Otra Moneda 
+<TotalITBISOtraMoneda> 
+Total de la suma de valores de ITBIS 
+en Otra Moneda a diferentes tasas. 
+Condicional a que exista Total ITBIS 
+Tasa 1 en Otra Moneda, y/o Total 
+ITBIS Tasa 2 en Otra Moneda y/o 
+Total ITBIS Tasa 3 en Otra Moneda. 
+18 NUM 
+a) Valor numérico de 
+16 enteros, 2 decimales; ≥ 0 
+(No puede ser negativo). 
+ 
+b) Suma de Total ITBIS Tasa 1 
+en Otra Moneda + Total ITBIS 
+Tasa 2 en Otra Moneda + 
+Total ITBIS Tasa 3 en Otra 
+Moneda. 
+N 2 2 2 2 2 0 0 2 2 0 
+ 
+ 
+ 
+36 Los montos sustentados en Comprobantes de Gastos Menores Electrónicos, no podrán ser utilizados como adelanto del ITBIS. 
+
+===== PAGE 32/89 =====
+
+ 
+Pág. 31 de 87 
+ 
+ 
+CAMPOS DESCRIPCIÓN 
+ 
+Largo 
+Max 
+Tipo Validación 
+ 
+ 
+I 
+OBLIGATORIEDAD 
+Fact. Créd. 
+Fiscal 
+Electr. 
+ 
+31 
+Fact. 
+Consum. 
+Electr. 
+ 
+32 
+Nota 
+Déb. 
+Electr. 
+ 
+33 
+Nota 
+Créd. 
+Electr. 
+ 
+34 
+Compras 
+Electr. 
+ 
+41 
+Gastos 
+Menor. 
+Electr. 
+ 
+43 
+Regím. 
+Espec. 
+Electr. 
+ 
+44 
+Guber. 
+Electr. 
+ 
+45 
+Export. 
+Electr. 
+ 
+46 
+Pagos 
+Exterior 
+Electr. 
+ 
+47 
+128 
+Total ITBIS Tasa 1 en Otra 
+Moneda 
+<TotalITBIS1OtraMoneda> 
+Valor numérico  igual a Monto Gravado 
+ITBIS en Otra Moneda Tasa1*tasa ITBIS 1. 
+Condicional a que exista Monto gravado 
+ITBIS Tasa 1 Otra Moneda. 
+ 
+Condicional a que exista Monto Gravado 
+tasa 1 en Otra Moneda. 
+18 NUM 
+a) Valor numérico de 16 enteros, 
+dos decimales≥ 0 (No puede ser 
+negativo). 
+ 
+ Total ITBIS Tasa1 en Otra 
+Moneda= Monto Gravado ITBIS 
+tasa1 Otra Moneda*ITBIS tasa 
+1.37 
+N 2 2 2 2 2 0 0 2 0 0 
+129 
+Total ITBIS Tasa 2 en otra 
+moneda 
+<TotalITBIS2OtraMoneda> 
+Valor numérico  igual a Monto Gravado 
+ITBIS en Otra Moneda Tasa2*tasa ITBIS 2.  
+ 
+Condicional a que exista Monto gravado 
+ITBIS Tasa 2 Otra Moneda. 
+18 NUM 
+a) Valor numérico de 16 enteros, 
+dos decimales; ≥0 (No puede ser 
+negativo). 
+ 
+Total ITBIS Tasa 2 en Otra 
+Moneda= Monto Gravado ITBIS 
+tasa2 Otra Moneda*ITBIS tasa 2. 
+N 2 2 2 2 2 0 0 2 0 0 
+130 
+Total ITBIS Tasa 3 en otra 
+moneda 
+<TotalITBIS3OtraMoneda> 
+Valor numérico  igual a Monto Gravado 
+ITBIS en Otra Moneda Tasa3*tasa ITBIS 3. 
+ 
+Condicional a que exista Monto gravado 
+ITBIS Tasa 3 Otra Moneda. 
+18 NUM 
+a) Valor numérico de 16 enteros, 
+dos decimales; ≥ 0 (No puede ser 
+negativo). 
+ 
+N 2 2 2 2 2 0 0 2 2 0 
+131 
+Monto del Impuesto 
+Adicional en Otra 
+Moneda38 
+<MontoImpuestoAdicionalOt
+raMoneda> 
+ 
+Sumatoria de los campos Monto Impuesto 
+Selectivo al Consumo Específico en Otra 
+Moneda, Monto Impuesto Selectivo Ad 
+Valorem en Otra Moneda  y Monto Otros 
+Impuestos Adicionales en Otra Moneda. 
+ 
+Condicional a que exista datos en código 
+otra moneda y exista al menos unos de los 
+campos de Monto Impuesto Selectivo al 
+Consumo Específico en Otra Moneda , 
+Monto Impuesto Selectivo Ad Valorem en 
+Otra Moneda y/o Monto Otros Impuestos 
+Adicionales en Otra Moneda. 
+ 
+18 NUM 
+a) Valor numérico de 16 enteros, 
+dos decimales; >0 (debe ser 
+positivo). 
+ 
+b) Monto del Impuesto Adicional 
+en Otra Moneda=  Monto 
+Impuesto Selectivo al Consumo 
+Específico en Otra Moneda +  
+Monto Impuesto Selectivo Ad 
+Valorem en Otra Moneda + 
+Monto Otros Impuestos 
+Adicionales en Otra Moneda. 
+N 2 2 2 2 0 0 239 2 0 0 
+ 
+37 Cuando existan impuestos adicionales que formen parte de la base imponible del ITBIS, estos se deberán sumar al monto gravado ITBIS tasa 1 en Otra Moneda antes de multiplicarlo por la tasa ITBIS 1 (18%). 
+38 Para el cálculo de Monto del Impuesto Adicional en otra Moneda, se debe realizar primero los cálculos correspondientes en DOP($) y luego referenciar a la tasa de tipo de cambio del código Otra Moneda seleccionado. 
+39 Ver nota 16. 
+
+===== PAGE 33/89 =====
+
+ 
+Pág. 32 de 87 
+ 
+ 
+CAMPOS DESCRIPCIÓN 
+ 
+Largo 
+Max 
+Tipo Validación 
+ 
+ 
+I 
+OBLIGATORIEDAD 
+Fact. 
+Créd. 
+Fiscal 
+Electr. 
+ 
+31 
+Fact. 
+Consum. 
+Electr. 
+ 
+32 
+Nota 
+Déb. 
+Electr. 
+ 
+33 
+Nota 
+Créd. 
+Electr. 
+ 
+34 
+Compras 
+Electr. 
+ 
+41 
+Gastos 
+Menor. 
+Electr. 
+ 
+43 
+Regím. 
+Espec. 
+Electr. 
+ 
+44 
+Guber. 
+Electr. 
+ 
+45 
+Export. 
+Electr. 
+ 
+46 
+Pagos 
+Exterior 
+Electr. 
+ 
+47 
+ 
+Tabla de 
+Impuestos Adicionales en Otra 
+moneda: 
+<ImpuestosAdicionalesOtraMoneda>
+40 
+Se pueden incluir 20 repeticiones 
+de pares código – valor. Incluye los 
+cinco campos siguientes: 
+  Condicional a que exista  otros(s) 
+impuesto(s) en la línea de detalle 
+distinto(s) al ITBIS y este 
+completado el campo  
+ 
+2 2 2 2 0 0 2 2 0 0 
+132 
+Código de Impuesto adicional en 
+Otra Moneda 
+<TipoImpuestoOtraMoneda> 
+Dato correspondiente al Código del 
+impuesto adicional de acuerdo con 
+la ‘Tabla de Codificación Tipos de 
+Impuestos Adicionales’.41 
+3 NUM 
+a) Validar con Tabla I (Codificación 
+Tipos de Impuestos Adicionales) 
+ 
+N 2 2 2 2 0 0 242 2 0 0 
+133 
+Tasa de Impuesto adicional en 
+Otra Moneda 
+<TasaImpuestoAdicionalOtraMoneda
+> 
+Dato correspondiente a la Tasa del 
+Impuesto Adicional. Se debe indicar 
+la tasa de Impuesto. 
+5 NUM a) Validar con Tabla I (Codificación 
+Tipos de Impuestos Adicionales) N 43 2 2 2 2 0 0 2 2 0 0 
+134 
+Monto Impuesto Selectivo al 
+Consumo Específico en Otra 
+Moneda 
+<MontoImpuestoSelectivoConsumoE
+specificoOtraMoneda> 
+Valor del campo Monto Impuesto 
+Selectivo al Consumo Específico  
+referenciado al tipo de cambio del 
+código Otra Moneda especificado. 
+Condicional a que exista código de 
+impuesto adicional del 006 al 022,  
+este completado el campo código 
+otra moneda y el campo Monto 
+Impuesto Selectivo Específico.44 
+18 NUM 
+a) Valor numérico de 16 enteros, 
+dos decimales; >0 (debe ser 
+positivo). 
+ 
+b) Valor del campo Monto 
+Impuesto Selectivo al Consumo 
+Específico dividiendo por la tasa 
+especificada en el campo Tipo de 
+Cambio. 
+N 2 2  2 2 0 0 0 2 0 0 
+ 
+ 
+ 
+ 
+ 
+40 Ver nota 2. 
+41 Ver nota 38. 
+42 Ver nota 16. 
+43 La tasa puede ser parte del título del campo impreso. 
+44 El campo Monto de Impuesto Selectivo Específico correspondiente al área de Totales de la sección Encabezado. 
+
+===== PAGE 34/89 =====
+
+ 
+Pág. 33 de 87 
+ 
+ 
+ 
+ 
+CAMPOS DESCRIPCIÓN 
+ 
+Largo 
+Max 
+Tipo Validación 
+ 
+ 
+I 
+OBLIGATORIEDAD 
+Fact. Créd. 
+Fiscal 
+Electr. 
+ 
+31 
+Fact. 
+Consum. 
+Electr. 
+ 
+32 
+Nota 
+Déb. 
+Electr. 
+ 
+33 
+Nota 
+Créd. 
+Electr. 
+ 
+34 
+Compras 
+Electr. 
+ 
+41 
+Gastos 
+Menor. 
+Electr. 
+ 
+43 
+Regím. 
+Espec. 
+Electr. 
+ 
+44 
+Guber. 
+Electr. 
+ 
+45 
+Export. 
+Electr. 
+ 
+46 
+Pagos 
+Exterior 
+Electr. 
+ 
+47 
+135 
+Monto Impuesto Selectivo al 
+Consumo Ad Valorem en Otra 
+Moneda 
+<MontoImpuestoSelectivoConsumo
+AdvaloremOtraMoneda> 
+Valor del campo Monto 
+Impuesto  
+Selectivo al Consumo Ad 
+Valorem referenciado al tipo de 
+cambio del código Otra Moneda 
+especificado. 
+Condicional a que exista código  
+de impuesto adicional del 023 al 
+039,  este completado el campo 
+código otra moneda y el campo 
+Monto Impuesto Selectivo Ad 
+Valorem.45 
+18 NUM 
+a) Valor numérico de 16 enteros, 
+dos decimales; >0 (debe ser 
+positivo). 
+ 
+a) Valor del campo Monto 
+Impuesto Selectivo Ad Valorem 
+dividiendo por la tasa 
+especificada en el campo Tipo de 
+Cambio. 
+N 2 2  2 2 0 0 0 2 0 0 
+136 
+Monto Otros Impuestos 
+Adicionales en Otra Moneda 
+<OtrosImpuestosAdicionalesOtraMo
+neda> 
+Valor del  Monto Impuesto 
+Adicionales referenciado al tipo 
+de cambio del código Otra 
+Moneda especificado.  
+Condicional a que exista código  
+de impuesto adicional del 001 al 
+005,  este completado el campo 
+código otra moneda y el campo 
+Monto Otros Impuestos 
+Adicionales.46 
+18 NUM 
+b) Valor numérico de 16 enteros, 
+dos decimales; >0 (debe ser 
+positivo). 
+ 
+c) Valor del campo Monto Otros 
+Impuesto Adicional dividiendo 
+por la tasa especificada en el 
+campo Tipo de Cambio. 
+N 2 2  2 2 0 0 247 2 0 0 
+ FIN TABLA  IMPUESTOS ADICIONALES    
+137 Monto Total en Otra Moneda 
+<MontoTotalOtraMoneda> 
+Monto gravado total en Otra 
+Moneda + Monto exento en 
+Otra Moneda+ T otal ITBIS en 
+Otra Moneda+ Monto del 
+Impuesto Adicional en Otra 
+Moneda.  
+ 
+Condicional a que exista  al 
+menos un monto en o tra 
+moneda. 
+18 NUM 
+a) Valor numérico de 16 enteros, 
+dos decimales; ≥ 0 ( no puede ser 
+negativo). 
+ 
+ b) Valor numérico de acuerdo con 
+el total sumatoria del campo de 
+Descripción. 
+N 2 2 2 2 2 2 2 2 2 2 
+ 
+45 El campo Monto de Impuesto Selectivo AdValorem correspondiente al área de Totales de la sección Encabezado. 
+46 El campo Monto Otros Impuestos Adicionales correspondiente al área de Totales de la sección Encabezado. 
+47 Ver nota 16. 
+
+===== PAGE 35/89 =====
+
+ 
+Pág. 34 de 87 
+ 
+ 
+ 
+ 
+CAMPOS DESCRIPCIÓN 
+ 
+Largo 
+Max 
+Tipo Validación 
+ 
+ 
+I 
+OBLIGATORIEDAD 
+Fact. Créd. 
+Fiscal 
+Electr. 
+ 
+31 
+Fact. 
+Consum. 
+Electr. 
+ 
+32 
+Nota 
+Déb. 
+Electr. 
+ 
+33 
+Nota 
+Créd. 
+Electr. 
+ 
+34 
+Compras 
+Electr. 
+ 
+41 
+Gastos 
+Menor. 
+Electr. 
+ 
+43 
+Regím. 
+Espec. 
+Electr. 
+ 
+44 
+Guber. 
+Electr. 
+ 
+45 
+Export. 
+Electr. 
+ 
+46 
+Pagos 
+Exterior 
+Electr. 
+ 
+47 
+ FIN ÁREA OTRA MONEDA ENCABEZADO  
+ FIN ÁREA ENCABEZADO  
+  
+
+===== PAGE 36/89 =====
+
+ 
+Pág. 35 de 87 
+ 
+B. DETALLE DE BIENES O SERVICIOS 
+Corresponde a la información de un ítem. Debe ir al menos una línea de detalle, se puede incluir la cantidad  páginas que incluyan todos los ítems, respetando la normativa. 
+ 
+CAMPOS DESCRIPCIÓN 
+ 
+Largo 
+Max 
+Tipo Validación 
+ 
+ 
+I 
+OBLIGATORIEDAD 
+Fact. 
+Créd. 
+Fiscal 
+Electr. 
+ 
+31 
+Fact. 
+Consum. 
+Electr. 
+ 
+32 
+Nota 
+Déb. 
+Electr. 
+ 
+33 
+Nota Créd. 
+Electr. 
+ 
+34 
+Compras 
+Electr. 
+ 
+41 
+Gastos 
+Menor. 
+Electr. 
+ 
+43 
+Regím. 
+Espec. 
+Electr. 
+ 
+44 
+Guber. 
+Electr. 
+ 
+45 
+Export. 
+Electr. 
+ 
+46 
+Pagos 
+Exterior 
+Electr. 
+ 
+47 
+ 
+ÁREA 
+<DetallesItem> DETALLES ÍTEM    
+ 
+1 1 1 1 1 1 1 1 1 1 
+ 
+ÁREA 
+<Item> 
+ÍTEM 
+Se pueden incluir hasta 100 
+repeticiones. 
+   
+ 
+1 1 1 1 1 1 1 1 1 1 
+1 N° de Línea o N° Secuencial 
+<NumeroLinea> 
+Línea que numera el ítem.  Desde 1 a 
+100 repeticiones.48 5 NUM a) Número secuencial de la 
+línea. N 1 1 1 1 1 1 1 1 1 1 
+ Tabla de Códigos de Ítem 
+<TablaCodigosItem> 
+Se pueden incluir 5 repeticiones de 
+pares código – valor. In cluye los dos 
+campos siguientes: 
+   
+ 
+3 3 3 3 3 3 3 3 3 3 
+2 Tipo Código 
+<TipoCodigo> 
+Tipo de codificación utilizada para el 
+ítem 
+Standard: EAN, PLU, DUN o Interna 
+(Hasta 5 tipos de códigos) 
+14 ALFA 
+NUM 
+a)Sin validación. 
+ 
+N 3 3 3 3 3 3 3 3 3 3 
+3 Código del Ítem 
+<CodigoItem> 
+Código del ítem de acuerdo a tipo de 
+codificación indicada en campo 
+anterior. 
+(Hasta 5 códigos) 
+35 ALFA 
+NUM 
+a)Sin validación. 
+ 
+N 3 3 3 3 3 3 3 3 3 3 
+ FIN TABLA 
+ 
+CÓDIGOS ÍTEM  
+ 
+ 
+ 
+ 
+48 Para la factura de consumo electrónica mayor o igual a DOP$250 mil se tendrá un máximo de mil (1,000) líneas. En caso de que la factura de consumo electrónica sea menor a DOP$250 mil se tendrá un máximo 
+de diez mil (10,000) líneas. 
+
+===== PAGE 37/89 =====
+
+ 
+Pág. 36 de 87 
+ 
+ 
+ 
+ 
+ CAMPOS DESCRIPCIÓN Largo 
+Max Tipo Validación I 
+OBLIGATORIEDAD 
+Fact. Créd. 
+Fiscal 
+Electr. 
+ 
+31 
+Fact. 
+Consum. 
+Electr. 
+ 
+32 
+Nota 
+Déb. 
+Electr. 
+ 
+33 
+Nota 
+Créd. 
+Electr. 
+ 
+34 
+Compras 
+Electr. 
+ 
+41 
+Gastos 
+Menor. 
+Electr. 
+ 
+43 
+Regím. 
+Espec. 
+Electr. 
+ 
+44 
+Guber. 
+Electr. 
+ 
+45 
+Export. 
+Electr. 
+ 
+46 
+Pagos 
+Exterior 
+Electr. 
+ 
+47 
+4 Indicador de Facturación 
+<IndicadorFacturacion> 
+Indica si el ítem es exento, si es gravado, o 
+No facturable., Indicará las distintas tasas: 
+ 
+0: No Facturable 
+ITBIS 1: ítem gravado a ITBIS tasa1 (18%). 
+ITBIS 2: ítem gravado a ITBIS tasa2 (16%). 
+ITBIS 3: ítem gravado a ITBIS tasa3 (0%). 
+E: Exento 
+1 NUM 
+a)Indicar si es valor 
+0: No Facturable 
+1: ITBIS 1 (18%)  
+2: ITBIS 2 (16%) 
+3: ITBIS 3 (0%) 
+4: Exento (E) 
+ 
+P49 1 1 1 1 1 150 1 1 151 1 
+ ÁREA 
+<Retencion> RETENCIÓN   Condicional a que exista retención.  2 0 2 2 1 0 0 0 0 1 
+5 
+Indicador Agente de 
+Retención o 
+Percepción52 
+<IndicadorAgenteRete
+ncionoPercepcion> 
+Para Agentes de Retención o Percepción. 
+Indica para cada transacción si es agente 
+retenedor d el producto que está 
+vendiendo o el servicio. Condicional a que 
+exista retención. 
+1 NUM 
+a)Codificación: 
+ 
+1: “R” 
+2: “P” 
+N 2 0 2 2 1 0 0 0 0 1 
+6 Monto ITBIS Retenido 
+<MontoITBISRetenido> 
+Monto del ITBIS correspondiente a la 
+retención que será realizado por el 
+comprador. Condicional a que exista 
+retención.53 
+18 NUM 
+a) Valor numérico de 16 enteros, 
+dos decimales, ≥0. 
+ 
+N 2 0 2 2 2 0 0 0 0 0 
+7 Monto Retención Renta 
+<MontoISRRetenido> 
+Monto del Impuesto Sobre la Renta 
+correspondiente a la retención realizada de 
+la prestación o locación de servicios.  
+ 
+El e-CF  tipo 41 es condicional a que exista 
+retención y el ‘Indicador Bien o Servicio’ 
+sea igual a 2. 
+18 NUM 
+a) Valor numérico de 16 enteros, 
+dos decimales, ≥0. 
+b) El e-CF  tipo 41 es condicional a 
+que exista retención y el ‘Indicador 
+Bien o Servicio’ sea igual a 2.  
+N 2 0 2 2 2 0 0 0 0 1 
+ 
+49 Se indicará en la representación impresa solo cuando el ítem sea exento. 
+50 El valor del indicador de facturación para los tipos de e-CF 43, 44 y 47 debe ser igual a 4 (Exento).  
+51 El valor del indicador de facturación para el tipo de e-CF 46 debe ser igual a 3 (ITBIS tasa cero). 
+52 Régimen de percepción no está vigente. 
+53 Si el campo ‘Indicador de Facturación’ es igual a 4 (exento) y el ‘Indicador de Retención o Percepción’ es igual a 1 (R) se deberá completar el campo ‘Monto ITBIS Retenido’ con valor cero (0). 
+
+===== PAGE 38/89 =====
+
+Pág 37 de 87 
+ 
+ 
+ 
+CAMPOS 
+ 
+DESCRIPCIÓN 
+ 
+ 
+Largo 
+Max 
+ 
+ 
+Tipo 
+ 
+ 
+Validación 
+ 
+ 
+I 
+OBLIGATORIEDAD 
+Fact. Créd. 
+Fiscal Electr. 
+ 
+31 
+Fact. 
+Consum. 
+Electr. 
+ 
+32 
+Nota 
+Déb. 
+Electr. 
+ 
+33 
+Nota 
+Créd. 
+Electr. 
+ 
+34 
+Compras 
+Electr. 
+ 
+41 
+Gastos 
+Menor. 
+Electr. 
+ 
+43 
+Regím. 
+Espec. 
+Electr. 
+ 
+44 
+Guber. 
+Electr. 
+ 
+45 
+Export. 
+Electr. 
+ 
+46 
+Pagos 
+Exterior 
+Electr. 
+ 
+47 
+ 
+FIN ÁREA RETENCIÓN  
+8 Nombre del Ítem 
+<NombreItem> Nombre del producto o servicio. 80 ALFA 
+NUM a) Sin validación. I 1 1 1 1 1 1 1 1 1 1 
+9 Indicador Bien o Servicio 
+<IndicadorBienoServicio> 
+Identifica si el ítem corresponde a Bien 
+o Servicio. 1 NUM 
+a) Indicar si es Valor: 
+ 
+1: Bien 
+2:  Servicio 
+N 1 1 1 1 1 1 1 1 1 154 
+10 Descripción Adicional 
+<DescripcionItem> 
+Descripción Adicional del ítem. 
+ 1000 ALFA 
+NUM a)Sin validación N 3 3 3 3 3 3 3 3 3 3 
+11 Cantidad 
+<CantidadItem> 
+Cantidad del ítem55 
+ 18 NUM 
+a) Valor numérico de 16 
+enteros, 2 decimales ; >0 (No 
+puede ser negativo). 
+I 1 1 1 1 1 1 1 1 1 1 
+12 
+Unidad de Medida Ítem 
+<UnidadMedida> 
+ 
+Indica la unidad de medida que está 
+expresada la cantidad. 2 NUM 
+a) Validar con la Tabla de 
+Codificación de Unidad de 
+medida. 
+P 3 3 3 3 3 3 3 3 3 3 
+13 Cantidad de Referencia 
+<CantidadReferencia> 
+Cantidad para la unidad de medida de 
+referencia (no se usa para el cálculo del 
+Monto Ítem). 
+ 
+Condicional a que el ítem esté gravado 
+con códigos de impuestos adicionales 
+entre 00 6-022 en la Tabla de 
+Codificación Tipo de Impuestos 
+Adicional. 56 
+ 
+18 NUM 
+a) Valor numérico de 16 
+enteros, 2 decimales ; ≥0 (No 
+puede ser negativo). 
+ 
+N 2 2 2 2 0 0 0 2 0 0 
+14 Unidad de Referencia 
+<UnidadReferencia> 
+Indica la unidad de medida de 
+referencia. 
+ 
+Condicional a que esté completado el 
+campo Cantidad de referencia. 
+2 NUM 
+a) Validar con la Tabla IV 
+(Codificación de Unidad de 
+medida). 
+N 2 2 2 2 0 0 0 2 0 0 
+ 
+ 
+54 Cuando se emita un Comprobante de Pagos a Exterior Electrónico, deberá ser completado el campo Bien o Servicio con valor 2. 
+55 Para facturación de servicios no es obligatorio imprimir. 
+56 En el caso de productos de alcohol, bebidas alcohólicas y cigarrillos, se debe indicar la cantidad de la presentación por unidad que contiene l a cantidad del ítem. Para los productos del tabaco y cigarrillos, se debe indicar la cantidad de 
+cajetillas que contiene el empaque. Este campo será completado cuando se refiera a la facturación de bienes cuya transferencia, a nivel de productor o fabricante, está gravada con Impuesto Selectivo al Consumo (Códigos desde 006 hasta 
+039 de la Tabla I). 
+
+===== PAGE 39/89 =====
+
+ 
+Pág. 38 de 87 
+ 
+ 
+ 
+CAMPOS DESCRIPCIÓN 
+ 
+Largo 
+Max 
+ 
+Tipo 
+ 
+Validación 
+ 
+ 
+I 
+OBLIGATORIEDAD   
+Fact. Créd. 
+Fiscal 
+Electr. 
+31 
+Fact. 
+Consum. 
+Electr. 
+32 
+Nota 
+Déb. 
+Electr. 
+33 
+Nota 
+Créd. 
+Electr. 
+34 
+ 
+Compras 
+Electr. 
+ 
+41 
+Gastos 
+Menor. 
+Electr. 
+43 
+Regím. 
+Espec. 
+Electr. 
+ 
+44 
+Guber. 
+Electr. 
+ 
+45 
+Export. 
+Electr. 
+ 
+46 
+Pagos 
+Exterior 
+Electr. 
+ 
+47 
+ 
+ 
+ 
+ 
+Tabla de 
+Distribución de 
+Subcantidad 
+<TablaSubcantidad>57 
+Se deberá incluir esta tabla para 
+fines del cálculo de los impuestos 
+selectivos al consumo a productos 
+derivados de alcohol y cervezas y 
+productos del tabaco y cigarrillos.  
+ 
+Condicional a que exista código 
+desde 006 hasta 039 según la ‘Tabla 
+de Codificación Tipos de Impuestos 
+Adicionales’.  
+ 
+Se pueden incluir 5 repeticiones de 
+pares cantidad – código. Incluye los 
+dos campos siguientes: 
+    
+N 2 2 2 2 0 0 0 2 0 0 
+15 Subcantidad 
+<Subcantidad> 
+Cantidad de unidades de referencia 
+que tiene la unidad del ítem.  
+Condicional a que el ítem esté 
+gravado con códigos de impuestos 
+adicionales desde  006 hasta 022 en 
+la Tabla de Codificación Tipo de 
+Impuestos Adicional. 58 
+19 NUM 
+a) Valor numérico de 16 enteros, 
+3 decimales; ≥0 (No puede ser 
+negativo). 
+N 2 2 2 2 0 0 0 2 0 0 
+16 
+Código subcantidad 
+<CodigoSubcantidad> 
+ 
+Indica la unidad de medida de la 
+subcantidad. 
+ 
+2 NUM 
+a) Validar con la Tabla IV 
+(Codificación de Unidad de 
+medida). 
+N 2 2 2 2 0 0 0 2 0 0 
+ FIN TABLA SUBCANTIDAD  
+ 
+ 
+ 
+57 Ver nota 2. 
+58 En el caso de productos de alcohol y bebidas alcohólicas, en este campo se debe indicar la cantidad de alcohol absoluto (volumen por unidad) expresada en litros. Para los productos del tabaco y cigarrillos, se debe indicar la cantidad 
+de unidades que contiene la cajetilla de cigarrillo o tabaco. Este campo será completado cuando se refiera a la facturación de bienes cuya transferencia, a nivel de productor o fabricante, está gravada con Impuesto Selectivo al Consumo 
+(Códigos 006-022). 
+
+===== PAGE 40/89 =====
+
+ 
+Pág. 39 de 87 
+ 
+ 
+ 
+CAMPOS DESCRIPCIÓN 
+ 
+Largo 
+Max 
+ 
+Tipo 
+ 
+Validación 
+ 
+ 
+I 
+OBLIGATORIEDAD 
+Fact. 
+Créd. 
+Fiscal 
+Electr. 
+31 
+Fact. 
+Consum. 
+Electr. 
+32 
+Nota 
+Déb. 
+Electr. 
+33 
+Nota 
+Créd. 
+Electr. 
+34 
+ 
+Compras 
+Electr. 
+ 
+41 
+Gastos 
+Menor. 
+Electr. 
+43 
+Regím. 
+Espec. 
+Electr. 
+ 
+44 
+Guber. 
+Electr. 
+ 
+45 
+Export. 
+Electr. 
+ 
+46 
+Pagos 
+Exterior 
+Electr. 
+ 
+47 
+17 Grados Alcohol en % 
+<GradosAlcohol>59 
+Corresponde al porcentaje de alcohol 
+en el volumen de concentración total 
+alcohólica por unidad de producto. 
+Condicional a que el ítem esté gravado 
+con códigos de impuestos adicionales 
+006 hasta 018 en la Tabla de 
+Codificación Tipo de Impuestos 
+Adicional (bebidas alcohólicas). 
+5 NUM 
+  
+a) Valor numérico de 3   
+enteros y 2 decimales; >0. 
+(Debe ser positivo) 
+ 
+ 
+I 2 2 2 2 0 0 0 2 0 0 
+18 Precio Unitario de Referencia 
+<PrecioUnitarioReferencia>60 
+Precio unitario para la unidad de 
+medida de referencia (no se usa para el 
+cálculo del monto Total). 
+ 
+Condicional a que el ítem esté gravado 
+con códigos de impuestos adicionales 
+desde 023 hasta 039 en la Tabla de 
+Codificación Tipo de Impuestos 
+Adicional. 
+ 
+ 
+18 NUM 
+a) Valor numérico de 16 
+enteros, 2 decimales.  >0 (No 
+puede ser negativo)  
+ 
+I 2 2 2 2 0 0 0 2 0 0 
+19 Fecha Elaboración 
+<FechaElaboracion> 
+Dato correspondiente a la fecha de 
+elaboración del ítem. 10 ALFA 
+NUM 
+a)Fecha válida  
+Formato: (dd-MM-AAAA) N 3 3 3 3 3 0 3 3 3 0 
+ 
+ 
+ 
+ 
+ 
+59 Este campo será completado cuando se refiera a la facturación de bienes cuya transferencia, a nivel de productor o fabricante, está gravada con Impuesto Selectivo al Consumo (Códigos 006-018 Tabla I). 
+60 En el caso de el ítem esté gravado con códigos de impuestos adicionales entre 023-039 (de la Tabla de Codificación Tipo de Impuestos Adicional ), se deberá colocar en el campo  Precio Unitario de referencia, el precio de venta al por 
+menor (PVP) empleado como base imponible para el cálculo del ISC Ad Valorem. 
+
+===== PAGE 41/89 =====
+
+ 
+Pág. 40 de 87 
+ 
+  
+CAMPOS 
+ 
+DESCRIPCIÓN 
+ 
+Largo 
+Max 
+ 
+Tipo 
+ 
+Validación 
+ 
+ 
+I 
+OBLIGATORIEDAD 
+Fact. 
+Créd. 
+Fiscal 
+Electr. 
+ 
+31 
+Fact. 
+Consum. 
+Electr. 
+ 
+32 
+Nota 
+Déb. 
+Electr. 
+ 
+33 
+Nota 
+Créd. 
+Electr. 
+ 
+34 
+Compras 
+Electr. 
+ 
+41 
+Gastos 
+Menor. 
+Electr. 
+ 
+43 
+Regím. 
+Espec. 
+Electr. 
+ 
+44 
+Guber. 
+Electr. 
+ 
+45 
+Export. 
+Electr. 
+ 
+46 
+Pagos 
+Exterior 
+Electr. 
+ 
+47 
+20 Fecha Vencimiento 
+<FechaVencimientoItem> 
+Dato correspondiente a la fecha de 
+vencimiento del ítem. 10 ALFA 
+NUM 
+a)Fecha válida 
+Formato: (dd-MM-AAAA) N 3 3 3 3 3 0 3 3 3 0 
+ ÁREA 
+<Mineria> 
+MINERÍA. 
+Condicional a que exista facturación 
+relacionado al sector minería. 
+    0 2 2 2 0 0 0 0 2 0 
+21 Peso Neto Kilogramo 
+<PesoNetoKilogramo> 
+Indica el peso neto en kilogramo del 
+mineral.61 19 NUM a) Valor numérico de 16 enteros, 3 
+decimales; ≥0 (No puede ser negativo). N 0 2 2 2 0 0 0 0 2 0 
+22 Peso Neto 
+<PesoNetoMineria> Indica el peso neto del mineral.62 19 NUM a) Valor numérico de 16 enteros, 3 
+decimales; ≥0 (No puede ser negativo). N 0 2 2 2 0 0 0 0 2 0 
+23 Tipo Afiliación 
+<TipoAfiliacion> Indica si el destinatario es o no afiliada.63 1 NUM 
+a) Indica si es valor: 
+  1: Afiliada 
+2: No afiliada 
+N 0 2 2 2 0 0 0 0 2 0 
+24 Liquidación 
+<Liquidacion> 
+Indica si la liquidación del mineral es 
+provisional o final.64 1 NUM 
+a) Indica si es valor: 
+ 1: Provisional 
+ 2: Final 
+N 0 2 2 2 0 0 0 0 2 0 
+ FIN ÁREA MINERÍA  
+25 
+Precio Unitario del 
+Ítem65 
+<PrecioUnitarioItem> 
+Dato correspondiente al p recio unitario 
+del ítem.  
+ 
+20 NUM  a)Valor numérico de 16 enteros, 4 
+decimales; ≥0 (No puede ser negativo). I 1 1 1 1 1 1 1 1 1 1 
+ 
+ 
+ 
+ 
+61 Es condicional a que exista facturacion de minerales (oro, plata, etc). 
+62 Ver nota 61. 
+63 Ver nota 61. 
+64 Ver nota 61. 
+65 En el caso de ventas de productos de alcohol, bebidas alcohólicas y cerveza, a nivel de productor, fabricante o importador, en este campo se deberá indicar el precio de lista del ítem. En el caso de ítems gravados con impuesto selectivo 
+a los servicios de seguros en general, el precio corresponde a la prima del seguro. 
+
+===== PAGE 42/89 =====
+
+ 
+Pág. 41 de 87 
+ 
+ 
+ CAMPOS DESCRIPCIÓN 
+ 
+Largo 
+Max 
+ 
+Tipo 
+ 
+Validación 
+ 
+ 
+I 
+OBLIGATORIEDAD 
+Fact. 
+Créd. 
+Fiscal 
+Electr. 
+ 
+31 
+Fact. 
+Consum. 
+Electr. 
+ 
+32 
+Nota 
+Déb. 
+Electr. 
+ 
+33 
+Nota 
+Créd. 
+Electr. 
+ 
+34 
+Compras 
+Electr. 
+ 
+41 
+Gastos 
+Menor. 
+Electr. 
+ 
+43 
+Regím. 
+Espec. 
+Electr. 
+ 
+44 
+Guber. 
+Electr. 
+ 
+45 
+Export. 
+Electr. 
+ 
+46 
+Pagos 
+Exterior 
+Electr. 
+ 
+47 
+26 Monto Descuento 
+<DescuentoMonto> 
+Totaliza todos los subdescuentos 
+otorgados al ítem en montos.  
+Condicional a que exista Monto 
+Subdescuento. 
+18 NUM 
+a) Valor numérico de 16 enteros, 2 
+decimales; ≥0 (No puede ser 
+negativo). 
+b)Monto Subdescuento 
+I 2 2 2 2 2 0 2 2 2 0 
+ 
+Tabla de 
+Distribución de 
+Subdescuento 
+<TablaSubDescuento>66 
+Condicional a que exista descuento en 
+el ítem.  Se pueden incluir 12 
+repeticiones. Incluye los tres campos 
+siguientes: 
+   
+N 2 2 2 2 2 0 2 2 2 0 
+27 Tipo de Subdescuento 
+<TipoSubDescuento> 
+Indica si el Subdescuento está en  
+monto ($) o porcentaje (%). 
+Condicional a que exista descuento en 
+el ítem. 
+1 ALFA a) "$" o "%" N 2 2 2 2 2 0 2 2 2 0 
+28 
+Subdescuento en % 
+<SubDescuentoPorcentaj
+e> 
+Valor del Subdescuento en porcentaje 
+%. Condicional a que exista tipo 
+Subdescuento en porcentaje (%). 
+5 NUM 
+a) Valor numérico. 
+3 enteros y 2 decimales; >0 (No 
+puede ser negativo) 
+N 2 2 2 2 2 0 2 2 2 0 
+29 Monto Subdescuento 
+<MontoSubDescuento> 
+Correspondiente al valor del 
+descuento expresado en monto.  
+ 
+Si va el subdescuento en %, deberá ir el 
+monto del subdescuento. 
+ 
+18 NUM 
+a)  Valor numérico de 16 enteros, 2 
+decimales. ≥0 (No puede ser 
+negativo). 
+b) Si va el subdescuento en %, el 
+valor del subdescuento en monto 
+deberá ser igual al precio unitario 
+de ítem por el subdescuento en 
+porcentaje, por la cantidad de 
+ítems. 
+N 2 2 2 2 2 0 2 2 2 0 
+ FIN TABLA SUBDESCUENTO    
+ 
+ 
+ 
+ 
+ 
+66 Ver nota 2. 
+
+===== PAGE 43/89 =====
+
+ 
+Pág. 42 de 87 
+ 
+ 
+CAMPOS DESCRIPCIÓN 
+ 
+Largo 
+Max 
+ 
+Tipo 
+ 
+Validación 
+ 
+ 
+I 
+OBLIGATORIEDAD 
+Fact. 
+Créd. 
+Fiscal 
+Electr. 
+ 
+31 
+Fact. 
+Consum. 
+Electr. 
+ 
+32 
+Nota 
+Déb. 
+Electr. 
+ 
+33 
+Nota Créd. 
+Electr. 
+ 
+34 
+Compras 
+Electr. 
+ 
+41 
+Gastos 
+Menor. 
+Electr. 
+ 
+43 
+Regím. 
+Espec. 
+Electr. 
+ 
+44 
+Guber. 
+Electr. 
+ 
+45 
+Export. 
+Electr. 
+ 
+46 
+Pagos 
+Exterior 
+Electr. 
+ 
+47 
+30 Monto Recargo 
+<RecargoMonto> 
+Totaliza todos los Subrecargos 
+otorgados al ítem en montos. 
+Condicional a que exista Monto 
+Subrecargo.   
+18 NUM 
+a)  Valor numérico de 16 enteros, 2 
+decimales; ≥0 (No puede ser negativo). 
+ 
+b) Monto Subrecargo. 
+I 2 2 2 2 2 0 2 2 2 0 
+ 
+Tabla de 
+Distribución de 
+Subrecargo 
+<TablaSubRecargo>67 
+Condicional a que exista recargo en el 
+ítem. Se pueden incluir 12 
+repeticiones de pares Tipo – Valor. 
+Incluye los tres campos siguientes: 
+   N 2 2 2 2 2 0 2 2 2 0 
+31 Tipo Subrecargo 
+<TipoSubRecargo> 
+Indica si el Sub recargo está en $ o % . 
+Condicional a que exista recargo en el 
+ítem. 
+1 ALFA "$" o "%" N 2 2 2 2 2 0 2 2 2 0 
+32 
+Subrecargo en % 
+<SubRecargoPorcentaje
+> 
+Valor del Subrecargo en porcentaje %. 
+Condicional a que exista tipo 
+Subrecargo en porcentaje (%). 
+5 NUM 
+a)Valor numérico, 3 enteros y 2 
+decimales; >0 (No puede ser negativo) 
+ 
+N 2 2 2 2 2 0 2 2 2 0 
+33 Monto Subrecargo 
+<MontoSubRecargo> 
+Correspondiente al valor del Subrecargo 
+expresado en monto. Condicional a que 
+exista subrecargo. 
+ 
+Si va el subrecargo en %, deberá ir el 
+monto del subrecargo. 
+ 
+18 NUM 
+a)  Valor numérico de 16 enteros, 
+decimales; ≥0 (No puede ser 
+negativo). 
+b) Si va el subrecargo en %, el valor del 
+subrecargo en monto deberá ser igual 
+al precio unitario del ítem por el valor 
+del subrecargo en porcentaje, por la 
+cantidad de ítems. 
+N 2 2 2 2 2 0 2 2 2 0 
+ FIN TABLA SUBRECARGO    
+ 
+Tabla de Códigos de 
+Impuestos Adicionales 
+<TablaImpuestoAdicion
+al>68 
+Se pueden incluir 2 repeticiones de 
+códigos de impuesto.     2 2 2 2 0 0 269 2 0 0 
+ 
+ 
+67 Ver nota 2. 
+68 Ver nota 2. 
+69 Ver nota 16. 
+
+===== PAGE 44/89 =====
+
+ 
+Pág. 43 de 87 
+ 
+ CAMPOS DESCRIPCIÓN 
+ 
+Largo 
+Max 
+ 
+Tipo 
+ 
+Validación 
+ OBLIGATORIEDAD 
+ 
+ 
+I 
+Fact. 
+Créd. 
+Fiscal 
+Electr. 
+ 
+31 
+Fact. 
+Consum. 
+Electr. 
+ 
+32 
+Nota 
+Déb. 
+Electr. 
+ 
+33 
+Nota Créd. 
+Electr. 
+ 
+34 
+Compras 
+Electr. 
+ 
+41 
+Gastos 
+Menor. 
+Electr. 
+ 
+43 
+Regím. 
+Espec. 
+Electr. 
+ 
+44 
+Guber. 
+Electr. 
+ 
+45 
+Export. 
+Electr. 
+ 
+46 
+Pagos 
+Exterior 
+Electr. 
+ 
+47 
+34 
+Código de Impuesto 
+Adicional 
+<TipoImpuesto> 
+Dato correspondiente al Código del 
+impuesto adicional de acuerdo a la Tabla 
+de Codificación Tipos de Impuestos 
+Adicionales (Tabla I). Condicional a que el 
+ítem este gravado con Impuesto 
+Adicional.70 
+3 NUM 
+Código válido respecto a la 
+Tabla I (Codificación Tipos de 
+Impuestos Adicionales). 
+N 2 2 2 2 0 0 271 2 0 0 
+ FIN TABLA IMPUESTOS ADICIONALES  
+ 
+ÁREA 
+<OtraMonedaDetalle> 
+ 
+OTRA MONEDA DETALLE. 
+Indicar precios en monedas alternativas.  
+72 
+    2 2 2 2 2 2 2 2 2 2 
+35 
+Precio unitario en otra 
+moneda 
+<PrecioOtraMoneda> 
+Dato correspondiente al precio Unitario 
+del Ítem en otra moneda . Condicional a 
+que el ítem sea en Otra Moneda. 
+20 NUM 
+a) Valor numérico de 16 
+enteros, 4 decimales. ≥0 (No 
+puede ser negativo). 
+ 
+N73 2 2 2 2 2 2 2 2 2 2 
+36 
+Descuento en Otra 
+Moneda 
+<DescuentoOtraMoneda> 
+Corresponde al valor de descuento 
+otorgado en Otra Moneda. 
+ 
+18 NUM 
+a) Valor numérico de 16 
+enteros, 2 decimales. ≥0 (No 
+puede ser negativo). 
+N 3 3 3 3 3 3 3 3 3 3 
+37 Recargo en Otra Moneda 
+<RecargoOtraMoneda> 
+Corresponde el valor de recargo 
+otorgado en Otra Moneda. 18 NUM 
+a) Valor numérico de 16 
+enteros, 2 decimales.  ≥0 (No 
+puede ser negativo). 
+N 3 3 3 3 3 3 3 3 3 3 
+38 
+Monto Ítem Otra Moneda 
+<MontoItemOtraMoneda> 
+(Precio Unitario en otra moneda * 
+Cantidad) – Descuento en otra m oneda 
++ Recargo en otra moneda. 
+Condicional a que el Precio del ítem y 
+Descuentos o Recargo (si existen) sean 
+en Otra Moneda. 
+18 NUM 
+a)  Valor numérico de 16 
+enteros, 2 decimales.  ≥0 (No 
+puede ser negativo). 
+b) Valor numérico de acuerdo 
+al campo de Descripción.  
+N 2 2 2 2 2 2 2 2 2 2 
+ 
+ 
+70 La condición está sujeta a la especificación del contribuyente, es decir, si en su facturación existe ítem gravado con impuesto adicional.   
+71 Ver nota 16. 
+72 La condición está sujeta a la especificación del contribuyente, es decir, si este indica que existen ítems en otra moneda, se deberán completar los demás campos de la tabla. 
+73 La impresión de los campos en otra moneda es condicional a que existan transacciones en otras monedas. Si existen transacciones en otras monedas, dichos campos pueden ser impresos en la RI sin ser necesario incluir los de moneda 
+local, debido a que ambas informaciones se encuentran en el formato XML de e-CF. 
+
+===== PAGE 45/89 =====
+
+ 
+Pág. 44 de 87 
+ 
+ CAMPOS DESCRIPCIÓN 
+ 
+Largo 
+Max 
+ 
+Tipo 
+ 
+Validación 
+ OBLIGATORIEDAD 
+ 
+ 
+I 
+Fact. 
+Créd. 
+Fiscal 
+Electr. 
+ 
+31 
+Fact. 
+Consum. 
+Electr. 
+ 
+32 
+Nota 
+Déb. 
+Electr. 
+ 
+33 
+Nota Créd. 
+Electr. 
+ 
+34 
+Compras 
+Electr. 
+ 
+41 
+Gastos 
+Menor. 
+Electr. 
+ 
+43 
+Regím. 
+Espec. 
+Electr. 
+ 
+44 
+Guber. 
+Electr. 
+ 
+45 
+Export. 
+Electr. 
+ 
+46 
+Pagos 
+Exterior 
+Electr. 
+ 
+47 
+ FIN ÁREA OTRA MONEDA DETALLE  
+39 
+Monto Ítem 
+(Valor por la línea de 
+detalle) 
+<MontoItem> 
+ 
+(Precio Unitario del ítem * Cantidad) – 
+Monto Descuento + Monto Recargo 
+ 
+ 
+ 
+ 
+ 
+ 
+18 NUM 
+a)  Valor numérico de 16 
+enteros, 2 decimales; ≥ 0 (No 
+puede ser negativo).  
+b) Valor numérico, de 
+acuerdo con descripción. 
+c)Debe ser cero cuando: es 
+una Nota de Crédito para 
+fines de corrección de 
+texto.74 
+Cuando es cero puede no 
+imprimirse o imprimirse un 
+texto explicativo (sin valor, 
+sin costo, etc.) 
+I 1 1 1 1 1 1 1 1 1 1 
+ FIN ÁREA ÍTEM    
+ FIN ÁREA DETALLES ÍTEM    
+ 
+74 Aplica cuando la emisión de la nota de crédito, tiene valor 2 en el campo ‘Codigo Modificación’ de la sección Información de Referencia. 
+
+===== PAGE 46/89 =====
+
+ 
+Pág. 45 de 87 
+ 
+C. SUBTOTALES INFORMATIVOS 
+Pueden ser de 0 hasta 20 líneas. Estos subtotales no aumentan o disminuyen la base del impuesto, ni modifican los campos tota lizadores, sólo son campos informativos. Estos subtotales tienen 
+una descripción que especifica el concepto. Por ejemplo, un subtotal aplicado a un determinado grupo de ítems.  En la representación impresa, estos subtotalizadores pueden intercalarse entre 
+las líneas de detalle, o indicarse en forma agrupada en una sección aparte, dependiendo de la facturación.  
+  
+CAMPOS 
+ 
+DESCRIPCIÓN 
+ 
+Largo 
+Max 
+ 
+Tipo 
+ 
+Validación 
+ 
+ 
+I 
+OBLIGATORIEDAD 
+Fact. 
+Créd. 
+Fiscal 
+Electr. 
+ 
+31 
+Fact. 
+Consum. 
+Electr. 
+ 
+32 
+Nota 
+Déb. 
+Electr. 
+ 
+33 
+Nota 
+Créd. 
+Electr. 
+ 
+34 
+Compras 
+Electr. 
+ 
+41 
+Gastos 
+Menor. 
+Electr. 
+ 
+43 
+Regím. 
+Espec. 
+Electr. 
+ 
+44 
+Guber. 
+Electr. 
+ 
+45 
+Export. 
+Electr. 
+ 
+46 
+Pagos 
+Exterior 
+Electr. 
+ 
+47 
+ 
+ÁREA 
+<Subtotales> 
+SUBTOTALES 
+    
+3 3 3 3 3 3 3 3 3 3 
+ 
+ÁREA 
+<Subtotal> 
+SUBTOTAL 
+Se pueden incluir hasta 20 
+repeticiones. 
+    
+3 3 3 3 3 3 3 3 3 3 
+1 Número Subtotal 
+<NumeroSubTotal> Número de Subtotal 2 NUM 
+a) Número secuencial de 
+acuerdo al número de 
+subtotales 
+N 3 3 3 3 3 3 3 3 3 3 
+2 Descripción 
+< DescripcionSubtotal> Título del Subtotal 40 ALFA a) Sin validación.  
+N 
+ 
+3 
+ 
+3 
+ 
+3 
+ 
+3 
+ 
+3 
+ 
+3 
+ 
+3 
+ 
+3 
+ 
+3 
+ 
+3 
+3 Orden 
+<Orden> 
+Ubicación para Impresión. 
+De uso para el contribuyente 
+como ayuda para indicar c ómo 
+imprimirá Subtotales. 
+2 NUM a) Sin validación. 
+ 
+ 
+N 
+ 
+3 
+ 
+3 
+ 
+3 
+ 
+3 
+ 
+3 
+ 
+3 
+ 
+3 
+ 
+3 
+ 
+3 
+ 
+3 
+4 
+Subtotal Monto Gravado ITBIS 
+Total 
+<SubTotalMontoGravadoTotal> 
+Valor de la sumatoria del 
+Subtotal Monto Gravado ITBIS 
+Tasa 1, ITBIS Tasa 2 e ITBIS Tasa 
+3; en DOP$ u otra moneda.  
+18 NUM 
+a) Valor numé rico de 16 
+enteros, 2 decimales; ≥0 
+ 
+ 
+N 
+ 
+3 
+ 
+3 
+ 
+3 
+ 
+3 
+ 
+3 
+ 
+0 
+ 
+0 
+ 
+3 
+ 
+3 
+ 
+0 
+5 
+Subtotal Monto Gravado ITBIS 
+Tasa 1 
+<SubTotalMontoGravadoI1> 
+Valor del monto gravado del 
+Subtotal asignados a ítem con 
+ITBIS tasa 1(18%); en DOP$ u 
+otra moneda. 
+18 NUM 
+a) Valor numé rico de 16 
+enteros, 2 decimales; ≥0 
+ 
+ 
+N 
+ 
+3 
+ 
+3 
+ 
+3 
+ 
+3 
+ 
+3 
+ 
+0 
+ 
+0 
+ 
+3 
+ 
+0 0 
+6 
+Subtotal Monto Gravado ITBIS 
+Tasa 2 
+<SubTotalMontoGravadoI2> 
+Valor del monto gravado del 
+Subtotal asignados a ítem con 
+ITBIS tasa 2 (16%); en DOP$ u 
+otra moneda. 
+18 NUM 
+a) Valor numé rico de 16 
+enteros, 2 decimales; ≥0 
+ 
+ 
+N 3 3 3 3 3 0 0 3 0 0 
+ 
+ 
+
+===== PAGE 47/89 =====
+
+ 
+Pág. 46 de 87 
+ 
+ 
+  
+CAMPOS 
+ 
+DESCRIPCIÓN 
+ 
+Largo 
+Max 
+ 
+Tipo 
+ 
+Validación 
+ 
+ 
+I 
+OBLIGATORIEDAD 
+Fact. 
+Créd. 
+Fiscal 
+Electr. 
+ 
+31 
+Fact. 
+Consum. 
+Electr. 
+ 
+32 
+Nota 
+Déb. 
+Electr. 
+ 
+33 
+Nota Créd. 
+Electr. 
+ 
+34 
+Compras 
+Electr. 
+ 
+41 
+Gastos 
+Menor. 
+Electr. 
+ 
+43 
+Regím. 
+Espec. 
+Electr. 
+ 
+44 
+Guber. 
+Electr. 
+ 
+45 
+Export. 
+Electr. 
+ 
+46 
+Pagos 
+Exterior 
+Electr. 
+ 
+47 
+7 
+Subtotal Monto Gravado ITBIS Tasa 3 
+<SubTotalMontoGravadoI3> 
+Valor del monto gravado del 
+Subtotal asignados a ítem con ITBIS 
+tasa 3 (0%); en DOP$ u otra 
+moneda. 
+18 NUM 
+a) Valor numérico de 16 enteros, 
+2 decimales; ≥0 
+ 
+ 
+N 
+3 3 3 3 3 0 0 3 3 0 
+8 Subtotal ITBIS 
+<SubTotaITBIS> 
+Valor de la sumatoria del Subtotal 
+ITBIS Tasa 1, subtotal ITBIS Tasa 2 y 
+Subtotal ITBIS Tasa 3; en DOP$ u 
+otra moneda. 
+18 NUM 
+a) Valor numérico de 16 enteros, 
+2 decimales; ≥0 
+ 
+ 
+N 3 3 3 3 3 0 0 3 3 0 
+9 Subtotal ITBIS Tasa 1 
+<SubTotaITBIS1> 
+Valor del total de ITBIS tasa 1 del 
+Subtotal; en DOP$ u otra moneda. 18 NUM 
+a) Valor numérico de 16 enteros, 
+2 decimales; ≥0 
+ 
+ 
+N 
+3 3 3 3 3 0 0 3 0 0 
+10 Subtotal ITBIS Tasa 2 
+<SubTotaITBIS2> 
+Valor del total de ITBIS tasa 2 del 
+Subtotal; en DOP$ u otra moneda. 18 NUM 
+a) Valor numérico de 16 enteros, 
+2 decimales; ≥0 
+ 
+ 
+N 
+3 3 3 3 3 0 0 3 0 0 
+11 Subtotal ITBIS Tasa 3 
+<SubTotaITBIS3> 
+Valor del total de ITBIS tasa 3 del 
+Subtotal; en DOP$ u otra moneda. 18 NUM 
+a) Valor numérico de 16 enteros, 
+2 decimales; ≥0 
+ 
+ 
+N 
+3 3 3 3 3 0 0 3 3 0 
+12 Subtotal Impuestos adicionales 
+<SubTotalImpuestoAdicional> 
+Valor de los Impuestos adicionales 
+del Subtotal. Aplica en subtotales en 
+DOP$ u otra moneda. 
+18 NUM 
+ 
+a) Valor numérico de 16 enteros, 
+2 decimales; >0 
+ 
+N 3 3 3 3 3 0 3 3 0 0 
+13 Subtotal Exento 
+<SubTotalExento> 
+Valor Exento del Subtotal. Aplica en 
+subtotales en DOP$ u otra moneda. 18 NUM 
+a) Valor numérico de 16 enteros, 
+2 decimales; ≥0 
+ 
+ 
+N 
+ 
+3 
+ 
+3 
+ 
+3 
+ 
+3 
+ 
+3 
+ 
+3 
+ 
+3 
+ 
+3 
+ 
+0 
+ 
+3 
+14 Monto del Subtotal 
+<MontoSubTotal> 
+Valor de la línea de subtotal . 
+Corresponde a la sumatoria de 
+Subtotal Monto Gravado ITBIS 
+Total, Subtotal ITBIS , Subtotal 
+Impuestos adicionales y/o   Subtotal 
+Exento. Aplica en subtotales en 
+DOP$ u otra moneda.  
+18 NUM 
+a) Valor numérico de 16 enteros, 
+2 decimales; ≥0 
+ 
+ 
+N 
+ 
+3 
+ 
+3 
+ 
+3 
+ 
+3 
+ 
+3 
+ 
+3 
+ 
+3 
+ 
+3 
+ 
+3 
+ 
+3 
+ 
+ 
+
+===== PAGE 48/89 =====
+
+ 
+Pág. 47 de 87 
+ 
+ 
+  
+CAMPOS 
+ 
+DESCRIPCIÓN 
+ 
+Largo 
+Max 
+ 
+Tipo 
+ 
+Validación 
+ 
+ 
+I 
+OBLIGATORIEDAD 
+Fact. Créd. 
+Fiscal 
+Electr. 
+ 
+31 
+Fact. 
+Consum. 
+Electr. 
+ 
+32 
+Nota 
+Déb. 
+Electr. 
+ 
+33 
+Nota 
+Créd. 
+Electr. 
+ 
+34 
+Compras 
+Electr. 
+ 
+41 
+Gastos 
+Menor. 
+Electr. 
+ 
+43 
+Regím. 
+Espec. 
+Electr. 
+ 
+44 
+Guber. 
+Electr. 
+ 
+45 
+Export. 
+Electr. 
+ 
+46 
+Pagos 
+Exterior 
+Electr. 
+ 
+47 
+15 Líneas 
+<Lineas> 
+Indica la cantidad de líneas que 
+se subtotaliza. 2 NUM  a) De acuerdo a descripción del 
+campo. 
+ 
+N 
+ 
+3 
+ 
+3 
+ 
+3 
+ 
+3 
+ 
+3 
+ 
+3 
+ 
+3 
+ 
+3 
+ 
+3 
+ 
+3 
+ FIN ÁREA SUBTOTAL    
+ FIN ÁREA SUBTOTALES    
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+===== PAGE 49/89 =====
+
+ 
+Pág. 48 de 87 
+ 
+D. DESCUENTOS O RECARGOS 
+Pueden ser de 0 hasta 20 líneas. Estos aumentan o disminuyen la base del impuesto. Estos descuentos  o recargos tienen una descripción que especifica el concepto. Por ejemplo un descuento 
+aplicado a un determinado tipo de ítems o un descuento por pago al contado que afecta a todos los ítems. 
+En caso de que se apliquen descuentos o recargos globales: 
+a) Si en la sección Detalle de Bienes o Servicios contiene ítems con distintos códigos de impuesto, el campo “tipo de valor” del descuento debe ser porcentaje (%). 
+b) Si en la sección Detalle de Bienes o Servicios contiene ítems gravados a diferentes tasas y exentos (“Indicador de Facturación” = 1, 2, 3 o 4), se pueden dar los siguientes casos: 
+1. Si el descuento afecta sólo a los ítems exentos se debe indicar un 4 en el “Indicador de Facturación”. 
+2. Si el descuento afecta sólo a los ítems gravados el “Indicador de Facturación” debe estar en 1, 2 o 3, según la tasa que aplique. 
+3. Si el descuento afecta a todos (“Indicador de Facturación” códigos 1, 2, 3, 4), deberá haber tantas líneas como conceptos existan. 
+ 
+  
+CAMPOS 
+ 
+DESCRIPCIÓN 
+ 
+Largo 
+Max 
+ 
+Tipo 
+ 
+Validación 
+ 
+ 
+I 
+OBLIGATORIEDAD 
+Fact. Créd. 
+Fiscal 
+Electr. 
+ 
+31 
+Fact. 
+Consum. 
+Electr. 
+ 
+32 
+Nota 
+Déb. 
+Electr. 
+ 
+33 
+Nota 
+Créd. 
+Electr. 
+ 
+34 
+Compras 
+Electr. 
+ 
+41 
+Gastos 
+Menor. 
+Electr. 
+ 
+43 
+Regím. 
+Espec. 
+Electr. 
+ 
+44 
+Guber. 
+Electr. 
+ 
+45 
+Export. 
+Electr. 
+ 
+46 
+Pagos 
+Exterior 
+Electr. 
+ 
+47 
+ 
+ÁREA 
+<DescuentosORecargos> 
+DESCUENTOS O RECARGOS    
+ 
+2 2 2 2 2 0 2 2 2 0 
+ 
+ÁREA 
+<DescuentoORecargo> 
+DESCUENTO O RECARGO. 
+Se pueden incluir hasta 20 repeticiones. 
+   
+ 
+2 2 2 2 2 0 2 2 2 0 
+1 
+N° de Línea o N° Secuencial 
+<NumeroLinea> 
+ 
+Número de descuento o recargo. De 1 a 
+20 repeticiones. Condicional a que exista 
+Descuento o Recargo global.75 
+2 NUM a)Número secuencial de la 
+línea.  N 2 2 2 2 2 0 2 2 2 0 
+2 Tipo de Ajuste 
+<TipoAjuste> 
+D(descuento) o R(recargo). 
+Condicional a que se aplique descuento 
+global o recargo global. 
+1 ALFA D o R N 2 2 2 2 2 0 2 2 2 0 
+3 Indicador Norma 10-07 
+<IndicadorNorma1007> 
+Indica si el descuento que se aplica  es 
+según lo establecido en la norma 10-07.  1 NUM 
+a)Valor 1 si corresponde  
+aplicar el descuento según lo 
+establecido en la norma 10 -
+07. 
+N 3 3 3 3 0 0 0 3 0 0 
+4 
+Descripción de Descuento 
+o Recargo 
+<DescripcionDescuentooRec
+argo> 
+Especificación de descuento o recargo. 45 ALFA a)Sin Validación I 3 3 3 3 3 0 3 3 3 0 
+ 
+75 La condición está sujeta a la especificación del contribuyente, a que exista descuento o recargo global en la facturación. 
+
+===== PAGE 50/89 =====
+
+ 
+Pág. 49 de 87 
+ 
+5 Tipo de valor 
+<TipoValor> 
+Indica si existe descuento o recargo 
+aplicado en  Porcentaje o Monto . 
+Condicional a que exista descuento o 
+recargo global.  
+ 
+1 ALFA “%” o “$” I 2 2 2 2 2 0 2 2 2 0 
+6 Descuento o Recargo en % 
+<ValorDescuentooRecargo> 
+Valor del  Descuento o Recargo en 
+porcentaje. Condicional a que 
+descuento o recargo global sea en %. 
+5 NUM 
+a) Valor numérico; 3 enteros y 
+2 decimales; >0 (No puede ser 
+negativo). 
+I 2 2 2 2 2 0 2 2 2 0 
+7 
+Monto de Descuento o 
+Recargo 
+<MontoDescuentooRecargo> 
+Valor del descuento o recargo. Si se 
+refiere al tipo de valor $ se debe indicar 
+el monto. 
+18 NUM 
+a) Valor numé rico de 16 
+enteros, 2 decimales; ≥0. 
+ 
+b) Si va el descuento o recargo 
+en %, debe ir el monto 
+correspondiente. 
+I 2 2 2 2 2 0 2 2 2 0 
+8 
+Monto en otra moneda de 
+Descuento o Recargo 
+<MontoDescuentooRecargoOt
+raMoneda> 
+Valor en otra moneda. Aplica en montos 
+de descuento o recargo global. 18 NUM 
+a) Valor numé rico de 16 
+enteros, 2 decimales; ≥0. 
+ 
+b)  Si va el descuento o 
+recargo en %, debe ir el monto 
+correspondiente. 
+N 3 3 3 3 3 0 3 3 3 0 
+9 
+Indicador de facturación 
+de Descuento o Recargo 
+<IndicadorFacturacionDescuen
+tooRecargo> 
+Indica si el des cuento o recargo afecta a 
+ítems: 
+ 
+ITBIS 1: ítem gravado a ITBIS tasa1 (18%). 
+ITBIS 2: ítem gravado a ITBIS tasa2 (16%). 
+ITBIS 3: ítem gravado a ITBIS3 tasa3 (0%). 
+E: Exento.  
+ Condicional a que exista descuento o 
+recargo global. 
+1 NUM 
+a) Indicar si es valor: 
+ 
+ 
+1: ITBIS 1 (18%)  
+2: ITBIS 2 (16%) 
+3: ITBIS 3 (0%) 
+4: Exento (E) 
+ 
+N 2 2 2 2 276 0 2 2 2 0 
+ FIN ÁREA DESCUENTO O RECARGO  
+ FIN ÁREA DESCUENTOS O RECARGOS  
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+76 Ver nota 45. 
+
+===== PAGE 51/89 =====
+
+ 
+Pág. 50 de 87 
+ 
+E. PAGINACIÓN  
+En esta sección se indica la cantidad de páginas del e-CF en la Representación Impresa y cuales ítems estarán en cada una77. Esta deberá repetirse para el total de páginas especificadas. 
+  
+CAMPOS 
+ 
+DESCRIPCIÓN 
+ 
+Largo 
+Max 
+ 
+Tipo 
+ 
+Validación 
+ 
+ 
+I 
+OBLIGATORIEDAD 
+Fact.  Créd. 
+Fiscal Electr. 
+31 
+Fact. 
+Consum. 
+Electr. 
+32 
+Nota 
+Déb. 
+Electr. 
+33 
+Nota 
+Créd. 
+Electr. 
+34 
+Compras 
+Electr. 
+41 
+Gastos 
+Menor. 
+Electr. 
+43 
+Regím. 
+Espec. 
+Electr. 
+44 
+Guber. 
+Electr. 
+45 
+Export. 
+Electr. 
+46 
+Pagos 
+Exterior 
+Electr. 
+47 
+ ÁREA 
+<Paginacion> PAGINACIÓN     2 2 2 2 2 2 2 2 2 2 
+ ÁREA 
+<Pagina> 
+PÁGINA 
+Deberá repetirse para el total de 
+páginas especificadas. 
+    2 2 2 2 2 2 2 2 2 2 
+1 Página No. 
+<PaginaNo> 
+Indica la numeración de la página que 
+contiene los datos del e -CF al realizar 
+una representación impresa, siempre 
+y cuando sea mayor a una página. 
+3 NUM 
+a) Debe estar entre 1 y 100. 
+ 
+b) El número indicado de página debe 
+estar en orden secuencial.  
+I 2 2 2 2 2 2 2 2 2 2 
+2 No. Línea Desde 
+<NoLineaDesde> 
+Indica el no. de la línea de detalle del 
+primer ítem que contiene la página. 
+ 
+Condicional a que sea completado el 
+campo Página No. 
+3 NUM 
+a) N úmero de línea que  corresponde al 
+primer ítem que será incluido en la página. 
+b) Valor numérico hasta 3 enteros. 
+c) El valor indicado debe ser menor o igual 
+al colocado en el campo ‘ No. Línea Hasta’ 
+y debe ser mayor a cero (>0). 
+ 
+N 2 2 2 2 2 2 2 2 2 2 
+3 No. Línea Hasta 
+<NoLineaHasta> 
+Indica el no. de la línea de detalle del 
+último ítem que será incluido en la 
+página. 
+ 
+Condicional a que sea completado el 
+campo No. Línea Desde. 
+3 NUM 
+a) N úmero de línea que  corresponde al 
+último ítem que será incluido en la página. 
+b) Valor numérico hasta 3 enteros. 
+c)El valor indicado debe ser mayor o igual 
+al colocado en el campo ‘No.  Línea Desde’ 
+y debe ser mayor a cero (>0). 
+ 
+N 2 2 2 2 2 2 2 2 2 2 
+ 
+ 
+ 
+ 
+ 
+ 
+77 La sección paginación es condicional a que el e-CF contenga más de una página. 
+
+===== PAGE 52/89 =====
+
+ 
+Pág. 51 de 87 
+ 
+  
+CAMPOS 
+ 
+DESCRIPCIÓN 
+ 
+Largo 
+Max 
+ 
+Tipo 
+ 
+Validación 
+ 
+ 
+I 
+OBLIGATORIEDAD 
+Fact. 
+  Créd.  
+Fiscal  
+Electr. 
+31 
+Fact. 
+Consum. 
+Electr. 
+32 
+Nota  
+Déb. Electr. 
+33 
+Nota 
+Créd. 
+Electr. 
+34 
+Compras 
+Electr. 
+41 
+Gastos 
+Menor. 
+Electr. 
+43 
+Regím. 
+Espec. 
+Electr. 
+44 
+Guber. 
+Electr. 
+45 
+Export. 
+Electr. 
+ 
+46 
+Pagos 
+Exterior 
+Electr. 
+ 
+47 
+4 
+Subtotal Monto Gravado 
+Total Página 
+<SubtotalMontoGravadoPagi
+na> 
+Total de la suma de valores de monto 
+gravado ITBIS a diferentes tasas , de 
+las líneas correspondientes a la página 
+que se indica. 
+ 
+Condicional a que exista Subtotal 
+Monto gravado1, y/o Subtotal Monto 
+gravado 2 y/o Subtotal Monto 
+gravado 3 Página. 
+18 NUM 
+a) Valor numérico de 16 enteros, 2 
+decimales; ≥ 0 (No puede ser 
+negativo).  
+b) El valor indicado debe ser igual a 
+la s umatoria del Subtotal Monto 
+gravado ITBIS Tasa1 + Subtotal 
+Monto gravado ITBIS Tasa2 + 
+Subtotal Monto gravado ITBIS Tasa3 
+de la página indicada. 
+ 
+I 2 2 2 2 2 0 0 2 2 0 
+5  
+Subtotal Monto Gravado 
+Tasa 1 Página 
+<SubtotalMontoGravado1Pa
+gina> 
+Total de la suma de valores de Ítems 
+gravados asignados a ITBIS tasa 1 
+(tasa 18%), de las líneas 
+correspondientes a la página que se 
+indica, menos descuentos más 
+recargos.78  
+ 
+Condicional a que la página contenga 
+algún ítem gravado a tasa ITBIS 1. 
+ 
+ 
+ 
+18 NUM 
+  
+a) Valor numérico de 16 enteros, 2 
+decimales; ≥ 0 (No puede ser 
+negativo). 
+ 
+b) Suma de valores del monto ítem 
+con indicador de facturación=1, 
+menos descuentos más recargos, de 
+las líneas de ítems incluidos en la 
+página. 
+ 
+N 2 2 2 2 2 0 0 2 0 0 
+6 
+Subtotal Monto Gravado 
+Tasa 2 Página 
+<SubtotalMontoGravado2Pa
+gina> 
+Total de la suma de valores de Ítems 
+gravados asignados a ITBIS tasa 2 
+(tasa 1 6%), de las líneas 
+correspondientes a la página que se 
+indica, menos descuentos más 
+recargos. 
+ 
+Condicional a que la página contenga 
+algún ítem gravado a tasa ITBIS 2. 
+18 NUM 
+  
+a) Valor numérico de 16 enteros, 2 
+decimales; ≥ 0 (No puede ser 
+negativo). 
+ 
+b) Suma d e valores del monto ítem 
+con indicador de facturación= 2, 
+menos descuentos más recargos, de 
+las líneas de ítems incluidos en la 
+página.  
+ 
+N 2 2 2 2 2 0 0 2 0 0 
+ 
+ 
+ 
+ 
+     OBLIGATORIEDAD 
+ 
+78 Se refiere al descuento o recargo global (Sección Descuentos o Recargos). 
+
+===== PAGE 53/89 =====
+
+ 
+Pág. 52 de 87 
+ 
+ 
+CAMPOS DESCRIPCIÓN Largo 
+Max 
+ 
+Tipo 
+Validación 
+ 
+I 
+Fact.   
+Créd.  
+Fiscal  
+Electr. 
+31 
+Fact. 
+Consum. 
+Electr. 
+32 
+Nota  
+Déb.  
+Electr. 
+33 
+Nota 
+Créd. 
+Electr. 
+34 
+Compras 
+Electr. 
+41 
+Gastos 
+Menor. 
+Electr. 
+43 
+Regím. 
+Espec. 
+Electr. 
+44 
+Guber. 
+Electr. 
+45 
+Export. 
+Electr. 
+ 
+46 
+Pagos 
+Exterior 
+Electr. 
+ 
+47 
+7 
+Subtotal Monto Gravado 
+Tasa 3 Página 
+<SubtotalMontoGravado3Pagin
+a> 
+Total de la suma de valores de 
+Ítems gravados asignados a ITBIS 
+tasa 3 (tasa 0), de las líneas 
+correspondientes a la página que 
+se indica, menos descuentos más 
+recargos. 
+ 
+Condicional a que la página 
+contenga algún ítem gravado a 
+tasa ITBIS 3. 
+ 
+18 NUM 
+ a) Valor numérico de 16 enteros, 2 
+decimales; ≥ 0 (No puede ser 
+negativo). 
+ 
+b) Suma de valores del monto ítem 
+con indicador de facturación= 3, 
+menos descuentos más recargos, de 
+las líneas de ítems incluidos en la 
+página. 
+ 
+N 2 2 2 2 2 0 0 2 2 0 
+8 Subtotal Exento Página 
+<SubtotalExentoPagina> 
+Total de la suma de valores 
+correspondientes a ítems exentos 
+indicados en el no. de línea ‘Desde’ 
+‘Hasta’, de la página. 
+ 
+Condicional a que en la página 
+contenga algún ítem exento. 
+ 
+18 NUM 
+a) Valor numérico de 16 enteros, 2 
+decimales. ≥ 0 (No puede ser 
+negativo). 
+ 
+b) Suma de valores del monto ítem 
+con indicador de facturación=4, 
+menos descuentos más recargos, de 
+las líneas de ítems incluidos en la 
+página. 
+ 
+I 2 2 2 2 2 2 2 2 0 2 
+9 Subtotal ITBIS Página 
+<SubtotalItbisPagina> 
+Total de la suma de valores de  
+Subtotal ITBIS 1, Subtotal ITBIS 2 y 
+Subtotal ITBIS 3,  a las diferentes 
+tasas, de las líneas 
+correspondientes a la página que se 
+indica. 
+ 
+Condicional a que exista Subtotal 
+ITBIS 1, Subtotal ITBIS 2 y Subtotal 
+ITBIS 3 Página. 
+ 
+18 NUM 
+a) Valor numérico de 16 enteros, 2 
+decimales; ≥ 0 (No puede ser 
+negativo). 
+ 
+b) Suma de Subtotal ITBIS Tasa 1  
+Página + Subtotal ITBIS Tasa 2 Página 
++ Subtotal ITBIS Tasa 3 Página. 
+I 2 2 2 2 2 0 0 2 2 0 
+ 
+ 
+ 
+     OBLIGATORIEDAD 
+
+===== PAGE 54/89 =====
+
+ 
+Pág. 53 de 87 
+ 
+ 
+CAMPOS DESCRIPCIÓN Largo 
+Max 
+ 
+Tipo 
+Validación 
+ 
+I 
+Fact.  
+Créd. 
+Fiscal 
+Electr. 
+31 
+Fact. 
+Consum. 
+Electr. 
+32 
+Nota  
+Déb. 
+ Electr. 
+33 
+Nota Créd. 
+Electr. 
+34 
+Compras 
+Electr. 
+41 
+Gastos 
+Menor. 
+Electr. 
+43 
+Regím. 
+Espec. 
+Electr. 
+44 
+Guber. 
+Electr. 
+45 
+Export. 
+Electr. 
+46 
+Pagos 
+Exterior 
+Electr. 
+47 
+10 
+ 
+Subtotal ITBIS 1 Página 
+<SubtotalItbis1Pagina> 
+Valor numérico igual al subtotal 
+monto gravado 1 por la tasa ITBIS 1, 
+de la línea indicada en la página.  
+ 
+Condicional a que exista Subtotal 
+Monto Gravado tasa 1. 
+18 NUM 
+a) Valor numérico de 16 enteros, 
+dos decimales; ≥ 0 (No puede ser 
+negativo). 
+b) Subtotal I TBIS Tasa1= Monto 
+Gravado ITBIS tasa1 *  ITBIS tasa 1, 
+de las líneas de ítems incluidos en 
+la página. 
+ 
+Solo forman parte de la base 
+imponible del ITBIS los impuestos 
+selectivos al consumo con códigos 
+desde 006 hasta 039 de la Tabla de 
+Codificación de Tipos de Impuestos 
+Adicionales. 
+ 
+N 2 2 2 2 2 0 0 2 0 0 
+11 Subtotal ITBIS 2 Página 
+<SubtotalItbis2Pagina> 
+Valor numérico igual al subtotal 
+monto gravado 2 por la tasa ITBIS 2, 
+de la línea indicada en la página.  
+ 
+Condicional a que exista Subtotal 
+Monto Gravado tasa 2. 
+18 NUM 
+a) Valor numérico de 16 enteros, 
+dos decimales; ≥ 0 (No puede ser 
+negativo). 
+b) Subtotal ITBIS Tasa2= Monto 
+Gravado ITBIS tasa2 * ITBIS tasa 2, 
+de las líneas de ítems incluidos en 
+la página. 
+ 
+N 2 2 2 2 2 0 0 2 0 0 
+12 Subtotal ITBIS 3 Página 
+<SubtotalItbis3Pagina> 
+Valor numérico igual al subtotal 
+monto gravado 3 por la tasa ITBIS 3, 
+de la línea indicada en la página.  
+ 
+Condicional a que exista Subtotal 
+Monto Gravado tasa 3. 
+ 
+18 NUM 
+ a) Valor numérico de 16 enteros, 
+dos decimales; ≥ 0 (No puede ser 
+negativo). 
+ 
+N 2 2 2 2 2 0 0 2 2 0 
+ 
+ 
+ 
+ 
+ 
+     OBLIGATORIEDAD 
+
+===== PAGE 55/89 =====
+
+ 
+Pág. 54 de 87 
+ 
+ 
+CAMPOS DESCRIPCIÓN Largo 
+Max 
+ 
+Tipo 
+Validación 
+ 
+I 
+Fact.  
+ Créd.  
+Fiscal  
+Electr. 
+31 
+Fact. 
+Consum. 
+Electr. 
+32 
+Nota 
+Déb. 
+Electr. 
+33 
+Nota 
+Créd. 
+Electr. 
+34 
+Compras 
+Electr. 
+41 
+Gastos 
+Menor. 
+Electr. 
+43 
+Regím. 
+Espec. 
+Electr. 
+44 
+Guber. 
+Electr. 
+45 
+Export. 
+Electr. 
+46 
+Pagos 
+Exterior 
+Electr. 
+47 
+13 
+Subtotal Impuesto Adicional 
+Página 
+<SubtotalImpuestoAdicionalPagina> 
+Sumatoria de los campos del área 
+Subtotal Impuesto Adicional.  
+ 
+Condicional a que se complete 
+campos del área Subtotal Impuesto 
+Adicional. 
+ 
+18 NUM 
+a) Valor numérico de 16 enteros, 
+dos decimales; >0 (debe ser 
+positivo). 
+ 
+b) Subtotal Impuesto Adicional= 
+Subtotal Impuesto Selectivo al 
+Consumo + Subtotal Otros 
+Impuestos Adicionales. 
+ 
+I 2 2 2 2 0 0 2 2 0 0 
+ ÁREA 
+<SubtotalImpuestoAdicional>  SUBTOTAL IMPUESTO ADICIONAL   
+Condicional a que exista otros(s) 
+impuesto(s) en la línea de detalle 
+de la página, distinto(s) al ITBIS. 
+ 
+ 2 2 2 2 0 0 2 2 0 0 
+14 
+Subtotal Impuesto Selectivo al 
+Consumo Página 
+<SubtotalImpuestoSelectivoConsum
+oEspecificoPagina> 
+Valor del impuesto selectivo al 
+consumo específico y Ad Valorem, 
+correspondientes a los ítems del 
+campo ‘No. de línea desde’ a ‘No. de 
+línea hasta’, indicados en la página. 
+ 
+Condicional a que los ítems del campo 
+‘No. de línea desde’ a ‘No. de línea 
+hasta’, ex istan gravados con 
+Impuestos al Consumo Específico y Ad 
+Valorem. 
+ 
+18 NUM 
+a) Valor numérico de 16 enteros, 
+dos decimales; >0 (debe ser 
+positivo). 
+ 
+ 
+N 2 2 2 2 0 0 0 2 0 0 
+15 
+Subtotal Otros Impuestos 
+Adicionales Página 
+<SubtotalOtrosImpuesto> 
+Valor del impuesto adicional 
+(exceptuando el impuesto selectivo al 
+consumo específico y Ad Valorem), 
+correspondientes a los ítems del 
+campo ‘No. de línea desde’ a ‘No. de 
+línea hasta’, indicados en la página. 
+ 
+Condicional a que los ítems del campo 
+‘No. de línea desde’ a ‘No. de línea 
+hasta’, ex istan gravados con Otros 
+Impuestos Adicionales. 
+ 
+18 NUM 
+a) Valor numérico de 16 enteros, 
+dos decimales; >0 (debe se r 
+positivo 
+N 2 2 2 2 0 0 2 2 0 0 
+ 
+ 
+ 
+
+===== PAGE 56/89 =====
+
+ 
+Pág. 55 de 87 
+ 
+  
+CAMPOS 
+ 
+DESCRIPCIÓN 
+ 
+Largo 
+Max 
+ 
+Tipo 
+ 
+Validación 
+ 
+ 
+I 
+OBLIGATORIEDAD 
+Fact.   
+Créd. 
+ Fiscal 
+Electr. 
+31 
+Fact. 
+Consum. 
+Electr. 
+32 
+Nota  
+Déb.  
+Electr. 
+33 
+Nota 
+Créd. 
+Electr. 
+34 
+Compras 
+Electr. 
+41 
+Gastos 
+Menor. 
+Electr. 
+43 
+Regím. 
+Espec. 
+Electr. 
+44 
+Guber. 
+Electr. 
+45 
+Export. 
+Electr. 
+46 
+Pagos 
+Exterior 
+Electr. 
+47 
+ FIN ÁREA SUBTOTAL IMPUESTO ADICIONAL   
+16 Monto Subtotal Página 
+<MontoSubtotalPagina> 
+Sumatoria de los campos Subtotal 
+Monto Gravado Total Pagina , 
+Subtotal Exento Pagina , Subtotal 
+ITBIS Pagina y 
+Subtotal Impuesto Adicional 
+Pagina.  
+ 
+Condicional a que se complete el 
+campo Página No. 
+18 NUM 
+ 
+a) Valor numérico de 16 
+enteros, dos decimales; ≥ 0 
+(No puede ser negativo). 
+ 
+b) Valor numérico de acuerdo 
+con el total de la sumatoria del 
+campo de Descripción. 
+ 
+I 2 2 2 2 2 2 2 2 2 2 
+17 
+Subtotal Monto No 
+Facturable Página 
+<SubtotalMontoNoFacturablePa
+gina> 
+Suma de  todos los  valores 
+correspondientes a ítems no 
+facturables, que estén indicados 
+en el no. de línea ‘Desde’ ‘Hasta’, 
+de la página. 
+ 
+Condicional a que la página incluya 
+ítems no facturables. 
+18 NUM 
+ 
+a) Valor numérico de 16 
+enteros, 2 decimales. ≥ 0 
+(Debe ser positivo). 
+ 
+b) Suma de valores del monto 
+ítem con indicador de 
+facturación=0, menos 
+descuentos más recargos. 
+ 
+ 
+N 2 2 2 2 0 0 2 2 2 0 
+ FIN ÁREA PAGINA  
+ FIN ÁREA PAGINACIÓN  
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+===== PAGE 57/89 =====
+
+ 
+Pág. 56 de 87 
+ 
+F. INFORMACIÓN DE REFERENCIA 
+Corresponde a la sección donde se indica la información del comprobante fiscal electrónico modificado por la nota de crédito o débito electrónica emitida o reemplazado por el e-CF emitido. Se 
+puede incluir hasta 1 línea. 
+  
+CAMPOS 
+ 
+DESCRIPCIÓN 
+ 
+Largo 
+Max 
+ 
+Tipo 
+ 
+Validación 
+ 
+ 
+I 
+OBLIGATORIEDAD 
+Fact. Créd. 
+Fiscal 
+Electr. 
+31 
+Fact. 
+Consum. 
+Electr. 
+32 
+Nota Déb. 
+Electr. 
+33 
+Nota 
+Créd. 
+Electr. 
+34 
+Compras 
+Electr. 
+41 
+Gastos 
+Menor. 
+Electr. 
+43 
+Regím. 
+Espec. 
+Electr. 
+44 
+Guber. 
+Electr. 
+45 
+Export. 
+Electr. 
+46 
+Pagos 
+Exterior 
+Electr. 
+47 
+ 
+ÁREA 
+<InformacionReferencia> 
+INFORMACIÓN DE REFERENCIA. 
+    
+2 2 1 1 2 2 2 2 2 2 
+1 
+Número de Comprobante 
+Fiscal modificado79 
+<NCFModificado> 
+Es el número del comprobante fiscal  
+que será afectado  o remplazado por 
+una secuencia electrónica. 
+ 
+Tanto el comprobante afectado o 
+reemplazado, como la  secuencia 
+electrónica, deben estar emitidos por 
+el mismo RNC/Cédula.  
+ 
+Condicional a que la emisión del e -CF 
+corresponda a un reemplazo de 
+Comprobante Fiscal  no electrónico  
+emitido en contingencia. 
+ 
+11 o 13 o 
+19 
+ALFA 
+NUM 
+a) Validar que el número 
+de comprobante fiscal 
+modificado haya sido 
+remitido previamente a la 
+DGII. Este puede ser tanto 
+secuencia electrónica 
+como en papel. 
+ 
+b) Si la emisión del e-CF es 
+por Código de 
+Modificación 4: 
+Reemplazo de un 
+comprobante no 
+electrónico emitido en 
+contingencia, se debe  
+validar que el tipo del NCF 
+modificado sea el 
+equivalente al tipo de e-CF 
+que se está emitiendo. 
+I 2 2 1 1 2 2 2 2 2 2 
+2 RNC Otro contribuyente 
+<RNCOtroContribuyente> 
+Aplica cuando el RNC del que emite el 
+e-CF no coincide con el comprobante 
+fiscal modificado (debido a que el RNC 
+se encuentre dado de baja por 
+disolución, fusión o escisión). En ese 
+caso, se debe validar que el  campo 
+“RNC otro contribuyente” esté 
+completado correctamente. 
+9 u 11 NUM Validar estructura. N 2 2 2 2 2 2 2 2 2 2 
+ 
+79 El número de comprobante fiscal modificado puede ser tanto electrónico como de secuencia en papel. La secuencia en papel puede ser modificada por una secuencia con inicio de letra A y B, es decir con la estructura A010010010100000001 y 
+B0100000001. 
+
+===== PAGE 58/89 =====
+
+ 
+Pág. 57 de 87 
+ 
+ 
+Condicional a que el comprobante 
+modificado no coincida con el RNC 
+Emisor del e-CF (debido a que el RNC 
+se encuentre  dado de baja (por 
+disolución, fusión o escisión). 
+ 
+3 Fecha NCF Modificado 
+<FechaNCFModificado> 
+Fecha del número de comprobante 
+fiscal modificado. Condicional a que la 
+emisión del e -CF corresponda a un 
+reemplazo de Comprobante Fiscal no 
+electrónico emitido en contingencia. 
+10 ALFA 
+NUM 
+Validar 
+a) Formato: (dd-MM-
+AAAA). 
+b) Fecha de emisión del 
+comprobante fiscal.  
+ 
+N 2 2 1 1 2 2 2 2 2 2 
+4 Código de Modificación 
+<CodigoModificacion> 
+Código utilizado para indicar si el e-CF 
+del comprobante fiscal modificado es 
+con la finalidad de: 
+a) Anulación total  
+b) Corrección montos  
+c) Corrección Texto  
+d) Reemplazo NCF emitido en 
+contingencia 
+e) Referenciar Factura de Consumo 
+Electrónica. 
+ 
+a), b) y c) solo aplican para Nota de 
+Crédito o Débito Electrónica. 
+ 
+Condicional a que el código de 
+modificación sea igual a 4. 
+ 
+1 NUM 
+a) Código tipo80: 
+ 
+1: Anula el NCF 
+modificado 
+2: Corrige Texto del 
+Comprobante Fiscal 
+modificado  
+3: Corrige montos del NCF 
+modificado 
+4: Reemplazo NCF 
+emitido en contingencia 
+5: Referencia Factura 
+Consumo Electrónica.81 
+ 
+P 2 2 1 1 2 2 2 2 2 2 
+5 Razón Modificación 
+<RazonModificacion> 
+Campo para describir los datos 
+modificados o la razón de la emisión 
+de la Nota de Cr édito o Débito 
+Electrónica.  
+Ejemplo: “error en precio”. 
+90 ALFA a) Sin validación N 0 0 3 3 0 0 0 0 0 0 
+ FIN ÁREA INFORMACIÓN DE REFERENCIA    
+ 
+ 
+ 
+ 
+80 Códigos de modificación 1, 2 y 3 aplican solo cuando se trate de la emisión de una nota de crédito o débito electrónica, según corresponda.  
+81 Aplica solo para la emisión de Factura de Crédito Fiscal. 
+
+===== PAGE 59/89 =====
+
+ 
+Pág. 58 de 87 
+ 
+G. FECHA Y HORA DE LA FIRMA DIGITAL 
+  
+CAMPOS 
+ 
+DESCRIPCIÓN 
+ 
+Largo Max 
+ 
+Tipo 
+ 
+Validación 
+1 Fecha y hora de la firma digital del e-CF 
+< FechaHoraFirma> 
+ Fecha y hora en formato dd-MM-AAAA HH:mm:ss; Zona horaria 
+GMT -4  
+19 ALFA 
+NUM 
+a) Fecha y hora válida en formato indicado, dd-
+MM-AAAA HH:mm:ss, respectivamente. 
+b) Valida que fecha y hora firma del e-CF=< fecha 
+y hora actual. 
+ 
+ 
+H. FIRMA DIGITAL 
+  
+CAMPOS 
+ 
+DESCRIPCIÓN 
+ 
+Largo 
+Max 
+ 
+Tipo 
+ 
+Validación Obligatoriedad 
+ ÁREA 
+<Signature> SIGNATURE    
+1 
+1 Firma Digital 
+Firma digital sobre todo el documento. 
+(Encabezado, Detalle, Descuentos - Recargos, 
+Paginación, Información de Referenci a, Fecha y 
+Hora de Firma del e-CF). 
+   1 
+ FIN ÁREA  SIGNATURE  
+
+===== PAGE 60/89 =====
+
+ 
+Pág. 59 de 87 
+ 
+ 
+ 
+ 
+TABLAS 
+ 
+ 
+ 
+
+===== PAGE 61/89 =====
+
+ 
+Pág. 60 de 87 
+ 
+ 
+TABLA I. CODIFICACIÓN TIPOS DE IMPUESTOS ADICIONALES 
+CÓDIGO Tipo Impuesto Tipo Impuesto 
+(Abreviatura) Descripción Tasa 
+001 Propina Legal Propina Legal Propina Legal 10% 
+002 Contribución al Desarrollo de 
+las Telecomunicaciones 
+CDT Contribución al Desarrollo de las Telecomunicaciones 
+Ley 153-98 Art. 45 2% 
+003 Impuesto Selectivo al 
+Consumo 
+ISC Servicios Seguros en general 16% 
+004 Servicios de Telecomunicaciones 10% 
+005 
+Impuesto sobre el Primer 
+Registro de Vehículos 
+(Primera Placa) 
+ 
+Expedición de la primera placa 17% 
+006 
+Impuesto Selectivo al 
+Consumo (Tasa Específico) 
+ 
+ISC Específico82 
+ 
+Cerveza 632.58 
+007 Vinos de uva 632.58 
+008 Vermut y demás vinos de uvas frescas 632.58 
+009 Demás bebidas fermentadas 632.58 
+010 Alcohol Etílico sin desnaturalizar (Mayor o igual a 80%) 632.58 
+011 Alcohol Etílico sin desnaturalizar (inferior a 80%) 632.58 
+012 Aguardientes de uva 632.58 
+013 Whisky 632.58 
+014 Ron y demás aguardientes de caña 632.58 
+015 Gin y Ginebra 632.58 
+016 Vodka 632.58 
+017 Licores 632.58 
+018 Los demás (Bebidas y Alcoholes) 632.58 
+019 Cigarrillos que contengan tabaco cajetilla 20 unidades 53.51 
+020 Los demás Cigarrillos que contengan 20 unidades 53.51 
+021 Cigarrillos que contengan 10 unidades 26.75 
+022 Los demás Cigarrillos que contengan 10 unidades 26.75 
+ 
+ 
+82 Los montos específicos para los productos del alcohol y del tabaco son ajustados trimestralmente de acuerdo con el índice de inflación publicado por el Banco Central. 
+
+===== PAGE 62/89 =====
+
+ 
+Pág. 61 de 87 
+ 
+ 
+ 
+Tipo Impuesto Tipo Impuesto 
+(Abreviatura) 
+Descripción Tasa 
+023 
+Impuesto Selectivo al 
+Consumo  
+(Tasa AdValorem) 
+ISC AdValorem 
+Cerveza 10% 
+024 Vinos de uva 10% 
+025 Vermut y demás vinos de uvas frescas 10% 
+026 Demás bebidas fermentadas 10% 
+027 Alcohol Etílico sin desnaturalizar (Mayor o igual a 80%) 10% 
+028 Alcohol Etílico sin desnaturalizar (inferior a 80%) 10% 
+029 Aguardientes de uva 10% 
+030 Whisky 10% 
+031 Ron y demás aguardientes de caña 10% 
+032 Gin y Ginebra 10% 
+033 Vodka 10% 
+034 Licores 10% 
+035 Los demás (Bebidas y Alcoholes) 10% 
+036 Cigarrillos que contengan tabaco cajetilla 20 unidades 20% 
+037 Los demás Cigarrillos que contengan 20 unidades 20% 
+038 Cigarrillos que contengan 10 unidades 20% 
+039 Los demás Cigarrillos que contengan 10 unidades 20% 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+===== PAGE 63/89 =====
+
+ 
+Pág. 62 de 87 
+ 
+TABLA II. CODIFICACIÓN MONEDAS 
+Código 
+ISO Moneda 
+BRL REAL BRASILENO 
+CAD DOLAR CANADIENSE 
+CHF FRANCO SUIZO 
+CHY YUAN CHINO 
+XDR DERECHO ESPECIAL DE GIRO83 
+DKK CORONA DANESA 
+EUR EURO 
+GBP LIBRA ESTERLINA 
+JPY YEN JAPONES 
+NOK CORONA NORUEGA 
+SCP LIBRA ESCOCESA 
+SEK CORONA SUECA 
+USD DOLAR ESTADOUNIDENSE 
+VEF BOLIVAR FUERTE VENEZOLANO 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+83 El Derecho Especial de Giro (DEG) no es una moneda, corresponde a la unidad de cuenta del FMI. 
+PESO MEXICANO
+GURDA HAITIANAHTG
+MXN
+COP PESO COLOMBIANO
+
+===== PAGE 64/89 =====
+
+ 
+Pág. 63 de 87 
+ 
+TABLA III. CODIFICACIÓN PROVINCIAS Y MUNICIPIOS84
+ 
+CÓDIGO 
+PROVINCIA 
+CÓDIGO 
+MUNICIPIO DESCRIPCIÓN 
+010000  DISTRITO NACIONAL 
+ 010100 MUNICIPIO SANTO DOMINGO DE GUZMÁN 
+ 010101 SANTO DOMINGO DE GUZMÁN (D. M.). 
+020000 020000 PROVINCIA AZUA 
+ 020100 MUNICIPIO AZUA 
+ 020101 AZUA (D. M.). 
+ 020102 BARRO ARRIBA (D. M.). 
+ 020103 LAS BARÍAS-LA ESTANCIA (D. M.). 
+ 020104 LOS JOVILLOS (D. M.). 
+ 020105 PUERTO VIEJO (D. M.). 
+ 020106 BARRERAS (D. M.). 
+ 020107 DOÑA EMMA BALAGUER VIUDA VALLEJO 
+(D. M.). 
+ 020108 CLAVELLINA (D. M.). 
+ 020109 LAS LOMAS (D. M.). 
+ 020200 MUNICIPIO LAS CHARCAS 
+ 020201 LAS CHARCAS (D. M.). 
+ 020202 PALMAR DE OCOA (D. M.). 
+ 020300 MUNICIPIO LAS YAYAS DE VIAJAMA 
+ 020301 LAS YAYAS DE VIAJAMA (D. M.). 
+ 020302 VILLARPANDO (D. M.). 
+ 020303 HATO NUEVO CORTÉS (D. M.). 
+Fuente: Oficina Nacional de Estadística (ONE), Departamento de Cartografía. División de Límites y Linderos. 
+Actualizada al 30 de junio del 2014 
+ 
+ 
+ 
+84 Listado de Códigos de Provincias, Municipios y Distritos Municipales (D.M.). Fuente: Oficina Nacional de Estadística (ONE), Departamento de Cartografía. División de Límites y Linderos. 
+ 
+
+===== PAGE 65/89 =====
+
+ 
+Pág. 64 de 87 
+ 
+CÓDIGO 
+PROVINCIA 
+CÓDIGO 
+MUNICIPIO DESCRIPCIÓN 
+ 020400 MUNICIPIO PADRE LAS CASAS 
+ 020401 PADRE LAS CASAS (D. M.). 
+ 020402 LAS LAGUNAS (D. M.). 
+ 020403 LA SIEMBRA (D. M.). 
+ 020404 MONTE BONITO (D. M.). 
+ 020405 LOS FRÍOS (D. M.). 
+ 020500 MUNICIPIO PERALTA 
+ 020501 PERALTA (D. M.). 
+ 020600 MUNICIPIO SABANA YEGUA 
+ 020601 SABANA YEGUA (D. M.). 
+ 020602 PROYECTO 4 (D. M.). 
+ 020603 GANADERO (D. M.). 
+ 020604 PROYECTO 2-C (D. M.). 
+ 020700 MUNICIPIO PUEBLO VIEJO 
+ 020701 PUEBLO VIEJO (D. M.). 
+ 020702 EL ROSARIO (D. M.). 
+ 020800 MUNICIPIO TÁBARA ARRIBA 
+ 020801 TÁBARA ARRIBA (D. M.). 
+ 020802 TÁBARA ABAJO (D. M.). 
+ 020803 AMIAMA GÓMEZ (D. M.). 
+ 020804 LOS TOROS (D. M.). 
+ 020900 MUNICIPIO GUAYABAL 
+ 020901 GUAYABAL (D. M.). 
+ 021000 MUNICIPIO ESTEBANÍA 
+ 021001 ESTEBANÍA (D. M.). 
+030000  PROVINCIA BAHORUCO 
+Fuente: Oficina Nacional de Estadística (ONE), Departamento de Cartografía. División de Límites y Linderos. 
+Actualizada al 30 de junio del 2014 
+ 
+
+===== PAGE 66/89 =====
+
+ 
+Pág. 65 de 87 
+ 
+CÓDIGO 
+PROVINCIA 
+CÓDIGO 
+MUNICIPIO DESCRIPCIÓN 
+ 030001 MUNICIPIO NEIBA 
+ 030101 NEIBA (D. M.). 
+ 030102 EL PALMAR  (D. M.). 
+ 030200 MUNICIPIO GALVÁN 
+ 030201 GALVÁN (D. M.). 
+ 030202 EL SALADO (D. M.). 
+ 030300 MUNICIPIO TAMAYO 
+ 030301 TAMAYO (D. M.). 
+ 030302 UVILLA (D. M.). 
+ 030303 SANTANA (D. M.). 
+ 030304 MONSERRATE (MONTSERRAT) (D. M.). 
+ 030305 CABEZA DE TORO (D. M.). 
+ 030306 MENA (D. M.). 
+ 030307 SANTA BÁRBARA EL 6 (D. M.). 
+ 030400 MUNICIPIO VILLA JARAGUA 
+ 030401 VILLA JARAGUA (D. M.). 
+ 030500 MUNICIPIO LOS RÍOS 
+ 030501 LOS RÍOS (D. M.). 
+ 030502 LAS CLAVELLINAS (D. M.). 
+040000  PROVINCIA BARAHONA 
+ 040100 MUNICIPIO BARAHONA 
+ 040101 BARAHONA (D. M.). 
+ 040102 EL CACHÓN (D. M.). 
+ 040103 LA GUÁZARA (D. M.). 
+ 040104 VILLA CENTRAL (D. M.). 
+ 040200 MUNICIPIO CABRAL 
+ 040201 CABRAL (D. M.). 
+ 040300 MUNICIPIO ENRIQUILLO 
+
+===== PAGE 67/89 =====
+
+ 
+Pág. 66 de 87 
+ 
+CÓDIGO 
+PROVINCIA 
+CÓDIGO 
+MUNICIPIO DESCRIPCIÓN 
+ 040301 ENRIQUILLO (D. M.). 
+ 040302 ARROYO DULCE (D. M.). 
+ 040400 MUNICIPIO PARAÍSO 
+ 040401 PARAÍSO (D. M.). 
+ 040402 LOS PATOS (D. M.). 
+ 040500 MUNICIPIO VICENTE NOBLE 
+ 040501 VICENTE NOBLE (D. M.). 
+ 040502 CANOA (D. M.). 
+ 040503 QUITA CORAZA (D. M.). 
+ 040504 FONDO NEGRO (D. M.). 
+ 040600 MUNICIPIO EL PEÑÓN 
+ 040601 EL PEÑÓN (D. M.). 
+ 040700 MUNICIPIO LA CIÉNAGA 
+ 040701 LA CIÉNAGA (D. M.). 
+ 040702 BAHORUCO (D. M.). 
+ 040800 MUNICIPIO FUNDACIÓN 
+ 040801 FUNDACIÓN (D. M.). 
+ 040802 PESCADERÍA (D. M.). 
+ 040900 MUNICIPIO LAS SALINAS 
+ 040901 LAS SALINAS (D. M.). 
+ 041000 MUNICIPIO POLO 
+ 041001 POLO (D. M.). 
+ 041100 MUNICIPIO JAQUIMEYES 
+ 041101 JAQUIMEYES (D. M.). 
+ 041102 PALO ALTO (D. M.). 
+050000  PROVINCIA DAJABÓN 
+ 050100 MUNICIPIO DAJABÓN 
+Fuente: Oficina Nacional de Estadística (ONE), Departamento de Cartografía. División de Límites y Linderos. 
+Actualizada al 30 de junio del 2014 
+
+===== PAGE 68/89 =====
+
+ 
+Pág. 67 de 87 
+ 
+CÓDIGO 
+PROVINCIA 
+CÓDIGO 
+MUNICIPIO DESCRIPCIÓN 
+ 050101 DAJABÓN (D. M.). 
+ 050102 CAÑONGO (D. M.). 
+ 050200 MUNICIPIO LOMA DE CABRERA 
+ 050201 LOMA DE CABRERA (D. M.). 
+ 050202 CAPOTILLO (D. M.). 
+ 050203 SANTIAGO DE LA CRUZ (D. M.). 
+ 050300 MUNICIPIO PARTIDO 
+ 050301 PARTIDO (D. M.). 
+ 050400 MUNICIPIO RESTAURACIÓN 
+ 050401 RESTAURACIÓN (D. M.). 
+ 050500 MUNICIPIO EL PINO 
+ 050501 EL PINO (D. M.). 
+ 050502 MANUEL BUENO (D. M.). 
+060000  PROVINCIA DUARTE 
+ 060100 MUNICIPIO SAN FRANCISCO DE MACORÍS 
+ 060101 SAN FRANCISCO DE MACORÍS (D. M.). 
+ 060102 LA PEÑA (D. M.). 
+ 060103 CENOVÍ (D. M.). 
+ 060104 JAYA (D. M.). 
+ 060105 PRESIDENTE DON ANTONIO GUZMÁN 
+FERNÁNDEZ (D. M.). 
+ 060200 MUNICIPIO ARENOSO 
+ 060201 ARENOSO (D. M.). 
+ 060202 LAS COLES (D. M.). 
+ 060203 EL AGUACATE (D. M.). 
+ 060300 MUNICIPIO CASTILLO 
+ 060301 CASTILLO (D. M.). 
+ 060400 MUNICIPIO PIMENTEL 
+ 060401 PIMENTEL (D. M.). 
+
+===== PAGE 69/89 =====
+
+ 
+Pág. 68 de 87 
+ 
+CÓDIGO 
+PROVINCIA 
+CÓDIGO 
+MUNICIPIO DESCRIPCIÓN 
+ 060500 MUNICIPIO VILLA RIVA 
+ 060501 VILLA RIVA (D. M.). 
+ 060502 AGUA SANTA DEL YUNA  (D. M.). 
+ 060503 CRISTO REY DE GUARAGUAO (D. M.). 
+ 060504 LAS TARANAS (D. M.). 
+ 060505 BARRAQUITO (D. M.). 
+ 060600 MUNICIPIO LAS GUÁRANAS 
+ 060601 LAS GUÁRANAS (D. M.). 
+ 060700 MUNICIPIO EUGENIO MARÍA DE HOSTOS 
+ 060701 EUGENIO MARÍA DE HOSTOS (D. M.). 
+ 060702 SABANA GRANDE (D. M.). 
+070000  PROVINCIA ELÍAS PIÑA 
+ 070100 MUNICIPIO COMENDADOR 
+ 070101 COMENDADOR (D. M.). 
+ 070102 SABANA LARGA (D. M.). 
+ 070103 GUAYABO  (D. M.). 
+ 070200 MUNICIPIO BÁNICA 
+ 070201 BÁNICA (D. M.). 
+ 070202 SABANA CRUZ (D. M.). 
+ 070203 SABANA HIGÜERO (D. M.). 
+ 070300 MUNICIPIO EL LLANO 
+ 070301 EL LLANO (D. M.). 
+ 070302 GUANITO (D. M.). 
+ 070400 MUNICIPIO HONDO VALLE 
+ 070401 HONDO VALLE (D. M.). 
+ 070402 RANCHO DE LA GUARDIA (D. M.). 
+ 070500 MUNICIPIO PEDRO SANTANA 
+ 070501 PEDRO SANTANA (D. M.). 
+
+===== PAGE 70/89 =====
+
+ 
+Pág. 69 de 87 
+ 
+CÓDIGO 
+PROVINCIA 
+CÓDIGO 
+MUNICIPIO DESCRIPCIÓN 
+ 070502 RÍO LIMPIO (D. M.). 
+ 070600 MUNICIPIO JUAN SANTIAGO 
+ 070601 JUAN SANTIAGO (D. M.). 
+080000  PROVINCIA EL SEIBO 
+ 080100 MUNICIPIO EL SEIBO 
+ 080101 EL SEIBO (D. M.). 
+ 080102 PEDRO SÁNCHEZ (D. M.). 
+ 080103 SAN FRANCISCO-VICENTILLO (D. M.). 
+ 080104 SANTA LUCÍA (D. M.). 
+ 080200 MUNICIPIO MICHES 
+ 080201 MICHES (D. M.). 
+ 080202 EL CEDRO (D. M.). 
+ 080203 LA GINA (D. M.). 
+090000  PROVINCIA ESPAILLAT 
+ 090100 MUNICIPIO MOCA 
+ 090101 MOCA (D. M.). 
+ 090102 JOSÉ CONTRERAS (D. M.). 
+ 090103 SAN VÍCTOR (D. M.). 
+ 090104 JUAN LÓPEZ (D. M.). 
+ 090105 LAS LAGUNAS (D. M.). 
+ 090106 CANCA LA REYNA  (D. M.). 
+ 090107 EL HIGÜERITO (D. M.). 
+ 090108 MONTE DE LA JAGUA (D. M.). 
+ 090109 LA ORTEGA (D. M.). 
+ 090200 MUNICIPIO CAYETANO GERMOSÉN 
+ 090201 CAYETANO GERMOSÉN (D. M.). 
+ 090300 MUNICIPIO GASPAR HERNÁNDEZ 
+ 090301 GASPAR HERNÁNDEZ (D. M.). 
+
+===== PAGE 71/89 =====
+
+ 
+Pág. 70 de 87 
+ 
+CÓDIGO 
+PROVINCIA 
+CÓDIGO 
+MUNICIPIO DESCRIPCIÓN 
+ 090302 JOBA ARRIBA (D. M.). 
+ 090303 VERAGUA (D. M.). 
+ 090304 VILLA MAGANTE (D. M.). 
+ 090400 MUNICIPIO JAMAO AL NORTE 
+ 090401 JAMAO AL NORTE (D. M.). 
+100000  PROVINCIA INDEPENDENCIA 
+ 100100 MUNICIPIO JIMANÍ 
+ 100101 JIMANÍ (D. M.). 
+ 100102 EL LIMÓN (D. M.). 
+ 100103 BOCA DE CACHÓN (D. M.). 
+ 100200 MUNICIPIO DUVERGÉ 
+ 100201 DUVERGÉ (D. M.). 
+ 100202 VENGAN A VER (D. M.). 
+ 100300 MUNICIPIO LA DESCUBIERTA 
+ 100301 LA DESCUBIERTA (D. M.). 
+ 100400 MUNICIPIO POSTRER RÍO 
+ 100401 POSTRER RÍO (D. M.). 
+ 100402 GUAYABAL (D. M.). 
+ 100500 MUNICIPIO CRISTÓBAL 
+ 100501 CRISTÓBAL (D. M.). 
+ 100502 BATEY 8 (D. M.). 
+ 100600 MUNICIPIO MELLA 
+ 100601 MELLA (D. M.). 
+ 100602 LA COLONIA (D. M.). 
+110000  PROVINCIA LA ALTAGRACIA 
+ 110100 MUNICIPIO HIGÜEY 
+ 110101 HIGÜEY (D. M.). 
+ 110102 LAS LAGUNAS DE NISIBÓN (D. M.). 
+
+===== PAGE 72/89 =====
+
+ 
+Pág. 71 de 87 
+ 
+CÓDIGO 
+PROVINCIA 
+CÓDIGO 
+MUNICIPIO DESCRIPCIÓN 
+ 110103 LA OTRA BANDA (D. M.). 
+ 110104 VERÓN PUNTA CANA (D. M.) (Incluye 
+Bávaro) 
+ 110200 MUNICIPIO SAN RAFAEL DEL YUMA 
+ 110201 SAN RAFAEL DEL YUMA (D. M.). 
+ 110202 BOCA DE YUMA (D. M.). 
+ 110203 BAYAHÍBE (D. M.). 
+120000  PROVINCIA LA ROMANA 
+ 120100 MUNICIPIO LA ROMANA 
+ 120101 LA ROMANA (D. M.). 
+ 120102 CALETA (D. M.). 
+ 120200 MUNICIPIO GUAYMATE 
+ 120201 GUAYMATE (D. M.). 
+ 120300 MUNICIPIO VILLA HERMOSA 
+ 120301 VILLA HERMOSA (D. M.). 
+ 120302 CUMAYASA (D. M.). 
+130000  PROVINCIA LA VEGA 
+ 130100 MUNICIPIO LA VEGA 
+ 130101 LA VEGA (D. M.). 
+ 130102 RÍO VERDE ARRIBA (D. M.). 
+ 130103 EL RANCHITO (D. M.). 
+ 130104 TAVERAS (D. M.). 
+ 130105 DON JUAN RODRÍGUEZ (D.M.) 
+ 130200 MUNICIPIO CONSTANZA 
+ 130201 CONSTANZA (D. M.). 
+ 130202 TIREO (D. M.). 
+ 130203 LA SABINA (D. M.). 
+ 130300 MUNICIPIO JARABACOA 
+ 130301 JARABACOA (D. M.). 
+
+===== PAGE 73/89 =====
+
+ 
+Pág. 72 de 87 
+ 
+CÓDIGO 
+PROVINCIA 
+CÓDIGO 
+MUNICIPIO DESCRIPCIÓN 
+ 130302 BUENA VISTA (D. M.). 
+ 130303 MANABAO (D. M.). 
+ 130400 MUNICIPIO JIMA ABAJO 
+ 130401 JIMA ABAJO (D. M.). 
+ 130402 RINCÓN (D. M.). 
+140000  PROVINCIA MARÍA TRINIDAD SÁNCHEZ 
+ 140100 MUNICIPIO NAGUA 
+ 140101 NAGUA (D. M.). 
+ 140102 SAN JOSÉ DE MATANZAS (D. M.). 
+ 140103 LAS GORDAS (D. M.). 
+ 140104 ARROYO AL MEDIO (D. M.). 
+ 140200 MUNICIPIO CABRERA 
+ 140201 CABRERA (D. M.). 
+ 140202 ARROYO SALADO (D. M.). 
+ 140203 LA ENTRADA (D. M.). 
+ 140300 MUNICIPIO EL FACTOR 
+ 140301 EL FACTOR (D. M.). 
+ 140302 EL POZO (D. M.). 
+ 140400 MUNICIPIO RÍO SAN JUAN 
+ 140401 RÍO SAN JUAN (D. M.). 
+150000  PROVINCIA MONTE CRISTI 
+ 150100 MUNICIPIO MONTE CRISTI 
+ 150101 MONTE CRISTI (D. M.). 
+ 150200 MUNICIPIO CASTAÑUELAS 
+ 150201 CASTAÑUELAS (D. M.). 
+ 150202 PALO VERDE (D. M.). 
+ 150300 MUNICIPIO GUAYUBÍN 
+ 150301 GUAYUBÍN (D. M.). 
+
+===== PAGE 74/89 =====
+
+ 
+Pág. 73 de 87 
+ 
+CÓDIGO 
+PROVINCIA 
+CÓDIGO 
+MUNICIPIO DESCRIPCIÓN 
+ 150302 VILLA ELISA (D. M.). 
+ 150303 HATILLO PALMA (D. M.). 
+ 150304 CANA CHAPETÓN (D. M.). 
+ 150400 MUNICIPIO LAS MATAS DE SANTA CRUZ 
+ 150401 LAS MATAS DE SANTA CRUZ (D. M.). 
+ 150500 MUNICIPIO PEPILLO SALCEDO 
+ 150501 PEPILLO SALCEDO (MANZANILLO)  
+ 150502 SANTA MARÍA (D. M.) 
+ 150600 MUNICIPIO VILLA VÁSQUEZ 
+ 150601 VILLA VÁSQUEZ  
+160000  PROVINCIA PEDERNALES 
+ 160100 MUNICIPIO PEDERNALES 
+ 160101 PEDERNALES  
+ 160102 JOSÉ FRANCISCO PEÑA GÓMEZ (D. M.). 
+ 160200 MUNICIPIO OVIEDO 
+ 160201 OVIEDO  
+ 160202 JUANCHO (D. M.). 
+170000  PROVINCIA PERAVIA 
+ 170100 MUNICIPIO BANÍ 
+ 170101 BANÍ (D. M.). 
+ 170102 MATANZAS (D. M.). 
+ 170103 VILLA FUNDACIÓN (D. M.). 
+ 170104 SABANA BUEY (D. M.). 
+ 170105 PAYA (D. M.). 
+ 170106 VILLA SOMBRERO (D. M.). 
+ 170107 EL CARRETÓN (D. M.). 
+ 170108 CATALINA (D. M.). 
+ 170109 EL LIMONAL (D. M.). 
+
+===== PAGE 75/89 =====
+
+ 
+Pág. 74 de 87 
+ 
+CÓDIGO 
+PROVINCIA 
+CÓDIGO 
+MUNICIPIO DESCRIPCIÓN 
+ 170110 LAS BARÍAS (D. M.). 
+ 170200 MUNICIPIO NIZAO 
+ 170201 NIZAO  
+ 170202 PIZARRETE (D. M.). 
+ 170203 SANTANA (D. M.). 
+ 170300 MATANZAS 
+ 170301 MATANZAS 
+180000  PROVINCIA PUERTO PLATA 
+ 180100 MUNICIPIO PUERTO PLATA 
+ 180101 PUERTO PLATA (D. M.). 
+ 180102 YÁSICA ARRIBA (D. M.). 
+ 180103 MAIMÓN (D. M.). 
+ 180200 MUNICIPIO ALTAMIRA 
+ 180201 ALTAMIRA  
+ 180202 RÍO GRANDE (D. M.). 
+ 180300 MUNICIPIO GUANANICO 
+ 180301 GUANANICO  
+ 180400 MUNICIPIO IMBERT 
+ 180401 IMBERT  
+ 180500 MUNICIPIO LOS HIDALGOS 
+ 180501 LOS HIDALGOS  
+ 180502 NAVAS (D. M.). 
+ 180600 MUNICIPIO LUPERÓN 
+ 180601 LUPERÓN  
+ 180602 LA ISABELA (D. M.). 
+ 180603 BELLOSO (D. M.). 
+ 180604 EL ESTRECHO DE LUPERÓN OMAR BROSS 
+(D. M.). 
+ 180700 MUNICIPIO SOSÚA 
+
+===== PAGE 76/89 =====
+
+ 
+Pág. 75 de 87 
+ 
+CÓDIGO 
+PROVINCIA 
+CÓDIGO 
+MUNICIPIO DESCRIPCIÓN 
+ 180701 SOSÚA  
+ 180702 CABARETE (D. M.). 
+ 180703 SABANETA DE YÁSICA (D. M.). 
+ 180800 MUNICIPIO VILLA ISABELA 
+ 180801 VILLA ISABELA  
+ 180802 ESTERO HONDO (D. M.). 
+ 180803 LA JAIBA (D. M.). 
+ 180804 GUALETE (D. M.). 
+ 180900 MUNICIPIO VILLA MONTELLANO 
+ 180901 VILLA MONTELLANO  
+190000  PROVINCIA HERMANAS MIRABAL 
+ 190100 MUNICIPIO SALCEDO 
+ 190101 SALCEDO  
+ 190102 JAMAO AFUERA (D. M.). 
+ 190200 MUNICIPIO TENARES 
+ 190201 TENARES  
+ 190202 BLANCO (D. M.). 
+ 190300 MUNICIPIO VILLA TAPIA 
+ 190301 VILLA TAPIA  
+200000  PROVINCIA SAMANÁ 
+ 200100 MUNICIPIO SAMANÁ 
+ 200101 SAMANÁ  
+ 200102 EL LIMÓN  (D. M.). 
+ 200103 ARROYO BARRIL (D. M.). 
+ 200104 LAS GALERAS (D. M.). 
+ 200200 MUNICIPIO SÁNCHEZ 
+ 200201 SÁNCHEZ (D. M.). 
+ 200300 MUNICIPIO LAS TERRENAS 
+
+===== PAGE 77/89 =====
+
+ 
+Pág. 76 de 87 
+ 
+CÓDIGO 
+PROVINCIA 
+CÓDIGO 
+MUNICIPIO DESCRIPCIÓN 
+ 200301 LAS TERRENAS 
+210000  PROVINCIA SAN CRISTÓBAL 
+ 210100 MUNICIPIO SAN CRISTÓBAL 
+ 210101 SAN CRISTÓBAL (D. M.). 
+ 210102 HATO DAMAS (D. M.). 
+ 210103 HATILLO (D. M.). 
+ 210200 MUNICIPIO SABANA GRANDE DE 
+PALENQUE 
+ 210201 SABANA GRANDE DE PALENQUE (D. M.). 
+ 210300 MUNICIPIO BAJOS DE HAINA 
+ 210301 BAJOS DE HAINA 
+ 210302 EL CARRIL (D. M.). 
+ 210303 QUITA SUEÑO (D. M.). 
+ 210400 MUNICIPIO CAMBITA GARABITOS 
+ 210401 CAMBITA GARABITOS  
+ 210402 CAMBITA EL PUEBLECITO (D. M.). 
+ 210500 MUNICIPIO VILLA ALTAGRACIA 
+ 210501 VILLA ALTAGRACIA  
+ 210502 SAN JOSÉ DEL PUERTO (D. M.). 
+ 210503 MEDINA (D. M.). 
+ 210504 LA CUCHILLA (D. M.). 
+ 210600 MUNICIPIO YAGUATE 
+ 210601 YAGUATE (D. M.). 
+ 210602 DOÑA ANA (D. M.) 
+ 210700 MUNICIPIO SAN GREGORIO DE NIGUA 
+ 210701 SAN GREGORIO DE NIGUA  
+ 210800 MUNICIPIO LOS CACAOS 
+ 210801 LOS CACAOS (D. M.). 
+220000  PROVINCIA SAN JUAN 
+
+===== PAGE 78/89 =====
+
+ 
+Pág. 77 de 87 
+ 
+CÓDIGO 
+PROVINCIA 
+CÓDIGO 
+MUNICIPIO DESCRIPCIÓN 
+ 220100 MUNICIPIO SAN JUAN 
+ 220101 SAN JUAN  
+ 220102 PEDRO CORTO (D. M.). 
+ 220103 SABANETA (D. M.). 
+ 220104 SABANA ALTA (D. M.). 
+ 220105 EL ROSARIO (D. M.). 
+ 220106 HATO DEL PADRE (D. M.). 
+ 220107 GUANITO (D. M.). 
+ 220108 LA JAGUA (D. M.). 
+ 220109 LAS MAGUANAS-HATO NUEVO (D. M.). 
+ 220110 LAS CHARCAS DE MARÍA NOVA (D. M.). 
+ 220111 LAS ZANJAS (D. M.) 
+ 220200 MUNICIPIO BOHECHÍO 
+ 220201 BOHECHÍO  
+ 220202 ARROYO CANO (D. M.). 
+ 220203 YAQUE (D. M.). 
+ 220300 MUNICIPIO EL CERCADO 
+ 220301 EL CERCADO  
+ 220302 DERRUMBADERO (D. M.) 
+ 220303 BATISTA (D. M.) 
+ 220400 MUNICIPIO JUAN DE HERRERA 
+ 220401 JUAN DE HERRERA 
+ 220402 JÍNOVA (D. M.). 
+ 220500 MUNICIPIO LAS MATAS DE FARFÁN 
+ 220501 LAS MATAS DE FARFÁN  
+ 220502 MATAYAYA (D. M.). 
+ 220503 CARRERA DE YEGUAS (D. M.). 
+ 220600 MUNICIPIO VALLEJUELO 
+
+===== PAGE 79/89 =====
+
+ 
+Pág. 78 de 87 
+ 
+CÓDIGO 
+PROVINCIA 
+CÓDIGO 
+MUNICIPIO DESCRIPCIÓN 
+ 220601 VALLEJUELO  
+ 220602 JORJILLO (D. M.). 
+230000  PROVINCIA SAN PEDRO DE MACORÍS 
+ 230100 MUNICIPIO SAN PEDRO DE MACORÍS 
+ 230101 SAN PEDRO DE MACORÍS  
+ 230200 MUNICIPIO LOS LLANOS 
+ 230201 LOS LLANOS  
+ 230202 EL PUERTO (D. M.). 
+ 230203 GAUTIER (D. M.). 
+ 230300 MUNICIPIO RAMÓN SANTANA 
+ 230301 RAMÓN SANTANA  
+ 230400 MUNICIPIO CONSUELO 
+ 230401 CONSUELO  
+ 230500 MUNICIPIO QUISQUEYA 
+ 230501 QUISQUEYA  
+ 230600 MUNICIPIO GUAYACANES 
+ 230601 GUAYACANES 
+240000  PROVINCIA SÁNCHEZ RAMÍREZ 
+ 240100 MUNICIPIO COTUÍ 
+ 240101 COTUÍ  
+ 240102 QUITA SUEÑO (D. M.). 
+ 240103 CABALLERO (D. M.). 
+ 240104 COMEDERO ARRIBA (D. M.). 
+ 240105 PLATANAL  (D. M.). 
+ 240106 ZAMBRANA ABAJO 
+ 240200 MUNICIPIO CEVICOS 
+ 240201 CEVICOS  
+ 240202 LA CUEVA (D. M.). 
+
+===== PAGE 80/89 =====
+
+ 
+Pág. 79 de 87 
+ 
+CÓDIGO 
+PROVINCIA 
+CÓDIGO 
+MUNICIPIO DESCRIPCIÓN 
+ 240300 MUNICIPIO FANTINO 
+ 240301 FANTINO  
+ 240400 MUNICIPIO LA MATA 
+ 240401 LA MATA  
+ 240402 LA BIJA (D. M.). 
+ 240403 ANGELINA (D. M.). 
+ 240404 HERNANDO ALONZO (D. M.). 
+250000  PROVINCIA SANTIAGO 
+ 250100 MUNICIPIO SANTIAGO 
+ 250101 SANTIAGO  
+ 250102 PEDRO GARCÍA (D. M.). 
+ 250104 BAITOA (D. M.). 
+ 250105 LA CANELA (D. M.). 
+ 250106 SAN FRANCISCO DE JACAGUA (D. M.). 
+ 250107 HATO DEL YAQUE (D. M.). 
+ 250200 MUNICIPIO BISONÓ 
+ 250201 VILLA BISONÓ (NAVARRETE) (D. M.). 
+ 250300 MUNICIPIO JÁNICO 
+ 250301 JÁNICO 
+ 250302 JUNCALITO (D. M.). 
+ 250303 EL CAIMITO (D. M.). 
+ 250400 MUNICIPIO LICEY AL MEDIO 
+ 250401 LICEY AL MEDIO  
+ 250402 LAS PALOMAS (D. M.). 
+ 250500 MUNICIPIO SAN JOSÉ DE LAS MATAS 
+ 250501 SAN JOSÉ DE LAS MATAS  
+ 250502 EL RUBIO (D. M.). 
+ 250503 LA CUESTA (D. M.). 
+
+===== PAGE 81/89 =====
+
+ 
+Pág. 80 de 87 
+ 
+CÓDIGO 
+PROVINCIA 
+CÓDIGO 
+MUNICIPIO DESCRIPCIÓN 
+ 250504 LAS PLACETAS (D. M.). 
+ 250600 MUNICIPIO TAMBORIL 
+ 250601 TAMBORIL  
+ 250602 CANCA LA PIEDRA (D. M.). 
+ 250700 MUNICIPIO VILLA GONZÁLEZ 
+ 250701 VILLA GONZÁLEZ 
+ 250702 PALMAR ARRIBA (D. M.). 
+ 250703 EL LIMÓN (D. M.). 
+ 250800 MUNICIPIO PUÑAL 
+ 250801 PUÑAL  
+ 250802 GUAYABAL (D. M.). 
+ 250803 CANABACOA (D. M.). 
+ 250900 MUNICIPIO SABANA IGLESIA  
+ 250901 SABANA IGLESIA  
+ 251000 BAITOA 
+ 251001 BAITOA 
+260000  PROVINCIA SANTIAGO RODRÍGUEZ 
+ 260100 MUNICIPIO SAN IGNACIO DE SABANETA 
+ 260101 SAN IGNACIO DE SABANETA (D. M.). 
+ 260200 MUNICIPIO VILLA LOS ALMÁCIGOS 
+ 260201 VILLA LOS ALMÁCIGOS (D. M.). 
+ 260300 MUNICIPIO MONCIÓN 
+ 260301 MONCIÓN (D. M.). 
+270000  PROVINCIA VALVERDE 
+ 270100 MUNICIPIO MAO 
+ 270101 MAO (D. M.). 
+ 270102 AMINA (D. M.). 
+ 270103 JAIBÓN (PUEBLO NUEVO) (D. M.). 
+
+===== PAGE 82/89 =====
+
+ 
+Pág. 81 de 87 
+ 
+CÓDIGO 
+PROVINCIA 
+CÓDIGO 
+MUNICIPIO DESCRIPCIÓN 
+ 270104 GUATAPANAL (D. M.). 
+ 270200 MUNICIPIO ESPERANZA 
+ 270201 ESPERANZA 
+ 270202 MAIZAL (D. M.). 
+ 270203 JICOMÉ (D. M.). 
+ 270204 BOCA DE MAO (D. M.). 
+ 270205 PARADERO (D. M.). 
+ 270300 MUNICIPIO LAGUNA SALADA 
+ 270301 LAGUNA SALADA (D. M.). 
+ 270302 JAIBÓN (D. M.). 
+ 270303 LA CAYA (D. M.). 
+ 270304 CRUCE DE GUAYACANES (D. M.). 
+280000  PROVINCIA MONSEÑOR NOUEL 
+ 280100 MUNICIPIO BONAO 
+ 280101 BONAO (D. M.). 
+ 280102 SABANA DEL PUERTO (D. M.). 
+ 280103 JUMA BEJUCAL (D. M.). 
+ 280104 ARROYO  TORO - MASIPEDRO (D. M.). 
+ 280105 JAYACO (D. M.). 
+ 280106 LA SALVIA - LOS QUEMADOS (D. M.). 
+ 280200 MUNICIPIO MAIMÓN 
+ 280201 MAIMÓN (D. M.). 
+ 280300 MUNICIPIO PIEDRA BLANCA 
+ 280301 PIEDRA BLANCA (D. M.). 
+ 280302 VILLA DE SONADOR (D. M.). 
+ 280303 JUAN ADRIÁN (D. M.). 
+290000  PROVINCIA MONTE PLATA 
+ 290100 MUNICIPIO MONTE PLATA 
+
+===== PAGE 83/89 =====
+
+ 
+Pág. 82 de 87 
+ 
+CÓDIGO 
+PROVINCIA 
+CÓDIGO 
+MUNICIPIO DESCRIPCIÓN 
+ 290101 MONTE PLATA (D. M.). 
+ 290102 DON JUAN (D. M.). 
+ 290103 CHIRINO (D. M.). 
+ 290104 BOYÁ (D. M.). 
+ 290200 MUNICIPIO BAYAGUANA 
+ 290201 BAYAGUANA (D. M.). 
+ 290300 MUNICIPIO SABANA GRANDE DE BOYÁ 
+ 290301 SABANA GRANDE DE BOYÁ (D. M.). 
+ 290302 GONZALO (D. M.). 
+ 290303 MAJAGUAL (D. M.). 
+ 290400 MUNICIPIO YAMASÁ 
+ 290402 LOS BOTADOS (D. M.). 
+ 290403 MAMÁ TINGÓ (D. M.). 
+ 290500 MUNICIPIO PERALVILLO 
+ 290501 PERALVILLO (D. M.). 
+300000  PROVINCIA HATO MAYOR 
+ 300100 MUNICIPIO HATO MAYOR 
+ 300101 HATO MAYOR (D. M.). 
+ 300102 YERBA BUENA (D. M.). 
+ 300103 MATA PALACIO (D. M.). 
+ 300104 GUAYABO DULCE (D. M.). 
+ 300200 MUNICIPIO SABANA DE LA MAR 
+ 300201 SABANA DE LA MAR (D. M.). 
+ 300202 ELUPINA CORDERO DE LAS CAÑITAS (D. 
+M.). 
+ 300300 MUNICIPIO EL VALLE 
+ 300301 EL VALLE (D. M.). 
+310000  PROVINCIA SAN JOSÉ DE OCOA 
+ 310100 MUNICIPIO SAN JOSÉ DE OCOA 
+
+===== PAGE 84/89 =====
+
+ 
+Pág. 83 de 87 
+ 
+CÓDIGO 
+PROVINCIA 
+CÓDIGO 
+MUNICIPIO DESCRIPCIÓN 
+ 310101 SAN JOSÉ DE OCOA (D. M.). 
+ 310102 LA CIÉNAGA (D. M.). 
+ 310103 NIZAO - LAS AUYAMAS (D. M.). 
+ 310104 EL PINAR (D. M.). 
+ 310105 EL NARANJAL (D. M.). 
+ 310200 MUNICIPIO SABANA LARGA 
+ 310201 SABANA LARGA (D. M.). 
+ 310300 MUNICIPIO RANCHO ARRIBA 
+ 310301 RANCHO ARRIBA (D. M.). 
+320000  PROVINCIA SANTO DOMINGO 
+ 320100 MUNICIPIO SANTO DOMINGO ESTE 
+ 320101 SANTO DOMINGO ESTE (D. M.). 
+ 320102 SAN LUIS (D. M.). 
+ 320200 MUNICIPIO SANTO DOMINGO OESTE 
+ 320201 SANTO DOMINGO OESTE (D. M.). 
+ 320300 MUNICIPIO SANTO DOMINGO NORTE 
+ 320301 SANTO DOMINGO NORTE (D. M.). 
+ 320302 LA VICTORIA (D. M.). 
+ 320400 MUNICIPIO BOCA CHICA 
+ 320401 BOCA CHICA (D. M.). 
+ 320402 LA CALETA (D. M.). 
+ 320500 MUNICIPIO SAN ANTONIO DE GUERRA 
+ 320501 SAN ANTONIO DE GUERRA (D. M.). 
+ 320502 HATO VIEJO (D. M.). 
+ 320600 MUNICIPIO LOS ALCARRIZOS 
+ 320601 LOS ALCARRIZOS (D. M.). 
+ 320602 PALMAREJO-VILLA LINDA (D. M.). 
+ 320603 PANTOJA (D. M.). 
+
+===== PAGE 85/89 =====
+
+ 
+Pág. 84 de 87 
+ 
+CÓDIGO 
+PROVINCIA 
+CÓDIGO 
+MUNICIPIO DESCRIPCIÓN 
+ 320700 MUNICIPIO PEDRO BRAND 
+ 320701 PEDRO BRAND (D. M.). 
+ 320702 LA GUÁYIGA (D. M.). 
+ 320703 LA CUABA (D. M.). 
+Fuente: Oficina Nacional de Estadística (ONE), Departamento de Cartografía. División de Límites y Linderos. 
+Actualizada al 30 de junio del 2014 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+===== PAGE 86/89 =====
+
+ 
+Pág. 85 de 87 
+ 
+TABLA IV. CODIFICACIÓN UNIDAD DE MEDIDA 
+Código Abrev. Medida 
+1 BARR Barril 
+2 BOL Bolsa 
+3 BOT Bote 
+4 BULTO Bultos 
+5 BOTELLA Botella 
+6 CAJ Caja/Cajón 
+7 CAJETILLA  Cajetilla  
+8 CM Centímetro 
+9 CIL Cilindro 
+10 CONJ Conjunto 
+11 CONT Contenedor 
+12 DÍA Día 
+13 DOC Docena 
+14 FARD Fardo 
+15 GL Galones 
+16 GRAD Grado 
+17 GR Gramo 
+18 GRAN Granel 
+19 HOR Hora 
+20 HUAC Huacal 
+21 KG Kilogramo 
+22 kWh Kilovatio Hora 
+23 LB Libra 
+24 LITRO Litro 
+25 LOT Lote 
+26 M Metro 
+27 M2 Metro Cuadrado 
+28 M3 Metro Cúbico 
+ 
+
+===== PAGE 87/89 =====
+
+ 
+Pág. 86 de 87 
+ 
+Código Abrev. Medida 
+29 MMBTU Millones de Unidades 
+Térmicas 
+30 MIN Minuto 
+31 PAQ Paquete 
+32 PAR Par 
+33 PIE Pie 
+34 PZA Pieza 
+35 ROL Rollo 
+36 SOBR Sobre 
+37 SEG Segundo 
+38 TANQUE Tanque 
+39 TONE Tonelada  
+40 TUB Tubo 
+41 YD Yarda 
+42 YD2 Yarda cuadrada 
+43 UND Unidad 
+44 EA Elemento 
+45 MILLAR Millar 
+46 SAC Saco 
+47 LAT Lata 
+48 DIS Display 
+49 BID Bidón 
+50 RAC Ración 
+51 Q Quintal 
+52 GRT Gross Register Tonnage 
+(Toneladas de registro bruto) 
+53 P2 Pie cuadrado 
+54 PAX Pasajero 
+55 PULG Pulgadas 
+56 STAY Parqueo barcos en muelle 
+57 BDJ Bandeja 
+ 
+
+===== PAGE 88/89 =====
+
+ 
+Pág. 87 de 87 
+ 
+Código Abrev. Medida 
+58 HA
+ML
+MG
+OZ
+OZT
+ Hectárea
+Mililitro
+Miligramo
+Onzas
+Onzas Troy
+59   
+60   
+61   
+62   
+
+===== PAGE 89/89 =====
+
+(809) 689-3444 desde cualquier parte del país.
+informacion@dgii.gov.do
+IMPUESTOS INTERNOS
+Octubre 2025
+dgii.gov.do
+Publicación informativa sin validez legal
+@DGIIRD

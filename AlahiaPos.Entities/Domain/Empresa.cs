@@ -17,8 +17,17 @@ namespace AlahiaPos.Entities.Domain
         public DateTime? FechaProximoPago { get; set; }
 
         [MaxLength(20)]
-        public string EstadoServicio { get; set; } = "ACTIVO";
+        public string EstadoServicio { get; set; } = "ACTIVA";
         public int? IdPlan { get; set; }
+
+        /// <summary>
+        /// Precio USD del plan solo para esta empresa (descuento/acuerdo especial).
+        /// Null = cobra el PrecioUSD del catálogo PlanesCloud.
+        /// </summary>
+        public decimal? PrecioPlanEspecialUsd { get; set; }
+
+        /// <summary>Empresa dueña de la plataforma (MacroBits). Exenta de cobros/suspensión.</summary>
+        public bool EsEmpresaSistema { get; set; } = false;
         public string? ApiPrint { get; set; }
         public string? NombreComercial { get; set; } = "";
         public string? RNC { get; set; } = "";

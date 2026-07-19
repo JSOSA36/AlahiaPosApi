@@ -1,0 +1,30 @@
+---
+description: e-CF XML solo por motor de definiciones (sin ifs por tipo en el Builder)
+globs: AlahiaPos.DataAccess/Servicios/FiscalGateway/DgiiDirecto/**/*
+alwaysApply: false
+---
+
+# e-CF: motor de definiciones
+
+## Obligatorio
+
+- Todo tipo e-CF nuevo o cambio de reglas → solo en `Definitions/EcfXXDefinition` + registro en `EcfTipoDefinitionRegistry`.
+- Documentar en `docs/dgii-ecf/definiciones/EXX.md` (plantilla `TEMPLATE.md`) hasta cumplir **DoD** (ver `ecf-dod-conocimiento.mdc`).
+- Reglas descubiertas en pruebas/certificación → definición + historial/errores del `.md` **el mismo día**, no solo en código.
+
+## Prohibido
+
+- `if (tipo == 31/32/…)` u otras ramas por TipoeCF en `DgiiXmlBuilder`, `EcfXmlEngine` o helpers genéricos.
+- Parches “rápidos” en el motor para un solo comprobante.
+
+## Extensión correcta
+
+1. `EcfXXDefinition : EcfTipoDefinitionBase` (campos, presencia, validaciones, `ConocimientoAcumulado`).
+2. Registrar en `EcfTipoDefinitionRegistry`.
+3. Actualizar `docs/dgii-ecf/definiciones/EXX.md`.
+4. Touch `EcfXmlEngine` **solo** si hay bug del motor genérico (orden vacío, encoding, etc.).
+
+## Referencia
+
+- Flujo: tipo → registry → validar → emitir nodos permitidos → XML.
+- Docs índice: `docs/dgii-ecf/definiciones/README.md`.

@@ -22,6 +22,7 @@ namespace AlahiaPosApi.Controllers
         private readonly ICategorias _Categorias;
         private readonly IPlanesCloud _PlanesCloud;
         private IEmpleados _empleados;
+        private readonly IContabilidadCatalogoService _contabilidadCatalogo;
         public EmpresaController(
             IEmpresas empresas,
             IUsuarios usuarios,
@@ -31,7 +32,8 @@ namespace AlahiaPosApi.Controllers
             IAreas area,
             ICategorias categorias,
             IEmpleados empleados,
-            IPlanesCloud planesCloud)
+            IPlanesCloud planesCloud,
+            IContabilidadCatalogoService contabilidadCatalogo)
         {
             _Empresas = empresas;
             _Usuarios = usuarios;
@@ -42,6 +44,7 @@ namespace AlahiaPosApi.Controllers
             _Categorias = categorias;
             _empleados = empleados;
             _PlanesCloud = planesCloud;
+            _contabilidadCatalogo = contabilidadCatalogo;
         }
 
         // =====================================================
@@ -201,6 +204,8 @@ namespace AlahiaPosApi.Controllers
                         });
                     }
 
+                    await _contabilidadCatalogo.SeedCatalogoDefaultAsync(empresa.IdEmpresa);
+
                     var empleadoAdmin = new Empleados
                     {
                         Nombre = "Administrador",
@@ -331,7 +336,12 @@ namespace AlahiaPosApi.Controllers
 
             var puede = _Empresas.PuedeOperar(empresa);
 
-            return Ok(new { puedeOperar = puede });
+            return Ok(new
+            {
+                puedeOperar = puede,
+                estadoServicio = empresa.EstadoServicio ?? "ACTIVA",
+                pagadoServicio = empresa.PagadoServicio
+            });
         }
         [HttpPost("ActualizarEstado")]
         public async Task<IActionResult> ActualizarEstado()

@@ -14,7 +14,7 @@ public interface IDescuentoHeader
     void DeleteDescuentoHeader(int IdDescuentoHeader);
     public void ToggleEstado(int id);
     public Task<DescuentoAplicadoDto> GetDescuentoAplicado(
-         int idEmpresa, int idProducto, int idArea);
+         int idEmpresa, int idProducto, int idArea, int idCategoria);
     // 🔹 Descuentos Activos
     Task<IEnumerable<DescuentoHeader>> GetDescuentosActivos(int IdEmpresa);
 

@@ -44,6 +44,7 @@ namespace AlahiaPos.Entities.Domain
         public ICollection<DescuentoDetalle> Detalles { get; set; } = new List<DescuentoDetalle>();
         public bool AplicaATodasAreas { get; set; } = false;
         public ICollection<DescuentoAreaDetalle> Areas { get; set; } = new List<DescuentoAreaDetalle>();
+        public ICollection<DescuentoCategoriaDetalle> Categorias { get; set; } = new List<DescuentoCategoriaDetalle>();
 
     }
 }

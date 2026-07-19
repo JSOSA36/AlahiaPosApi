@@ -129,9 +129,9 @@ namespace AlahiaPosApi.Controllers
         }
         [HttpGet("Aplicar")]
         public async Task<ActionResult<DescuentoAplicadoDto>> AplicarDescuento(
-        int idEmpresa, int idProducto, int idArea)
+        int idEmpresa, int idProducto, int idArea, int idCategoria = 0)
         {
-            var dto = await _service.GetDescuentoAplicado(idEmpresa, idProducto, idArea);
+            var dto = await _service.GetDescuentoAplicado(idEmpresa, idProducto, idArea, idCategoria);
             return Ok(dto);
         }
 

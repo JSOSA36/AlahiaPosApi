@@ -1,14 +1,9 @@
-﻿
-using System;
-using System.Collections.Generic;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace AlahiaPos.Entities.Domain
 {
+    [Table("Proveedores")]
     public class Proveedores:BaseEntity
     {
         [Key]
@@ -25,5 +20,10 @@ namespace AlahiaPos.Entities.Domain
         public string? Direccion { get; set; } = "";
         public string? Nota { get; set; } = "";
         public string? Email { get; set; } = "";
+
+        // Defaults fiscales futuros (Sprint A) — no foto de documento
+        public string? RegimenDgii { get; set; }
+        public byte? TipoIdentificacionDgii { get; set; }
+        public string? ClasificacionRetencionItbisDefault { get; set; }
     }
 }

@@ -137,7 +137,13 @@ namespace AlahiaPos.API.Controllers
 
                         ingreso.Descripcion
                         ??
-                        "Entrada automática por ingreso"
+                        "Entrada automática por ingreso",
+
+                        categoria: "INGRESO",
+
+                        referenciaId: ingreso.IdIngreso > 0 ? ingreso.IdIngreso : null,
+
+                        referenciaTipo: "INGRESO"
                     );
                 }
 

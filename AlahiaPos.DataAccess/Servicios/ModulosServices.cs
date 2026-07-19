@@ -26,7 +26,7 @@ namespace AlahiaPos.DataAccess.Servicios
             return await _Repository.GetByIdAsync(IdModulo);
         }
 
-        public async Task<Modulo> GetModuloByCodigo(string Codigo)
+        public async Task<Modulo?> GetModuloByCodigo(string Codigo)
         {
             return await _Repository.GetByExpresionAsync(
                 c => c.Codigo == Codigo && c.Activo == true

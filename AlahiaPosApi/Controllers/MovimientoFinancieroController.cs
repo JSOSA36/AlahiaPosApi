@@ -199,10 +199,10 @@ RegistrarTransferencia(
                 int id
             )
         {
-            await _service
-                .DeleteAsync(id);
-
-            return NoContent();
+            return BadRequest(new
+            {
+                message = "Los movimientos de tesorería no se eliminan. Use un movimiento de ajuste o anulación."
+            });
         }
     }
 }

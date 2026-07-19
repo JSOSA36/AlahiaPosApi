@@ -21,5 +21,16 @@ namespace AlahiaPos.Entities.Domain
         public string? Estado { get; set; } // PENDIENTE, APROBADO, RECHAZADO
 
         public string? Observacion { get; set; } // opcional
+
+        public DateTime? FechaPago { get; set; }
+
+        [MaxLength(120)]
+        public string? Banco { get; set; }
+
+        [MaxLength(120)]
+        public string? Referencia { get; set; }
+
+        public int? IdCiclo { get; set; }
+        public int? IdUsuarioReporta { get; set; }
     }
 }

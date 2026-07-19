@@ -36,6 +36,7 @@ namespace AlahiaPos.Entities.Dto
         public decimal Itbis { get; set; }
         public decimal SubTotal { get; set; }
         public decimal Descuento { get; set; }
+        public decimal CantidadDevuelta { get; set; }
         public bool EnviadoCocina { get; set; }
         public decimal PrecioOferta { get; set; }
         //[NotMapped]

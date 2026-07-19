@@ -1,0 +1,28 @@
+---
+description: Definition of Done e-CF — documentación es parte del desarrollo
+globs: AlahiaPos.DataAccess/Servicios/FiscalGateway/DgiiDirecto/**/*,docs/dgii-ecf/**/*,Alahia.eCF.Api/**/*
+alwaysApply: false
+---
+
+# DoD comprobante e-CF
+
+Un tipo **NO** está terminado solo porque DGII lo acepte.
+
+## Checklist obligatorio (todos actuales y futuros)
+
+- [ ] Definición `EcfXXDefinition` + registro en registry
+- [ ] Doc `docs/dgii-ecf/definiciones/EXX.md` (plantilla completa)
+- [ ] Reglas de negocio documentadas en el `.md`
+- [ ] XML de ejemplo en `definiciones/ejemplos/` (estructura alineada a envío aceptado)
+- [ ] Casos de prueba documentados
+- [ ] Historial de certificación
+- [ ] Errores de certificación + cómo se resolvieron
+- [ ] Restricciones / validaciones especiales
+
+## Regla viva
+
+Cada regla nueva descubierta en certificación → **mismo cambio** en definición C# **y** en el `.md` (historial + errores si aplica). No dejar conocimiento solo en código ni en memoria del equipo.
+
+## Referencia
+
+`docs/dgii-ecf/definiciones/README.md` · `TEMPLATE.md`

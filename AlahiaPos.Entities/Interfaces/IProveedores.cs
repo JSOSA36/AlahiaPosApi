@@ -9,11 +9,11 @@ namespace AlahiaPos.Entities.Interfaces
 {
     public interface IProveedores
     {
-        public Task<IEnumerable<Proveedores>> GetAllProveedores();
-
-        public Task<Proveedores> GetAllProveedoresById(int IdCategorias);
-        public void UpdateProveedores(int Id, Proveedores Proveedores);
-        public Task InsertProveedores(Proveedores Proveedores);
-        public void DeleteProveedores(int IdProveedores);
+        Task<IEnumerable<Proveedores>> GetAllProveedores(int idEmpresa, bool soloActivos = true);
+        Task<Proveedores?> GetProveedorById(int idProveedor, int idEmpresa);
+        Task<Proveedores> InsertProveedores(Proveedores proveedor);
+        Task UpdateProveedores(int id, Proveedores proveedor, int idEmpresa);
+        Task DesactivarProveedor(int idProveedor, int idEmpresa);
+        Task<bool> TieneDocumentosAsociados(int idProveedor);
     }
 }

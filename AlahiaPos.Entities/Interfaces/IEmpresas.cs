@@ -17,7 +17,7 @@ namespace AlahiaPos.Entities.Interfaces
         Task MarcarPago(int empresaId);
 
         Task MarcarPendiente(int empresaId);
-        AlertaPagoDto ObtenerAlertaPago(Empresas empresa);
+        AlertaPagoDto? ObtenerAlertaPago(Empresas empresa);
         Task ActualizarEstadoAutomatico();
         Task ActualizarEstadoEmpresa(int empresaId);
         bool PuedeOperar(Empresas empresa);

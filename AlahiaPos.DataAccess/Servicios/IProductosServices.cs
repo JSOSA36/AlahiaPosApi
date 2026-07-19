@@ -1,6 +1,8 @@
-﻿using AlahiaPos.Entities.Domain;
+﻿using AlahiaPos.DataAccess.Data;
+using AlahiaPos.Entities.Domain;
 using AlahiaPos.Entities.Dto;
 using AlahiaPos.Entities.Interfaces;
+using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -9,10 +11,12 @@ namespace AlahiaPos.DataAccess.Servicios
     public class IProductosServices : IProductos
     {
         IRepository<Productos> Repository;
+        private readonly AlahiaPosContext _context;
 
-        public IProductosServices(IRepository<Productos> repository)
+        public IProductosServices(IRepository<Productos> repository, AlahiaPosContext context)
         {
             Repository = repository;
+            _context = context;
         }
         // 🚀 Nuevo método: traer solo servicios por área
         public async Task<IEnumerable<ProductoLiteDto>> GetLite(int IdEmpresa)
@@ -61,6 +65,8 @@ namespace AlahiaPos.DataAccess.Servicios
         &&
 
         (
+            c.EsServicio
+            ||
 
             c.TipoOperacion
             == "VENTA"
@@ -108,6 +114,85 @@ namespace AlahiaPos.DataAccess.Servicios
             );
         }
         // 🚀 Nuevo método: traer solo servicios por área
+
+        public async Task<ProductoBusquedaCompraResultDto> BuscarProductosCompra(
+            int idEmpresa,
+            string? q,
+            int page,
+            int pageSize,
+            int? idAlmacen = null)
+        {
+            page = page < 1 ? 1 : page;
+            pageSize = pageSize < 1 ? 25 : Math.Min(pageSize, 100);
+
+            var query = _context.Productos
+                .AsNoTracking()
+                .Where(p =>
+                    p.IdEmpresa == idEmpresa
+                    && p.IsActivo);
+
+            var term = (q ?? string.Empty).Trim();
+            if (!string.IsNullOrEmpty(term))
+            {
+                var lower = term.ToLower();
+                var esNumerico = int.TryParse(term, out var idProducto);
+
+                query = query.Where(p =>
+                    (p.Nombre != null && p.Nombre.ToLower().Contains(lower))
+                    || (p.Descripcion != null && p.Descripcion.ToLower().Contains(lower))
+                    || (p.CodigoBarra != null && p.CodigoBarra.ToLower().Contains(lower))
+                    || (esNumerico && p.IdProducto == idProducto));
+            }
+
+            var total = await query.CountAsync();
+
+            var productos = await query
+                .OrderBy(p => p.Nombre)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(p => new ProductoBusquedaCompraDto
+                {
+                    IdProducto = p.IdProducto,
+                    CodigoBarra = p.CodigoBarra,
+                    Nombre = p.Nombre,
+                    Cantidad = p.Cantidad,
+                    PrecioCompra = p.PrecioCompra,
+                    ControlarStock = p.ControlarStock,
+                    EsServicio = p.EsServicio,
+                    TipoComportamiento = p.TipoComportamiento,
+                    Itbis = p.Itbis,
+                    ExistenciaAlmacen = 0
+                })
+                .ToListAsync();
+
+            if (idAlmacen.HasValue && idAlmacen.Value > 0 && productos.Count > 0)
+            {
+                var ids = productos.Select(p => p.IdProducto).ToList();
+                var existencias = await _context.AlmacenExistencia
+                    .AsNoTracking()
+                    .Where(e =>
+                        e.IdEmpresa == idEmpresa
+                        && e.IdAlmacen == idAlmacen.Value
+                        && ids.Contains(e.IdProducto))
+                    .ToListAsync();
+
+                var mapa = existencias.ToDictionary(e => e.IdProducto, e => e.Cantidad);
+                foreach (var item in productos)
+                {
+                    if (mapa.TryGetValue(item.IdProducto, out var cant))
+                        item.ExistenciaAlmacen = cant;
+                }
+            }
+
+            return new ProductoBusquedaCompraResultDto
+            {
+                Items = productos,
+                Total = total,
+                Page = page,
+                PageSize = pageSize,
+                HasMore = page * pageSize < total
+            };
+        }
 
     }
 }

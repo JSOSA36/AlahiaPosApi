@@ -23,5 +23,10 @@ namespace AlahiaPos.Entities.Domain
         public string? Nota { get; set; } = "";
         public decimal? LimiteCredito { get; set; }
         public List<CorreosElectronicos>? ClienteCorreos { get; set; }
+
+        // Defaults fiscales futuros (Sprint A)
+        public string? RegimenDgii { get; set; }
+        public bool EsRegimenEspecial { get; set; }
+        public byte? TipoIdentificacionDgii { get; set; }
     }
 }

@@ -708,6 +708,18 @@ namespace AlahiaPos.DataAccess.Servicios
             if (facturas == null || facturas.Count == 0)
                 return result;
 
+            var clientesIds = facturas
+                .Where(f => f.IDCliente.HasValue && f.IDCliente > 0)
+                .Select(f => f.IDCliente!.Value)
+                .Distinct()
+                .ToList();
+
+            var clientesPorId = clientesIds.Any()
+                ? _Clientes
+                    .GetAllByExpresionNoAsync(c => clientesIds.Contains(c.IDCliente))
+                    .ToDictionary(c => c.IDCliente)
+                : new Dictionary<int, Clientes>();
+
             foreach (var factura in facturas)
             {
                 var detalles = _FacturaDetalles.GetAllByExpresionNoAsync(
@@ -759,7 +771,7 @@ namespace AlahiaPos.DataAccess.Servicios
                     {
                         NoFactura = "0000" + factura.IdFacturaHeader,
                         Fecha = factura.FechaInseccion,
-                        Cliente = factura.NombreCuenta ?? "Consumidor Final",
+                        Cliente = ObtenerNombreCliente(factura, clientesPorId),
                         Hora = factura.Hora,
 
                         TipoComision = comisionConfig.TipoComision,
@@ -789,6 +801,27 @@ namespace AlahiaPos.DataAccess.Servicios
 
             return result;
         }
+
+        private static string ObtenerNombreCliente(
+            FacturaHeaders factura,
+            Dictionary<int, Clientes> clientesPorId)
+        {
+            if (!string.IsNullOrWhiteSpace(factura.NombreCuenta))
+            {
+                return factura.NombreCuenta.Trim();
+            }
+
+            if (factura.IDCliente.HasValue
+                && factura.IDCliente > 0
+                && clientesPorId.TryGetValue(factura.IDCliente.Value, out var cliente)
+                && !string.IsNullOrWhiteSpace(cliente.NombreComercial))
+            {
+                return cliente.NombreComercial.Trim();
+            }
+
+            return "Consumidor Final";
+        }
+
         public async Task<IEnumerable<ServicioRankingDto>> GetTopServiciosDelMes(int IdEmpresa)
         {
             var mesActual = DateTime.Now.Month;

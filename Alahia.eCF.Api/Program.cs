@@ -1,45 +1,78 @@
-﻿using Alahia.eCF.Api.Interfaces;
-using Alahia.eCF.Api.Services;
-using Alahia.eCF.Api.Setting;
+﻿using AlahiaPos.DataAccess.Seguridad;
+using AlahiaPos.DataAccess.Servicios.FiscalGateway.DgiiDirecto;
+using AlahiaPos.DataAccess.Servicios.FiscalGateway.Transmission;
+using AlahiaPos.Entities.Interfaces;
+using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 🔥 CONFIGURACIÓN DGII
-builder.Services.Configure<DgiiSettings>(
-    builder.Configuration.GetSection("DGII")
-);
+builder.Services.Configure<DgiiDirectoSettings>(opts =>
+{
+    builder.Configuration.GetSection("DgiiDirecto").Bind(opts);
+    var dgii = builder.Configuration.GetSection("DGII");
+    if (string.IsNullOrWhiteSpace(opts.P12Path))
+        opts.P12Path = dgii["P12Path"];
+    if (string.IsNullOrWhiteSpace(opts.P12Password))
+        opts.P12Password = dgii["P12Password"];
+    opts.PreferSettingsCertificate = true;
+});
 
-// 🔥 SERVICIOS CORE
-builder.Services.AddScoped<IExcelMapperService, ExcelMapperService>();
+builder.Services.Configure<Alahia.eCF.Api.Security.AlahiaEcfApiSettings>(
+    builder.Configuration.GetSection("AlahiaEcfApi"));
 
-builder.Services.AddScoped<IXmlGeneratorService, XmlGeneratorService>();
+builder.Services.AddScoped<IECFSigner, EcfSigner>();
+builder.Services.AddScoped<DgiiCertificadoResolver>(sp =>
+    new DgiiCertificadoResolver(
+        sp.GetRequiredService<IOptions<DgiiDirectoSettings>>(),
+        sp.GetRequiredService<ILogger<DgiiCertificadoResolver>>(),
+        ctx: null));
+builder.Services.AddScoped<DgiiXmlBuilder>();
+builder.Services.AddScoped<DgiiRfceBuilder>();
+builder.Services.AddHttpClient<DgiiAuthService>();
+builder.Services.AddHttpClient<DgiiRecepcionClient>();
+builder.Services.AddScoped<DgiiDirectoGateway>();
+builder.Services.AddScoped<IFiscalGateway>(sp => sp.GetRequiredService<DgiiDirectoGateway>());
+builder.Services.AddSingleton<IFiscalDocumentoValidator, AlahiaPos.DataAccess.Servicios.FiscalGateway.FiscalDocumentoValidator>();
+builder.Services.AddAlahiaTransmissionEngine(builder.Configuration);
+builder.Services.AddHostedService<Alahia.eCF.Api.Services.TransmissionWorkerHostedService>();
+builder.Services.AddScoped<Alahia.eCF.Api.Services.ReceiptOrchestrator>();
 
-builder.Services.AddScoped<IXmlFirmaService, XmlFirmaService>();
-
-builder.Services.AddHttpClient<IDgiiService, DgiiService>();
-
-builder.Services.AddScoped<IEcfService, EcfService>();
-
-// 🔥 CONTROLADORES
 builder.Services.AddControllers();
-
-// 🔥 SWAGGER
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new() { Title = "Alahia e-CF API (DGII Directo)", Version = "v1" });
+    c.AddSecurityDefinition("ApiKey", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+    {
+        Description = "API Key en header X-Api-Key (mismo patrón que PG.eInvoicing)",
+        Name = "X-Api-Key",
+        In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+        Type = Microsoft.OpenApi.Models.SecuritySchemeType.ApiKey
+    });
+    c.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+    {
+        {
+            new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+            {
+                Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                {
+                    Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+                    Id = "ApiKey"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
+});
 
 var app = builder.Build();
 
-// 🔥 PIPELINE
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
-
-app.UseAuthorization();
-
+app.UseMiddleware<Alahia.eCF.Api.Security.ApiKeyMiddleware>();
 app.MapControllers();
-
 app.Run();

@@ -12,5 +12,6 @@ namespace AlahiaPos.Entities.Dto
         public string Estado { get; set; } // APROBADO o RECHAZADO
         public string Observacion { get; set; }
         public string UsuarioValida { get; set; }
+        public int? IdUsuarioValida { get; set; }
     }
 }

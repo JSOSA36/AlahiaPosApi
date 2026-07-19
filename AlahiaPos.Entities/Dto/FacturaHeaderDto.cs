@@ -45,6 +45,7 @@ namespace AlahiaPos.Entities.Dto
         public decimal TotalDescuento { get; set; }
        
         public bool EstaCancelada { get; set; }
+        public string? MotivoAnulacion { get; set; }
         public bool EstaCerrada { get; set; }
         public string? Nota { get; set; } = "";
         public DateTime FechaBencimiento { get; set; }

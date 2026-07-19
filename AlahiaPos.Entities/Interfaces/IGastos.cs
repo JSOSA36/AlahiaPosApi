@@ -20,6 +20,10 @@ namespace AlahiaPos.Entities.Interfaces
 );
         void UpdateGastos(Gastos Gastos);
 
-        void DeleteGastos(int id);
+        Task AnularGastoAsync(
+            int idGasto,
+            int idEmpresa,
+            string motivoAnulacion,
+            string? usuarioAnulo);
     }
 }

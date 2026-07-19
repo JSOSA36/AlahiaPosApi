@@ -11,6 +11,12 @@ namespace AlahiaPos.Entities.Interfaces
         Task<TicketNotaCreditoDto?> GetTicketNotaCredito(
             int idNotaCredito,
             int idEmpresa);
+
+        Task<IEnumerable<NotaCreditoListadoDto>> ListarNotasCredito(
+            int idEmpresa,
+            DateTime? desde,
+            DateTime? hasta,
+            bool soloConComprobante);
     }
 
     public class NotasCreditoResultadoDto

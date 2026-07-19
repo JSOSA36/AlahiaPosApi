@@ -1,7 +1,11 @@
-﻿using AlahiaPos.Entities.Dto;
+﻿using AlahiaPos.DataAccess.Data;
+using AlahiaPos.Entities.Domain;
+using AlahiaPos.Entities.Dto;
 using AlahiaPos.Entities.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace AlahiaPosApi.Controllers
@@ -15,15 +19,21 @@ namespace AlahiaPosApi.Controllers
         private readonly IEmpresas _empresasService;
         private readonly IIngresos _ingresosService;
         private readonly IPlanesCloud _lanesCloud;
+        private readonly IPoliticasServicioService _politicasServicio;
+        private readonly ISuscripcionCobroService _suscripcionCobro;
+        private readonly INotificacionCentro _notificaciones;
+        private readonly AlahiaPosContext _ctx;
 
         public LoginController(
             ILoginService loginService,
             IUsuarios usuariosService,
             IEmpresas empresasService,
              IIngresos ingresosService,
-             IPlanesCloud lanesCloud
-
-
+             IPlanesCloud lanesCloud,
+             IPoliticasServicioService politicasServicio,
+             ISuscripcionCobroService suscripcionCobro,
+             INotificacionCentro notificaciones,
+             AlahiaPosContext ctx
         )
         {
             _loginService = loginService;
@@ -31,8 +41,10 @@ namespace AlahiaPosApi.Controllers
             _empresasService = empresasService;
             _ingresosService= ingresosService;
             _lanesCloud = lanesCloud;
-
-
+            _politicasServicio = politicasServicio;
+            _suscripcionCobro = suscripcionCobro;
+            _notificaciones = notificaciones;
+            _ctx = ctx;
         }
 
         // =====================================================
@@ -88,22 +100,6 @@ namespace AlahiaPosApi.Controllers
                 // 🔔 Obtener alerta con la empresa actualizada
                 var alertaPago = _empresasService.ObtenerAlertaPago(empresa);
 
-                // 🔴 Validar si puede operar
-                //if (!_empresasService.PuedeOperar(empresa))
-                //{
-                //    return StatusCode(403, new
-                //    {
-                //        bloqueado = true,
-                //        mensaje = "Tu servicio está suspendido. Debes renovar tu plan para continuar.",
-                //        estadoServicio = empresa.EstadoServicio,
-                //        empresa = new
-                //        {
-                //            idEmpresa = empresa.IdEmpresa,
-                //            nombreComercial = empresa.NombreComercial
-                //        }
-                //    });
-                //}
-
                 // 🔍 Plan
                 var plan = await _lanesCloud.GetPlanById((int)empresa.IdPlan);
 
@@ -114,6 +110,80 @@ namespace AlahiaPosApi.Controllers
                 if (plan.PrecioUSD == 0 && empresa.FechaTerminacion.Date < DateTime.Now.Date)
                 {
                     return StatusCode(403, "El período de prueba ha finalizado.");
+                }
+
+                // 🔴 Suscripción bloqueada (suspendida / pago en validación / cancelada)
+                // Se permite sesión mínima para Reportar Pago, pero el front no entra al ERP.
+                var bloqueado = _suscripcionCobro.EstaBloqueada(empresa);
+                if (bloqueado)
+                {
+                    usuarioDb.Token = Guid.NewGuid().ToString();
+                    usuarioDb.Dispositivo = dto.DeviceId;
+                    usuarioDb.UltimoAcceso = DateTime.Now;
+                    await _usuariosService.Actualizar(usuarioDb);
+
+                    var factura = await _suscripcionCobro.CalcularFacturaAsync(empresa.IdEmpresa);
+                    var pagoPendiente = await _ctx.PagosEmpresa.AsNoTracking()
+                        .AnyAsync(p => p.IdEmpresa == empresa.IdEmpresa && p.Estado == "PENDIENTE");
+
+                    // Si hay voucher pendiente, sincronizar estado y no pedir otro reporte
+                    var estadoEfectivo = empresa.EstadoServicio ?? SuscripcionEstados.Suspendida;
+                    if (pagoPendiente
+                        && estadoEfectivo != SuscripcionEstados.Cancelada
+                        && estadoEfectivo != SuscripcionEstados.PagoReportado)
+                    {
+                        empresa.EstadoServicio = SuscripcionEstados.PagoReportado;
+                        _empresasService.UpdateEmpresas(empresa.IdEmpresa, empresa);
+                        estadoEfectivo = SuscripcionEstados.PagoReportado;
+                    }
+                    else if (pagoPendiente)
+                    {
+                        estadoEfectivo = SuscripcionEstados.PagoReportado;
+                    }
+
+                    var pagoEnValidacion = pagoPendiente
+                        || estadoEfectivo == SuscripcionEstados.PagoReportado;
+
+                    var mensajeBloqueo = pagoEnValidacion
+                        ? "Su pago está en validación. El acceso se restaurará cuando MacroBits lo apruebe."
+                        : (alertaPago?.Mensaje ?? "Su servicio se encuentra suspendido por falta de pago.");
+
+                    var puedeReportar = estadoEfectivo != SuscripcionEstados.Cancelada
+                        && !pagoEnValidacion;
+
+                    return Ok(new
+                    {
+                        bloqueado = true,
+                        mensaje = mensajeBloqueo,
+                        estadoServicio = estadoEfectivo,
+                        puedeReportarPago = puedeReportar,
+                        pagoEnValidacion,
+                        token = usuarioDb.Token,
+                        usuario = new
+                        {
+                            idUsuario = usuarioDb.IdUsuario,
+                            userName = usuarioDb.UserName,
+                            idEmpresa = usuarioDb.IdEmpresa
+                        },
+                        empresa = new
+                        {
+                            idEmpresa = empresa.IdEmpresa,
+                            nombreComercial = empresa.NombreComercial,
+                            idPlan = empresa.IdPlan,
+                            nombrePlan = plan.Nombre,
+                            estadoServicio = estadoEfectivo,
+                            precioPlan = factura.Total,
+                            montoPlan = factura.MontoPlan,
+                            montoCargos = factura.MontoCargos,
+                            desgloseFactura = factura.Lineas,
+                            correElectronico = empresa.CorreElectronico
+                        },
+                        alertaPlan = new
+                        {
+                            tipo = alertaPago?.Tipo ?? "critico",
+                            mensaje = mensajeBloqueo
+                        }
+                    });
                 }
 
                 // 🔥 Facturación del mes
@@ -149,6 +219,11 @@ namespace AlahiaPosApi.Controllers
 
                 await _usuariosService.Actualizar(usuarioDb);
 
+                var politicasEstado = await _politicasServicio
+                    .ObtenerEstadoAsync(usuarioDb.IdEmpresa, usuarioDb.IdUsuario);
+                var esAdministrador = politicasEstado?.EsAdministrador == true
+                    || _politicasServicio.EsAdministrador(usuarioDb.Empleado?.Ocupacion);
+
                 // ✅ RESPUESTA FINAL
                 return Ok(new
                 {
@@ -170,7 +245,10 @@ namespace AlahiaPosApi.Controllers
                         puedeEliminarOrden = loginResponse.PuedeEliminarOrden,
                         puedeEliminarItemCarrito = usuarioDb.PuedeEliminarItemCarrito,
                         puedeDisminuirCantidadCarrito = usuarioDb.PuedeDisminuirCantidadCarrito,
-                        puedeEditarPrecioCarrito = usuarioDb.PuedeEditarPrecioCarrito
+                        puedeEditarPrecioCarrito = usuarioDb.PuedeEditarPrecioCarrito,
+                        esAdministrador,
+                        idPerfil = usuarioDb.IdPerfil,
+                        nombrePerfil = usuarioDb.Perfil?.Nombre
                     },
                     empresa = new
                     {
@@ -182,15 +260,20 @@ namespace AlahiaPosApi.Controllers
                         fechaTerminacion = empresa.FechaTerminacion,
                         estadoServicio = empresa.EstadoServicio,
                         pagadoServicio = empresa.PagadoServicio,
-                        PoliticasAceptadas=empresa.PoliticasAceptadas
+                        PoliticasAceptadas = !politicasEstado.RequiereAceptacion
                     },
+                    politicas = politicasEstado,
                     modulos = loginResponse.Modulos,
                     token = usuarioDb.Token,
-                    alertaPlan = new
-                    {
-                        tipo = alertaPago.Tipo,
-                        mensaje = alertaPago.Mensaje,
-                    }
+                    alertaPlan = alertaPago == null || string.IsNullOrWhiteSpace(alertaPago.Mensaje)
+                        ? null
+                        : new
+                        {
+                            tipo = alertaPago.Tipo,
+                            mensaje = alertaPago.Mensaje
+                        },
+                    notificacionesNoLeidas = await _notificaciones.ContarNoLeidasAsync(
+                        empresa.IdEmpresa, usuarioDb.IdUsuario)
                 });
             }
             catch (Exception ex)

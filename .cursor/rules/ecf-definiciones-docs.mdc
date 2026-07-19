@@ -1,0 +1,13 @@
+---
+description: Docs e-CF = biblioteca de conocimiento viva (DoD + sync regla/código)
+globs: docs/dgii-ecf/definiciones/**/*
+alwaysApply: false
+---
+
+# Biblioteca de conocimiento e-CF
+
+- Plantilla: `TEMPLATE.md`. Índice/DoD: `README.md`.
+- Aceptación DGII ≠ terminado: falta doc, ejemplos, pruebas, errores, historial.
+- Regla nueva en certificación → actualizar `EcfXXDefinition` + `EXX.md` el mismo día.
+- XML ejemplo: `ejemplos/EXX-*.xml` referenciado desde el `.md`.
+- Objetivo: en 1 año no re-investigar un E34; leer solo su definición + doc.

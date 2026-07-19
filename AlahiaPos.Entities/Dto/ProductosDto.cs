@@ -28,5 +28,6 @@ namespace AlahiaPos.Entities.Dto
         public bool? DisponibleEnCitas { get; set; } = true;
         public string? CodigoBarra { get; set; }
         public bool? Itbis { get; set; }
+        public string? TipoComportamiento { get; set; }
     }
 }

@@ -13,16 +13,19 @@ namespace AlahiaPos.DataAccess.Servicios
         private readonly IRepository<DescuentoHeader> _repository;
         private readonly IRepository<DescuentoDetalle> _repositoryDetalle;
         private readonly IRepository<DescuentoAreaDetalle> _repositoryArea;
+        private readonly IRepository<DescuentoCategoriaDetalle> _repositoryCategoria;
 
         public DescuentoHeaderServices(
             IRepository<DescuentoHeader> repository,
             IRepository<DescuentoDetalle> repositoryDetalle,
-            IRepository<DescuentoAreaDetalle> repositoryArea
+            IRepository<DescuentoAreaDetalle> repositoryArea,
+            IRepository<DescuentoCategoriaDetalle> repositoryCategoria
         )
         {
             _repository = repository;
             _repositoryDetalle = repositoryDetalle;
             _repositoryArea = repositoryArea;
+            _repositoryCategoria = repositoryCategoria;
         }
 
         // ============================================================
@@ -40,7 +43,7 @@ namespace AlahiaPos.DataAccess.Servicios
             _repository.Update(id, header);
         }
         public async Task<DescuentoAplicadoDto> GetDescuentoAplicado(
-          int idEmpresa, int idProducto, int idArea)
+          int idEmpresa, int idProducto, int idArea, int idCategoria)
         {
             var hoy = DateTime.Now;
             var diaSemana = (int)hoy.DayOfWeek; // 0 = Domingo
@@ -56,6 +59,9 @@ namespace AlahiaPos.DataAccess.Servicios
                     .GetAllByExpresionAsync(x => x.IdDescuentoHeader == h.IdDescuentoHeader)).ToList();
 
                 h.Areas = (await _repositoryArea
+                    .GetAllByExpresionAsync(x => x.IdDescuentoHeader == h.IdDescuentoHeader)).ToList();
+
+                h.Categorias = (await _repositoryCategoria
                     .GetAllByExpresionAsync(x => x.IdDescuentoHeader == h.IdDescuentoHeader)).ToList();
             }
 
@@ -85,49 +91,58 @@ namespace AlahiaPos.DataAccess.Servicios
 
             if (porProducto != null)
             {
-                return new DescuentoAplicadoDto
-                {
-                    Aplica = true,
-                    Tipo = porProducto.TipoDescuento,
-                    Valor = porProducto.Valor,
-                    NombreEvento = porProducto.NombreEvento
-                };
+                return MapDescuentoAplicado(porProducto);
             }
 
-            // PRIORIDAD 2: por área
-            var porArea = headers
-                .Where(h => h.Areas.Any(a => a.IdArea == idArea))
-                .FirstOrDefault();
-
-            if (porArea != null)
+            // PRIORIDAD 2: por categoría
+            if (idCategoria > 0)
             {
-                return new DescuentoAplicadoDto
+                var porCategoria = headers
+                    .Where(h => h.Categorias.Any(c => c.IdCategoria == idCategoria))
+                    .FirstOrDefault();
+
+                if (porCategoria != null)
                 {
-                    Aplica = true,
-                    Tipo = porArea.TipoDescuento,
-                    Valor = porArea.Valor,
-                    NombreEvento = porArea.NombreEvento
-                };
+                    return MapDescuentoAplicado(porCategoria);
+                }
             }
 
-            // PRIORIDAD 3: descuento general
+            // PRIORIDAD 3: por área
+            if (idArea > 0)
+            {
+                var porArea = headers
+                    .Where(h => h.Areas.Any(a => a.IdArea == idArea))
+                    .FirstOrDefault();
+
+                if (porArea != null)
+                {
+                    return MapDescuentoAplicado(porArea);
+                }
+            }
+
+            // PRIORIDAD 4: descuento general
             var general = headers
                 .Where(h => h.AplicaATodos)
                 .FirstOrDefault();
 
             if (general != null)
             {
-                return new DescuentoAplicadoDto
-                {
-                    Aplica = true,
-                    Tipo = general.TipoDescuento,
-                    Valor = general.Valor,
-                    NombreEvento = general.NombreEvento
-                };
+                return MapDescuentoAplicado(general);
             }
 
             // Si no aplica nada
             return new DescuentoAplicadoDto { Aplica = false };
+        }
+
+        private static DescuentoAplicadoDto MapDescuentoAplicado(DescuentoHeader header)
+        {
+            return new DescuentoAplicadoDto
+            {
+                Aplica = true,
+                Tipo = header.TipoDescuento,
+                Valor = header.Valor,
+                NombreEvento = header.NombreEvento
+            };
         }
 
         public void DeleteDescuentoHeader(int IdDescuentoHeader)
@@ -153,6 +168,10 @@ namespace AlahiaPos.DataAccess.Servicios
                     x => x.IdDescuentoHeader == h.IdDescuentoHeader
                 );
 
+                var categorias = await _repositoryCategoria.GetAllByExpresionAsync(
+                    x => x.IdDescuentoHeader == h.IdDescuentoHeader
+                );
+
                 resultado.Add(new DescuentoHeaderDto
                 {
                     IdDescuentoHeader = h.IdDescuentoHeader,
@@ -171,7 +190,8 @@ namespace AlahiaPos.DataAccess.Servicios
 
                     // 🔥 DEVUELVE SOLO LOS IDs COMO NECESITA ANGULAR
                     Servicios = servicios.Select(s => s.IdProducto).ToList(),
-                    Areas = areas.Select(a => a.IdArea).ToList()
+                    Areas = areas.Select(a => a.IdArea).ToList(),
+                    Categorias = categorias.Select(c => c.IdCategoria).ToList()
                 });
             }
 
@@ -190,6 +210,10 @@ namespace AlahiaPos.DataAccess.Servicios
             )).ToList();
 
             h.Areas = (await _repositoryArea.GetAllByExpresionAsync(
+                x => x.IdDescuentoHeader == IdDescuentoHeader
+            )).ToList();
+
+            h.Categorias = (await _repositoryCategoria.GetAllByExpresionAsync(
                 x => x.IdDescuentoHeader == IdDescuentoHeader
             )).ToList();
 
@@ -219,7 +243,7 @@ namespace AlahiaPos.DataAccess.Servicios
             await _repository.Save(header);
 
             // 3️⃣ Guardar servicios (DescuentoDetalle)
-            foreach (var idProducto in dto.Servicios)
+            foreach (var idProducto in dto.Servicios ?? new List<int>())
             {
                 await _repositoryDetalle.Save(new DescuentoDetalle
                 {
@@ -229,12 +253,21 @@ namespace AlahiaPos.DataAccess.Servicios
             }
 
             // 4️⃣ Guardar áreas (DescuentoAreaDetalle)
-            foreach (var idArea in dto.Areas)
+            foreach (var idArea in dto.Areas ?? new List<int>())
             {
                 await _repositoryArea.Save(new DescuentoAreaDetalle
                 {
                     IdDescuentoHeader = header.IdDescuentoHeader,
                     IdArea = idArea
+                });
+            }
+
+            foreach (var idCategoria in dto.Categorias ?? new List<int>())
+            {
+                await _repositoryCategoria.Save(new DescuentoCategoriaDetalle
+                {
+                    IdDescuentoHeader = header.IdDescuentoHeader,
+                    IdCategoria = idCategoria
                 });
             }
         }
@@ -275,7 +308,7 @@ namespace AlahiaPos.DataAccess.Servicios
                  _repositoryDetalle.Delete(s.IdDescuentoDetalle);
 
             // Insertar los servicios nuevos
-            foreach (var idProducto in dto.Servicios)
+            foreach (var idProducto in dto.Servicios ?? new List<int>())
             {
                  _repositoryDetalle.SaveNoAsync(new DescuentoDetalle
                 {
@@ -297,12 +330,28 @@ namespace AlahiaPos.DataAccess.Servicios
                  _repositoryArea.Delete(a.IdDescuentoAreaDetalle);
 
             // Insertar áreas nuevas
-            foreach (var idArea in dto.Areas)
+            foreach (var idArea in dto.Areas ?? new List<int>())
             {
                  _repositoryArea.SaveNoAsync(new DescuentoAreaDetalle
                 {
                     IdDescuentoHeader = Id,
                     IdArea = idArea
+                });
+            }
+
+            var categoriasActuales = _repositoryCategoria.GetAllByExpresionNoAsync(
+                x => x.IdDescuentoHeader == Id
+            );
+
+            foreach (var c in categoriasActuales)
+                _repositoryCategoria.Delete(c.IdDescuentoCategoriaDetalle);
+
+            foreach (var idCategoria in dto.Categorias ?? new List<int>())
+            {
+                _repositoryCategoria.SaveNoAsync(new DescuentoCategoriaDetalle
+                {
+                    IdDescuentoHeader = Id,
+                    IdCategoria = idCategoria
                 });
             }
         }

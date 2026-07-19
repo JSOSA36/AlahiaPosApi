@@ -88,6 +88,28 @@ namespace AlahiaPos.Entities.Domain
         public decimal Abono { get; set; } // pago inicial
         public decimal Balance { get; set; } // Total - Pagado
 
+        // --- Fotografía fiscal IT-1 / 607 (Sprint A) ---
+        /// <summary>Código DGII 01/02/…/31…. Null si no determinado.</summary>
+        public string? CodigoTipoComprobanteDgii { get; set; }
+        /// <summary>Tipo ingreso Anexo A. Histórico suele ser null; nuevos docs default app=1.</summary>
+        public byte? TipoIngresoDgii { get; set; }
+        public byte? IndicadorFacturacion { get; set; }
+        public decimal MontoGravado { get; set; }
+        public decimal MontoExento { get; set; }
+        public decimal MontoGravadoI1 { get; set; }
+        public decimal MontoGravadoI2 { get; set; }
+        public decimal MontoGravadoI3 { get; set; }
+        public decimal MontoGravadoI4 { get; set; }
+        public decimal DescuentoAfectaBase { get; set; }
+        public decimal MontoPropinaLegal { get; set; }
+        /// <summary>Solo si hay certeza (ej. crédito=15). Mixto/contado = null; usar montos por medio.</summary>
+        public byte? FormaVentaFiscalDgii { get; set; }
+        public string? RegimenFiscalClienteCodigo { get; set; }
+        public decimal? TasaItbisPrincipal { get; set; }
+        /// <summary>0 = backfill estimado; ≥1 = foto al emitir.</summary>
+        public int FotografiaFiscalVersion { get; set; }
+        public DateTime? FechaFotografiaFiscal { get; set; }
+        public string? EstadoFiscalDocumento { get; set; }
 
     }
 }

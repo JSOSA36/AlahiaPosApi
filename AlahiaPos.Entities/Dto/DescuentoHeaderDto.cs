@@ -30,6 +30,6 @@ namespace AlahiaPos.Entities.Dto
 
         public List<int> Servicios { get; set; } = new();
         public List<int> Areas { get; set; } = new();
+        public List<int> Categorias { get; set; } = new();
     }
-
 }

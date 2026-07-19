@@ -1,6 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using AlahiaPos.Entities.Domain;
+using AlahiaPos.Entities.Dto;
 
 namespace AlahiaPos.Entities.Interfaces
 {
@@ -13,6 +15,12 @@ namespace AlahiaPos.Entities.Interfaces
         /// <returns>Lista de pagos de facturas.</returns>
         Task<IEnumerable<PagosFacturasClientes>> GetAllPagosFacturasClientes(int IdEmpresa);
         public Task RegistrarPagoFactura(int IdFactura, PagosFacturasClientes pago);
+
+        /// <summary>
+        /// Registra cobros a varias facturas del mismo cliente en una sola transacción.
+        /// </summary>
+        Task<RegistrarPagoLoteResult> RegistrarPagoLoteAsync(RegistrarPagoLoteRequest request);
+
         /// <summary>
         /// Obtiene un pago específico de factura por su identificador.
         /// </summary>
@@ -34,16 +42,18 @@ namespace AlahiaPos.Entities.Interfaces
         Task InsertPagosFacturasClientes(PagosFacturasClientes pago);
 
         /// <summary>
-        /// Actualiza la información de un pago de factura existente.
-        /// </summary>
-        /// <param name="IdPago">Identificador del pago a actualizar.</param>
-        /// <param name="pago">Objeto con los nuevos datos.</param>
-      
-
-        /// <summary>
         /// Elimina un pago de factura del registro.
         /// </summary>
         /// <param name="IdPago">Identificador del pago a eliminar.</param>
         void DeletePagosFacturasClientes(int IdPago);
+
+        /// <summary>
+        /// Estado de cuenta / auxiliar de CxC por cliente y rango de fechas.
+        /// </summary>
+        Task<EstadoCuentaClienteDto> ObtenerEstadoCuentaClienteAsync(
+            int idEmpresa,
+            int idCliente,
+            DateTime desde,
+            DateTime hasta);
     }
 }

@@ -58,6 +58,18 @@ namespace AlahiaPosApi.Controllers
             return await services.GetProductByBarcCode(BarCode, IdEmpresa);
         }
 
+        [HttpGet]
+        [Route("BuscarCompra/{idEmpresa}")]
+        public async Task<ProductoBusquedaCompraResultDto> BuscarCompra(
+            int idEmpresa,
+            [FromQuery] string? q = null,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 25,
+            [FromQuery] int? idAlmacen = null)
+        {
+            return await services.BuscarProductosCompra(idEmpresa, q, page, pageSize, idAlmacen);
+        }
+
         // POST api/<ProductosController>
         [HttpPost]
         public async Task<IActionResult> GuardarProducto([FromForm] ProductosDto value)
@@ -108,16 +120,23 @@ namespace AlahiaPosApi.Controllers
                 p.PorcientoGanancia = 0;
                 p.PorcientoDescuento = 0;
 
-                p.EsServicio = value.EsServicio ?? false;
                 p.Itbis = value.Itbis ?? false;
+
+                TipoComportamientoConstantes.AplicarComportamientoErp(
+                    p,
+                    value.TipoComportamiento);
+
+                p.EsServicio = value.EsServicio ?? false;
 
                 p.Descuento = 0;
                 p.IsActivo = true;
 
-                
-
-                // 🔥 SI ES SERVICIO → SIN STOCK
-                p.ControlarStock = p.EsServicio ? false : value.ControlarStock;
+                if (string.IsNullOrWhiteSpace(value.TipoComportamiento)
+                    && TipoComportamientoConstantes.Normalizar(p.TipoComportamiento) == TipoComportamientoConstantes.Inventario
+                    && value.EsServicio != true)
+                {
+                    p.ControlarStock = value.ControlarStock;
+                }
 
                 p.Ganancia = 0;
                 p.Rentado = 0;
@@ -200,6 +219,10 @@ namespace AlahiaPosApi.Controllers
             Producto.Itbis = (bool)value.Itbis;
             Producto.EsServicio = (bool)value.EsServicio;
 
+            TipoComportamientoConstantes.AplicarComportamientoErp(
+                Producto,
+                value.TipoComportamiento);
+
             services.UpdateProductos(value.idProducto,Producto);
         }
         [HttpGet("ProductosLite/{IdEmpresa}")]
@@ -217,9 +240,19 @@ namespace AlahiaPosApi.Controllers
 
         // DELETE api/<ProductosController>/5
         [HttpDelete("{id}")]
-        public void Delete(int id)
+        public IActionResult Delete(int id)
         {
-            services.DeleteProductos(id);
+            try
+            {
+                services.DeleteProductos(id);
+                return Ok();
+            }
+            catch (Microsoft.EntityFrameworkCore.DbUpdateException ex)
+                when (ex.InnerException is Microsoft.Data.SqlClient.SqlException sqlEx
+                      && (sqlEx.Number == 547))
+            {
+                return Conflict(new { message = "No se puede eliminar este producto porque tiene registros asociados (facturas, órdenes, inventario, etc.)." });
+            }
         }
     }
 }

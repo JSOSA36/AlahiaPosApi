@@ -8,7 +8,28 @@
 
   <ItemGroup>
     <PackageReference Include="EPPlus" Version="8.5.1" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="7.0.10" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AlahiaPos.DataAccess\AlahiaPos.DataAccess.csproj" />
+    <ProjectReference Include="..\AlahiaPos.Entities\AlahiaPos.Entities.csproj" />
+  </ItemGroup>
+
+  <!-- Legacy Excel demo (no forma parte de la API Receipt/DGII) -->
+  <ItemGroup>
+    <Compile Remove="tools\**\*.cs" />
+    <Compile Remove="Controllers\EcfController.cs" />
+    <Compile Remove="Servicios\EcfService.cs" />
+    <Compile Remove="Servicios\IDgiiService.cs" />
+    <Compile Remove="Servicios\XmlGeneratorService.cs" />
+    <Compile Remove="Servicios\XmlFirmaService.cs" />
+    <Compile Remove="Servicios\ExcelMapperService.cs" />
+    <Compile Remove="Interfaces\**\*.cs" />
+    <Compile Remove="Dto\**\*.cs" />
+    <Compile Remove="Setting\**\*.cs" />
+    <Compile Remove="WeatherForecast.cs" />
   </ItemGroup>
 
 </Project>

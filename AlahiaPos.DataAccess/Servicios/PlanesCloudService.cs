@@ -12,14 +12,17 @@ namespace AlahiaPos.DataAccess.Servicios
     {
         private readonly IRepository<PlanesCloud> _repositoryPlan;
         private readonly IRepository<Empresas> _repositoryEmpresa;
+        private readonly ISuscripcionCobroService _suscripcion;
 
         public PlanesCloudService(
             IRepository<PlanesCloud> repositoryPlan,
-            IRepository<Empresas> repositoryEmpresa
+            IRepository<Empresas> repositoryEmpresa,
+            ISuscripcionCobroService suscripcion
         )
         {
             _repositoryPlan = repositoryPlan;
             _repositoryEmpresa = repositoryEmpresa;
+            _suscripcion = suscripcion;
         }
 
         // =====================================================
@@ -76,19 +79,16 @@ namespace AlahiaPos.DataAccess.Servicios
             if (plan == null)
                 throw new Exception("Plan no válido");
 
-            // 🔥 ACTUALIZAR PLAN
+            // 🔥 ACTUALIZAR PLAN (cobro del nuevo precio en el próximo ciclo día 30)
+            var planAnterior = empresa.IdPlan ?? 0;
             empresa.IdPlan = plan.IdPlan;
 
-            // 🔥 OPCIONAL (recomendado): guardar nombre o precio si usas cache local
-            
-            // 🔥 REINICIAR PERIODO
+            // No reactivar ni prorratear: el nuevo plan se factura en el siguiente ciclo
             empresa.FechaTerminacion = DateTime.Now.AddMonths(1);
-
-            // 🔥 ACTIVAR SERVICIO (por si estaba bloqueado)
             empresa.Estado = true;
 
-            // 🔥 GUARDAR
             _repositoryEmpresa.Update(idEmpresa, empresa);
+            await _suscripcion.OnPlanCambiadoAsync(idEmpresa, planAnterior, plan.IdPlan, null);
         }
     }
 }

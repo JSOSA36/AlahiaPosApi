@@ -30,6 +30,9 @@ namespace AlahiaPos.Entities.Domain
 
         public bool EstaAnulado { get; set; }
 
+        [StringLength(500)]
+        public string? MotivoAnulacion { get; set; }
+
         // 🔥 Nuevos campos
         [StringLength(100)]
         public string FormaPago { get; set; } = "EFECTIVO";
@@ -38,6 +41,12 @@ namespace AlahiaPos.Entities.Domain
 
         [StringLength(100)]
         public string? Referencia { get; set; }
+
+        /// <summary>COMPRAS | MANUAL — origen del registro de gasto.</summary>
+        [StringLength(30)]
+        public string? OrigenModulo { get; set; }
+
+        public int? IdOrdenCompraDetalle { get; set; }
 
         [ForeignKey(nameof(IdUsuario))]
         public virtual Usuarios? Usuario { get; set; }

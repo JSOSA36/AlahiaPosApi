@@ -1,0 +1,46 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ECF>
+  <Encabezado>
+    <Version>1.0</Version>
+    <IdDoc>
+      <TipoeCF>44</TipoeCF>
+      <eNCF>E440000500101</eNCF>
+      <FechaVencimientoSecuencia>31-12-2028</FechaVencimientoSecuencia>
+      <TipoIngresos>01</TipoIngresos>
+      <TipoPago>1</TipoPago>
+      <TablaFormasPago>
+        <FormaDePago>
+          <FormaPago>1</FormaPago>
+          <MontoPago>500.00</MontoPago>
+        </FormaDePago>
+      </TablaFormasPago>
+    </IdDoc>
+    <Emisor>
+      <RNCEmisor>133524899</RNCEmisor>
+      <RazonSocialEmisor>Flawless Laundry</RazonSocialEmisor>
+      <DireccionEmisor>Calle Principal 1</DireccionEmisor>
+      <FechaEmision>19-07-2026</FechaEmision>
+    </Emisor>
+    <Comprador>
+      <RNCComprador>101609291</RNCComprador>
+      <RazonSocialComprador>CLIENTE REGIMEN ESPECIAL</RazonSocialComprador>
+    </Comprador>
+    <Totales>
+      <MontoExento>500.00</MontoExento>
+      <MontoTotal>500.00</MontoTotal>
+    </Totales>
+  </Encabezado>
+  <DetallesItems>
+    <Item>
+      <NumeroLinea>1</NumeroLinea>
+      <IndicadorFacturacion>4</IndicadorFacturacion>
+      <NombreItem>Servicio regimen especial E44</NombreItem>
+      <IndicadorBienoServicio>2</IndicadorBienoServicio>
+      <CantidadItem>1.00</CantidadItem>
+      <UnidadMedida>43</UnidadMedida>
+      <PrecioUnitarioItem>500.00</PrecioUnitarioItem>
+      <MontoItem>500.00</MontoItem>
+    </Item>
+  </DetallesItems>
+  <FechaHoraFirma>19-07-2026 10:34:39</FechaHoraFirma>
+</ECF>

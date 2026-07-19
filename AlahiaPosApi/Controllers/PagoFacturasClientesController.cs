@@ -1,6 +1,8 @@
 ﻿using AlahiaPos.Entities.Domain;
+using AlahiaPos.Entities.Dto;
 using AlahiaPos.Entities.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -42,6 +44,32 @@ namespace AlahiaPosApi.Controllers
             return await _pagosService.GetPagosByFacturaId(IdFactura);
         }
 
+        /// <summary>
+        /// Estado de cuenta del cliente (auxiliar CxC).
+        /// </summary>
+        [HttpGet("EstadoCuenta/{idEmpresa:int}/{idCliente:int}")]
+        public async Task<IActionResult> EstadoCuenta(
+            int idEmpresa,
+            int idCliente,
+            [FromQuery] DateTime desde,
+            [FromQuery] DateTime hasta)
+        {
+            try
+            {
+                var result = await _pagosService.ObtenerEstadoCuentaClienteAsync(
+                    idEmpresa, idCliente, desde, hasta);
+                return Ok(result);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+        }
+
         // 🔹 POST: api/PagoFacturasClientes
         [HttpPost]
         public async Task<IActionResult> Post([FromBody] PagosFacturasClientes pago)
@@ -64,6 +92,30 @@ namespace AlahiaPosApi.Controllers
             {
                 await _pagosService.RegistrarPagoFactura(IdFactura, pago);
                 return Ok(new { message = "Pago registrado y factura actualizada correctamente" });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Cobro a varias facturas del mismo cliente (una transacción).
+        /// </summary>
+        [HttpPost("RegistrarPagoLote")]
+        public async Task<IActionResult> RegistrarPagoLote([FromBody] RegistrarPagoLoteRequest request)
+        {
+            if (request == null)
+                return BadRequest(new { message = "Datos del pago inválidos" });
+
+            try
+            {
+                var result = await _pagosService.RegistrarPagoLoteAsync(request);
+                return Ok(result);
             }
             catch (ArgumentException ex)
             {

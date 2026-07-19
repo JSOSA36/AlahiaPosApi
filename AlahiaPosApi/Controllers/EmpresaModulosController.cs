@@ -11,24 +11,25 @@ namespace AlahiaPosApi.Controllers
     public class EmpresaModulosController : ControllerBase
     {
         private readonly IEmpresaModulos _IEmpresaModulos;
+        private readonly IContabilidadConfiguracionService _contabilidadConfiguracion;
         private readonly IMapper _Mapper;
 
         public EmpresaModulosController(
             IEmpresaModulos empresaModulos,
+            IContabilidadConfiguracionService contabilidadConfiguracion,
             IMapper mapper)
         {
             _IEmpresaModulos = empresaModulos;
+            _contabilidadConfiguracion = contabilidadConfiguracion;
             _Mapper = mapper;
         }
 
-        // 🔹 GET: api/EmpresaModulos/GetByEmpresa/5
         [HttpGet("GetByEmpresa/{idEmpresa}")]
         public async Task<IEnumerable<EmpresaModulo>> GetByEmpresa(int idEmpresa)
         {
             return await _IEmpresaModulos.GetModulosByEmpresa(idEmpresa);
         }
 
-        // 🔹 GET: api/EmpresaModulos/TieneModulo/5/3
         [HttpGet("TieneModulo/{idEmpresa}/{idModulo}")]
         public async Task<IActionResult> TieneModulo(int idEmpresa, int idModulo)
         {
@@ -36,7 +37,6 @@ namespace AlahiaPosApi.Controllers
             return Ok(new { tiene });
         }
 
-        // 🔹 POST: api/EmpresaModulos
         [HttpPost]
         public async Task<IActionResult> Post([FromForm] EmpresaModuloDto value)
         {
@@ -44,6 +44,11 @@ namespace AlahiaPosApi.Controllers
             {
                 var entity = _Mapper.Map<EmpresaModulo>(value);
                 await _IEmpresaModulos.InsertEmpresaModulo(entity);
+
+                await _contabilidadConfiguracion.InicializarSiEsModuloContabilidadAsync(
+                    entity.EmpresaId,
+                    entity.ModuloId,
+                    entity.Activo);
 
                 return Ok(new { message = "✅ Módulo asignado a la empresa correctamente" });
             }
@@ -53,12 +58,16 @@ namespace AlahiaPosApi.Controllers
             }
         }
 
-        // 🔹 PUT: api/EmpresaModulos
         [HttpPut]
-        public IActionResult Put([FromForm] EmpresaModuloDto value)
+        public async Task<IActionResult> Put([FromForm] EmpresaModuloDto value)
         {
             var entity = _Mapper.Map<EmpresaModulo>(value);
             _IEmpresaModulos.UpdateEmpresaModulo(value.Id, entity);
+
+            await _contabilidadConfiguracion.InicializarSiEsModuloContabilidadAsync(
+                entity.EmpresaId,
+                entity.ModuloId,
+                entity.Activo);
 
             return Ok(new { message = "✅ Módulo actualizado correctamente" });
         }

@@ -22,6 +22,12 @@ namespace AlahiaPos.Entities.Interfaces
         Task InsertProductos(Productos Productos);
         void DeleteProductos(int IdProductos);
         Task<IEnumerable<ProductoLiteDto>> GetLite(int IdEmpresa);
+        Task<ProductoBusquedaCompraResultDto> BuscarProductosCompra(
+            int idEmpresa,
+            string? q,
+            int page,
+            int pageSize,
+            int? idAlmacen = null);
 
 
     }

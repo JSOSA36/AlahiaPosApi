@@ -69,6 +69,20 @@ namespace AlahiaPosApi.Controllers
                 );
         }
 
+        [HttpGet("ResumenSaldos/{idEmpresa}")]
+        public async Task<IEnumerable<TesoreriaSaldoResumenDto>>
+            GetResumenSaldos(int idEmpresa)
+        {
+            return await _service.GetResumenSaldosAsync(idEmpresa);
+        }
+
+        [HttpPost("SincronizarSaldos/{idEmpresa}")]
+        public async Task<IActionResult> SincronizarSaldos(int idEmpresa)
+        {
+            var actualizadas = await _service.SincronizarSaldosAsync(idEmpresa);
+            return Ok(new { cuentasActualizadas = actualizadas });
+        }
+
         /* =====================================
         🔥 CREATE
         ===================================== */
@@ -132,10 +146,15 @@ namespace AlahiaPosApi.Controllers
                 int id
             )
         {
-            await _service
-                .DeleteAsync(id);
-
-            return NoContent();
+            try
+            {
+                await _service.DeleteAsync(id);
+                return NoContent();
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
     }
 }

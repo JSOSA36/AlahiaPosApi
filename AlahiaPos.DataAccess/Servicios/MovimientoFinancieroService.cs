@@ -1,10 +1,5 @@
 ﻿using AlahiaPos.Entities.Dto;
 using AlahiaPos.Entities.Interfaces;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace AlahiaPos.DataAccess.Servicios
 {
@@ -33,10 +28,6 @@ namespace AlahiaPos.DataAccess.Servicios
                 cuentaRepository;
         }
 
-        /* =====================================
-        🔥 CREATE
-        ===================================== */
-
         public async Task<int>
             CreateAsync(
                 MovimientoFinanciero entity
@@ -49,10 +40,6 @@ namespace AlahiaPos.DataAccess.Servicios
             return entity
                 .IdMovimientoFinanciero;
         }
-
-        /* =====================================
-        🔥 UPDATE
-        ===================================== */
 
         public async Task
             UpdateAsync(
@@ -69,10 +56,6 @@ namespace AlahiaPos.DataAccess.Servicios
             await Task.CompletedTask;
         }
 
-        /* =====================================
-        🔥 DELETE
-        ===================================== */
-
         public async Task
             DeleteAsync(
                 int id
@@ -83,10 +66,6 @@ namespace AlahiaPos.DataAccess.Servicios
             await Task.CompletedTask;
         }
 
-        /* =====================================
-        🔥 GET BY ID
-        ===================================== */
-
         public async Task<MovimientoFinanciero?>
             GetByIdAsync(
                 int id
@@ -96,20 +75,12 @@ namespace AlahiaPos.DataAccess.Servicios
                 .GetByIdAsync(id);
         }
 
-        /* =====================================
-        🔥 GET ALL
-        ===================================== */
-
         public async Task<IEnumerable<MovimientoFinanciero>>
             GetAllAsync()
         {
             return await _repository
                 .GetAllAsync();
         }
-
-        /* =====================================
-        🔥 GET BY EMPRESA
-        ===================================== */
 
         public async Task<IEnumerable<MovimientoFinanciero>>
             GetByEmpresaAsync(
@@ -126,10 +97,6 @@ namespace AlahiaPos.DataAccess.Servicios
                         idEmpresa
                 );
         }
-
-        /* =====================================
-        🔥 GET BY CUENTA
-        ===================================== */
 
         public async Task<IEnumerable<MovimientoFinanciero>>
             GetByCuentaAsync(
@@ -152,10 +119,6 @@ namespace AlahiaPos.DataAccess.Servicios
                         idCuentaFinanciera
                 );
         }
-
-        /* =====================================
-        🔥 GET BY FECHA
-        ===================================== */
 
         public async Task<IEnumerable<MovimientoFinanciero>>
             GetByFechaAsync(
@@ -190,140 +153,113 @@ namespace AlahiaPos.DataAccess.Servicios
                 );
         }
 
-        /* =====================================
-        🔥 ENTRADA
-        ===================================== */
-
         public async Task RegistrarEntradaAsync(
 
-      int idEmpresa,
+            int idEmpresa,
 
-      int idUsuario,
+            int idUsuario,
 
-      int idCuentaDestino,
+            int idCuentaDestino,
 
-      decimal monto,
+            decimal monto,
 
-      string motivo,
+            string motivo,
 
-      string? observacion
-  )
+            string? observacion,
+
+            string? categoria = null,
+
+            int? referenciaId = null,
+
+            string? referenciaTipo = null,
+
+            string? claveIdempotencia = null
+        )
         {
-            // =====================================
-            // 🔥 OBTENER CUENTA
-            // =====================================
+            if (monto <= 0)
+                throw new Exception("El monto debe ser mayor a cero.");
+
+            if (await ExisteIdempotenciaAsync(idEmpresa, claveIdempotencia))
+                return;
 
             var cuenta =
                 await _cuentaRepository
                 .GetByIdAsync(idCuentaDestino);
 
             if (cuenta == null)
-            {
-                throw new Exception(
-                    "La cuenta financiera no existe."
-                );
-            }
+                throw new Exception("La cuenta financiera no existe.");
 
-            // =====================================
-            // 🔥 ACTUALIZAR SALDO
-            // =====================================
-
+            var balanceAnterior = cuenta.SaldoDisponible;
             cuenta.SaldoDisponible += monto;
 
-            await _cuentaRepository
-                .UpdateAsync(cuenta);
-
-            // =====================================
-            // 🔥 REGISTRAR MOVIMIENTO
-            // =====================================
+            await _cuentaRepository.UpdateAsync(cuenta);
 
             var movimiento =
                 new MovimientoFinanciero
                 {
-                    IdEmpresa =
-                        idEmpresa,
-
-                    IdUsuario =
-                        idUsuario,
-
-                    IdCuentaDestino =
-                        idCuentaDestino,
-
-                    TipoMovimiento =
-                        "ENTRADA",
-
-                    Categoria =
-                        "AJUSTE",
-
-                    Monto =
-                        monto,
-
-                    Motivo =
-                        motivo,
-
-                    Observacion =
-                        observacion
+                    IdEmpresa = idEmpresa,
+                    IdUsuario = idUsuario,
+                    IdCuentaDestino = idCuentaDestino,
+                    TipoMovimiento = "ENTRADA",
+                    Categoria = string.IsNullOrWhiteSpace(categoria) ? "AJUSTE" : categoria,
+                    ReferenciaId = referenciaId,
+                    ReferenciaTipo = referenciaTipo,
+                    Monto = monto,
+                    Motivo = motivo,
+                    Observacion = observacion,
+                    BalanceAnteriorDestino = balanceAnterior,
+                    BalanceNuevoDestino = cuenta.SaldoDisponible,
+                    ClaveIdempotencia = claveIdempotencia,
+                    Estado = "CONFIRMADO",
+                    FechaMovimiento = DateTime.Now,
+                    FechaRegistro = DateTime.Now
                 };
 
-            await _repository
-                .Save(movimiento);
+            await _repository.Save(movimiento);
         }
-
-        /* =====================================
-        🔥 SALIDA
-        ===================================== */
 
         public async Task RegistrarSalidaAsync(
 
-      int idEmpresa,
+            int idEmpresa,
 
-      int idUsuario,
+            int idUsuario,
 
-      int idCuentaOrigen,
+            int idCuentaOrigen,
 
-      decimal monto,
+            decimal monto,
 
-      string motivo,
+            string motivo,
 
-      string? observacion
-  )
+            string? observacion,
+
+            string? categoria = null,
+
+            int? referenciaId = null,
+
+            string? referenciaTipo = null,
+
+            string? claveIdempotencia = null
+        )
         {
-            // =========================================
-            // 🔥 CUENTA
-            // =========================================
+            if (monto <= 0)
+                throw new Exception("El monto debe ser mayor a cero.");
+
+            if (await ExisteIdempotenciaAsync(idEmpresa, claveIdempotencia))
+                return;
 
             var cuenta = await _cuentaRepository
                 .GetByIdAsync(idCuentaOrigen);
 
             if (cuenta == null)
-            {
                 throw new Exception("Cuenta no encontrada");
-            }
 
-            // =========================================
-            // 🔥 VALIDAR FONDOS
-            // =========================================
-
-            if (cuenta.SaldoDisponible < monto)
-            {
+            if (!cuenta.PermiteSaldoNegativo && cuenta.SaldoDisponible < monto)
                 throw new Exception("Fondos insuficientes");
-            }
 
-            // =========================================
-            // 🔥 ACTUALIZAR SALDO
-            // =========================================
-
+            var balanceAnterior = cuenta.SaldoDisponible;
             cuenta.SaldoDisponible -= monto;
 
-            // =========================================
-            // 🔥 GUARDAR CUENTA
-            // =========================================
-
             await _cuentaRepository.UpdateAsync(cuenta);
-
-            // =========================================
-            // 🔥 MOVIMIENTO
-            // =========================================
 
             var movimiento = new MovimientoFinanciero
             {
@@ -331,22 +267,22 @@ namespace AlahiaPos.DataAccess.Servicios
                 IdUsuario = idUsuario,
                 IdCuentaOrigen = idCuentaOrigen,
                 TipoMovimiento = "SALIDA",
-                Categoria = "AJUSTE",
+                Categoria = string.IsNullOrWhiteSpace(categoria) ? "AJUSTE" : categoria,
+                ReferenciaId = referenciaId,
+                ReferenciaTipo = referenciaTipo,
                 Monto = monto,
                 Motivo = motivo,
-                Observacion = observacion
+                Observacion = observacion,
+                BalanceAnteriorOrigen = balanceAnterior,
+                BalanceNuevoOrigen = cuenta.SaldoDisponible,
+                ClaveIdempotencia = claveIdempotencia,
+                Estado = "CONFIRMADO",
+                FechaMovimiento = DateTime.Now,
+                FechaRegistro = DateTime.Now
             };
-
-            // =========================================
-            // 🔥 GUARDAR MOVIMIENTO
-            // =========================================
 
             await _repository.Save(movimiento);
         }
-
-        /* =====================================
-        🔥 TRANSFERENCIA
-        ===================================== */
 
         public async Task RegistrarTransferenciaAsync(
 
@@ -362,42 +298,78 @@ namespace AlahiaPos.DataAccess.Servicios
 
             string motivo,
 
-            string? observacion
+            string? observacion,
+
+            string? claveIdempotencia = null
         )
         {
+            if (monto <= 0)
+                throw new Exception("El monto debe ser mayor a cero.");
+
+            if (idCuentaOrigen == idCuentaDestino)
+                throw new Exception("La cuenta origen y destino deben ser diferentes.");
+
+            if (await ExisteIdempotenciaAsync(idEmpresa, claveIdempotencia))
+                return;
+
+            var cuentaOrigen = await _cuentaRepository.GetByIdAsync(idCuentaOrigen);
+            var cuentaDestino = await _cuentaRepository.GetByIdAsync(idCuentaDestino);
+
+            if (cuentaOrigen == null || cuentaDestino == null)
+                throw new Exception("Una de las cuentas financieras no existe.");
+
+            if (!cuentaOrigen.PermiteSaldoNegativo && cuentaOrigen.SaldoDisponible < monto)
+                throw new Exception("Fondos insuficientes en la cuenta origen.");
+
+            var balanceAnteriorOrigen = cuentaOrigen.SaldoDisponible;
+            var balanceAnteriorDestino = cuentaDestino.SaldoDisponible;
+
+            cuentaOrigen.SaldoDisponible -= monto;
+            cuentaDestino.SaldoDisponible += monto;
+
+            await _cuentaRepository.UpdateAsync(cuentaOrigen);
+            await _cuentaRepository.UpdateAsync(cuentaDestino);
+
             var movimiento =
                 new MovimientoFinanciero
                 {
-                    IdEmpresa =
-                        idEmpresa,
-
-                    IdUsuario =
-                        idUsuario,
-
-                    IdCuentaOrigen =
-                        idCuentaOrigen,
-
-                    IdCuentaDestino =
-                        idCuentaDestino,
-
-                    TipoMovimiento =
-                        "TRANSFERENCIA",
-
-                    Categoria =
-                        "TRANSFERENCIA",
-
-                    Monto =
-                        monto,
-
-                    Motivo =
-                        motivo,
-
-                    Observacion =
-                        observacion
+                    IdEmpresa = idEmpresa,
+                    IdUsuario = idUsuario,
+                    IdCuentaOrigen = idCuentaOrigen,
+                    IdCuentaDestino = idCuentaDestino,
+                    TipoMovimiento = "TRANSFERENCIA",
+                    Categoria = "TRANSFERENCIA",
+                    Monto = monto,
+                    Motivo = motivo,
+                    Observacion = observacion,
+                    BalanceAnteriorOrigen = balanceAnteriorOrigen,
+                    BalanceNuevoOrigen = cuentaOrigen.SaldoDisponible,
+                    BalanceAnteriorDestino = balanceAnteriorDestino,
+                    BalanceNuevoDestino = cuentaDestino.SaldoDisponible,
+                    ClaveIdempotencia = claveIdempotencia,
+                    Estado = "CONFIRMADO",
+                    FechaMovimiento = DateTime.Now,
+                    FechaRegistro = DateTime.Now
                 };
 
-            await _repository
-                .Save(movimiento);
+            await _repository.Save(movimiento);
+        }
+
+        private async Task<bool> ExisteIdempotenciaAsync(
+            int idEmpresa,
+            string? claveIdempotencia
+        )
+        {
+            if (string.IsNullOrWhiteSpace(claveIdempotencia))
+                return false;
+
+            var existente = await _repository.GetByExpresionAsync(
+                x =>
+                    x.IdEmpresa == idEmpresa
+                    && x.ClaveIdempotencia == claveIdempotencia
+            );
+
+            return existente != null;
         }
     }
 }

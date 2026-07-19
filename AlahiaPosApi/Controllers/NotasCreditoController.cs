@@ -51,5 +51,22 @@ namespace AlahiaPosApi.Controllers
 
             return Ok(ticket);
         }
+
+        [HttpGet("listado/{idEmpresa}")]
+        public async Task<IActionResult> Listado(
+            int idEmpresa,
+            [FromQuery] DateTime? desde,
+            [FromQuery] DateTime? hasta,
+            [FromQuery] bool soloConComprobante = false)
+        {
+            var lista =
+                await _notasCredito.ListarNotasCredito(
+                    idEmpresa,
+                    desde,
+                    hasta,
+                    soloConComprobante);
+
+            return Ok(lista);
+        }
     }
 }

@@ -82,6 +82,30 @@ namespace AlahiaPosApi.Controllers
         }
 
         // =====================================================
+        // 🔹 HISTORIAL DE PAGOS (CLIENTE — su empresa)
+        // =====================================================
+        [HttpGet("ObtenerPagosPorEmpresa/{idEmpresa:int}")]
+        public async Task<IActionResult> ObtenerPagosPorEmpresa(int idEmpresa)
+        {
+            try
+            {
+                if (idEmpresa <= 0)
+                    return BadRequest("IdEmpresa inválido.");
+
+                var pagos = await _pagoService.ObtenerPagosPorEmpresaAsync(idEmpresa);
+                return Ok(pagos);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    error = "Error al obtener el historial de pagos",
+                    message = ex.Message
+                });
+            }
+        }
+
+        // =====================================================
         // 🔹 APROBAR / RECHAZAR PAGO (ADMIN)
         // =====================================================
         [HttpPost("ValidarPago")]

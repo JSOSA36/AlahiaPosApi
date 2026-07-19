@@ -38,6 +38,16 @@ namespace AlahiaPos.Entities.Interfaces
             GetBalanceAsync(
                 int idCuentaFinanciera
             );
+
+        Task<IEnumerable<TesoreriaSaldoResumenDto>>
+            GetResumenSaldosAsync(
+                int idEmpresa
+            );
+
+        Task<int>
+            SincronizarSaldosAsync(
+                int idEmpresa
+            );
     }
 }
 

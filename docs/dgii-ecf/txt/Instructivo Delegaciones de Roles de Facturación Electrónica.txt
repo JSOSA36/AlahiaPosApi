@@ -1,0 +1,151 @@
+
+
+===== PAGE 1/9 =====
+
+Instructivo 
+Delegaciones de Roles 
+de Facturación Electrónica
+FACTURACIÓN ELECTRÓNICA
+REPÚBLICA DOMINICANA
+Versión 2.0
+Junio 2025
+
+===== PAGE 2/9 =====
+
+e-CF: Comprobante Fiscal Electrónico. 
+FE: Facturación Electrónica.
+Delegación: es la asignación que se realiza a una persona física, la cual debe 
+figurar con una relación de representante en los datos al Registro Nacional de 
+Contribuyentes del RNC/Cédula de quien autoriza a realizar acciones en su 
+nombre respecto a Facturación Electrónica. 
+Delegado: es la persona física a la cual le es asignado un rol de Facturación 
+Electrónica a través del menú correspondiente para estos fines. 
+Rol de Facturación Electrónica: los roles existentes respecto a Facturación 
+Electrónica son: Solicitante, Firmante, Aprobador Comercial y de Administrador, 
+conforme sea requerido. 
+Rol de Firmante: este rol permite al delegado contar con la autorización para 
+firmar los e-CF de su empresa. 
+Rol de Aprobador Comercial: este rol permite al delegado contar con la 
+autorización para poder aceptar las Aprobaciones Comerciales recibidas de 
+terceros, respecto a los e-CF que les han emitido a su empresa. 
+Rol de Administrador: este rol permite al delegado contar con la autorización 
+para realizar delegaciones a través de la OFV de su empresa.
+1
+GLOSARIO
+
+
+===== PAGE 3/9 =====
+
+El presente documento tiene por finalidad orientar a los contribuyentes sobre los 
+pasos a seguir que conlleva el proceso para realizar las delegaciones de roles de 
+Facturación Electrónica, de manera que les sirva de insumo a los contribuyentes en 
+caso de ser requerido. 
+PROPÓSITO 
+2
+
+===== PAGE 4/9 =====
+
+3
+A).   Aceptación de Rol Administrador:
+1. La persona designada como administrador recibirá una notificación vía OFV con 
+el Asunto: “Delegación de Rol de Facturación Electrónica”, en donde podrá 
+Aceptar o Rechazar la delegación del rol de administrador.
+2. Una vez el representante acepte el rol de Administrador, se enviará una 
+notificación al RNC/Cédula solicitante del rol (contribuyente), indicando que 
+dicha solicitud fue aprobada por parte de la persona seleccionada para el rol.
+B).   Paso a paso para realizar Delegaciones de Roles de Facturación Electrónica:
+1. El representante en su rol de Administrador, ingresa a su OFV personal y en el 
+menú “Delegación de e-CF” selecciona la opción “Delegación de Roles”.
+ Delegación de e-CF
+     Delegación de Roles
+     Consulta de Delegaciones
+     Carga XML Delegaciones
+Previo a iniciar las delegaciones de roles, el contribuyente debe aceptar el rol de administrador.
+El administrador tendrá la opción de asignarse los demás roles, así como también asignar cada rol a 
+diferentes representantes.
+1
+2
+3. Ingresa el RNC/Cédula del delegado y presiona el botón “Buscar”.
+
+
+===== PAGE 5/9 =====
+
+4
+4. Para completar la asignación de roles el Administrador, deberá aceptar los 
+términos legales del proceso y presionar el botón “Descargar” para obtener el 
+XML para fines de firma. 
+3. Luego, procede a delegar los siguientes roles: “Solicitante Autorizado”, 
+“Firmante Autorizado” y “Aprobador Comercial” cotejando las casillas 
+según corresponda  y presionando el botón “Aceptar”.
+Términos Legales
+Autorización del Contribuyente (en la OFV) Archivo XML Decargados correctamente
+NOTA: El xml debe ser firmado por la 
+herramienta recomendada por DGII
+Información de usuario
+Aceptar Término legales
+Descargar Cancelar
+Nombre: EVANGELISTA ABREU SANCHEZ
+Cédula: 01308863085
+Nombre Comercial: SOLUCIONES EN GENERAL, SRL
+RNC: 101004978
+Dirección: C/JUAN PEREZ, NO5, CIUDAD NUEVA
+Autorizo delegar la persona de:
+Nombre: CINTHIA LOPEZ GUZMAN
+Cédula: 00114625751 
+1 2
+OK
+
+===== PAGE 6/9 =====
+
+5. Luego, el contribuyente localiza en su PC el XML descargado y procede a 
+firmarlo utilizando la herramienta App de Firma.                      
+ Delegación de e-CF
+     Delegación de Roles
+     Consulta de Delegaciones
+     Carga XML Delegaciones
+6. Descargado el XML firmado, el contribuyente procede a cargarlo a través de la 
+opción “Carga XML Delegación” en el menú “Delegaciones e-CF”, y presiona el 
+botón “Siguiente”.
+1 2
+5
+
+===== PAGE 7/9 =====
+
+7. Luego, en la próxima pantalla debe presionar el botón “Guardar”.
+Guardar Cancelar
+1 2
+NOTA: los roles asignados deben ser 
+aprobados o rechazados por el delegado
+OK
+El proceso se completo Satifactoriamente.
+Administrador de contribuyente
+Firma autorizado
+Solicitante autorizado
+Aprobador Comercial
+ROLES
+8. El contribuyente debe realizar la aprobación de la asignación de roles, ingresando 
+a su buzón de la Oficina Virtual, dando clic en cada mensaje y presionando el 
+botón “Aprobación o Rechazo de Roles”, luego “Aceptar” en las siguientes 
+ventanas emergentes:
+1
+2
+6
+
+===== PAGE 8/9 =====
+
+3
+4
+
+
+===== PAGE 9/9 =====
+
+IMPUESTOS INTERNOS
+Junio 2025
+@DGIIRD
+Publicación informativa sin validez legal
+dgii.gov.do
+Facturación Electrónica
+Centro de Contacto: (809) 689-3444, opción 4
+Contacto Directo: (809) 287-2009 
+Correo: facturacionelectronica@dgii.gov.do
+                                                                                                                                  En el portal web DGII - Comunidad de Ayuda,                                                                                                                                      categoría “Facturación Electrónica”

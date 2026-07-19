@@ -1,0 +1,50 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ECF>
+  <Encabezado>
+    <Version>1.0</Version>
+    <IdDoc>
+      <TipoeCF>46</TipoeCF>
+      <eNCF>E460000500102</eNCF>
+      <FechaVencimientoSecuencia>31-12-2028</FechaVencimientoSecuencia>
+      <TipoIngresos>01</TipoIngresos>
+      <TipoPago>1</TipoPago>
+      <TablaFormasPago>
+        <FormaDePago>
+          <FormaPago>1</FormaPago>
+          <MontoPago>1000.00</MontoPago>
+        </FormaDePago>
+      </TablaFormasPago>
+    </IdDoc>
+    <Emisor>
+      <RNCEmisor>133524899</RNCEmisor>
+      <RazonSocialEmisor>Flawless Laundry</RazonSocialEmisor>
+      <DireccionEmisor>Calle Principal 1</DireccionEmisor>
+      <FechaEmision>19-07-2026</FechaEmision>
+    </Emisor>
+    <Comprador>
+      <RNCComprador>101609291</RNCComprador>
+      <RazonSocialComprador>EXPORT CUSTOMER LLC</RazonSocialComprador>
+    </Comprador>
+    <Totales>
+      <MontoGravadoTotal>1000.00</MontoGravadoTotal>
+      <MontoGravadoI3>1000.00</MontoGravadoI3>
+      <ITBIS3>0</ITBIS3>
+      <TotalITBIS>0.00</TotalITBIS>
+      <TotalITBIS3>0.00</TotalITBIS3>
+      <MontoTotal>1000.00</MontoTotal>
+    </Totales>
+  </Encabezado>
+  <DetallesItems>
+    <Item>
+      <NumeroLinea>1</NumeroLinea>
+      <IndicadorFacturacion>3</IndicadorFacturacion>
+      <NombreItem>Producto exportacion prueba E46</NombreItem>
+      <IndicadorBienoServicio>1</IndicadorBienoServicio>
+      <CantidadItem>1.00</CantidadItem>
+      <UnidadMedida>43</UnidadMedida>
+      <PrecioUnitarioItem>1000.00</PrecioUnitarioItem>
+      <MontoItem>1000.00</MontoItem>
+    </Item>
+  </DetallesItems>
+  <FechaHoraFirma>19-07-2026 10:50:27</FechaHoraFirma>
+</ECF>

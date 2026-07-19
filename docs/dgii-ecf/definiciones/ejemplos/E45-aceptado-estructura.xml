@@ -1,0 +1,51 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ECF>
+  <Encabezado>
+    <Version>1.0</Version>
+    <IdDoc>
+      <TipoeCF>45</TipoeCF>
+      <eNCF>E450000500101</eNCF>
+      <FechaVencimientoSecuencia>31-12-2028</FechaVencimientoSecuencia>
+      <IndicadorMontoGravado>0</IndicadorMontoGravado>
+      <TipoIngresos>01</TipoIngresos>
+      <TipoPago>1</TipoPago>
+      <TablaFormasPago>
+        <FormaDePago>
+          <FormaPago>1</FormaPago>
+          <MontoPago>1180.00</MontoPago>
+        </FormaDePago>
+      </TablaFormasPago>
+    </IdDoc>
+    <Emisor>
+      <RNCEmisor>133524899</RNCEmisor>
+      <RazonSocialEmisor>Flawless Laundry</RazonSocialEmisor>
+      <DireccionEmisor>Calle Principal 1</DireccionEmisor>
+      <FechaEmision>19-07-2026</FechaEmision>
+    </Emisor>
+    <Comprador>
+      <RNCComprador>401007355</RNCComprador>
+      <RazonSocialComprador>MINISTERIO DEMO GUBERNAMENTAL</RazonSocialComprador>
+    </Comprador>
+    <Totales>
+      <MontoGravadoTotal>1000.00</MontoGravadoTotal>
+      <MontoGravadoI1>1000.00</MontoGravadoI1>
+      <ITBIS1>18</ITBIS1>
+      <TotalITBIS>180.00</TotalITBIS>
+      <TotalITBIS1>180.00</TotalITBIS1>
+      <MontoTotal>1180.00</MontoTotal>
+    </Totales>
+  </Encabezado>
+  <DetallesItems>
+    <Item>
+      <NumeroLinea>1</NumeroLinea>
+      <IndicadorFacturacion>1</IndicadorFacturacion>
+      <NombreItem>Servicio gubernamental prueba E45</NombreItem>
+      <IndicadorBienoServicio>2</IndicadorBienoServicio>
+      <CantidadItem>1.00</CantidadItem>
+      <UnidadMedida>43</UnidadMedida>
+      <PrecioUnitarioItem>1000.00</PrecioUnitarioItem>
+      <MontoItem>1000.00</MontoItem>
+    </Item>
+  </DetallesItems>
+  <FechaHoraFirma>19-07-2026 10:41:51</FechaHoraFirma>
+</ECF>

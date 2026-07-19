@@ -5,6 +5,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace AlahiaPos.Entities.Domain
 {
+    [Table("ECFEncabezado")]
     public class ECFEncabezado
     {
         [Key]
@@ -75,6 +76,10 @@ namespace AlahiaPos.Entities.Domain
         [MaxLength(100)]
         public string? TrackId { get; set; }
 
+        /// <summary>Id del job en Transmission Engine del proveedor (Alahia.eCF / compatible).</summary>
+        [MaxLength(100)]
+        public string? TransmissionJobId { get; set; }
+
         /// <summary>
         /// Pendiente / Enviado / EnProceso / Aceptado / Rechazado
         /// </summary>
@@ -96,6 +101,38 @@ namespace AlahiaPos.Entities.Domain
         public bool EnContingencia { get; set; } = false;
 
         public DateTime FechaCreacion { get; set; } = DateTime.Now;
+
+        // ======================================================
+        // Facturación Electrónica (extensión)
+        // ======================================================
+
+        /// <summary>
+        /// Origen genérico: enum OrigenDocumento persistido como int.
+        /// Reemplaza IdFacturaInterna para desacoplar del modelo comercial.
+        /// </summary>
+        public int OrigenDocumento { get; set; } = 1;
+
+        /// <summary>
+        /// PK del documento en su tabla de origen.
+        /// </summary>
+        public int IdOrigen { get; set; }
+
+        [MaxLength(20)]
+        public string? SecurityCode { get; set; }
+
+        [MaxLength(500)]
+        public string? UrlQR { get; set; }
+
+        public DateTime? FechaFirma { get; set; }
+
+        [MaxLength(50)]
+        public string? NumeroFacturaInterna { get; set; }
+
+        /// <summary>
+        /// BORRADOR, PENDIENTE_ENVIO, ENVIADO, ACEPTADO, RECHAZADO, ERROR, ANULADO, CONTINGENCIA
+        /// </summary>
+        [MaxLength(30)]
+        public string EstadoDocumento { get; set; } = EstadoDocumentoElectronico.Borrador;
 
         // ======================================================
         // 🔗 NAVIGATION PROPERTIES

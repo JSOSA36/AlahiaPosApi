@@ -56,5 +56,33 @@ namespace AlahiaPos.Entities.Dto
 
         public DateTime FechaCreacion { get; set; }
             = DateTime.Now;
+
+        [MaxLength(30)]
+        public string? Codigo { get; set; }
+
+        public int? IdTesoreriaSubtipoCuenta { get; set; }
+
+        [MaxLength(3)]
+        public string Moneda { get; set; } = "DOP";
+
+        public int? IdCuentaContable { get; set; }
+
+        public bool EsPrincipal { get; set; }
+
+        public bool PermiteSaldoNegativo { get; set; }
+
+        [MaxLength(500)]
+        public string? Descripcion { get; set; }
+
+        public DateTime? FechaUltimaConciliacion { get; set; }
+
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal? UltimoSaldoConciliado { get; set; }
+
+        [ForeignKey(nameof(IdTesoreriaSubtipoCuenta))]
+        public TesoreriaSubtipoCuenta? TesoreriaSubtipoCuenta { get; set; }
+
+        [ForeignKey(nameof(IdCuentaContable))]
+        public CuentaContable? CuentaContable { get; set; }
     }
 }

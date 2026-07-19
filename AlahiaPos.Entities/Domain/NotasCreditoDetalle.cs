@@ -25,6 +25,13 @@ namespace AlahiaPos.Entities.Domain
 
         public decimal SubTotal { get; set; }
 
+        // Fotografía fiscal línea NC (Sprint A)
+        public decimal? TasaItbis { get; set; }
+        public decimal MontoGravadoLinea { get; set; }
+        public decimal MontoExentoLinea { get; set; }
+        public decimal DescuentoAfectaBase { get; set; }
+        public decimal ItbisCalculado { get; set; }
+
         [ForeignKey(nameof(IdNotaCredito))]
         public virtual NotasCredito? NotaCredito { get; set; }
     }

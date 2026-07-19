@@ -1,0 +1,895 @@
+
+
+===== PAGE 1/26 =====
+
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+Proceso de Certificación 
+para ser Emisor Electrónico 
+
+===== PAGE 2/26 =====
+
+2  
+Introducción 
+A partir de las disposiciones establecidas en la Ley 32-23 de Facturación Electrónica de la Rep. 
+Dom., en el Decreto 587-24 Reglamento para la Aplicación de la Ley núm. 32-23 de FE de la Rep. 
+Dom. y en la Norma General 01-2020, que regula la emisión y el uso de los Comprobantes 
+Fiscales Electrónicos (e-CF), se establece la obligatoriedad de cumplir con un proceso de 
+certificación ante Impuestos Internos (DGII). Este documento tiene como objetivo presentar, de 
+forma clara y ordenada, el paso a paso que deben seguir los contribuyentes que se encuentran 
+en proceso de certificación, detallando cada una de las etapas requeridas para la correcta 
+implementación de la facturación electrónica conforme a la normativa vigente. 
+ 
+Paso a paso para proceso de Certificación para ser Emisor Electrónico 
+El procedimiento de certificación consta de una serie de pasos establecidos para la 
+autorización de la emisión de Comprobantes Fiscales Electrónicos (e-CF), que otorga 
+Impuestos Internos, las cuales se resumen conforme la siguiente gráfica: 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+Solicitud 
+para ser emisor 
+electrónico 
+ 
+ 
+ 
+Set de Pruebas 
+se valida la capacidad técnica 
+para cumplir con los requisitos para 
+ser emisor electrónico 
+ 
+ 
+ 
+ 
+Certificación 
+se otorga autorización para 
+ser emisor electrónico 
+ 
+ Requisitos para solicitar ser autorizado como emisor electrónico  
+ 
+Estar inscrito en el Registro Nacional de Contribuyentes (RNC). 
+Poseer clave de acceso a la Oficina Virtual (OFV). 
+Tener autorización para emitir comprobantes fiscales (Alta NCF). 
+Disponer de un certificado digital para Procedimiento Tributario,
+ 
+emitido por 
+una prestadora de servicios de confianza (entidad de certificación), que 
+corresponda a la persona que actuará como Usuario Administrador e-CF1. 
+Disponer de un software para la emisión de Comprobantes Fiscales Electrónicos (e-CF). 
+Estar al día en el cumplimiento de sus obligaciones tributarias. 
+ 
+1 El representante debe estar vinculado al RNC del contribuyente solicitante. 
+
+
+===== PAGE 3/26 =====
+
+3  
+1.1 Solicitud (1ra etapa) 
+ 
+ 
+Una vez cumpla con los requisitos anteriores2, el contribuyente deberá completar el 
+“Formulario de Solicitud para ser Emisor Electrónico (FI-GDF-016)”. Si la solicitud cumple con 
+todas las especificaciones indicadas, el contribuyente recibirá por Buzón de Oficina Virtual un 
+mensaje con las instrucciones para acceder al Portal de Certificación.  
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+Una vez el contribuyente este autenticado en el portal Certificación de Facturación 
+Electrónica, mediante el usuario y clave de acceso y previo al inicio de la certificación, podrá 
+realizar pruebas en el ambiente de pre-certificación, que le permitan confirmar la adecuación 
+e integración de su sistema, así como, consultar las preguntas frecuentes con enfoque 
+técnico si lo considera necesario. 
+ 
+Luego de finalizar las pruebas se deberá iniciar con el proceso de certificación, seleccionando 
+“Crear Postulación” en la opción “Emisor Electrónico” y posterior a esto, completando el 
+formulario de postulación para ser emisor electrónico. 
+ 
+2 En caso de que el solicitante no cumpla con los requisitos, la solicitud será rechazada y puede ser introducida nueva vez 
+cuando las razones por las que fue rechazado hayan sido subsanadas o completadas. 
+ 
+
+===== PAGE 4/26 =====
+
+4  
+ 
+1.2 Flujo de Certificación - Etapa de Set de Pruebas (2da etapa) 
+ 
+A continuación, los pasos para completar el set de pruebas del proceso de certificación:  
+ 
+ 
+Paso 1: Registrado 
+Formulario de Solicitud para ser Emisor 
+Electrónico vía Portal de Certificación de FE 
+ 
+El Formulario de postulación posee los campos de la 
+sección “Datos del contribuyente” y “Datos del 
+Representante”, los cuales son prellenados de manera 
+automática conforme a los datos completados en el 
+Formulario de Solicitud para ser Emisor Electrónico en la 
+Oficina Virtual y de manera adicional deberá indicar las 
+informaciones especificadas en la sección de “Datos del 
+software a utilizar”, la cual posee campos que requerirán 
+ser rellenados con los datos del software que utilizará 
+para el proceso de certificación, los cuales se detallan a 
+continuación: 
+ 
+ 
+a) Tipo de Registro: deberá indicar que el proceso de 
+certificación será realizado en calidad de Emisor 
+Electrónico. 
+ 
+b) Tipo de Software: deberá indicar si el software con el 
+que se está certificando es adquirido a través de un 
+proveedor externo a su empresa o desarrollado de 
+manera interna. 
+ 
+c) Nombre del Software: deberá indicar el nombre del 
+software de facturación, ya sea desarrollado internamente 
+en su empresa o contratado con un proveedor. 
+ 
+d) URL Recepción: se deberá indicar la dirección donde se encontrará el servicio web que 
+recibirá los e-CF que le sean emitidos al contribuyente,     asumiendo   este un rol de 
+receptor electrónico. 
+ 
+ 
+
+
+===== PAGE 5/26 =====
+
+5  
+e)  URL Aprobación: se deberá indicar dirección donde se encontrará el servicio web que 
+recibirá las Aprobaciones o Rechazos Comerciales que le sean emitidas al contribuyente 
+a partir de un e-CF que haya generado, asumiendo este un rol de emisor electrónico. 
+ 
+f)  URL Autenticación: se deberá indicar la dirección para fines de validar la identidad de 
+un contribuyente a partir de una petición de acceso que mediante el uso de un 
+certificado digital sobre un archivo (semilla), retornará un token con una duración 
+determinada. 
+ 
+g)  Versión de Software: deberá indicar la versión del software de facturación que estará 
+utilizando para el proceso de certificación. 
+ 
+h) Datos del Proveedor: esta sección deberá ser completada por el contribuyente en caso 
+de haber indicado en el campo ‘Tipo de software’ que había adquirido el mismo a 
+través de un proveedor externo a su empresa. 
+ 
+ 
+
+
+===== PAGE 6/26 =====
+
+6  
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+
+===== PAGE 7/26 =====
+
+7  
+3. Luego de completado el formulario, el contribuyente deberá seleccionar la opción 
+“Generar archivo” donde se descargará la información capturada en formato XML, 
+posteriormente deberá proceder al firmado mediante la herramienta establecida para los 
+fines.3 
+ 
+4. Luego de firmado el archivo de postulación (en XML), el contribuyente deberá cargar y 
+enviar el mismo para ser validada la información contenida, así como otros parámetros 
+evaluados por Impuestos Internos. 
+ 
+ 
+ 
+En caso de que las validaciones de postulación hayan resultado satisfactorias, se procederá a 
+habilitar las pruebas requeridas para completar el proceso de certificación (pruebas de datos, 
+pruebas de simulación y pruebas de comunicación), en caso contrario, se le informará al 
+contribuyente para fines de regular su situación. 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+3 En caso de utilizar la herramienta de firmado digital “App Firma Digital”, proporcionada por Impuestos Internos (de 
+manera    opcional), ver instructivo ubicado en la sección Comprobantes Fiscales Electrónicos (e-CF) en el apartado 
+“Herramienta  Recomendada”. 
+
+
+===== PAGE 8/26 =====
+
+8  
+Paso 2. Pruebas de Datos 
+ 
+En este paso se inicia el proceso de pruebas del software de facturación, donde el 
+contribuyente deberá descargar un set de datos de prueba4  
+con informaciones suministradas 
+por Impuestos Internos para la generación de los XML de e-CF y Aprobación o Rechazo 
+Comercial. Posteriormente deberá remitirlos a los servicios de Impuestos Internos5  
+para fines 
+de validación. 
+ 
+ 
+ 
+1. Descarga Set Prueba e-CF: Consiste en la descarga de un archivo en formato Excel 
+suministrado por Impuestos Internos, con las informaciones necesarias para crear 
+facturas en formato XML. 
+ 
+ 
+                        
+ 
+4 El contribuyente deberá generar los XML con los mismos campos y en el mismo orden que se encuentra establecido en el archivo 
+descargado del set de datos de prueba. En el caso de que un e-CF generado resulte con estado “Rechazado”, deberá reiniciar la 
+generación del set de datos de prueba. 
+5 Las URL de estos servicios se encuentran disponibles en la pantalla de las Pruebas de Datos de e-CF del portal de certificación de FE. 
+
+
+===== PAGE 9/26 =====
+
+9  
+2. Envío Set Prueba e-CF: Una vez descargado el set de datos, el contribuyente deberá 
+configurar su software de facturación electrónica para la generación de las facturas en los 
+formatos XML definidos para los fines y las remita al servicio de recepción de Impuestos 
+Internos. 
+ 
+Paso 3. Prueba de Datos Aprobaciones o Rechazos Comerciales 
+ 
+1. Descarga Set Aprobaciones o Rechazos Comerciales: Se deberá descargar un archivo en 
+formato Excel con las informaciones necesarias para crear las Aprobaciones o Rechazos 
+Comerciales de los e-CF enviados en el proceso anterior. 
+ 
+ 
+ 
+2. Envío Set Aprobaciones o Rechazos Comerciales: Luego de descargado el set de datos, el 
+contribuyente deberá configurar su software facturador para que genere las Aprobaciones 
+o Rechazos Comerciales en el formato XML6 definido y lo remita al servicio de Impuestos 
+Internos para fines de validar la correcta generación. 
+ 
+ 
+• Respuesta de validación 
+ 
+De acuerdo con las validaciones de los envíos tanto de los comprobantes como de las 
+Aprobaciones o Rechazos Comerciales, será generada una respuesta por parte de 
+Impuestos Internos, detallada a continuación: 
+ 
+ 
+6 Para más información acerca del formato de Aprobaciones Comerciales, ver la documentación encontrada en el portal de Impuestos 
+Internos, sección “Facturación”, apartado “Comprobantes Fiscales Electrónicos (e-CF)”. 
+
+
+===== PAGE 10/26 =====
+
+10  
+a) Comprobante Fiscal Electrónico (e-CF) 
+ 
+El contribuyente recibirá como respuesta un TrackId que utilizará para consultar el 
+resultado del e-CF a través del servicio de Impuestos Internos7,
+ 
+pudiendo tener los 
+siguientes estados: 
+ 
+• Aceptado: significa que el documento recibido cumple con las características 
+establecidas para un e-CF y las informaciones que contiene se presentan de forma 
+íntegra y coherente. 
+ 
+•  Rechazado: significa que el documento recibido no cumple con las características 
+establecidas para un e-CF o que el mismo presenta errores. 
+ 
+• Aceptado Condicional: significa que el documento recibido no amerita el rechazo, 
+pero existen ciertas irregularidades que deben ser observadas y corregidas para la 
+emisión de futuros comprobantes. 
+ 
+• En Proceso: el documento recibido se encuentra en proceso de validación, por lo 
+que se debe consultar más tarde para obtener uno de los estados descritos 
+anteriormente. 
+ 
+ 
+b) Aprobaciones o Rechazos Comerciales 
+ 
+Para el caso de las Aprobaciones o Rechazos Comerciales, el contribuyente podrá recibir 
+una de las siguientes respuestas: 
+ 
+• “OK” lo que implica un estado satisfactorio. 
+• “Error” o “Incorrecto” indicando de que el estado no ha sido satisfactorio. 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+7 Servicio de Consulta Resultado Impuestos Internos: https://eCF.dgii.gov.do/CerteCF/ConsultaResultado. 
+
+===== PAGE 11/26 =====
+
+11  
+Paso 4. Pruebas de Simulación 
+ 
+En esta etapa se generan facturas a partir de datos representativos de la operatividad real del 
+contribuyente.  
+ 
+ 
+ 
+
+
+===== PAGE 12/26 =====
+
+12  
+1. Envío de e-CF 
+ 
+En esta actividad el contribuyente deberá generar facturas en el formato XML definido 
+para los fines y remitirlas al servicio de recepción de Impuestos Internos8. 
+ 
+ 
+• Respuesta de validación del envío de e-CF 
+ 
+El contribuyente recibirá como respuesta de Impuestos Internos un TrackId que 
+utilizará para consultar el resultado del e-CF a través del servicio de Impuestos 
+Internos9,
+ 
+pudiendo tener los siguientes estados: 
+ 
+• Aceptado: significa que el documento recibido cumple con las características 
+establecidas para un e-CF y las informaciones que contiene se presentan de forma 
+íntegra y coherente. 
+ 
+• Rechazado: significa que el documento recibido no cumple con las características 
+establecidas para un e-CF o que el mismo presenta errores. 
+ 
+•  Aceptado Condicional: significa que el documento recibido no amerita el rechazo, 
+pero existen ciertas irregularidades que deben ser observadas y corregidas para la 
+emisión de futuros comprobantes. 
+ 
+•  En Proceso: el documento recibido se encuentra en proceso de validación, por lo 
+que se debe consultar más tarde para obtener uno de los estados descritos 
+anteriormente. 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+8 Servicio de Recepción Impuestos Internos: https://eCF.dgii.gov.do/CerteCF/Recepción. 
+9 Servicio de Consulta Resultado Impuestos Internos: https://eCF.dgii.gov.do/CerteCF/ConsultaResultado. 
+ 
+
+===== PAGE 13/26 =====
+
+13  
+Paso 5. Pruebas de Simulación 
+ 
+En esta opción el contribuyente procede a enviar la representación impresa de los e-CF 
+remitidos en la actividad anterior, en formato Portable Document Format (PDF), con un 
+tamaño máximo de 10MB, con el objetivo de verificar que cumplen con las especificaciones 
+mínimas exigidas, así como el orden y lugar en deben ser colocadas las informaciones 
+correspondientes de acuerdo con el tipo de e-CF remitido10. 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+10 Para más información acerca de la Representación Impresa e-CF, ver la documentación del “Informe Técnico de      e-
+CF” ubicada en el portal Web de Impuestos Internos, sección “Facturación”, apartado “Comprobantes Fiscales 
+Electrónicos (e-CF)”. 
+
+
+===== PAGE 14/26 =====
+
+14  
+Paso 6. Validación de la Representación Impresa 
+ 
+ 
+ 
+ 
+ 
+Para el caso del envío de las representaciones impresa a través del portal de certificación de 
+FE, el contribuyente recibirá una de las siguientes respuestas: 
+ 
+•  Representación Impresa Aprobada: si la representación impresa cumple con el 
+formato establecido. 
+ 
+•  Representación Impresa Rechazada: si el contenido del documento enviado no 
+corresponde a una representación impresa o ésta presenta inconsistencias con el 
+formato establecido. Una vez corregidas las representaciones impresas con las 
+indicaciones especificadas, deberán ser remitidas nuevamente para fines de 
+validación. 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+
+===== PAGE 15/26 =====
+
+15  
+Paso 7. URL Servicio de Prueba 
+  
+1. Actualizar las URL o rutas de los servicios de recepción y aprobación comercial que indicó 
+en el formulario inicial de postulación y de manera opcional la URL del servicio de 
+autenticación, en caso de que existiera cambios durante el proceso de certificación 
+iniciado. 
+ 
+ 
+
+
+===== PAGE 16/26 =====
+
+16  
+Paso 8. URL Pruebas de Comunicación 
+ 
+1.  Realizar de manera opcional, una validación de los certificados digitales, por lo que se 
+deberá descargar el certificado raíz seleccionando la opción de ‘Descargar certificado raíz’. 
+ 
+ 
+ 
+Posteriormente, se le habilitará una opción donde deberá indicar que se encuentra listo para la 
+recepción de los e-CF. Adicional, en caso de existir modificación en la URL registradas de los 
+servicios de autenticación o recepción, el contribuyente tendrá la opción para actualizarlas. 
+ 
+Paso 9. Recepción de e-CF 
+ 
+En esta etapa el contribuyente recibirá comprobantes generados y enviados por Impuestos 
+Internos, debiendo retornar los acuses de recibo para fines de validación11. 
+ 
+ 
+11 Antes de iniciar las pruebas de comunicación, se deberá realizar una validación, de manera opcional, de los certificados 
+digitales para el firmado de los e-CF, por lo que se deberá descargar el certificado raíz seleccionando la opción de 
+“Descargar certificado raíz”. 
+ 
+
+
+===== PAGE 17/26 =====
+
+17  
+ 
+ 
+Paso 10. Inicio prueba Aprobaciones Comerciales 
+ 
+1. El contribuyente procederá a la recepción de aprobaciones comerciales de los e-CF antes 
+recibidos y deberá, previo al inicio de este paso, indicar que se encuentra listo para la 
+recepción, seleccionando la opción ‘Enviar prueba de Aprobaciones Comerciales’. 
+ 
+ 
+ 
+
+
+===== PAGE 18/26 =====
+
+18  
+Paso 11. Recepción de Aprobaciones Comerciales 
+ 
+ 
+1. El contribuyente, asumiendo el rol de receptor, procederá a recibir las Aprobaciones o 
+Rechazos Comerciales generadas y enviadas por Impuestos Internos. 
+ 
+ 
+• Respuesta de Validación 
+ 
+Conforme las recepciones de comprobantes y Aprobaciones o Rechazos Comerciales de 
+los pasos anteriores serán remitidas las siguientes informaciones: 
+ 
+a) Comprobante Fiscal Electrónico 
+En el caso de los e-CF, el contribuyente responderá mediante un acuse de recibo12. 
+ 
+b) Aprobaciones o Rechazos Comerciales 
+En el caso de las Aprobaciones o Rechazos Comerciales, el contribuyente responderá 
+con uno de los siguientes estados (no implica una validación por Impuestos Internos): 
+ 
+• “OK” lo que implica un estado satisfactorio. 
+• “Error” o “Incorrecto” indicando de que el estado no ha sido satisfactorio. 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+12 Para más información acerca del formato de Acuse de Recibo, ver la documentación encontrada en el portal de Impuestos Internos, 
+sección “Facturación”, apartado “Comprobantes Fiscales Electrónicos (e-CF)”. 
+
+
+===== PAGE 19/26 =====
+
+19  
+Paso 12. URL Servicios Producción 
+ 
+1. Completar las URL de los servicios de Autenticación, Recepción y Aprobación 
+Comercial que estarán disponibles en el ambiente productivo. 
+ 
+El formulario donde se indicarán estas URL13 contendrá las siguientes 
+especificaciones: 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+13 Las URL serán almacenadas en el directorio de servicios mediante un web service que se encargará de comunicar el proceso de 
+certificación directamente con la Oficina Virtual (OFV). 
+
+
+===== PAGE 20/26 =====
+
+20  
+Paso 13. Declaración Jurada 
+ 
+1. Un formulario electrónico con carácter y responsabilidad legal, bajo fe de juramento, en el 
+cual hace constar que la certificación fue realizada de manera íntegra, sin acciones 
+fraudulentas o irregularidades. 
+ 
+ 
+ 
+ 
+ 
+ 
+2. Firmado de Declaración Jurada: El contribuyente deberá descargar el contenido en 
+formato XML, el mismo incluye internamente los datos de RNC, representante y 
+condiciones normativas de Facturación Electrónica a los que se está sometiendo. Deberá 
+seleccionar la opción “Generar Archivo” y lo deberá firmar utilizando la herramienta de 
+App de Firma Digital14. 
+ 
+14 En caso de utilizar la herramienta de firmado digital disponibilizada por Impuestos Internos (de manera opcional), ver 
+instructivo del App Firma Digital ubicado en la sección Comprobantes Fiscales Electrónicos (e-CF) en el apartado 
+“Herramienta Recomendada”. 
+
+
+===== PAGE 21/26 =====
+
+21  
+ 
+3. Envío de Declaración Jurada: Una vez firmado, deberá cargar el mismo 
+seleccionando la opción ‘Enviar Archivo’ donde se validará que haya sido 
+firmado por el representante indicado por el contribuyente en el formulario 
+de postulación o en su defecto un representante registrado. 
+ 
+ 
+ 
+ 
+Paso 14. Verificación Estatus del contribuyente 
+ 
+1. Realizar revisión del estado del RNC, a fines de confirmar que mantenga el 
+estatus que le permitió acceder al proceso de certificación, realizando las 
+siguientes revisiones: 
+ 
+• Estar al día con el cumplimiento de sus obligaciones tributarias. 
+• Poseer clave de acceso a la Oficina Virtual (OFV). 
+• Tener autorización para emitir comprobantes fiscales (Alta NCF). 
+• Contar con representante registrado. 
+ 
+En caso de que el contribuyente presente inconvenientes como resultado de las 
+validaciones, deberá corregir su situación a fines de completar la declaración 
+jurada. 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+
+===== PAGE 22/26 =====
+
+22  
+1.3 Etapa de Certificación (3ra etapa) 
+ 
+Una vez el contribuyente haya completado exitosamente todas las pruebas (de datos, 
+simulación y comunicación) y haya aceptado la declaración jurada, se procederá con la 
+autorización para ser Emisor Electrónico, por lo que será habilitado en la Oficina Virtual el 
+menú de facturación electrónica con las opciones de registro de contingencia, delegación, 
+consulta de e-CF emitidos, recibidos y anulados, consulta de directorio electrónico y 
+mantenimiento directorio, donde en este último serán cargadas las URL de los servicios de 
+recepción, aprobación comercial y autenticación, en ambiente productivo15. 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+15 Se refiere a las URL registradas en el apartado 2.3 de este documento (URL Servicios Producción). 
+
+
+===== PAGE 23/26 =====
+
+23  
+2 Funcionalidades 
+ 
+2.1 Cancelación de postulaciones 
+ 
+El contribuyente cuenta con la posibilidad de cancelar una postulación en cualquiera de los 
+pasos del 1 al 13 del Flujo de certificación, especificando el motivo de la decisión. 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+
+===== PAGE 24/26 =====
+
+24  
+ 
+ 
+ 
+El contribuyente que decida cancelar su postulación y cursar una nueva, puede seleccionar 
+otro representante de los relacionados a su registro según lo prestablecido. 
+ 
+ 
+ 
+ 
+
+
+===== PAGE 25/26 =====
+
+25  
+ 
+ 
+ 
+ 
+ 
+ 
+ Para cambio de representante:  
+ 
+a. Cuando se tenga una certificación en curso, para poder utilizarse otro 
+representante, se deberá cancelar dicha postulación seleccionando la justificación 
+“Cambio de representante”, crear otra postulación y seleccionar el nuevo 
+representante. 
+ 
+b. Al seleccionarse un nuevo representante en el paso “1: registrado” para consigo 
+cursar el proceso de certificación, tener en cuenta que el anterior representante será 
+cambiado por el nuevo en el ambiente de precertificación. 
+ 
+c. Si la información del representante seleccionado se encuentra errada o uno de los 
+datos obligatorios está incompleto, dicho representante deberá actualizar su 
+registro por los canales oficiales que dispone la institución y una vez actualizados 
+volver al portal de certificación para visualizar los cambios y continuar el proceso. 
+ 
+d. Los datos que como mínimo el representante seleccionado debe tener en su 
+registro, debido a que son obligatorios para el proceso de certificación, son los 
+siguientes: 
+ 
+• RNC/Cédula (RNC asignado de ser extranjero/Cédula de ser nacional) 
+• Pasaporte (Solo de ser extranjero, si es nacional no debe tener pasaporte) 
+• Nombre 
+• Correo electrónico 
+ 
+ 
+ 
+ 
+
+
+===== PAGE 26/26 =====
+
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+dgii.gov.do 
+(809) 689-3444 desde cualquier parte del país. 
+(809) 689-0131 Quejas y Sugerencias. 
+ 
+informacion@dgii.gov.do 
+ 
+IMPUESTOS INTERNOS 
+Julio 2025 
+ 
+Publicación informativa sin validez legal 
+ 
+     @DGII      

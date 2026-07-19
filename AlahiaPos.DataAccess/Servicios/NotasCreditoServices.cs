@@ -1,11 +1,14 @@
 using AlahiaPos.Entities.Domain;
 using AlahiaPos.Entities.Dto;
 using AlahiaPos.Entities.Interfaces;
+using System.Linq;
 
 namespace AlahiaPos.DataAccess.Servicios
 {
     public class NotasCreditoServices : INotasCredito
     {
+        private const int IdTipoDocumentoNotaCredito = 8;
+
         private readonly IRepository<NotasCredito> _notasCredito;
 
         private readonly IRepository<NotasCreditoDetalle> _notasCreditoDetalle;
@@ -24,6 +27,9 @@ namespace AlahiaPos.DataAccess.Servicios
 
         private readonly IEmpresas _empresas;
 
+        private readonly ISecuenciaDocumentoService _secuenciaDocumentoService;
+        private readonly IFiscalWorkEnqueueService _fiscalEnqueue;
+
         public NotasCreditoServices(
             IRepository<NotasCredito> notasCredito,
             IRepository<NotasCreditoDetalle> notasCreditoDetalle,
@@ -33,7 +39,9 @@ namespace AlahiaPos.DataAccess.Servicios
             INCF_Secuencias ncfSecuencias,
             IMovimientosInventarioService movimientosInventario,
             IAlmacenes almacenes,
-            IEmpresas empresas)
+            IEmpresas empresas,
+            ISecuenciaDocumentoService secuenciaDocumentoService,
+            IFiscalWorkEnqueueService fiscalEnqueue)
         {
             _notasCredito = notasCredito;
             _notasCreditoDetalle = notasCreditoDetalle;
@@ -44,6 +52,8 @@ namespace AlahiaPos.DataAccess.Servicios
             _movimientosInventario = movimientosInventario;
             _almacenes = almacenes;
             _empresas = empresas;
+            _secuenciaDocumentoService = secuenciaDocumentoService;
+            _fiscalEnqueue = fiscalEnqueue;
         }
 
         public async Task<NotasCreditoResultadoDto> CrearNotaCredito(
@@ -193,28 +203,26 @@ namespace AlahiaPos.DataAccess.Servicios
                 Total = total,
                 Observacion = dto.Observacion ?? "",
                 IdUsuario = dto.IdUsuario,
-                FechaInseccion = DateTime.Now
+                FechaInseccion = DateTime.Now,
+                FechaFacturaOrigen = factura.FechaInseccion
             };
 
-            if (!string.IsNullOrWhiteSpace(factura.NCF))
+            // Facturación electrónica: el e-NCF (E34) se reserva en emitir-enviar.
+            // No generar B04/NCF clásico cuando la factura origen ya es e-CF (E31/E32/…).
+            var esDocumentoElectronico = EsEncfElectronico(factura.NCF);
+            if (!string.IsNullOrWhiteSpace(factura.NCF) && !esDocumentoElectronico)
             {
-                try
-                {
-                    nota.NCF =
-                        await _ncfSecuencias.GenerarNCF(
-                            dto.IdEmpresa,
-                            "B04");
-                }
-                catch
-                {
-                    nota.NCF = "";
-                }
+                nota.NCF =
+                    await GenerarNcfNotaCreditoAsync(
+                        dto.IdEmpresa);
             }
 
             await _notasCredito.Save(nota);
 
             nota.NumeroDocumento =
-                $"NC-{nota.IdNotaCredito:D6}";
+                await _secuenciaDocumentoService.GenerarDocumentoAsync(
+                    dto.IdEmpresa,
+                    IdTipoDocumentoNotaCredito);
 
             _notasCredito.Update(
                 nota.IdNotaCredito,
@@ -238,6 +246,21 @@ namespace AlahiaPos.DataAccess.Servicios
             await CrearMovimientoInventarioDevolucion(
                 nota,
                 dto.IdUsuario);
+
+            try
+            {
+                await _fiscalEnqueue.EnqueueFotografiaSiActivoAsync(new FiscalDocumentoRequest
+                {
+                    IdEmpresa = dto.IdEmpresa,
+                    IdUsuario = dto.IdUsuario,
+                    ReferenciaId = nota.IdNotaCredito,
+                    TipoDocumento = "NotaCredito"
+                });
+            }
+            catch
+            {
+                // NC comercial ya persistida
+            }
 
             return new NotasCreditoResultadoDto
             {
@@ -303,6 +326,125 @@ namespace AlahiaPos.DataAccess.Servicios
                         SubTotal = d.SubTotal
                     }).ToList()
             };
+        }
+
+        public async Task<IEnumerable<NotaCreditoListadoDto>> ListarNotasCredito(
+            int idEmpresa,
+            DateTime? desde,
+            DateTime? hasta,
+            bool soloConComprobante)
+        {
+            var notas =
+                (await _notasCredito.GetAllByExpresionAsync(n =>
+                    n.IdEmpresa == idEmpresa))
+                .AsEnumerable();
+
+            if (desde.HasValue)
+            {
+                var desdeDate = desde.Value.Date;
+                notas = notas.Where(n =>
+                    n.FechaInseccion.Date >= desdeDate);
+            }
+
+            if (hasta.HasValue)
+            {
+                var hastaDate = hasta.Value.Date;
+                notas = notas.Where(n =>
+                    n.FechaInseccion.Date <= hastaDate);
+            }
+
+            if (soloConComprobante)
+            {
+                notas = notas.Where(n =>
+                    !string.IsNullOrWhiteSpace(n.NCF));
+            }
+
+            var lista = new List<NotaCreditoListadoDto>();
+
+            foreach (var nota in notas.OrderByDescending(n => n.IdNotaCredito))
+            {
+                var factura =
+                    await _facturaHeader.GetFacturaHeaderById(
+                        nota.IdFacturaHeader,
+                        idEmpresa);
+
+                var detalles =
+                    (await _notasCreditoDetalle
+                        .GetAllByExpresionAsync(d =>
+                            d.IdNotaCredito == nota.IdNotaCredito))
+                    .ToList();
+
+                lista.Add(new NotaCreditoListadoDto
+                {
+                    IdNotaCredito = nota.IdNotaCredito,
+                    NumeroDocumento = nota.NumeroDocumento ?? "",
+                    NCF = nota.NCF ?? "",
+                    NCFModificado = nota.NCFModificado ?? "",
+                    IdFacturaHeader = nota.IdFacturaHeader,
+                    NumeroFactura =
+                        factura?.NumeroDocumento
+                        ?? $"Fact-{nota.IdFacturaHeader}",
+                    NombreCliente = nota.NombreCliente ?? "",
+                    RNC = nota.RNC ?? "",
+                    SubTotal = nota.SubTotal,
+                    TotalItbis = nota.TotalItbis,
+                    Total = nota.Total,
+                    Observacion = nota.Observacion ?? "",
+                    FechaInseccion = nota.FechaInseccion,
+                    CantidadProductos = detalles.Count,
+                    ProductosDevueltos = string.Join(
+                        ", ",
+                        detalles.Select(d =>
+                            $"{d.NombreProducto} (x{d.Cantidad:0.##})")),
+                    TieneComprobante =
+                        !string.IsNullOrWhiteSpace(nota.NCF)
+                });
+            }
+
+            return lista;
+        }
+
+        /// <summary>
+        /// e-NCF electrónicos DGII: E31, E32, E33, E34, …
+        /// </summary>
+        private static bool EsEncfElectronico(string? ncf)
+        {
+            if (string.IsNullOrWhiteSpace(ncf)) return false;
+            ncf = ncf.Trim();
+            return ncf.Length >= 3
+                && ncf.StartsWith("E", StringComparison.OrdinalIgnoreCase)
+                && char.IsDigit(ncf[1])
+                && char.IsDigit(ncf[2]);
+        }
+
+        private async Task<string> GenerarNcfNotaCreditoAsync(
+            int idEmpresa)
+        {
+            var tiposIntento = new[]
+            {
+                "Nota de Crédito",
+                "B04"
+            };
+
+            Exception? ultimoError = null;
+
+            foreach (var tipo in tiposIntento)
+            {
+                try
+                {
+                    return await _ncfSecuencias.GenerarNCF(
+                        idEmpresa,
+                        tipo);
+                }
+                catch (Exception ex)
+                {
+                    ultimoError = ex;
+                }
+            }
+
+            throw ultimoError
+                ?? new Exception(
+                    "No se pudo generar el comprobante de nota de crédito.");
         }
 
         private async Task CrearMovimientoInventarioDevolucion(

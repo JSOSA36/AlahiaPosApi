@@ -1,0 +1,197 @@
+
+
+===== PAGE 1/13 =====
+
+
+
+===== PAGE 2/13 =====
+
+Contenido
+Glosario.................................................................................................................3
+Propósito ..............................................................................................................4
+Estado de contingencia ....................................................................................... 5
+Contingencia - cuando existe imposibilidad de emitir e-cf .................................6
+Declaración Entrada en Contingencia..................................................................6
+Declaración Salida de Contingencia ....................................................................9
+Registro de Contingencias..................................................................................11
+Consideraciones importantes .............................................................................15
+1
+
+
+===== PAGE 3/13 =====
+
+Glosario
+Comprobante Fiscal Electrónico (e-CF): es el documento electrónico firmado 
+digitalmente que acredita la transferencia de bienes, entrega en uso o la prestación 
+de servicios, debiendo cumplir siempre con los requisitos establecidos en la 
+normativa dispuesta para estos fines.
+Comprobante Fiscal No Electrónico (Serie B): es el documento autorizado que se 
+emite en formato físico o manual, sin utilizar los sistemas de facturación 
+electrónica, que acredita la transferencia de bienes, entrega en uso o la prestación 
+de servicios.
+Contingencia: una situación excepcional o imprevista que impide emitir, transmitir 
+o validar comprobantes fiscales electrónicos (e-CF).
+Contingencia parcial: es cuando existe una falla de sistema que afecta solo una 
+parte de las operaciones del contribuyente, es decir, que una o varias de sus 
+sucursales o unidades de negocio no puede facturar electrónicamente pero el resto 
+continúa operando de forma habitual, emitiendo comprobantes electrónicos.
+Contingencia total: este estado se refiere a cuando existe una falla de sistema que 
+afecta la operación total del contribuyente (emisión de e-CF) o todas sus sucursales. 
+FE: Facturación Electrónica.
+Menú de Facturación Electrónica: es el menú habilitado en la Oficina Virtual (OFV) 
+para el contribuyente autorizado como Emisor Electrónico o el delegado poder 
+realizar acciones y/o consultas conforme a su perfil. 
+32
+
+
+===== PAGE 4/13 =====
+
+Próposito
+El presente documento ha sido elaborado con el fin de instruir a los contribuyentes 
+acerca de la contingencia de Facturación Electrónica, los motivos para solicitarla, 
+las vías para iniciar y culminar este estado de facturación, así como, las acciones a 
+realizar para verificar el histórico de solicitudes realizadas. 
+3
+
+
+===== PAGE 5/13 =====
+
+Estado de Contingencia
+Los emisores electrónicos se consideran en estado de contingencia cuando no 
+pueden emitir y/o enviar e-CF a la DGII por los siguientes motivos:
+1. Falta de conectividad:
+Cuando el emisor electrónico no está en capacidad de emitir los e-CF por falta de 
+conectividad o intermitencia. Por lo tanto, para la entrega de la mercancía o la 
+prestación del servicio deberá cumplir con las siguientes condiciones: 
+• Deberá generar los e-CF de manera offline y remitir los e-CF emitidos a la DGII 
+una vez se reestablezca la conexión, en un plazo no mayor de setenta y dos (72) 
+horas, posterior a este tiempo se podrá consultar la validez del e-CF.
+• Deberá entregar al cliente una representación impresa del e-CF con la leyenda: 
+“e-CF emitido en modalidad de Contingencia, el cual podrá ser consultado para 
+su validez fiscal, a partir de las setenta y dos (72) horas.” 
+2.  Imposibilidad de emitir e-CF:
+Cuando el emisor electrónico no está en capacidad técnica de emitir los e-CF.
+• El contribuyente deberá emitir comprobantes fiscales no electrónicos 
+autorizados.
+• Esta contingencia no podrá exceder de un máximo de 15 días calendario.
+• Debe notificarse a la DGII por el mecanismo establecido vía Oficina Virtual.
+Según lo establece el Art. 40 del Decreto 587-24: Reglamento para la Aplicación de la Ley Núm. 32-23 
+de Facturación Electrónica de la República Dominicana.
+4
+1
+1
+
+===== PAGE 6/13 =====
+
+Contingencia - Cuando existe imposibilidad de emitir e-CF
+Declaración Entrada en Contingencia
+Paso 1. Ingrese a su Oficina Virtual, diríjase al menú “Facturación Electrónica” y 
+seleccione “Contingencia FE”. Una vez allí, el recuadro le da la opción “Declaración 
+Entrada en Contingencia”, a fin de seleccionar la modalidad requerida: “Total” o 
+“Parcial”.
+5
+
+
+===== PAGE 7/13 =====
+
+Paso 2. Si desea declarar contingencia en modalidad “Total”, debe dar un clic                              
+seleccionando esta opción, en “Descripción” detallar la razón de su solicitud y dar 
+un clic a “Guardar” y el sistema arroja el mensaje: “Registro insertado 
+correctamente. Ahora se encuentra en estado de Contingencia”. Para finalizar la 
+acción dar clic a “Aceptar”
+6
+
+
+===== PAGE 8/13 =====
+
+Paso 2.1 Si desea declarar contingencia en modalidad “Parcial”, debe dar un clic                              
+seleccionando esta opción, en “Descripción” detallar la razón de su solicitud y dar 
+un clic a “Guardar” y el sistema arroja el mensaje: “Registro insertado 
+correctamente. Ahora se encuentra en estado de Contingencia.” Para finalizar la 
+acción dar clic a “Aceptar”.
+7
+
+
+===== PAGE 9/13 =====
+
+Paso 2.1 Si desea declarar contingencia en modalidad “Parcial”, debe dar un clic                              
+seleccionando esta opción, en “Descripción” detallar la razón de su solicitud y dar 
+un clic a “Guardar” y el sistema arroja el mensaje: “Registro insertado 
+correctamente. Ahora se encuentra en estado de Contingencia.” Para finalizar la 
+acción dar clic a “Aceptar”.
+Declaración Salida de Contingencia
+Una vez sea subsanada la razón por la cual se sometió la solicitud de contingencia, 
+debe ser solicitada la salida de ese estado. 
+Paso 1. Ingrese a su Oficina Virtual, diríjase al menú “Facturación Electrónica” y 
+seleccione “Contingencia FE”. 
+Paso 1.1 Una vez allí, el recuadro le da la opción “Declaración Salida de 
+Contingencia”, en el apartado “Descripción”, puede colocar una breve reseña del 
+inconveniente para su posterior consulta, proceda dar clic a “Guardar” y el sistema 
+arroja el mensaje: “Registro insertado correctamente. Ya no se encuentra en estado 
+de Contingencia”. Para finalizar la acción dar clic a “Guardar”
+Este tipo de contingencia no podrá exceder de un máximo de duración de quince (15) días 
+calendario, según lo establece el Art. 40 del Decreto 587-24: Reglamento para la Aplicación de la 
+Ley Núm. 32-23 de Facturación Electrónica de la República Dominicana.
+8
+2
+2
+
+
+===== PAGE 10/13 =====
+
+Registro de Contingencias
+En caso de que se necesite consultar las contingencias solicitadas, la OFV cuenta 
+con la opción “Histórico de Contingencias”, ubicada en la parte inferior del 
+apartado: “Declaración Entrada/Salida de Contingencia”, donde se pueden visualizar 
+los incidentes reportados, al dar clic en la opción “ Ver”, del apartado “Detalle”.
+9
+
+
+===== PAGE 11/13 =====
+
+En ese mismo tenor, En la bandeja de entrada de OFV se registran las notificaciones 
+donde se reflejan las entradas y salidas de Contingencia realizadas por el 
+contribuyente.
+10
+
+
+===== PAGE 12/13 =====
+
+Consideraciones importantes 
+Salida de contingencia
+• Una vez superada la contingencia, el contribuyente tiene 30 días calendario para 
+enviar a la DGII los e-CF que reemplacen los comprobantes no electrónicos 
+emitidos.
+• Estos e-CF se envían solo a la DGII, no al receptor.
+• El receptor podrá sustentar sus costos, gastos y crédito fiscal con el 
+comprobante ordinario recibido.
+Validez de comprobantes no electrónicos 
+• Solo los comprobantes no electrónicos emitidos en contingencia y notificados 
+correctamente a la DGII serán válidos para sustentar costos, gastos y crédito 
+fiscal.
+Contingencia de la DGII
+• Si los sistemas de la DGII no están disponibles, los contribuyentes deben 
+almacenar los e-CF y realizar el envío una vez que se reestablezca la 
+comunicación.
+• Si la contingencia de la DGII dura más de 15 días hábiles se habilitará en la 
+Oficina Virtual (OFV) la opción para enviar reportes de libros de ventas, compras, 
+gastos, costos, retenciones y otros, operando de manera ordinaria con 
+comprobantes no electrónicos.
+Ley Núm. 32-23, Art. 21; Norma 01-2020, Art. 3, literal (i) y Art. 10; Reglamento 587-24, Arts.40, 
+41, 42 y 43.
+11
+3
+3
+
+===== PAGE 13/13 =====
+
+IMPUESTOS INTERNOS
+Febrero 2026
+dgii.gov.do
+Publicación informativa sin validez legal
+@DGIIRD
+Facturación Electrónica
+Centro de Contacto: (809) 689-3444, opción 4
+Correo: facturacionelectronica@dgii.gov.do                   
+En el portal web DGII - Comunidad de Ayuda,
+categoría “Facturación Electrónica”

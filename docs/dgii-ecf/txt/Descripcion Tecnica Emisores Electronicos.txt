@@ -1,0 +1,501 @@
+
+
+===== PAGE 1/13 =====
+
+
+
+===== PAGE 2/13 =====
+
+2 
+  
+  
+ÍNDICE 
+Bitácora ...................................................................................................... 3 
+Propósito .................................................................................................... 4 
+Estándares como Emisor Electrónico........................................................... 4 
+Nombre de los Archivos XML ............................................................................................ 4 
+Restricciones de Contenido y/o Caracteres en los XML ................................................... 4 
+Firmado de XML ................................................................................................................ 6 
+Estándar como Receptor Electrónico .......................................................... 6 
+Reglas Generales ............................................................................................................... 6 
+Creación de Servicios ........................................................................................................ 7 
+ 
+ 
+ 
+  
+ 
+
+===== PAGE 3/13 =====
+
+3 
+  
+Bitácora  
+Actualizaciones al 02-01-2026 
+1) Se actualizó la fecha de vencimiento de las secuencias habilitadas a los contribuyentes 
+para fines de prueba en el ambiente de precertificación. 
+2) Se segrega en dos documentos la Descripción Técnica de Facturación Electrónica: 
+a. Descripción Técnica Servicios DGII 
+b. Descripción Técnica Servicios Emisores Electrónicos 
+ 
+Actualizaciones al 03-04-2025 
+1) Se agregaron nuevos caracteres de escape de restricciones de Contenido y/o 
+Caracteres en los XML. 
+  
+
+===== PAGE 4/13 =====
+
+4 
+  
+Propósito 
+ 
+Con el propósito de asegurar un intercambio de información seguro, homogéneo y confiable 
+entre los contribuyentes, tanto en su rol de emisores como de receptores, este documento 
+tiene como objetivo describir y estandarizar los servicios que deberán implementarse para su 
+autorización como Emisores Electrónicos en el sistema de Facturación Electrónica. 
+ 
+Estándares como Emisor Electrónico 
+ 
+Nombre de los Archivos XML 
+Deberá utilizarse el siguiente estándar para el nombre de l os archivos de cada formato XML , 
+con el objetivo de tener una mejor gestión de estos: 
+ 
+Formato XML Nombre de archivo Ejemplo 
+Formato e-CF  RNCEmisor+e-NCF 101672919E310000000001.xml 
+Formato Aprobación Comercial RNCComprador+e-NCF 
+ 101672919E310000000001.xml 
+Formato Acuse de recibo RNCComprador +e-NCF 
+ 101672919E310000000001.xml 
+Formato de Resumen Factura de 
+Consumo (32 < 250,000.00) 
+RNCEmisor+e-NCF 
+ 101672919E320000000001.xml 
+ 
+Restricciones de Contenido y/o Caracteres en los XML 
+ 
+En la información ‘ALFANUM’ dentro de los XML a generar y enviar, los siguientes 
+caracteres no deben emplearse, ya que tienen un significado por sí solos y deberán ser 
+remplazados por definiciones estándar especificadas a continuación: 
+ 
+Nombre Caracter de Escape Referencia Decimal Referencia Hexadecimal 
+" &quot; &#34; &#x22; 
+' &apos; &#39; &#x27; 
+<  &lt; &#60; &#x3C; 
+>  &gt; &#62; &#x3E; 
+& &amp; &#38; &#x26; 
+
+===== PAGE 5/13 =====
+
+5 
+  
+© &copy; &#169; &#xA9; 
+€ &euro; &#8364; &#x20AC; 
+® &reg; &#174; &#xAE; 
+ 
+En el caso de los datos del código de seguridad de l QR en las representaciones impresas, 
+a su vez no deben utilizarse los siguientes caracteres reservados ya que tienen un 
+significado especial en la URL y deberán ser reemplazados en esta por su representación 
+hexadecimal. 
+Nombre Caracter Referencia Hexadecimal 
+Espacio  %20 
+Cierra admiración ! %21 
+Numeral # %23 
+Pesos 
+(dólar) $ %24 
+Et 
+(ampersand) 
+& %26 
+Apóstrofo ' %27 
+Paréntesis izquierdo ( %28 
+Paréntesis derecho ) %29 
+Asterisco * %2A 
+Más + %2B 
+Coma , %2C 
+Barra / %2F 
+Dos puntos : %3A 
+Punto y coma ; %3B 
+Igual = %3D 
+Cierra interrogación ? %3F 
+Arroba @ %40 
+Corchete izquierdo [ %5B 
+Corchete derecho ] %5D 
+Comilla " %22 
+Guion - %2D 
+Punto . %2E 
+Menor < %3C 
+Mayor > %3E 
+
+===== PAGE 6/13 =====
+
+6 
+  
+Barra inversa \ %5C 
+Acento circunflejo ^ %5E 
+Guion bajo _ %5F 
+Tilde grave ` %60 
+ 
+Adicionalmente, no deberá incluirse tags vacíos en los XML . T odo tag que no vaya a ser 
+utilizado debe excluirse del e -CF, ya que su evaluación sin ningún tipo de valor provoca 
+rechazos y afecta el tiempo de validación. 
+ 
+Firmado de XML  
+ 
+En el proceso de firmado de los XML, se deben tomar en cuenta los siguientes puntos: 
+ 
+− El protocolo de firmado a utilizar es SHA-256.  
+− El campo “ SN” de los certificados digitales debe corresponder al RNC, C édula o 
+Pasaporte del propietario del certificado. 
+− Debe realizarse la firma sin la preservación de los espacios  preservewhitespace = 
+false. 
+− Una vez firmado el XML, este no puede ser alterado en ninguna circunstancia. 
+ 
+Para ejemplos de firmado, ver documentación  Firmado de e -CF en la subsección 
+Documentación sobre e -CF de la sección Facturación Electrónica  en el portal web de DGII  
+(www.dgii.gov.do). 
+ 
+ 
+Estándar como Receptor Electrónico  
+ 
+Reglas Generales 
+ 
+1) Desarrollar o adquirir un software que adicional a la emisión de e -CF y 
+aprobaciones comerciales, también permita la recepción de estos según los 
+estándares establecidos para cada servicio en este documento. 
+ 
+2) Los servicios deberán:  
+− Utilizar SSL. 
+− Emplear puertos de red tradicionales. 
+− No ser sensibles a mayúsculas o minúsculas. 
+
+===== PAGE 7/13 =====
+
+7 
+  
+− Ser accesibles desde internet. 
+− No estar el dominio en listas negras o categorizado como proxy avoidance. 
+ 
+3) Preservar los estándares en el tiempo y adaptarse oportunamente a los cambios 
+tras madurez del sistema de Facturación Electrónica. 
+ 
+Creación de Servicios 
+ 
+Se deberán crear los siguientes servicios bajo el mismo estándar de nombre en cada 
+recurso, de manera que la única diferencia entre los servicios de los contribuyentes sea 
+la dirección de host: 
+ 
+URL de autenticación: Servicio responsable de establecer controles de seguridad en la 
+interacción entre contribuyentes. Su uso es opcional , sin embargo, en caso de 
+implementarse, el servicio deberá disponer de los siguientes dos recursos (endpoints): 
+ 
+ 
+ 
+ 
+ 
+ 
+Especificaciones: semilla 
+Descripción 
+Retorna un archivo xml con un valor único (semilla) que 
+posteriormente tendrá que ser firmado digitalmente  para ser 
+intercambiado por un token en el próximo endpoint  
+(validacioncertificado). 
+Estándar 
+recurso 
+(endpoint) 
+/fe/autenticacion/api/semilla 
+Método GET 
+Parámetros 
+de entrada N/A 
+Ejemplo 
+header curl -X 'GET' \   
+https://                                            
+ 
+ 
+ 
+Autenticación 
+ 
+Estándar 
+ 
+ 
+Estándar  
+ 
+Dirección de Host  
+ 
+
+===== PAGE 8/13 =====
+
+8 
+  
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+  
+'https://host/ambiente/nombreservicio/fe/autenticacion/api
+/semilla' \ 
+  -h 'accept: application/json' 
+Salida xml 
+Ejemplo 
+salida 
+Respuesta en formato xml  
+<?Xml version="1.0" encoding="utf-8"?> 
+  <semillamodel 
+xmlns:xsi="http://www.w3.org/2001/xmlschema-instance" 
+xmlns:xsd="http://www.w3.org/2001/xmlschema"> 
+    
+<valor>0xggeol2rfxxmt22g4abxa91ycxblmyeci6h1+519rudfci
+uqf2ytd7wdftm1m1z39g4yobdwvd2iietwua3sopo6iztphhwb
+pnfim/azenhh0gqew/5bhragf2+kjddtdow7mc7hqcsmgfbg7dr
+wg==</valor> 
+    <fecha>2022-07-27t11:59:31.3551245-04:00</fecha> 
+  </semillamodel> 
+Especificaciones: validacioncertificado 
+Descripción Valida que el contenido y firma del archivo entregado se 
+encuentre integro. 
+Estándar 
+recurso 
+(endpoint) 
+/fe/autenticacion/api/validacioncertificado 
+Método POST 
+Parámetros de 
+entrada xml 
+Ejemplo 
+header 
+curl -x 'POST' \ 
+  
+'https://host/ambiente/nombreservicio/fe/autentic
+acion/api/validacioncertificado' \ 
+
+===== PAGE 9/13 =====
+
+9 
+  
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+  -h 'accept: application/json' \ 
+  -h 'content-type: multipart/form-data' \ 
+  -f 'xml=@archivosemillafirmado.xml;type=text/xml' 
+Salida 
+Un token con su fecha de expedición y expiración, pudiendo 
+solicitarse dicha respuesta en formato json o  xml según el 
+consumidor lo especifique en el accept del header de su 
+petición. 
+Dichas fechas deben encontrarse en el formato estándar 
+universal yyyy-mm-ddthh:mm:ssz, ver referencia: 
+https://docs.microsoft.com/en-
+us/dotnet/api/system.globalization.datetimeformatinfo.univ
+ersalsortabledatetimepattern?view=net-6.0 
+Adicionalmente, ver la siguiente referencia para más 
+información sobre la autenticación por tokens: 
+Ver rcf 6750 (https://tools.ietf.org/html/rfc6750). 
+ 
+Ejemplo salida 
+Respuesta en formato json  
+                      {   
+"token": "string",  
+  
+"expira": "yyyy-mm-ddthh:mm:ssz",  
+"expedido": "yyyy-mm-ddthh:mm:ssz"  
+}  
+Respuesta en formato xml  
+                 <?Xml version="1.0" encoding="utf-8"?>  
+  
+<respuestaautenticacion>  
+<token>string</token>  
+ <expira> yyyy-mm-ddthh:mm:ssz</expira>  
+ <expedido> yyyy-mm-ddthh:mm:ssz</expedido>  
+                                 </respuestaautenticacion>  
+
+===== PAGE 10/13 =====
+
+10 
+  
+URL de recepción: Servicio responsable de recibir el archivo XML de los Comprobantes 
+Fiscales Electrónicos (e -CF) emitidos al contribuyente en su calidad de receptor. La 
+disponibilidad de este servicio es de carácter obligatorio. 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+Especificaciones recepción 
+Estándar 
+recurso 
+(endpoint) 
+/fe/recepción/api/ecf 
+Método POST 
+Parámetros 
+de entrada xml (Formato e-CF) 
+Authorization 
+Un header authorization con el esquema bearer y el valor del 
+token obtenido en la autenticación , condicional a que se 
+haya declarado autenticación. 
+Ejemplo 
+header 
+curl -X 'POST' \  
+ 
+'https://host/ambiente/nombreservicio/fe/recepcion/api/e
+cf'\ 
+  -h 'accept: */*' \ 
+  -h 'authorization: bearer 
+eyjhbgcioijiuzi1niisinr5cci6ikpxvcj9.eyjodhrwoi8vc2nozw1hc
+y54bwxzb2fwlm9yzy93cy8ymda1lza1l2lkzw50axr5l2nsywltc
+y9uyw1lijoimdaxotk5otk5otyilcjqdgkioii2mzhjzddjns0xy2nllt
+qymmutyjnkmc0wmgq4mtczmzyxnwuilcjuymyioje2ntkzmd
+y5nzisimv4cci6mty1otmxmdu3miwiaxnzijoiredjss5grsisimf1
+zci6ilvtvufssu9tlkrhsukurkuifq.4qk1-0iqwkxcbc-
+n_jteyoeniie90-znxsc8ya1l8yw' \ 
+  -h 'content-type: multipart/form-data' \ 
+  -f 'xml=@101672919e3100000001.xml;type=text/xml' 
+Salida Un xml de acuse de recibo firmado digitalmente. 
+https://                                             /fe/recepcion/api/ecf   
+ 
+ 
+Recepción* 
+Estándar  
+ 
+ Estándar 
+ Dirección de Host  
+ 
+
+===== PAGE 11/13 =====
+
+11 
+  
+Ejemplo 
+salida 
+Respuesta en formato xml  
+<?Xml version="1.0" encoding="utf-8"?> 
+<arecf xmlns:xsi="http://www.w3.org/2001/xmlschema -
+instance" 
+xmlns:xsd="http://www.w3.org/2001/xmlschema"> 
+  <detalleacusederecibo> 
+    <version>1.0</version> 
+    <rncemisor>131880600</rncemisor> 
+    <rnccomprador>132880600</rnccomprador> 
+    <encf>e310000000001</encf> 
+    <estado>0</estado> 
+    <fechahoraacuserecibo>17-12-2020 
+11:19:06</fechahoraacuserecibo> 
+  </detalleacusederecibo> 
+</arecf> 
+ 
+Nota: tomar de referencia el formato y xsd compartidos en el 
+portal web de DGII (www.dgii.gov.do). 
+ 
+URL de aprobación comercial : Servicio responsable de recibir el archivo XML de las 
+aprobaciones comerciales que se le sean emitidas. La disponibilidad de este servicio 
+es de carácter obligatorio. 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+Especificaciones Aprobación Comercial 
+Estándar 
+recurso 
+(endpoint) 
+/fe/aprobacioncomercial/api/ecf 
+https://                                             /fe/aprobacioncomercial/api/ecf 
+ 
+ 
+Aprobación Comercial* 
+Estándar  
+ 
+ Estándar 
+ Dirección de Host  
+ 
+
+===== PAGE 12/13 =====
+
+12 
+  
+Método POST 
+Parámetros de 
+entrada 
+xml (Formato ACECF) 
+Authorization 
+Un header Authorization con el esquema Bearer y el valor 
+del token obtenido en la autenticación, condicional a que se 
+haya declarado autenticación. 
+ 
+Ejemplo 
+header 
+curl -X 'POST' \ 
+'https://host/ambiente/nombreservicio/fe/aprobacioncom
+ercial/api/ecf' \ 
+  -H 'accept: */*' \ 
+  -H 'Authorization: bearer 
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2No
+ZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aX
+R5L2NsYWltcy9uYW1lIjoiMDAxOTk5OTk5OTYiLCJqdGkiOiI2
+MzhjZDdjNS0xY2NlLTQyMmUtYjNkMC0wMGQ4MTczMzYx
+NWUiLCJuYmYiOjE2NTkzMDY5NzIsImV4cCI6MTY1OTMxMD
+U3MiwiaXNzIjoiREdJSS5GRSIsImF1ZCI6IlVTVUFSSU9TLkRHS
+UkuRkUifQ.4qk1-0iqWkXcBC-n_JTEYoeniie90-
+ZnXSc8ya1l8Yw' \ 
+  -H 'Content-Type: multipart/form-data' \ 
+  -F 'xml=@101672919E3100000001.xml;type=text/xml' 
+Salida Satisfactorio: HTTP 200  
+Insatisfactorio: HTTP 400 
+ 
+ 
+
+===== PAGE 13/13 =====
+
