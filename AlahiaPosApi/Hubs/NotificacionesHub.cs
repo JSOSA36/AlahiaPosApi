@@ -49,5 +49,12 @@ namespace AlahiaPosApi.Hubs
             await _hub.Clients.Group($"empresa:{notificacion.IdEmpresa}")
                 .SendAsync("notificacion:nueva", notificacion, ct);
         }
+
+        public Task EmitirLeidaAsync(int idEmpresa, int idNotificacion, CancellationToken ct = default)
+        {
+            if (idEmpresa <= 0 || idNotificacion <= 0) return Task.CompletedTask;
+            return _hub.Clients.Group($"empresa:{idEmpresa}")
+                .SendAsync("notificacion:leida", new { idNotificacion, idEmpresa }, ct);
+        }
     }
 }
