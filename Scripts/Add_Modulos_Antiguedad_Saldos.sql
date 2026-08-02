@@ -2,14 +2,14 @@
 USE AlahiaPos_Dev;
 GO
 
-IF NOT EXISTS (SELECT 1 FROM Modulos WHERE Codigo = 'ANTIGUEDAD_CXC')
+IF NOT EXISTS (SELECT 1 FROM Modulos WHERE Codigo = N'ANTIGUEDAD_CXC')
     INSERT INTO Modulos (Codigo, Nombre, Descripcion, PrecioUSD, Activo, FechaCreacion)
-    VALUES ('ANTIGUEDAD_CXC', 'Antigüedad de Saldos CxC', 'Análisis de antigüedad de cuentas por cobrar', 0, 1, GETDATE());
+    VALUES (N'ANTIGUEDAD_CXC', N'Antigüedad de Saldos CxC', N'Análisis de antigüedad de cuentas por cobrar', 0, 1, GETDATE());
 GO
 
-IF NOT EXISTS (SELECT 1 FROM Modulos WHERE Codigo = 'ANTIGUEDAD_CXP')
+IF NOT EXISTS (SELECT 1 FROM Modulos WHERE Codigo = N'ANTIGUEDAD_CXP')
     INSERT INTO Modulos (Codigo, Nombre, Descripcion, PrecioUSD, Activo, FechaCreacion)
-    VALUES ('ANTIGUEDAD_CXP', 'Antigüedad de Saldos CxP', 'Análisis de antigüedad de cuentas por pagar', 0, 1, GETDATE());
+    VALUES (N'ANTIGUEDAD_CXP', N'Antigüedad de Saldos CxP', N'Análisis de antigüedad de cuentas por pagar', 0, 1, GETDATE());
 GO
 
 INSERT INTO Empresa_Modulos (EmpresaId, ModuloId, Activo, FechaActivacion)

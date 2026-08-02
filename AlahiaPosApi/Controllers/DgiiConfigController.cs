@@ -11,15 +11,18 @@ namespace AlahiaPosApi.Controllers
         private readonly IDgiiConfigService _config;
         private readonly IFiscalFeatureService _features;
         private readonly IDgiiFiscalAuthService _auth;
+        private readonly IReporteIt1Service _reporteIt1;
 
         public DgiiConfigController(
             IDgiiConfigService config,
             IFiscalFeatureService features,
-            IDgiiFiscalAuthService auth)
+            IDgiiFiscalAuthService auth,
+            IReporteIt1Service reporteIt1)
         {
             _config = config;
             _features = features;
             _auth = auth;
+            _reporteIt1 = reporteIt1;
         }
 
         [HttpGet("{idEmpresa:int}")]
@@ -61,6 +64,28 @@ namespace AlahiaPosApi.Controllers
             dto.IdEmpresa = idEmpresa;
             var result = await _config.UpsertAsync(dto, idUsuario, dto.MotivoCambio);
             return Ok(result);
+        }
+
+        /// <summary>
+        /// Liquidación IT-1 2020 + Anexo A (preview en vivo).
+        /// GET api/DgiiConfig/ReporteIt1/{idEmpresa}?periodo=yyyyMM
+        /// </summary>
+        [HttpGet("ReporteIt1/{idEmpresa:int}")]
+        public async Task<ActionResult<ReporteIt1Dto>> ReporteIt1(
+            int idEmpresa,
+            [FromQuery] string? periodo = null,
+            [FromQuery] DateTime? desde = null,
+            [FromQuery] DateTime? hasta = null)
+        {
+            try
+            {
+                var result = await _reporteIt1.ObtenerAsync(idEmpresa, desde, hasta, periodo);
+                return Ok(result);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
     }
 }

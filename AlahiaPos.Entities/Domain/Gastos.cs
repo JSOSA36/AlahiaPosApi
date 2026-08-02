@@ -13,6 +13,25 @@ namespace AlahiaPos.Entities.Domain
 
         public string? TipoGasto { get; set; }
 
+        /// <summary>FK a catálogo CategoriasGasto (clasificación ERP).</summary>
+        public int? IdCategoriaGasto { get; set; }
+
+        /// <summary>Sin comprobante | Comprobante para Gastos Menores | Recibo | Ticket | Otro</summary>
+        [StringLength(80)]
+        public string? TipoComprobante { get; set; }
+
+        [StringLength(50)]
+        public string? NumeroComprobante { get; set; }
+
+        [Column(TypeName = "date")]
+        public DateTime? FechaComprobante { get; set; }
+
+        [StringLength(20)]
+        public string? RncEmisorComprobante { get; set; }
+
+        [StringLength(150)]
+        public string? NombreEmisorComprobante { get; set; }
+
         public int IdProveedor { get; set; }
 
         [Column(TypeName = "decimal(18,2)")]
@@ -42,7 +61,7 @@ namespace AlahiaPos.Entities.Domain
         [StringLength(100)]
         public string? Referencia { get; set; }
 
-        /// <summary>COMPRAS | MANUAL — origen del registro de gasto.</summary>
+        /// <summary>COMPRAS | MANUAL | CONCILIACION — origen del registro de gasto.</summary>
         [StringLength(30)]
         public string? OrigenModulo { get; set; }
 
@@ -53,6 +72,9 @@ namespace AlahiaPos.Entities.Domain
 
         [ForeignKey(nameof(IdCuentaFinanciera))]
         public virtual CuentaFinanciera? CuentaFinanciera { get; set; }
+
+        [ForeignKey(nameof(IdCategoriaGasto))]
+        public virtual CategoriaGasto? CategoriaGasto { get; set; }
 
         [NotMapped]
         public Proveedores? Proveedores { get; set; }

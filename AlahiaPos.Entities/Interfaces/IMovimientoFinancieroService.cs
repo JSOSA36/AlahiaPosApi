@@ -1,8 +1,6 @@
 ﻿using AlahiaPos.Entities.Dto;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace AlahiaPos.Entities.Interfaces
@@ -49,9 +47,14 @@ namespace AlahiaPos.Entities.Interfaces
                 DateTime hasta
             );
 
-        /* =========================================
-        🔥 OPERACIONES
-        ========================================= */
+        Task<IEnumerable<MovimientoFinancieroListadoDto>>
+            ConsultarAsync(MovimientoFinancieroFiltroDto filtro);
+
+        Task<EstadoCuentaDto>
+            GetEstadoCuentaAsync(
+                int idCuentaFinanciera,
+                DateTime? desde = null,
+                DateTime? hasta = null);
 
         Task RegistrarEntradaAsync(
 
@@ -117,6 +120,25 @@ namespace AlahiaPos.Entities.Interfaces
 
             string? claveIdempotencia = null
         );
+
+        /// <summary>
+        /// Transferencia Caja→Banco (o inversa) originada en reclasificación de pago.
+        /// Permite saldo negativo en origen cuando el banco es la fuente de verdad.
+        /// </summary>
+        Task<int> RegistrarTransferenciaReclasificacionAsync(
+            int idEmpresa,
+            int idUsuario,
+            int idCuentaOrigen,
+            int idCuentaDestino,
+            decimal monto,
+            string motivo,
+            string? observacion,
+            string claveIdempotencia,
+            int? referenciaId,
+            DateTime fechaMovimiento);
+
+        Task<int> RegistrarAjusteAsync(RegistrarAjusteDto dto);
+
+        Task AnularMovimientoAsync(AnularMovimientoDto dto);
     }
 }
-

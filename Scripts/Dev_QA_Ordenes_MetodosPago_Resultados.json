@@ -1,0 +1,205 @@
+﻿{
+    "fecha":  "2026-07-20T18:27:41",
+    "totales":  {
+                    "fail":  0,
+                    "pass":  37,
+                    "ejecutados":  37
+                },
+    "cuentas":  {
+                    "popular":  23,
+                    "tarjeta":  19,
+                    "reservas":  25,
+                    "glBhd":  135,
+                    "glReserva":  136,
+                    "glPopular":  134,
+                    "bhd":  24,
+                    "caja":  18
+                },
+    "casos":  [
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Baseline",
+                      "nota":  "BG Diff=0.00; ER=48584.50 RE=48584.50; BC Deb=123851.00 Cred=123851.00"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Setup GL Popular/BHD/Reservas",
+                      "nota":  "ids=134,135,136"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Setup cuentas financieras",
+                      "nota":  "Popular=23 BHD=24 Reservas=25"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Setup MetodoPagoCuenta",
+                      "nota":  "EFECTIVO,TARJETA,POPULAR,BHD,BANRESERVAS,RESERVAS"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "EFECTIVO - venta",
+                      "nota":  "factura=9464 total=118"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "EFECTIVO - asiento cuadra",
+                      "nota":  "Deb=118.00 Cred=118.00 idAsiento=261"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Post-EFECTIVO",
+                      "nota":  "BG Diff=0.00; ER=48684.50 RE=48684.50; BC Deb=123969.00 Cred=123969.00"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "EFECTIVO debito CAJA",
+                      "nota":  "cuentas=3"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "TARJETA - venta",
+                      "nota":  "factura=9465 total=118"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "TARJETA - asiento cuadra",
+                      "nota":  "Deb=118.00 Cred=118.00 idAsiento=262"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Post-TARJETA",
+                      "nota":  "BG Diff=0.00; ER=48784.50 RE=48784.50; BC Deb=124087.00 Cred=124087.00"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "TARJETA debito BANCO",
+                      "nota":  "cuentas=4"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "POPULAR - venta",
+                      "nota":  "factura=9466 total=118"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "POPULAR - asiento cuadra",
+                      "nota":  "Deb=118.00 Cred=118.00 idAsiento=263"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Post-POPULAR",
+                      "nota":  "BG Diff=0.00; ER=48884.50 RE=48884.50; BC Deb=124205.00 Cred=124205.00"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "POPULAR debito banco mapeado",
+                      "nota":  "esperadoGl=134 cuentas=134"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "BHD - venta",
+                      "nota":  "factura=9467 total=118"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "BHD - asiento cuadra",
+                      "nota":  "Deb=118.00 Cred=118.00 idAsiento=264"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Post-BHD",
+                      "nota":  "BG Diff=0.00; ER=48984.50 RE=48984.50; BC Deb=124323.00 Cred=124323.00"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "BHD debito banco mapeado",
+                      "nota":  "esperadoGl=135 cuentas=135"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "BANRESERVAS - venta",
+                      "nota":  "factura=9468 total=118"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "BANRESERVAS - asiento cuadra",
+                      "nota":  "Deb=118.00 Cred=118.00 idAsiento=265"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Post-BANRESERVAS",
+                      "nota":  "BG Diff=0.00; ER=49084.50 RE=49084.50; BC Deb=124441.00 Cred=124441.00"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "BANRESERVAS debito banco mapeado",
+                      "nota":  "esperadoGl=136 cuentas=136"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "MULTI 5 metodos - venta",
+                      "nota":  "factura=9469"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "MULTI 5 metodos - asiento cuadra",
+                      "nota":  "Deb=590.00 Cred=590.00"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "MULTI 5 metodos - varios debitos tesoreria",
+                      "nota":  "cuentasDeb=[136,4,3,135,134] count=5"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Post-MULTI5",
+                      "nota":  "BG Diff=0.00; ER=49584.50 RE=49584.50; BC Deb=125031.00 Cred=125031.00"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "MIX_EFECTIVO_TARJETA - venta",
+                      "nota":  "factura=9470 total=118"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "MIX_EFECTIVO_TARJETA - asiento cuadra",
+                      "nota":  "Deb=118.00 Cred=118.00 idAsiento=267"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Post-MIX_EFECTIVO_TARJETA",
+                      "nota":  "BG Diff=0.00; ER=49684.50 RE=49684.50; BC Deb=125149.00 Cred=125149.00"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "MIX EFECTIVO+TARJETA split",
+                      "nota":  "cuentas=4,3"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "MIX_POPULAR_BHD - venta",
+                      "nota":  "factura=9471 total=118"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "MIX_POPULAR_BHD - asiento cuadra",
+                      "nota":  "Deb=118.00 Cred=118.00 idAsiento=268"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Post-MIX_POPULAR_BHD",
+                      "nota":  "BG Diff=0.00; ER=49784.50 RE=49784.50; BC Deb=125267.00 Cred=125267.00"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "MIX POPULAR+BHD split",
+                      "nota":  "cuentas=134,135"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "FINAL BG cuadra",
+                      "nota":  "Diff=0.00 Act=60224.10"
+                  }
+              ]
+}

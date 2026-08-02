@@ -54,6 +54,7 @@ namespace Alahia.eCF.Api.Services
             var fiscal = PgReceiptMapper.ToFiscal(documento);
             AsegurarValidacion(fiscal);
             var canal = ResolverCanal(fiscal.Encabezado.TipoEcf, fiscal.Encabezado.MontoTotal);
+            var eff = _settings.Effective();
 
             _logger.LogInformation(
                 "Emitir e-CF: {Encf} tipo={Tipo} monto={Monto} canal={Canal} ambiente={Ambiente}",
@@ -61,7 +62,7 @@ namespace Alahia.eCF.Api.Services
                 fiscal.Encabezado.TipoEcf,
                 fiscal.Encabezado.MontoTotal,
                 canal,
-                _settings.AmbientePath);
+                eff.AmbientePath);
 
             var package = await BuildPackageAsync(fiscal, canal, ct);
             var accept = await _transmission.SubmitAsync(package, ct);
@@ -126,17 +127,22 @@ namespace Alahia.eCF.Api.Services
         public static string ResolverCanal(int tipoeCf, decimal montoTotal)
             => tipoeCf == 32 && montoTotal < UmbralRfceMontoTotal ? "RFCE" : "ECF";
 
-        public object Info() => new
+        public object Info()
         {
-            provider = TransmissionProviderCodes.Dgii,
-            transmissionEngine = true,
-            ambiente = _settings.AmbientePath,
-            authBase = _settings.AuthBaseUrl,
-            recepcionEcf = _settings.RecepcionBaseUrl,
-            recepcionRfce = _settings.RecepcionFcBaseUrl,
-            umbralRfce = UmbralRfceMontoTotal,
-            reglaE32 = "TipoeCF=32 y MontoTotal < 250000 → RFCE (B2C); si no → ECF individual"
-        };
+            var eff = _settings.Effective();
+            return new
+            {
+                provider = TransmissionProviderCodes.Dgii,
+                transmissionEngine = true,
+                ambiente = eff.AmbientePath,
+                ambienteDefault = _settings.AmbientePath,
+                authBase = eff.AuthBaseUrl,
+                recepcionEcf = eff.RecepcionBaseUrl,
+                recepcionRfce = eff.RecepcionFcBaseUrl,
+                umbralRfce = UmbralRfceMontoTotal,
+                reglaE32 = "TipoeCF=32 y MontoTotal < 250000 → RFCE (B2C); si no → ECF individual"
+            };
+        }
 
         private async Task<TransmissionPackage> BuildPackageAsync(
             FiscalDocumentoElectronico fiscal,
@@ -167,17 +173,19 @@ namespace Alahia.eCF.Api.Services
             }
 
             var taxpayer = DgiiXmlBuilder.NormalizarRnc(fiscal.Encabezado.RncEmisor);
+            var eff = _settings.Effective();
             var meta = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
             {
                 [DgiiTransmissionProvider.MetaFileName] = fileName,
                 [DgiiTransmissionProvider.MetaIdEmpresa] = fiscal.IdEmpresa.ToString(),
+                [DgiiTransmissionProvider.MetaAmbiente] = eff.AmbientePath,
                 ["result.canal"] = canal,
                 ["result.fechaFirma"] = fechaFirma.ToString("o")
             };
             if (!string.IsNullOrEmpty(securityCode))
             {
                 meta["result.securityCode"] = securityCode;
-                meta["result.qr"] = DgiiDirectoMapper.BuildQrUrl(fiscal, fechaFirma, securityCode, _settings);
+                meta["result.qr"] = DgiiDirectoMapper.BuildQrUrl(fiscal, fechaFirma, securityCode, eff);
             }
 
             return new TransmissionPackage

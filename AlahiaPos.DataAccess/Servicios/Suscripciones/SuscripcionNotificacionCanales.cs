@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using AlahiaPos.Entities.Dto;
@@ -32,7 +33,7 @@ namespace AlahiaPos.DataAccess.Servicios.Suscripciones
                     <div style=""font-family:Segoe UI,Arial,sans-serif;max-width:640px;"">
                     <h2>{System.Net.WebUtility.HtmlEncode(mensaje.Titulo)}</h2>
                     <p>Empresa: <strong>{System.Net.WebUtility.HtmlEncode(mensaje.NombreEmpresa ?? "")}</strong></p>
-                    <p>{System.Net.WebUtility.HtmlEncode(mensaje.Mensaje)}</p>
+                    <p style=""line-height:1.5;"">{string.Join("<br/>", (mensaje.Mensaje ?? "").Replace("\r\n", "\n").Split('\n').Select(System.Net.WebUtility.HtmlEncode))}</p>
                     <p style=""color:#666;font-size:12px;"">MacroBits SRL / Alahia ERP</p>
                     </div>";
 

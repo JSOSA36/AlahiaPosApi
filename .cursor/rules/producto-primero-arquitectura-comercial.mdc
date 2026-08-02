@@ -1,0 +1,23 @@
+---
+description: Product-first development; respect commercial architecture without rewriting it
+alwaysApply: true
+---
+
+# Product first · Commercial architecture is reference
+
+## Priority
+
+1. Build a solid, professional ERP.
+2. Frontend strategy docs under CLoudAlahiaPos (`Estrategia-Comercial`, `Mapa-Definitivo-Modulos`, investigación) are **reference**, not a reason to reshape APIs for packaging convenience.
+3. Pricing / GTM wait until the product is mature.
+
+## When building or improving a module
+
+- Align new module codes and `Empresa_Modulos` gates with the hybrid map when licensing is involved.
+- Prefer improving the module (API, data, correctness) over changing commercial packaging.
+- Only propose commercial-architecture changes for a **strong business reason**; ask before editing strategy docs.
+
+## What not to do in normal development
+
+- Do not invent SKUs, plan tiers, or price tables while shipping product work.
+- Do not block product fixes for commercial-map edge cases—note drift briefly and keep building.

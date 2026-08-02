@@ -39,7 +39,7 @@ namespace AlahiaPos.Entities.Dto
         public List<SuscripcionCicloDto> CiclosAbiertos { get; set; } = new();
     }
 
-    /// <summary>Cliente para que MacroBits asigne cargos / revise cobro.</summary>
+    /// <summary>Cliente para que MacroBits configure tarifa / revise cobro.</summary>
     public class SuscripcionEmpresaCobroDto
     {
         public int IdEmpresa { get; set; }
@@ -47,9 +47,14 @@ namespace AlahiaPos.Entities.Dto
         public string EstadoServicio { get; set; } = "";
         public bool PagadoServicio { get; set; }
         public int? IdPlan { get; set; }
+        /// <summary>"Plan {NombreComercial}".</summary>
         public string? NombrePlan { get; set; }
-        public decimal? PrecioPlanCatalogo { get; set; }
-        public decimal? PrecioPlanEspecialUsd { get; set; }
+        public decimal MontoServicio { get; set; }
+        public decimal CargoAdicional { get; set; }
+        public int LimiteFacturacion { get; set; }
+        public decimal CargoReconexionDop { get; set; }
+        public bool ReconexionPendiente { get; set; }
+        public decimal TotalCiclo => MontoServicio + CargoAdicional;
     }
 
     public class NotificacionSuscripcionMensaje
@@ -61,5 +66,31 @@ namespace AlahiaPos.Entities.Dto
         public string Mensaje { get; set; } = "";
         public string? CorreoDestino { get; set; }
         public string? NombreEmpresa { get; set; }
+    }
+
+    public class SuscripcionCuentaCobroDto
+    {
+        public int Id { get; set; }
+        public string Banco { get; set; } = "";
+        public string NumeroCuenta { get; set; } = "";
+        public string Titular { get; set; } = "";
+        public string Cedula { get; set; } = "";
+        public string? Correo { get; set; }
+        public string? CuentaEstandar { get; set; }
+        public bool Activo { get; set; }
+        public int Orden { get; set; }
+    }
+
+    public class GuardarSuscripcionCuentaCobroDto
+    {
+        public int? Id { get; set; }
+        public string Banco { get; set; } = "";
+        public string NumeroCuenta { get; set; } = "";
+        public string Titular { get; set; } = "";
+        public string Cedula { get; set; } = "";
+        public string? Correo { get; set; }
+        public string? CuentaEstandar { get; set; }
+        public bool Activo { get; set; } = true;
+        public int Orden { get; set; }
     }
 }

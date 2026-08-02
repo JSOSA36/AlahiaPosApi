@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Ejemplo de trama e-CF tipo 31 (Factura de Crédito Fiscal Electrónica)
+  según XSD oficial "e-CF 31 v.1.0.xsd" + Formato e-CF V1.0 DGII.
+
+  Reglas clave:
+  - Sin namespace XML
+  - RNCEmisor / RNCComprador: exactamente 9 u 11 dígitos
+  - Fechas: dd-MM-yyyy  |  FechaHoraFirma: dd-MM-yyyy HH:mm:ss
+  - TipoIngresos: "01".."06" (string con cero a la izquierda)
+  - eNCF: exactamente 13 alfanuméricos (ej. E310000000001)
+  - Orden Comprador: RNC → RazonSocial → Correo → Direccion (no al revés)
+  - Teléfono (si va): ###-###-####
+  - Firma XMLDSig RSA-SHA256 se agrega DESPUÉS de FechaHoraFirma
+-->
+<ECF>
+  <Encabezado>
+    <Version>1.0</Version>
+    <IdDoc>
+      <TipoeCF>31</TipoeCF>
+      <eNCF>E310000000001</eNCF>
+      <FechaVencimientoSecuencia>31-12-2026</FechaVencimientoSecuencia>
+      <IndicadorMontoGravado>0</IndicadorMontoGravado>
+      <TipoIngresos>01</TipoIngresos>
+      <TipoPago>1</TipoPago>
+      <TablaFormasPago>
+        <FormaDePago>
+          <FormaPago>1</FormaPago>
+          <MontoPago>118.00</MontoPago>
+        </FormaDePago>
+      </TablaFormasPago>
+    </IdDoc>
+    <Emisor>
+      <RNCEmisor>022818177</RNCEmisor>
+      <RazonSocialEmisor>EMPRESA DEMO SRL</RazonSocialEmisor>
+      <DireccionEmisor>Calle Principal No. 1</DireccionEmisor>
+      <TablaTelefonoEmisor>
+        <TelefonoEmisor>809-555-1234</TelefonoEmisor>
+      </TablaTelefonoEmisor>
+      <CorreoEmisor>facturas@empresa.com</CorreoEmisor>
+      <FechaEmision>18-07-2026</FechaEmision>
+    </Emisor>
+    <Comprador>
+      <RNCComprador>131880738</RNCComprador>
+      <RazonSocialComprador>CLIENTE DEMO SA</RazonSocialComprador>
+      <CorreoComprador>cliente@demo.com</CorreoComprador>
+      <DireccionComprador>Av. Duarte 100</DireccionComprador>
+    </Comprador>
+    <Totales>
+      <MontoGravadoTotal>100.00</MontoGravadoTotal>
+      <MontoGravadoI1>100.00</MontoGravadoI1>
+      <ITBIS1>18</ITBIS1>
+      <TotalITBIS>18.00</TotalITBIS>
+      <TotalITBIS1>18.00</TotalITBIS1>
+      <MontoTotal>118.00</MontoTotal>
+    </Totales>
+  </Encabezado>
+  <DetallesItems>
+    <Item>
+      <NumeroLinea>1</NumeroLinea>
+      <IndicadorFacturacion>1</IndicadorFacturacion>
+      <NombreItem>Producto de prueba</NombreItem>
+      <IndicadorBienoServicio>1</IndicadorBienoServicio>
+      <CantidadItem>1.00</CantidadItem>
+      <UnidadMedida>43</UnidadMedida>
+      <PrecioUnitarioItem>100.00</PrecioUnitarioItem>
+      <MontoItem>100.00</MontoItem>
+    </Item>
+  </DetallesItems>
+  <FechaHoraFirma>18-07-2026 18:00:00</FechaHoraFirma>
+  <!-- Signature (XMLDSig) se inserta aquí al firmar -->
+</ECF>

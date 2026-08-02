@@ -1,0 +1,97 @@
+﻿[
+    {
+        "Caso":  "Schema columnas/extracto",
+        "Resultado":  "PASS",
+        "Nota":  "40 3 2043870348"
+    },
+    {
+        "Caso":  "Listar cuentas",
+        "Resultado":  "PASS",
+        "Nota":  "count=8"
+    },
+    {
+        "Caso":  "ResumenSaldos",
+        "Resultado":  "PASS",
+        "Nota":  "count=8"
+    },
+    {
+        "Caso":  "Consultar+SaldoAcumulado",
+        "Resultado":  "PASS",
+        "Nota":  "movs=39"
+    },
+    {
+        "Caso":  "RegistrarAjuste",
+        "Resultado":  "PASS",
+        "Nota":  "id=768"
+    },
+    {
+        "Caso":  "AnularMovimiento",
+        "Resultado":  "PASS",
+        "Nota":  "id=768"
+    },
+    {
+        "Caso":  "Transferencia",
+        "Resultado":  "PASS",
+        "Nota":  "ok"
+    },
+    {
+        "Caso":  "CrearConciliacion",
+        "Resultado":  "PASS",
+        "Nota":  "id=2"
+    },
+    {
+        "Caso":  "ListarPendientes",
+        "Resultado":  "PASS",
+        "Nota":  "count=41"
+    },
+    {
+        "Caso":  "MarcarConciliados",
+        "Resultado":  "PASS",
+        "Nota":  "ids=587,594"
+    },
+    {
+        "Caso":  "CerrarConciliacion",
+        "Resultado":  "PASS",
+        "Nota":  "ok"
+    },
+    {
+        "Caso":  "ReabrirConciliacion",
+        "Resultado":  "PASS",
+        "Nota":  "ok"
+    },
+    {
+        "Caso":  "ImportExtracto",
+        "Resultado":  "PASS",
+        "Nota":  "id=2"
+    },
+    {
+        "Caso":  "SugerenciasMatch",
+        "Resultado":  "PASS",
+        "Nota":  "count=2"
+    },
+    {
+        "Caso":  "EstadoCuenta",
+        "Resultado":  "PASS",
+        "Nota":  "saldoFinal=8480.00"
+    },
+    {
+        "Caso":  "HistorialConciliaciones",
+        "Resultado":  "PASS",
+        "Nota":  "count=2"
+    },
+    {
+        "Caso":  "PendientesConciliacion",
+        "Resultado":  "PASS",
+        "Nota":  "count=41"
+    },
+    {
+        "Caso":  "ContabilidadON_BG_coherente",
+        "Resultado":  "PASS",
+        "Nota":  "diff=0.00"
+    },
+    {
+        "Caso":  "SincronizarSaldos",
+        "Resultado":  "PASS",
+        "Nota":  "actualizadas=1"
+    }
+]

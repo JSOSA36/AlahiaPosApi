@@ -1,30 +1,19 @@
 using AlahiaPos.Entities.Dto;
 using AlahiaPos.Entities.Events;
+using AlahiaPos.Entities.Interfaces;
 
 namespace AlahiaPos.DataAccess.Servicios
 {
     /// <summary>
-    /// Construye solicitudes de asiento para ventas. Usa montos del evento;
-    /// las cuentas se resuelven en fases posteriores vía mapeo parametrizado.
-    /// Por ahora retorna lista vacía si no hay líneas explícitas en el evento.
+    /// Stub reemplazado: la lógica vive en ContabilidadAsientoBuilders.DesdeVentaAsync.
+    /// Se mantiene el tipo por compatibilidad de referencias.
     /// </summary>
     internal static class ContabilidadVentaAsientoBuilder
     {
-        public static List<ContabilidadIntegracionRequest> Construir(
+        public static Task<List<ContabilidadIntegracionRequest>> Construir(
             VentaConfirmadaEvent venta,
-            ContabilidadConfiguracion config)
-        {
-            var resultado = new List<ContabilidadIntegracionRequest>();
-
-            // Fase 3.1: aquí se resolverán cuentas vía ContabilidadCuentaMapeo.
-            // La infraestructura está lista; el builder se completará al cablear ventas.
-            // Mientras tanto, si el evento no trae líneas pre-calculadas, no genera asiento.
-            if (venta.Total <= 0)
-                return resultado;
-
-            // Placeholder: se activará cuando exista mapeo de cuentas por empresa.
-            // Evita generar asientos incorrectos sin parametrización.
-            return resultado;
-        }
+            ContabilidadConfiguracion config,
+            IContabilidadCuentaMapeoService mapeo)
+            => ContabilidadAsientoBuilders.DesdeVentaAsync(venta, config, mapeo);
     }
 }

@@ -58,171 +58,28 @@ namespace AlahiaPos.DataAccess.Servicios
             var desde = new DateTime(hoy.Year, hoy.Month, 1);
             var hasta = desde.AddMonths(1).AddDays(-1);
             var finExclusivo = desde.AddMonths(1);
+            var cultura = new System.Globalization.CultureInfo("es-DO");
 
             var dto = new DashboardGerencialDto
             {
                 IdEmpresa = idEmpresa,
                 PeriodoDesde = desde,
                 PeriodoHasta = hasta,
-                PeriodoLabel = desde.ToString("MMMM yyyy", new System.Globalization.CultureInfo("es-DO"))
+                PeriodoLabel = desde.ToString("MMMM yyyy", cultura),
+                PeriodoHoyLabel = hoy.ToString("dddd, d 'de' MMMM 'de' yyyy", cultura)
             };
 
-            var headersMes = await _context.FacturaHeaders
-                .AsNoTracking()
-                .Where(f =>
-                    f.IdEmpresa == idEmpresa
-                    && f.IdTipoDocumentos == TipoDocumentoFactura
-                    && f.EstaCancelada == false
-                    && f.Estado == "Pagada"
-                    && f.FechaInseccion >= desde
-                    && f.FechaInseccion < finExclusivo)
-                .Select(f => new
-                {
-                    f.IdFacturaHeader,
-                    f.Total,
-                    f.FechaInseccion
-                })
-                .ToListAsync();
+            // Día primero en el payload: el propietario ve ingresos/utilidad de hoy al entrar.
+            // Secuencial: DbContext no es thread-safe.
+            dto.PlHoy = await CalcularPlPeriodoAsync(idEmpresa, hoy, hoy.AddDays(1));
+            var mes = await ObtenerSnapshotPeriodoAsync(idEmpresa, desde, hasta, finExclusivo);
+            dto.Pl = mes.Pl;
 
-            var idsHeaders = headersMes.Select(h => h.IdFacturaHeader).ToList();
-
-            var detallesMes = idsHeaders.Count == 0
-                ? new List<DetalleVentaRow>()
-                : await (
-                    from d in _context.FacturaDetalles.AsNoTracking()
-                    join p in _context.Productos.AsNoTracking() on d.IdProducto equals p.IdProducto
-                    where idsHeaders.Contains(d.IdFacturaHeader)
-                    select new DetalleVentaRow
-                    {
-                        IdProducto = d.IdProducto,
-                        Nombre = p.Nombre ?? "Sin nombre",
-                        Cantidad = d.Cantidad - d.CantidadDevuelta,
-                        VentaNeta = d.SubTotal - d.Itbis,
-                        PrecioCompra = p.PrecioCompra,
-                        EsServicio = p.EsServicio,
-                        TipoComportamiento = p.TipoComportamiento
-                    }
-                ).ToListAsync();
-
-            foreach (var d in detallesMes)
-            {
-                if (d.Cantidad < 0) d.Cantidad = 0;
-            }
-
-            var ventasBrutas = detallesMes.Sum(d => d.VentaNeta);
-            if (ventasBrutas == 0 && headersMes.Count > 0)
-                ventasBrutas = headersMes.Sum(h => h.Total);
-
-            var costoVenta = detallesMes
-                .Where(EsProductoInventariable)
-                .Sum(d => d.Cantidad * d.PrecioCompra);
-
-            var utilidadBruta = ventasBrutas - costoVenta;
-
-            var gastos = await _context.Gastos
-                .AsNoTracking()
-                .Where(g =>
-                    g.IdEmpresa == idEmpresa
-                    && g.EstaAnulado == false
-                    && g.FechaInseccion >= desde
-                    && g.FechaInseccion < finExclusivo)
-                .Select(g => new { g.Monto, g.TipoGasto })
-                .ToListAsync();
-
-            var gastosOperativos = gastos.Sum(g => g.Monto);
-
-            var comisionesDetalle = _facturaHeader
-                .GetComisionesDetalle(desde, hasta, idEmpresa)
-                .ToList();
-            var comisiones = comisionesDetalle.Sum(c => c.TotalComisiones);
-
-            var perdidasDetalles = await (
-                from m in _context.MovimientosInventario.AsNoTracking()
-                from det in m.Detalles
-                join p in _context.Productos.AsNoTracking() on det.IdProducto equals p.IdProducto into pj
-                from p in pj.DefaultIfEmpty()
-                where m.IdEmpresa == idEmpresa
-                      && m.Activo
-                      && m.Fecha >= desde
-                      && m.Fecha < finExclusivo
-                      && (
-                          m.Motivo == "PERDIDA"
-                          || (m.Motivo == "AJUSTE" && m.TipoMovimiento == "SALIDA")
-                      )
-                select new
-                {
-                    Nombre = p != null ? (p.Nombre ?? "Sin nombre") : "Sin nombre",
-                    Monto = det.SubTotal ?? (det.Cantidad * (det.Precio ?? 0))
-                }
-            ).ToListAsync();
-
-            var perdidasInventario = perdidasDetalles.Sum(x => x.Monto);
-
-            // Otros ingresos: solo ingreso económico real (no cobros de factura / tesorería interna)
-            var ingresosMes = await _context.Ingresos
-                .AsNoTracking()
-                .Where(i =>
-                    i.IdEmpresa == idEmpresa
-                    && i.EstaAnulado == false
-                    && i.FechaRegistro >= desde
-                    && i.FechaRegistro < finExclusivo)
-                .Select(i => new { i.Categoria, i.Monto, i.IdFacturaHeader })
-                .ToListAsync();
-
-            var otrosIngresos = ingresosMes
-                .Where(i => EsOtroIngresoEconomico(i.Categoria, i.IdFacturaHeader))
-                .Sum(i => i.Monto);
-
-            // Otros egresos: solo egresos extraordinarios explícitos.
-            // No incluyen transferencias, préstamos, ajustes de caja ni pagos ya cubiertos por Gastos.
-            var otrosEgresosRaw = await _context.MovimientoFinanciero
-                .AsNoTracking()
-                .Where(m =>
-                    m.IdEmpresa == idEmpresa
-                    && m.TipoMovimiento == "SALIDA"
-                    && m.Estado == "CONFIRMADO"
-                    && m.FechaMovimiento >= desde
-                    && m.FechaMovimiento < finExclusivo)
-                .Select(m => new { m.Categoria, m.Monto, m.TipoMovimiento })
-                .ToListAsync();
-
-            var otrosEgresos = otrosEgresosRaw
-                .Where(m =>
-                {
-                    var cat = (m.Categoria ?? "").Trim().ToUpperInvariant();
-                    return cat is "OTRO" or "OTROS" or "EGRESO EXTRAORDINARIO" or "EXTRAORDINARIO";
-                })
-                .Sum(m => m.Monto);
-
-            var utilidadOperativa =
-                utilidadBruta
-                - gastosOperativos
-                - comisiones
-                - perdidasInventario
-                - otrosEgresos
-                + otrosIngresos;
-
-            var margenBrutoPct = ventasBrutas > 0
-                ? Round(utilidadBruta / ventasBrutas * 100m)
-                : 0;
-            var margenOperativoPct = ventasBrutas > 0
-                ? Round(utilidadOperativa / ventasBrutas * 100m)
-                : 0;
-
-            dto.Pl = new DashboardGerencialPlDto
-            {
-                VentasBrutas = Round(ventasBrutas),
-                CostoVenta = Round(costoVenta),
-                UtilidadBruta = Round(utilidadBruta),
-                GastosOperativos = Round(gastosOperativos),
-                Comisiones = Round(comisiones),
-                PerdidasInventario = Round(perdidasInventario),
-                OtrosIngresos = Round(otrosIngresos),
-                OtrosEgresos = Round(otrosEgresos),
-                UtilidadOperativa = Round(utilidadOperativa),
-                MargenBrutoPct = margenBrutoPct,
-                MargenOperativoPct = margenOperativoPct
-            };
+            var headersMes = mes.Headers;
+            var detallesMes = mes.Detalles;
+            var gastos = mes.Gastos;
+            var comisionesDetalle = mes.ComisionesDetalle;
+            var perdidasDetalles = mes.PerdidasDetalles;
 
             var saldos = (await _cuentasFinancieras.GetResumenSaldosAsync(idEmpresa)).ToList();
             var caja = saldos
@@ -361,6 +218,175 @@ namespace AlahiaPos.DataAccess.Servicios
             return dto;
         }
 
+        private async Task<DashboardGerencialPlDto> CalcularPlPeriodoAsync(
+            int idEmpresa, DateTime desde, DateTime finExclusivo)
+        {
+            var hasta = finExclusivo.AddDays(-1);
+            var snap = await ObtenerSnapshotPeriodoAsync(idEmpresa, desde, hasta, finExclusivo);
+            return snap.Pl;
+        }
+
+        private async Task<PeriodoSnapshot> ObtenerSnapshotPeriodoAsync(
+            int idEmpresa, DateTime desde, DateTime hasta, DateTime finExclusivo)
+        {
+            var headers = await _context.FacturaHeaders
+                .AsNoTracking()
+                .Where(f =>
+                    f.IdEmpresa == idEmpresa
+                    && f.IdTipoDocumentos == TipoDocumentoFactura
+                    && f.EstaCancelada == false
+                    && f.Estado == "Pagada"
+                    && f.FechaInseccion >= desde
+                    && f.FechaInseccion < finExclusivo)
+                .Select(f => new HeaderVentaRow
+                {
+                    IdFacturaHeader = f.IdFacturaHeader,
+                    Total = f.Total,
+                    FechaInseccion = f.FechaInseccion
+                })
+                .ToListAsync();
+
+            var idsHeaders = headers.Select(h => h.IdFacturaHeader).ToList();
+
+            var detalles = idsHeaders.Count == 0
+                ? new List<DetalleVentaRow>()
+                : await (
+                    from d in _context.FacturaDetalles.AsNoTracking()
+                    join p in _context.Productos.AsNoTracking() on d.IdProducto equals p.IdProducto
+                    where idsHeaders.Contains(d.IdFacturaHeader)
+                    select new DetalleVentaRow
+                    {
+                        IdProducto = d.IdProducto,
+                        Nombre = p.Nombre ?? "Sin nombre",
+                        Cantidad = d.Cantidad - d.CantidadDevuelta,
+                        VentaNeta = d.SubTotal - d.Itbis,
+                        PrecioCompra = p.PrecioCompra,
+                        EsServicio = p.EsServicio,
+                        TipoComportamiento = p.TipoComportamiento
+                    }
+                ).ToListAsync();
+
+            foreach (var d in detalles)
+            {
+                if (d.Cantidad < 0) d.Cantidad = 0;
+            }
+
+            var ventasBrutas = detalles.Sum(d => d.VentaNeta);
+            if (ventasBrutas == 0 && headers.Count > 0)
+                ventasBrutas = headers.Sum(h => h.Total);
+
+            var costoVenta = detalles
+                .Where(EsProductoInventariable)
+                .Sum(d => d.Cantidad * d.PrecioCompra);
+
+            var utilidadBruta = ventasBrutas - costoVenta;
+
+            var gastos = await _context.Gastos
+                .AsNoTracking()
+                .Where(g =>
+                    g.IdEmpresa == idEmpresa
+                    && g.EstaAnulado == false
+                    && g.FechaInseccion >= desde
+                    && g.FechaInseccion < finExclusivo)
+                .Select(g => new GastoRow { Monto = g.Monto, TipoGasto = g.TipoGasto })
+                .ToListAsync();
+
+            var gastosOperativos = gastos.Sum(g => g.Monto);
+
+            var comisionesDetalle = _facturaHeader
+                .GetComisionesDetalle(desde, hasta, idEmpresa)
+                .ToList();
+            var comisiones = comisionesDetalle.Sum(c => c.TotalComisiones);
+
+            var perdidasDetalles = await (
+                from m in _context.MovimientosInventario.AsNoTracking()
+                from det in m.Detalles
+                join p in _context.Productos.AsNoTracking() on det.IdProducto equals p.IdProducto into pj
+                from p in pj.DefaultIfEmpty()
+                where m.IdEmpresa == idEmpresa
+                      && m.Activo
+                      && m.Fecha >= desde
+                      && m.Fecha < finExclusivo
+                      && (
+                          m.Motivo == "PERDIDA"
+                          || (m.Motivo == "AJUSTE" && m.TipoMovimiento == "SALIDA")
+                      )
+                select new PerdidaRow
+                {
+                    Nombre = p != null ? (p.Nombre ?? "Sin nombre") : "Sin nombre",
+                    Monto = det.SubTotal ?? (det.Cantidad * (det.Precio ?? 0))
+                }
+            ).ToListAsync();
+
+            var perdidasInventario = perdidasDetalles.Sum(x => x.Monto);
+
+            var ingresos = await _context.Ingresos
+                .AsNoTracking()
+                .Where(i =>
+                    i.IdEmpresa == idEmpresa
+                    && i.EstaAnulado == false
+                    && i.FechaRegistro >= desde
+                    && i.FechaRegistro < finExclusivo)
+                .Select(i => new { i.Categoria, i.Monto, i.IdFacturaHeader })
+                .ToListAsync();
+
+            var otrosIngresos = ingresos
+                .Where(i => EsOtroIngresoEconomico(i.Categoria, i.IdFacturaHeader))
+                .Sum(i => i.Monto);
+
+            var otrosEgresosRaw = await _context.MovimientoFinanciero
+                .AsNoTracking()
+                .Where(m =>
+                    m.IdEmpresa == idEmpresa
+                    && m.TipoMovimiento == "SALIDA"
+                    && m.Estado == "CONFIRMADO"
+                    && m.FechaMovimiento >= desde
+                    && m.FechaMovimiento < finExclusivo)
+                .Select(m => new { m.Categoria, m.Monto })
+                .ToListAsync();
+
+            var otrosEgresos = otrosEgresosRaw
+                .Where(m =>
+                {
+                    var cat = (m.Categoria ?? "").Trim().ToUpperInvariant();
+                    return cat is "OTRO" or "OTROS" or "EGRESO EXTRAORDINARIO" or "EXTRAORDINARIO";
+                })
+                .Sum(m => m.Monto);
+
+            var utilidadOperativa =
+                utilidadBruta
+                - gastosOperativos
+                - comisiones
+                - perdidasInventario
+                - otrosEgresos
+                + otrosIngresos;
+
+            var pl = new DashboardGerencialPlDto
+            {
+                VentasBrutas = Round(ventasBrutas),
+                CostoVenta = Round(costoVenta),
+                UtilidadBruta = Round(utilidadBruta),
+                GastosOperativos = Round(gastosOperativos),
+                Comisiones = Round(comisiones),
+                PerdidasInventario = Round(perdidasInventario),
+                OtrosIngresos = Round(otrosIngresos),
+                OtrosEgresos = Round(otrosEgresos),
+                UtilidadOperativa = Round(utilidadOperativa),
+                MargenBrutoPct = ventasBrutas > 0 ? Round(utilidadBruta / ventasBrutas * 100m) : 0,
+                MargenOperativoPct = ventasBrutas > 0 ? Round(utilidadOperativa / ventasBrutas * 100m) : 0
+            };
+
+            return new PeriodoSnapshot
+            {
+                Pl = pl,
+                Headers = headers,
+                Detalles = detalles,
+                Gastos = gastos,
+                ComisionesDetalle = comisionesDetalle,
+                PerdidasDetalles = perdidasDetalles
+            };
+        }
+
         private static bool EsOtroIngresoEconomico(string? categoria, int? idFacturaHeader)
         {
             // Cobros de factura / POS nunca deben aumentar la utilidad aquí
@@ -462,6 +488,35 @@ namespace AlahiaPos.DataAccess.Servicios
 
         private static decimal Round(decimal value) =>
             Math.Round(value, 2, MidpointRounding.AwayFromZero);
+
+        private class PeriodoSnapshot
+        {
+            public DashboardGerencialPlDto Pl { get; set; } = new();
+            public List<HeaderVentaRow> Headers { get; set; } = new();
+            public List<DetalleVentaRow> Detalles { get; set; } = new();
+            public List<GastoRow> Gastos { get; set; } = new();
+            public List<ComisionesResultDto> ComisionesDetalle { get; set; } = new();
+            public List<PerdidaRow> PerdidasDetalles { get; set; } = new();
+        }
+
+        private class HeaderVentaRow
+        {
+            public int IdFacturaHeader { get; set; }
+            public decimal Total { get; set; }
+            public DateTime FechaInseccion { get; set; }
+        }
+
+        private class GastoRow
+        {
+            public decimal Monto { get; set; }
+            public string? TipoGasto { get; set; }
+        }
+
+        private class PerdidaRow
+        {
+            public string Nombre { get; set; } = "";
+            public decimal Monto { get; set; }
+        }
 
         private class DetalleVentaRow
         {

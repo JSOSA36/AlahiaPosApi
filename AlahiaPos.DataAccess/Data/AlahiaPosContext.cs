@@ -21,6 +21,7 @@ namespace AlahiaPos.DataAccess.Data
         public DbSet<SuscripcionCicloDetalle> SuscripcionCicloDetalle { get; set; }
         public DbSet<SuscripcionEvento> SuscripcionEvento { get; set; }
         public DbSet<SuscripcionAvisoLog> SuscripcionAvisoLog { get; set; }
+        public DbSet<SuscripcionCuentaCobro> SuscripcionCuentaCobro { get; set; }
         public DbSet<EmpresaCargoRecurrente> EmpresaCargoRecurrente { get; set; }
         public DbSet<Cocinas> Cocinas { get; set; }
         public DbSet<Zonas> Zonas { get; set; }
@@ -31,6 +32,7 @@ namespace AlahiaPos.DataAccess.Data
         public DbSet<PagosFacturasClientes> PagosFacturasClientes { get; set; }
         public DbSet<Empresas> Empresas { get; set; }
         public DbSet<Gastos> Gastos { get; set; }
+        public DbSet<CategoriaGasto> CategoriasGasto { get; set; }
         public DbSet<FacturaDetalles> FacturaDetalles { get; set; }
         public DbSet<FacturaHeaders> FacturaHeaders { get; set; }
         public DbSet<Productos> Productos { get; set; }
@@ -121,6 +123,8 @@ namespace AlahiaPos.DataAccess.Data
         public DbSet<DgiiConfiguracionAuditoria> DgiiConfiguracionAuditoria { get; set; }
         public DbSet<NotasCredito> NotasCredito { get; set; }
         public DbSet<NotasCreditoDetalle> NotasCreditoDetalle { get; set; }
+        public DbSet<NotasCreditoAplicacion> NotasCreditoAplicaciones { get; set; }
+        public DbSet<ClienteSaldoAFavor> ClienteSaldoAFavor { get; set; }
         public DbSet<PlantillasDocumentosClinicos> PlantillasDocumentosClinicos { get; set; }
         public DbSet<DocumentosClinicos> DocumentosClinicos { get; set; }
         public DbSet<CuentaContable> CuentasContables { get; set; }
@@ -138,6 +142,23 @@ namespace AlahiaPos.DataAccess.Data
         public DbSet<TesoreriaTipoDocumento> TesoreriaTipoDocumento { get; set; }
         public DbSet<TesoreriaConciliacion> TesoreriaConciliacion { get; set; }
         public DbSet<TesoreriaConciliacionLinea> TesoreriaConciliacionLinea { get; set; }
+        public DbSet<TesoreriaConciliacionAuditoria> TesoreriaConciliacionAuditoria { get; set; }
+        public DbSet<TesoreriaExtractoImport> TesoreriaExtractoImport { get; set; }
+        public DbSet<TesoreriaExtractoLinea> TesoreriaExtractoLinea { get; set; }
+        public DbSet<PagoReclasificacion> PagoReclasificacion { get; set; }
+
+        // ==============================
+        // COTIZADOR COMERCIAL
+        // ==============================
+        public DbSet<AlahiaPos.Entities.Domain.Cotizador.ModuloComercial> ModuloComercial { get; set; }
+        public DbSet<AlahiaPos.Entities.Domain.Cotizador.ModuloDependencia> ModuloDependencia { get; set; }
+        public DbSet<AlahiaPos.Entities.Domain.Cotizador.TipoNegocio> TipoNegocio { get; set; }
+        public DbSet<AlahiaPos.Entities.Domain.Cotizador.ModuloTipoNegocio> ModuloTipoNegocio { get; set; }
+        public DbSet<AlahiaPos.Entities.Domain.Cotizador.CotizadorParametro> CotizadorParametro { get; set; }
+        public DbSet<AlahiaPos.Entities.Domain.Cotizador.CotizadorTramoDocumento> CotizadorTramoDocumento { get; set; }
+        public DbSet<AlahiaPos.Entities.Domain.Cotizador.Cotizacion> Cotizacion { get; set; }
+        public DbSet<AlahiaPos.Entities.Domain.Cotizador.CotizacionDetalle> CotizacionDetalle { get; set; }
+        public DbSet<AlahiaPos.Entities.Domain.Cotizador.CotizacionLead> CotizacionLead { get; set; }
 
         // ==============================
         // 🔧 CONFIGURACIONES RELACIONES
@@ -196,6 +217,36 @@ namespace AlahiaPos.DataAccess.Data
             {
                 e.Ignore(d => d.Productos);
                 e.Property(d => d.IdProducto).HasColumnName("IdProducto");
+            });
+
+            modelBuilder.Entity<AlahiaPos.Entities.Domain.Cotizador.ModuloComercial>(e =>
+            {
+                e.HasIndex(x => x.ModuloId).IsUnique();
+            });
+
+            modelBuilder.Entity<AlahiaPos.Entities.Domain.Cotizador.ModuloDependencia>(e =>
+            {
+                e.HasIndex(x => new { x.ModuloId, x.ModuloRequeridoId, x.Tipo }).IsUnique();
+            });
+
+            modelBuilder.Entity<AlahiaPos.Entities.Domain.Cotizador.TipoNegocio>(e =>
+            {
+                e.HasIndex(x => x.Codigo).IsUnique();
+            });
+
+            modelBuilder.Entity<AlahiaPos.Entities.Domain.Cotizador.ModuloTipoNegocio>(e =>
+            {
+                e.HasIndex(x => new { x.ModuloId, x.TipoNegocioId }).IsUnique();
+            });
+
+            modelBuilder.Entity<AlahiaPos.Entities.Domain.Cotizador.CotizadorParametro>(e =>
+            {
+                e.HasIndex(x => x.Clave).IsUnique();
+            });
+
+            modelBuilder.Entity<AlahiaPos.Entities.Domain.Cotizador.Cotizacion>(e =>
+            {
+                e.HasIndex(x => x.Folio).IsUnique();
             });
         }
     }

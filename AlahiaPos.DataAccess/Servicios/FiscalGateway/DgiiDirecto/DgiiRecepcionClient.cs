@@ -42,14 +42,17 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.DgiiDirecto
             _http.Timeout = TimeSpan.FromSeconds(Math.Max(15, _settings.TimeoutSeconds));
         }
 
+        private DgiiDirectoSettings Eff => _settings.Effective();
+
         public async Task<DgiiHttpResultado> EnviarRfceAsync(
             string xmlFirmado,
             string nombreArchivo,
             int idEmpresa,
             CancellationToken ct = default)
         {
+            var eff = Eff;
             var token = await _auth.ObtenerTokenAsync(idEmpresa, ct);
-            var url = Combine(_settings.RecepcionFcBaseUrl, _settings.RecepcionRfceEndpoint);
+            var url = Combine(eff.RecepcionFcBaseUrl, eff.RecepcionRfceEndpoint);
 
             using var form = new MultipartFormDataContent();
             var bytes = Encoding.UTF8.GetBytes(xmlFirmado);
@@ -61,7 +64,7 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.DgiiDirecto
             req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
             req.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
-            _logger.LogInformation("DGII RFCE POST {Url} archivo={Archivo}", url, nombreArchivo);
+            _logger.LogInformation("DGII RFCE POST {Url} ambiente={Ambiente} archivo={Archivo}", url, eff.AmbientePath, nombreArchivo);
             using var res = await _http.SendAsync(req, ct);
             var body = await res.Content.ReadAsStringAsync(ct);
             return Parse(res.IsSuccessStatusCode, (int)res.StatusCode, body);
@@ -73,8 +76,9 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.DgiiDirecto
             int idEmpresa,
             CancellationToken ct = default)
         {
+            var eff = Eff;
             var token = await _auth.ObtenerTokenAsync(idEmpresa, ct);
-            var url = Combine(_settings.RecepcionBaseUrl, _settings.RecepcionEcfEndpoint);
+            var url = Combine(eff.RecepcionBaseUrl, eff.RecepcionEcfEndpoint);
 
             using var form = new MultipartFormDataContent();
             var bytes = Encoding.UTF8.GetBytes(xmlFirmado);
@@ -86,7 +90,7 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.DgiiDirecto
             req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
             req.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
-            _logger.LogInformation("DGII recepción POST {Url} archivo={Archivo}", url, nombreArchivo);
+            _logger.LogInformation("DGII recepción POST {Url} ambiente={Ambiente} archivo={Archivo}", url, eff.AmbientePath, nombreArchivo);
             using var res = await _http.SendAsync(req, ct);
             var body = await res.Content.ReadAsStringAsync(ct);
             return Parse(res.IsSuccessStatusCode, (int)res.StatusCode, body);
@@ -97,8 +101,9 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.DgiiDirecto
             int idEmpresa,
             CancellationToken ct = default)
         {
+            var eff = Eff;
             var token = await _auth.ObtenerTokenAsync(idEmpresa, ct);
-            var baseUrl = Combine(_settings.ConsultaBaseUrl, _settings.ConsultaEstadoEndpoint);
+            var baseUrl = Combine(eff.ConsultaBaseUrl, eff.ConsultaEstadoEndpoint);
             var url = $"{baseUrl}?TrackId={Uri.EscapeDataString(trackId)}";
 
             using var req = new HttpRequestMessage(HttpMethod.Get, url);

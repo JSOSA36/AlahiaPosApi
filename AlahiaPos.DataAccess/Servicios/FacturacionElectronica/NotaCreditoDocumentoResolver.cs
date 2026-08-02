@@ -43,7 +43,11 @@ namespace AlahiaPos.DataAccess.Servicios.FacturacionElectronica
                 Total = nc.Total,
                 NcfModificado = nc.NCFModificado,
                 FechaDocumentoModificado = nc.FechaFacturaOrigen,
-                CodigoModificacion = 1,
+                CodigoModificacion = (nc.Detalles != null
+                    && nc.Detalles.Count > 0
+                    && nc.Detalles.All(d => d.IdFacturaDetalle <= 0))
+                    ? 3
+                    : 1,
                 RazonModificacion = string.IsNullOrWhiteSpace(nc.Observacion) ? "Devolucion" : nc.Observacion
             };
 
@@ -76,6 +80,7 @@ namespace AlahiaPos.DataAccess.Servicios.FacturacionElectronica
 
             if (!info.FormasPago.Any() && info.Total > 0)
             {
+                // E34 no incluye TablaFormasPago; el builder las limpia para tipo 34.
                 info.FormasPago.Add(new DocumentoOrigenPago
                 {
                     FormaPagoDgii = 1,

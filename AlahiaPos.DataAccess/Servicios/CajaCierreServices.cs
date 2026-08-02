@@ -1,5 +1,6 @@
 ﻿using AlahiaPos.Entities.Domain;
 using AlahiaPos.Entities.Dto;
+using AlahiaPos.Entities.Events;
 using AlahiaPos.Entities.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -25,6 +26,10 @@ namespace AlahiaPos.DataAccess.Servicios
         IRepository<Productos> _productoRepository;
         IGastos _IGastos;
         IIngresos _Ingresos;
+        private readonly IContabilidadEventPublisher _contabilidadEvents;
+        private readonly IMovimientoFinancieroService _movimientoFinancieroService;
+        private readonly ICuentaFinancieraService _cuentaFinancieraService;
+
         public CajaCierreServices(
 
     IRepository<CajaCierre> repository,
@@ -38,7 +43,10 @@ namespace AlahiaPos.DataAccess.Servicios
 
     IRepository<FacturaDetalles> detalleRepository,
 
-    IRepository<Productos> productoRepository
+    IRepository<Productos> productoRepository,
+    IContabilidadEventPublisher contabilidadEvents,
+    IMovimientoFinancieroService movimientoFinancieroService,
+    ICuentaFinancieraService cuentaFinancieraService
 )
         {
             _repository = repository;
@@ -53,6 +61,9 @@ namespace AlahiaPos.DataAccess.Servicios
             _detalleRepository = detalleRepository;
 
             _productoRepository = productoRepository;
+            _contabilidadEvents = contabilidadEvents;
+            _movimientoFinancieroService = movimientoFinancieroService;
+            _cuentaFinancieraService = cuentaFinancieraService;
         }
 
         /* =====================================
@@ -797,6 +808,84 @@ namespace AlahiaPos.DataAccess.Servicios
 
                 apertura
             );
+
+            // Contabilidad: solo diferencia de cuadre (sobrante/faltante). Ventas/gastos ya están contabilizados.
+            try
+            {
+                if (Math.Abs(model.Diferencia) >= 0.01m)
+                {
+                    var esSobrante = model.Diferencia > 0;
+                    await _contabilidadEvents.TryPublishAsync(new MovimientoBancarioRegistradoEvent
+                    {
+                        IdEmpresa = model.IdEmpresa,
+                        IdUsuario = model.IdUsuario,
+                        Fecha = model.FechaCierre == default ? DateTime.Now : model.FechaCierre,
+                        ReferenciaId = model.IdCajaCierre,
+                        ReferenciaTipo = "CierreCaja",
+                        TipoMovimiento = esSobrante ? "CIERRE_SOBRANTE" : "CIERRE_FALTANTE",
+                        Categoria = "CIERRE",
+                        Monto = Math.Abs(model.Diferencia),
+                        TipoCuentaOrigen = "CAJA",
+                        TipoCuentaDestino = "CAJA",
+                        Motivo = $"Cierre caja #{model.IdCajaCierre}"
+                    });
+                }
+            }
+            catch
+            {
+                // Nunca tumbar cierre operativo
+            }
+
+            // Tesorería: reflejar sobrante/faltante en cuenta CAJA principal sin duplicar asiento contable.
+            try
+            {
+                if (Math.Abs(model.Diferencia) >= 0.01m)
+                {
+                    var cuentas = await _cuentaFinancieraService.GetByEmpresaAsync(model.IdEmpresa);
+                    var cajaPrincipal = cuentas.FirstOrDefault(c =>
+                        c.TipoCuenta == "CAJA" && c.EsPrincipal && c.Activa)
+                        ?? cuentas.FirstOrDefault(c => c.TipoCuenta == "CAJA" && c.Activa);
+
+                    if (cajaPrincipal != null)
+                    {
+                        var monto = Math.Abs(model.Diferencia);
+                        var motivo = $"Cierre caja #{model.IdCajaCierre}";
+
+                        if (model.Diferencia > 0)
+                        {
+                            await _movimientoFinancieroService.RegistrarEntradaAsync(
+                                model.IdEmpresa,
+                                model.IdUsuario,
+                                cajaPrincipal.IdCuentaFinanciera,
+                                monto,
+                                motivo,
+                                null,
+                                categoria: "CIERRE_CAJA",
+                                referenciaId: model.IdCajaCierre,
+                                referenciaTipo: "CierreCaja",
+                                claveIdempotencia: $"CAJA_CIERRE_{model.IdCajaCierre}_SOBRANTE");
+                        }
+                        else
+                        {
+                            await _movimientoFinancieroService.RegistrarSalidaAsync(
+                                model.IdEmpresa,
+                                model.IdUsuario,
+                                cajaPrincipal.IdCuentaFinanciera,
+                                monto,
+                                motivo,
+                                null,
+                                categoria: "CIERRE_CAJA",
+                                referenciaId: model.IdCajaCierre,
+                                referenciaTipo: "CierreCaja",
+                                claveIdempotencia: $"CAJA_CIERRE_{model.IdCajaCierre}_FALTANTE");
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                // Nunca tumbar cierre operativo
+            }
 
             /* =====================================
             🔥 RETORNO

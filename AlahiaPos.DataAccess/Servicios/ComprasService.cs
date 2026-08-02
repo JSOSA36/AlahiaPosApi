@@ -1,6 +1,7 @@
 using AlahiaPos.DataAccess.Data;
 using AlahiaPos.Entities.Domain;
 using AlahiaPos.Entities.Dto;
+using AlahiaPos.Entities.Events;
 using AlahiaPos.Entities.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
@@ -23,6 +24,7 @@ namespace AlahiaPos.DataAccess.Servicios
         private readonly IMovimientoFinancieroService _movimientoFinancieroService;
         private readonly IMetodoPagoCuentaService _metodoPagoCuentaService;
         private readonly IFiscalWorkEnqueueService _fiscalEnqueue;
+        private readonly IContabilidadEventPublisher _contabilidadEvents;
 
         public ComprasService(
             AlahiaPosContext context,
@@ -36,7 +38,8 @@ namespace AlahiaPos.DataAccess.Servicios
             IMovimientosInventarioService movimientosInventario,
             IMovimientoFinancieroService movimientoFinancieroService,
             IMetodoPagoCuentaService metodoPagoCuentaService,
-            IFiscalWorkEnqueueService fiscalEnqueue)
+            IFiscalWorkEnqueueService fiscalEnqueue,
+            IContabilidadEventPublisher contabilidadEvents)
         {
             _context = context;
             _headerRepository = headerRepository;
@@ -50,6 +53,7 @@ namespace AlahiaPos.DataAccess.Servicios
             _movimientoFinancieroService = movimientoFinancieroService;
             _metodoPagoCuentaService = metodoPagoCuentaService;
             _fiscalEnqueue = fiscalEnqueue;
+            _contabilidadEvents = contabilidadEvents;
         }
 
         public async Task<FacturaCompraDto> GuardarBorradorAsync(GuardarFacturaCompraRequest request)
@@ -216,6 +220,56 @@ namespace AlahiaPos.DataAccess.Servicios
                     // Confirmación comercial ya commit
                 }
 
+                try
+                {
+                    decimal montoInventario = 0;
+                    decimal montoGasto = 0;
+                    decimal montoActivoFijo = 0;
+                    foreach (var linea in detalles)
+                    {
+                        var tipo = TipoComportamientoConstantes.Normalizar(linea.TipoComportamientoLinea);
+                        if (string.IsNullOrWhiteSpace(linea.TipoComportamientoLinea))
+                        {
+                            var producto = _productosRepository.GetById(linea.IdProducto);
+                            tipo = producto != null
+                                ? TipoComportamientoConstantes.ResolverComportamientoCompra(producto)
+                                : TipoComportamientoConstantes.Inventario;
+                        }
+
+                        var netoLinea = Math.Max(0, linea.SubTotal - linea.Itbis);
+                        if (tipo == TipoComportamientoConstantes.Gasto
+                            || tipo == TipoComportamientoConstantes.Servicio)
+                            montoGasto += netoLinea;
+                        else if (tipo == TipoComportamientoConstantes.ActivoFijo)
+                            montoActivoFijo += netoLinea;
+                        else if (tipo == TipoComportamientoConstantes.Inventario)
+                            montoInventario += netoLinea;
+                        else
+                            montoGasto += netoLinea;
+                    }
+
+                    await _contabilidadEvents.TryPublishAsync(new CompraConfirmadaEvent
+                    {
+                        IdEmpresa = request.IdEmpresa,
+                        IdUsuario = request.IdUsuario,
+                        Fecha = DateTime.Now,
+                        ReferenciaId = header.IdOrdenCompraHeader,
+                        ReferenciaTipo = "Compra",
+                        Total = header.Total,
+                        TotalItbis = header.TotalItbis,
+                        MontoInventario = montoInventario,
+                        MontoGasto = montoGasto,
+                        MontoActivoFijo = montoActivoFijo,
+                        EsContado = esContado,
+                        FormaPago = request.FormaPago,
+                        NumeroDocumento = header.NumeroDocumento
+                    });
+                }
+                catch
+                {
+                    // Contabilidad nunca tumba compra
+                }
+
                 return await MapToDtoAsync(idOrdenCompraHeader, request.IdEmpresa)
                     ?? throw new Exception("No se pudo cargar la factura confirmada.");
             }
@@ -281,6 +335,18 @@ namespace AlahiaPos.DataAccess.Servicios
 
                 await transaction.CommitAsync();
 
+                await _contabilidadEvents.TryPublishAsync(new PagoProveedorRegistradoEvent
+                {
+                    IdEmpresa = request.IdEmpresa,
+                    IdUsuario = request.IdUsuario,
+                    Fecha = DateTime.Now,
+                    ReferenciaId = pago.IdPagoProveedor,
+                    ReferenciaTipo = "PagoProveedor",
+                    Monto = request.Monto,
+                    FormaPago = request.FormaPago,
+                    IdOrdenCompraHeader = header.IdOrdenCompraHeader
+                });
+
                 return await MapToDtoAsync(idOrdenCompraHeader, request.IdEmpresa)
                     ?? throw new Exception("No se pudo cargar la factura actualizada.");
             }
@@ -296,15 +362,26 @@ namespace AlahiaPos.DataAccess.Servicios
             return await MapToDtoAsync(idOrdenCompraHeader, idEmpresa);
         }
 
-        public async Task<IEnumerable<FacturaCompraDto>> ListarAsync(int idEmpresa, string? estado = null)
+        public async Task<IEnumerable<FacturaCompraDto>> ListarAsync(
+            int idEmpresa,
+            string? estado = null,
+            DateTime? desde = null,
+            DateTime? hasta = null)
         {
-            var headers = await _headerRepository.GetAllByExpresionAsync(h =>
-                h.IdEmpresa == idEmpresa
-                && h.IdTipoDocumentos == TipoDocumentoFacturaCompra
-                && (estado == null || h.Estado == estado));
+            var d = desde?.Date;
+            var h = hasta?.Date;
+            if (d.HasValue && h.HasValue && h.Value < d.Value)
+                throw new ArgumentException("La fecha hasta no puede ser menor que desde.");
+
+            var headers = await _headerRepository.GetAllByExpresionAsync(x =>
+                x.IdEmpresa == idEmpresa
+                && x.IdTipoDocumentos == TipoDocumentoFacturaCompra
+                && (estado == null || x.Estado == estado)
+                && (!d.HasValue || x.FechaInseccion.Date >= d.Value)
+                && (!h.HasValue || x.FechaInseccion.Date <= h.Value));
 
             var result = new List<FacturaCompraDto>();
-            foreach (var header in headers.OrderByDescending(h => h.FechaInseccion))
+            foreach (var header in headers.OrderByDescending(x => x.FechaInseccion))
             {
                 var dto = await MapToDtoAsync(header.IdOrdenCompraHeader, idEmpresa);
                 if (dto != null)
@@ -314,16 +391,27 @@ namespace AlahiaPos.DataAccess.Servicios
             return result;
         }
 
-        public async Task<IEnumerable<FacturaCompraDto>> ListarPendientesAsync(int idEmpresa, int? idProveedor = null)
+        public async Task<IEnumerable<FacturaCompraDto>> ListarPendientesAsync(
+            int idEmpresa,
+            int? idProveedor = null,
+            DateTime? desde = null,
+            DateTime? hasta = null)
         {
-            var headers = await _headerRepository.GetAllByExpresionAsync(h =>
-                h.IdEmpresa == idEmpresa
-                && h.IdTipoDocumentos == TipoDocumentoFacturaCompra
-                && h.Pendiente > 0
-                && h.Estado != "BORRADOR"
-                && h.Estado != "ANULADA"
-                && h.Estado != "PAGADA"
-                && (!idProveedor.HasValue || idProveedor.Value == 0 || h.IdProveedor == idProveedor.Value));
+            var d = desde?.Date;
+            var h = hasta?.Date;
+            if (d.HasValue && h.HasValue && h.Value < d.Value)
+                throw new ArgumentException("La fecha hasta no puede ser menor que desde.");
+
+            var headers = await _headerRepository.GetAllByExpresionAsync(header =>
+                header.IdEmpresa == idEmpresa
+                && header.IdTipoDocumentos == TipoDocumentoFacturaCompra
+                && header.Pendiente > 0
+                && header.Estado != "BORRADOR"
+                && header.Estado != "ANULADA"
+                && header.Estado != "PAGADA"
+                && (!idProveedor.HasValue || idProveedor.Value == 0 || header.IdProveedor == idProveedor.Value)
+                && (!d.HasValue || header.FechaInseccion.Date >= d.Value)
+                && (!h.HasValue || header.FechaInseccion.Date <= h.Value));
 
             var result = new List<FacturaCompraDto>();
             foreach (var header in headers.OrderBy(h => h.FechaBencimiento))
@@ -360,13 +448,24 @@ namespace AlahiaPos.DataAccess.Servicios
                 && h.IdEmpresa == idEmpresa)
                 ?? throw new KeyNotFoundException("Factura de compra no encontrada.");
 
+            if (string.Equals(header.Estado, "ANULADA", StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("La factura ya está anulada.");
+
+            var esFacturaCompra = header.IdTipoDocumentos == TipoDocumentoFacturaCompra;
+            var esFacturaConfirmada = esFacturaCompra
+                && (string.Equals(header.Estado, "CONFIRMADA", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(header.Estado, "FACTURADA", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(header.Estado, "PAGADA", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(header.Estado, "PARCIALMENTE_PAGADA", StringComparison.OrdinalIgnoreCase));
+
             if (!string.Equals(header.Estado, "BORRADOR", StringComparison.OrdinalIgnoreCase)
+                && !esFacturaConfirmada
                 && !(header.IdTipoDocumentos == TipoDocumentoOrdenCompra
                      && (string.Equals(header.Estado, "EMITIDA", StringComparison.OrdinalIgnoreCase)
                          || string.Equals(header.Estado, "ENVIADA", StringComparison.OrdinalIgnoreCase))))
             {
                 throw new InvalidOperationException(
-                    "Solo se pueden anular borradores, u órdenes emitidas/enviadas aún no facturadas.");
+                    "Solo se pueden anular borradores, facturas de compra confirmadas, u órdenes emitidas/enviadas aún no facturadas.");
             }
 
             if (header.IdTipoDocumentos == TipoDocumentoOrdenCompra
@@ -383,7 +482,28 @@ namespace AlahiaPos.DataAccess.Servicios
 
             header.Estado = "ANULADA";
             _headerRepository.Update(header.IdOrdenCompraHeader, header);
-            await Task.CompletedTask;
+
+            if (esFacturaConfirmada)
+            {
+                // Contabilidad: reverso de asientos de la compra (no-op si Contabilidad apagada)
+                try
+                {
+                    await _contabilidadEvents.TryPublishAsync(new CompraAnuladaEvent
+                    {
+                        IdEmpresa = idEmpresa,
+                        IdUsuario = 0,
+                        Fecha = DateTime.Now,
+                        ReferenciaId = header.IdOrdenCompraHeader,
+                        ReferenciaTipo = "CompraAnulada",
+                        Motivo = "Anulación de factura de compra",
+                        NumeroDocumento = header.NumeroDocumento
+                    });
+                }
+                catch
+                {
+                    // Contabilidad nunca tumba anulación
+                }
+            }
         }
 
         // ============================================================
@@ -490,15 +610,26 @@ namespace AlahiaPos.DataAccess.Servicios
                 ?? throw new Exception("No se pudo cargar la orden emitida.");
         }
 
-        public async Task<IEnumerable<FacturaCompraDto>> ListarOrdenesAsync(int idEmpresa, string? estado = null)
+        public async Task<IEnumerable<FacturaCompraDto>> ListarOrdenesAsync(
+            int idEmpresa,
+            string? estado = null,
+            DateTime? desde = null,
+            DateTime? hasta = null)
         {
-            var headers = await _headerRepository.GetAllByExpresionAsync(h =>
-                h.IdEmpresa == idEmpresa
-                && h.IdTipoDocumentos == TipoDocumentoOrdenCompra
-                && (estado == null || h.Estado == estado));
+            var d = desde?.Date;
+            var h = hasta?.Date;
+            if (d.HasValue && h.HasValue && h.Value < d.Value)
+                throw new ArgumentException("La fecha hasta no puede ser menor que desde.");
+
+            var headers = await _headerRepository.GetAllByExpresionAsync(x =>
+                x.IdEmpresa == idEmpresa
+                && x.IdTipoDocumentos == TipoDocumentoOrdenCompra
+                && (estado == null || x.Estado == estado)
+                && (!d.HasValue || x.FechaInseccion.Date >= d.Value)
+                && (!h.HasValue || x.FechaInseccion.Date <= h.Value));
 
             var result = new List<FacturaCompraDto>();
-            foreach (var header in headers.OrderByDescending(h => h.FechaInseccion))
+            foreach (var header in headers.OrderByDescending(x => x.FechaInseccion))
             {
                 var dto = await MapToDtoAsync(header.IdOrdenCompraHeader, idEmpresa);
                 if (dto != null)
@@ -1475,6 +1606,19 @@ namespace AlahiaPos.DataAccess.Servicios
                 TipoRetencionIsr = request.TipoRetencionIsr,
                 MontoRetencionRenta = request.MontoRetencionRenta,
                 FechaPagoFiscal = request.FechaPagoFiscal,
+                DestinoItbis = request.DestinoItbis,
+                ClasificacionConfirmada = request.ClasificacionConfirmada && request.DestinoItbis is >= 1 and <= 7,
+                EstadoClasificacionItbis = request.ClasificacionConfirmada && request.DestinoItbis is >= 1 and <= 7
+                    ? "CONFIRMADO"
+                    : (request.DestinoItbis != null ? "PENDIENTE_VALIDAR" : "NO_APLICA"),
+                FechaClasificacion = request.ClasificacionConfirmada && request.DestinoItbis is >= 1 and <= 7
+                    ? DateTime.Now
+                    : null,
+                ItbisComprasLocales = request.ItbisComprasLocales ?? 0,
+                ItbisServicios = request.ItbisServicios ?? 0,
+                ItbisImportaciones = request.ItbisImportaciones ?? 0,
+                CodigoNormaRetencionItbis = request.CodigoNormaRetencionItbis,
+                BaseRetencionItbis = request.BaseRetencionItbis,
                 TotalDescuento = totales.TotalDescuento,
                 TotalItbis = totales.TotalItbis,
                 Total = totales.Total,
@@ -1511,6 +1655,18 @@ namespace AlahiaPos.DataAccess.Servicios
             header.TipoRetencionIsr = request.TipoRetencionIsr;
             header.MontoRetencionRenta = request.MontoRetencionRenta;
             header.FechaPagoFiscal = request.FechaPagoFiscal;
+            header.DestinoItbis = request.DestinoItbis;
+            header.ClasificacionConfirmada = request.ClasificacionConfirmada && request.DestinoItbis is >= 1 and <= 7;
+            header.EstadoClasificacionItbis = header.ClasificacionConfirmada
+                ? "CONFIRMADO"
+                : (request.DestinoItbis != null ? "PENDIENTE_VALIDAR" : "NO_APLICA");
+            if (header.ClasificacionConfirmada)
+                header.FechaClasificacion = DateTime.Now;
+            header.ItbisComprasLocales = request.ItbisComprasLocales ?? 0;
+            header.ItbisServicios = request.ItbisServicios ?? 0;
+            header.ItbisImportaciones = request.ItbisImportaciones ?? 0;
+            header.CodigoNormaRetencionItbis = request.CodigoNormaRetencionItbis;
+            header.BaseRetencionItbis = request.BaseRetencionItbis;
             header.TotalDescuento = totales.TotalDescuento;
             header.TotalItbis = totales.TotalItbis;
             header.Total = totales.Total;
@@ -1670,6 +1826,14 @@ namespace AlahiaPos.DataAccess.Servicios
                 TipoRetencionIsr = header.TipoRetencionIsr,
                 MontoRetencionRenta = header.MontoRetencionRenta,
                 FechaPagoFiscal = header.FechaPagoFiscal,
+                DestinoItbis = header.DestinoItbis,
+                DestinoItbisSugerido = header.DestinoItbisSugerido,
+                ClasificacionConfirmada = header.ClasificacionConfirmada,
+                ItbisComprasLocales = header.ItbisComprasLocales,
+                ItbisServicios = header.ItbisServicios,
+                ItbisImportaciones = header.ItbisImportaciones,
+                CodigoNormaRetencionItbis = header.CodigoNormaRetencionItbis,
+                BaseRetencionItbis = header.BaseRetencionItbis,
                 TotalDescuento = header.TotalDescuento,
                 TotalItbis = header.TotalItbis,
                 Total = header.Total,
@@ -1775,6 +1939,52 @@ namespace AlahiaPos.DataAccess.Servicios
                 result.Lineas.Add(linea);
             }
 
+            // Gastos con NCF/e-NCF (no anulados). Evita duplicar los que nacieron desde COMPRAS.
+            var gastos = (await _gastosRepository.GetAllByExpresionAsync(g =>
+                    g.IdEmpresa == idEmpresa
+                    && !g.EstaAnulado
+                    && g.NumeroComprobante != null
+                    && g.NumeroComprobante != ""
+                    && (g.OrigenModulo == null || g.OrigenModulo.ToUpper() != "COMPRAS")
+                    && (
+                        (g.FechaComprobante.HasValue
+                            && g.FechaComprobante.Value >= d
+                            && g.FechaComprobante.Value <= h)
+                        || (!g.FechaComprobante.HasValue
+                            && g.FechaInseccion.Date >= d
+                            && g.FechaInseccion.Date <= h)
+                    )))
+                .OrderBy(g => g.FechaComprobante ?? g.FechaInseccion)
+                .ThenBy(g => g.IdGasto)
+                .ToList();
+
+            var proveedorIdsGasto = gastos
+                .Where(g => g.IdProveedor > 0)
+                .Select(g => g.IdProveedor)
+                .Distinct()
+                .ToList();
+
+            var proveedoresGasto = new Dictionary<int, Proveedores>();
+            foreach (var idProv in proveedorIdsGasto)
+            {
+                var p = await _proveedoresRepository.GetByIdAsync(idProv);
+                if (p != null)
+                    proveedoresGasto[idProv] = p;
+            }
+
+            foreach (var gasto in gastos)
+            {
+                proveedoresGasto.TryGetValue(gasto.IdProveedor, out var prov);
+                var lineaGasto = MapearLinea606DesdeGasto(gasto, prov, result.RncEmpresa);
+                if (lineaGasto != null)
+                    result.Lineas.Add(lineaGasto);
+            }
+
+            result.Lineas = result.Lineas
+                .OrderBy(l => l.FechaComprobante)
+                .ThenBy(l => l.Ncf)
+                .ToList();
+
             result.CantidadRegistros = result.Lineas.Count;
             result.CantidadConAlertas = result.Lineas.Count(x => !x.EsValidaParaEnvio);
             result.TotalMontoFacturado = result.Lineas.Sum(x => x.TotalMontoFacturado);
@@ -1825,6 +2035,7 @@ namespace AlahiaPos.DataAccess.Servicios
             var linea = new Reporte606LineaDto
             {
                 IdOrdenCompraHeader = header.IdOrdenCompraHeader,
+                OrigenDocumento = "Compra",
                 NumeroDocumento = header.NumeroDocumento,
                 ProveedorNombre = proveedor?.NombreComercial,
                 RncCedula = rnc,
@@ -1855,22 +2066,134 @@ namespace AlahiaPos.DataAccess.Servicios
                 Estado = header.Estado ?? ""
             };
 
+            ValidarLinea606(linea);
+            return linea;
+        }
+
+        /// <summary>
+        /// Gastos con NCF/e-NCF → renglón 606.
+        /// Sin desglose ITBIS/bienes en el módulo de gastos: monto total en bienes, ITBIS 0, alertas.
+        /// </summary>
+        private static Reporte606LineaDto? MapearLinea606DesdeGasto(
+            Gastos gasto,
+            Proveedores? proveedor,
+            string? rncEmpresa)
+        {
+            var ncf = (gasto.NumeroComprobante ?? "").Trim().ToUpperInvariant();
+            if (!EsNcfOEncf(ncf))
+                return null;
+
+            var rnc = LimpiarDocumento(gasto.RncEmisorComprobante);
+            if (string.IsNullOrEmpty(rnc))
+                rnc = LimpiarDocumento(proveedor?.RNC);
+
+            var esGastosMenores = ncf.StartsWith("E43") || ncf.StartsWith("B13")
+                || GastoComprobanteTipos.EsGastosMenores(gasto.TipoComprobante);
+
+            if (string.IsNullOrEmpty(rnc) && esGastosMenores)
+                rnc = LimpiarDocumento(rncEmpresa);
+
+            var tipoId = ResolverTipoIdDocumento(rnc);
+            var fecha = (gasto.FechaComprobante ?? gasto.FechaInseccion).Date;
+            var monto = Math.Round(gasto.Monto, 2, MidpointRounding.AwayFromZero);
+            if (monto < 0) monto = 0;
+
+            // Default DGII: 02 — trabajos, suministros y servicios (gastos operativos).
+            const int tipoBienesDefault = 2;
+            var formaPago = ResolverFormaPagoDgiiDesdeTexto(gasto.FormaPago ?? gasto.Orien);
+
+            var linea = new Reporte606LineaDto
+            {
+                IdOrdenCompraHeader = gasto.IdGasto,
+                OrigenDocumento = "Gasto",
+                NumeroDocumento = $"Gasto-{gasto.IdGasto}",
+                ProveedorNombre = FirstNonEmpty(gasto.NombreEmisorComprobante, proveedor?.NombreComercial, gasto.TipoGasto),
+                RncCedula = rnc,
+                TipoId = tipoId,
+                TipoBienesServicios = tipoBienesDefault,
+                Ncf = ncf,
+                FechaComprobante = fecha,
+                FechaPago = gasto.FechaInseccion.Date,
+                MontoFacturadoServicios = 0,
+                MontoFacturadoBienes = monto,
+                TotalMontoFacturado = monto,
+                ItbisFacturado = 0,
+                ItbisPorAdelantar = 0,
+                FormaPagoDgii = formaPago,
+                Estado = "GASTO"
+            };
+
+            ValidarLinea606(linea);
+            if (esGastosMenores && string.Equals(rnc, LimpiarDocumento(rncEmpresa), StringComparison.Ordinal)
+                && string.IsNullOrWhiteSpace(gasto.RncEmisorComprobante))
+            {
+                linea.Alertas.Add("Gasto menores: RNC emisor vacío; se usó RNC empresa");
+            }
+
+            return linea;
+        }
+
+        private static void ValidarLinea606(Reporte606LineaDto linea)
+        {
             if (string.IsNullOrWhiteSpace(linea.RncCedula))
-                linea.Alertas.Add("Proveedor sin RNC/Cédula");
+                linea.Alertas.Add("Proveedor/emisor sin RNC/Cédula");
             if (linea.TipoId < 1 || linea.TipoId > 2)
                 linea.Alertas.Add("Tipo Id inválido (RNC/Cédula)");
             if (linea.TipoBienesServicios < 1 || linea.TipoBienesServicios > 11)
                 linea.Alertas.Add("Falta Tipo de Bienes y Servicios DGII (1-11)");
             if (string.IsNullOrWhiteSpace(linea.Ncf))
-                linea.Alertas.Add("Falta NCF del proveedor");
+                linea.Alertas.Add("Falta NCF");
+            else if (linea.Ncf.Length != 11 && linea.Ncf.Length != 13)
+                linea.Alertas.Add($"NCF longitud inválida ({linea.Ncf.Length}); esperado 11 o 13");
             if (linea.FormaPagoDgii < 1 || linea.FormaPagoDgii > 7)
                 linea.Alertas.Add("Falta Forma de Pago DGII (1-7)");
             if ((linea.ItbisRetenido > 0 || linea.MontoRetencionRenta > 0) && !linea.FechaPago.HasValue)
                 linea.Alertas.Add("Retención sin Fecha de pago fiscal");
             if (Math.Abs(linea.TotalMontoFacturado - (linea.MontoFacturadoServicios + linea.MontoFacturadoBienes)) > 0.02m)
                 linea.Alertas.Add("Bienes + Servicios no cuadra con el total facturado");
+        }
 
-            return linea;
+        private static bool EsNcfOEncf(string ncf)
+        {
+            if (string.IsNullOrWhiteSpace(ncf) || ncf.Length < 3)
+                return false;
+            var p = ncf[0];
+            return (p == 'B' || p == 'E') && (ncf.Length == 11 || ncf.Length == 13);
+        }
+
+        private static int ResolverFormaPagoDgiiDesdeTexto(string? formaPago)
+        {
+            var m = (formaPago ?? "")
+                .Trim()
+                .ToUpperInvariant()
+                .Normalize(System.Text.NormalizationForm.FormD);
+            m = new string(m.Where(c => System.Globalization.CharUnicodeInfo.GetUnicodeCategory(c)
+                != System.Globalization.UnicodeCategory.NonSpacingMark).ToArray());
+
+            if (m.Contains("MIXTO")) return 7;
+            if (m.Contains("PERMUT")) return 5;
+            if ((m.Contains("NOTA") && m.Contains("CREDITO")) || m.Contains("NOTA CRED")) return 6;
+            if (m.Contains("TARJETA") || m.Contains("VISA") || m.Contains("MASTER") || m.Contains("CARD") || m.Contains("AMEX"))
+                return 3;
+            if (m.Contains("CREDITO"))
+                return 4;
+            if (m.Contains("TRANSF") || m.Contains("DEPOSITO") || m.Contains("CHEQUE") || m.Contains("CHECK")
+                || m.Contains("POPULAR") || m.Contains("BHD") || m.Contains("BANRESERVA") || m.Contains("APAP")
+                || m.Contains("QIK") || m.Contains("BANCO") || m.Contains("ACH"))
+                return 2;
+            if (m.Contains("EFECTIVO") || m.Contains("CASH") || m.Contains("CAJA"))
+                return 1;
+            return 1;
+        }
+
+        private static string? FirstNonEmpty(params string?[] values)
+        {
+            foreach (var v in values)
+            {
+                if (!string.IsNullOrWhiteSpace(v))
+                    return v.Trim();
+            }
+            return null;
         }
 
         private static string GenerarTxt606(Reporte606Dto reporte)

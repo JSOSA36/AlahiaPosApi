@@ -8,8 +8,16 @@ namespace AlahiaPos.Entities.Interfaces
         Task<FacturaCompraDto> GuardarBorradorAsync(GuardarFacturaCompraRequest request);
         Task<FacturaCompraDto> ConfirmarAsync(int idOrdenCompraHeader, ConfirmarFacturaCompraRequest request);
         Task<FacturaCompraDto?> ObtenerPorIdAsync(int idOrdenCompraHeader, int idEmpresa);
-        Task<IEnumerable<FacturaCompraDto>> ListarAsync(int idEmpresa, string? estado = null);
-        Task<IEnumerable<FacturaCompraDto>> ListarPendientesAsync(int idEmpresa, int? idProveedor = null);
+        Task<IEnumerable<FacturaCompraDto>> ListarAsync(
+            int idEmpresa,
+            string? estado = null,
+            DateTime? desde = null,
+            DateTime? hasta = null);
+        Task<IEnumerable<FacturaCompraDto>> ListarPendientesAsync(
+            int idEmpresa,
+            int? idProveedor = null,
+            DateTime? desde = null,
+            DateTime? hasta = null);
         Task<FacturaCompraDto> RegistrarPagoAsync(int idOrdenCompraHeader, RegistrarPagoProveedorRequest request);
         Task<IEnumerable<PagosProveedor>> ObtenerPagosAsync(int idOrdenCompraHeader, int idEmpresa);
         Task AnularAsync(int idOrdenCompraHeader, int idEmpresa);
@@ -28,7 +36,11 @@ namespace AlahiaPos.Entities.Interfaces
         // --- Orden de Compra (tipo 5) ---
         Task<FacturaCompraDto> GuardarBorradorOrdenAsync(GuardarFacturaCompraRequest request);
         Task<FacturaCompraDto> EmitirOrdenAsync(int idOrdenCompraHeader, EmitirOrdenCompraRequest request);
-        Task<IEnumerable<FacturaCompraDto>> ListarOrdenesAsync(int idEmpresa, string? estado = null);
+        Task<IEnumerable<FacturaCompraDto>> ListarOrdenesAsync(
+            int idEmpresa,
+            string? estado = null,
+            DateTime? desde = null,
+            DateTime? hasta = null);
         Task<FacturaCompraDto> GenerarFacturaDesdeOrdenAsync(int idOrdenCompraHeader, int idEmpresa, int idUsuario);
         Task<FacturaCompraDto> MarcarOrdenEnviadaAsync(int idOrdenCompraHeader, EnviarOrdenCompraRequest request);
 

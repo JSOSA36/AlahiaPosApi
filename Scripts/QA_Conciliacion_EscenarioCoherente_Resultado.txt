@@ -1,0 +1,41 @@
+QA Conciliación Bancaria — Escenario coherente
+Fecha: 2026-07-22
+DB: AlahiaPos_Dev | Empresa: 60 | Usuario: 28
+Tag: QA-CB-20260722084956
+
+RESULTADO: ESCENARIO OK
+
+IDs
+- Cuenta banco QA: #29 (QA Conciliación Popular Limpia)
+- Conciliación: #17
+- Extracto import: #15 (CSV_GENERICO, 7 líneas)
+
+Operaciones ERP sembradas (libros)
+- Cobro factura: +25,000
+- Pago suplidor: -12,000
+- Gasto: -3,500
+- Ingreso: +2,000
+- Transferencia caja→banco: +5,000
+- Saldo libros post-seed: 116,500.00
+
+Integración de diferencias (solo banco)
+- CREAR_GASTO comisión QA-CB-COM-150 → MovimientoFinanciero #813 (EXTRACTO)
+- CREAR_INGRESO interés QA-CB-INT-8755 → MovimientoFinanciero #814 (EXTRACTO)
+- Asientos contables ligados: 2
+
+Estado final
+- Pendientes banco: 0
+- Conciliadas: 7/7
+- KPI pendientes/conciliadas = listados: sí
+- Saldo banco = saldo libros = 116,437.55
+- Diferencia: 0.00
+- PuedeCerrar: True
+- Auditoría: CREAR_GASTO + CREAR_INGRESO presentes
+
+Fix aplicado durante la corrida
+- ResolverLinea: no bloquear CREAR_* por matching cruzado cuando ClasificacionLinea = BANCARIO_PURO
+  (evitaba registrar intereses/comisiones si había un cobro similar en caja).
+
+Scripts
+- Scripts/Dev_QA_Conciliacion_Cleanup_Popular.sql
+- Scripts/Test-TesoreriaConciliacionEscenarioCoherente.ps1

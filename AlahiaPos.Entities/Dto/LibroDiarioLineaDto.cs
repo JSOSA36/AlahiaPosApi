@@ -13,5 +13,8 @@ namespace AlahiaPos.Entities.Dto
         public decimal Credito { get; set; }
         public string? Referencia { get; set; }
         public string OrigenModulo { get; set; } = string.Empty;
+        public int? OrigenReferenciaId { get; set; }
+        public string TipoOperacion { get; set; } = string.Empty;
+        public bool EsAutomatico { get; set; }
     }
 }

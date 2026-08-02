@@ -1,6 +1,7 @@
 ﻿using AlahiaPos.DataAccess.Data;
 using AlahiaPos.Entities.Domain;
 using AlahiaPos.Entities.Dto;
+using AlahiaPos.Entities.Events;
 using AlahiaPos.Entities.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -19,6 +20,7 @@ namespace AlahiaPos.DataAccess.Servicios
         private readonly IIngresos _ingresosService;
         private readonly IMetodoPagoCuentaService _metodoPagoCuentaService;
         private readonly IMovimientoFinancieroService _movimientoFinancieroService;
+        private readonly IContabilidadEventPublisher _contabilidadEvents;
 
         public PagosFacturasClientesService(
             AlahiaPosContext context,
@@ -27,7 +29,8 @@ namespace AlahiaPos.DataAccess.Servicios
             IRepository<Clientes> clientesRepository,
             IIngresos ingresosService,
             IMetodoPagoCuentaService metodoPagoCuentaService,
-            IMovimientoFinancieroService movimientoFinancieroService)
+            IMovimientoFinancieroService movimientoFinancieroService,
+            IContabilidadEventPublisher contabilidadEvents)
         {
             _context = context;
             _repository = repository;
@@ -36,6 +39,7 @@ namespace AlahiaPos.DataAccess.Servicios
             _ingresosService = ingresosService;
             _metodoPagoCuentaService = metodoPagoCuentaService;
             _movimientoFinancieroService = movimientoFinancieroService;
+            _contabilidadEvents = contabilidadEvents;
         }
 
         public async Task<IEnumerable<PagosFacturasClientes>> GetAllPagosFacturasClientes(int IdEmpresa)
@@ -141,6 +145,18 @@ namespace AlahiaPos.DataAccess.Servicios
                     claveIdempotencia: $"CXC-{factura.IdFacturaHeader}-{formaPago}-{pago.Monto}-{pago.FechaInseccion:yyyyMMddHHmmss}"
                 );
             }
+
+            await _contabilidadEvents.TryPublishAsync(new CobroClienteRegistradoEvent
+            {
+                IdEmpresa = factura.IdEmpresa,
+                IdUsuario = factura.IdEmpleados ?? 0,
+                Fecha = pago.FechaInseccion == default ? DateTime.Now : pago.FechaInseccion,
+                ReferenciaId = pago.Id > 0 ? pago.Id : IdFactura,
+                ReferenciaTipo = "CobroCliente",
+                Monto = pago.Monto,
+                FormaPago = formaPago,
+                IdFacturaHeader = IdFactura
+            });
         }
 
         public async Task<RegistrarPagoLoteResult> RegistrarPagoLoteAsync(RegistrarPagoLoteRequest request)

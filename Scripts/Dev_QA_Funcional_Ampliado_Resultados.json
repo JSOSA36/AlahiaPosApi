@@ -1,0 +1,395 @@
+﻿{
+    "fecha":  "2026-07-20T13:56:55",
+    "totales":  {
+                    "fail":  1,
+                    "pass":  55,
+                    "skip":  1,
+                    "ejecutados":  65,
+                    "gap":  8
+                },
+    "bgFinal":  {
+                    "diff":  0.00,
+                    "patrimonio":  37305.50,
+                    "pasivos":  7682.00,
+                    "resultadoEjercicio":  37305.50,
+                    "cuadra":  true,
+                    "activos":  44987.50
+                },
+    "casos":  [
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Setup MetodoPago TARJETA",
+                      "nota":  "-\u003e cuenta 19"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Setup MetodoPago TRANSFERENCIA",
+                      "nota":  "-\u003e cuenta 19"
+                  },
+                  {
+                      "resultado":  "FAIL",
+                      "caso":  "Setup Banco2",
+                      "nota":  "No se puede convertir el valor \"System.Object[]\" de tipo \"System.Object[]\" al tipo \"System.Int32\"."
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Baseline",
+                      "nota":  "BG Diff=0.00 cuadra=True; ER=34945.50 RE=34945.50; BC Deb=60763.70 Cred=60763.70"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Venta con descuento (precio rebajado)",
+                      "nota":  "id=9422"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Post-VentaDescuento",
+                      "nota":  "BG Diff=0.00 cuadra=True; ER=34995.50 RE=34995.50; BC Deb=61258.70 Cred=61258.70"
+                  },
+                  {
+                      "resultado":  "GAP",
+                      "caso":  "Venta descuento via solo totalDescuento",
+                      "nota":  "ProcesarFactura no resta TotalDescuento/Descuento linea; usar precioOferta rebajado"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Venta multi-pago (EFECTIVO+TARJETA)",
+                      "nota":  "id=9423 asientos=77"
+                  },
+                  {
+                      "resultado":  "GAP",
+                      "caso":  "Venta multi-pago asiento split CAJA+BANCO",
+                      "nota":  "Contabilidad usa metodoPrincipal (mayor monto); no parte cobro entre CAJA y BANCO"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Post-VentaMulti",
+                      "nota":  "BG Diff=0.00 cuadra=True; ER=35995.50 RE=35995.50; BC Deb=62438.70 Cred=62438.70"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Venta multi-pago (EFECTIVO+TRANSFERENCIA)",
+                      "nota":  "id=9424"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Post-VentaMulti2",
+                      "nota":  "BG Diff=0.00 cuadra=True; ER=36495.50 RE=36495.50; BC Deb=63028.70 Cred=63028.70"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Venta exenta ITBIS",
+                      "nota":  "id=9425"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Post-VentaExenta",
+                      "nota":  "BG Diff=0.00 cuadra=True; ER=36695.50 RE=36695.50; BC Deb=63228.70 Cred=63228.70"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Venta stock insuficiente",
+                      "nota":  "Rechazada: Error Guardando Movimiento: Stock insuficiente en el almacén para: Pasta Dental Colegate | INNER: "
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Post-StockInsuf",
+                      "nota":  "BG Diff=0.00 cuadra=True; ER=36695.50 RE=36695.50; BC Deb=63228.70 Cred=63228.70"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Compra con ITBIS",
+                      "nota":  "orden=8"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Post-CompraITBIS",
+                      "nota":  "BG Diff=0.00 cuadra=True; ER=36695.50 RE=36695.50; BC Deb=63346.70 Cred=63346.70"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Compra exenta ITBIS",
+                      "nota":  "orden=9"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Post-CompraExenta",
+                      "nota":  "BG Diff=0.00 cuadra=True; ER=36695.50 RE=36695.50; BC Deb=63426.70 Cred=63426.70"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Compra activo fijo",
+                      "nota":  "orden=10 (contablemente a Inventario)"
+                  },
+                  {
+                      "resultado":  "GAP",
+                      "caso":  "Compra activo fijo cuenta ACTIVO_FIJO",
+                      "nota":  "Asiento usa concepto INVENTARIO; no hay mapeo ACTIVO_FIJO dedicado"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Post-CompraAF",
+                      "nota":  "BG Diff=0.00 cuadra=True; ER=36695.50 RE=36695.50; BC Deb=69326.70 Cred=69326.70"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Gasto desde Caja",
+                      "nota":  "id=163"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Post-GastoCaja",
+                      "nota":  "BG Diff=0.00 cuadra=True; ER=36670.50 RE=36670.50; BC Deb=69351.70 Cred=69351.70"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Gasto desde Banco",
+                      "nota":  "id=164"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Post-GastoBanco",
+                      "nota":  "BG Diff=0.00 cuadra=True; ER=36640.50 RE=36640.50; BC Deb=69381.70 Cred=69381.70"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Ingreso en Caja",
+                      "nota":  "id=0"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Post-IngresoCaja",
+                      "nota":  "BG Diff=0.00 cuadra=True; ER=36695.50 RE=36695.50; BC Deb=69436.70 Cred=69436.70"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Ingreso en Banco",
+                      "nota":  "id=0"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Post-IngresoBanco",
+                      "nota":  "BG Diff=0.00 cuadra=True; ER=36755.50 RE=36755.50; BC Deb=69496.70 Cred=69496.70"
+                  },
+                  {
+                      "resultado":  "SKIP",
+                      "caso":  "Transferencia entre dos bancos",
+                      "nota":  "sin Banco2"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Ajuste inventario positivo",
+                      "nota":  "ENTRADA 2"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Post-InvPos",
+                      "nota":  "BG Diff=0.00 cuadra=True; ER=37155.50 RE=37155.50; BC Deb=69896.70 Cred=69896.70"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Ajuste inventario negativo",
+                      "nota":  "SALIDA 1"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Post-InvNeg",
+                      "nota":  "BG Diff=0.00 cuadra=True; ER=36955.50 RE=36955.50; BC Deb=70096.70 Cred=70096.70"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Venta credito para CxC",
+                      "nota":  "id=9427"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Post-CxCVenta",
+                      "nota":  "BG Diff=0.00 cuadra=True; ER=37355.50 RE=37355.50; BC Deb=70568.70 Cred=70568.70"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Pago parcial CxC",
+                      "nota":  "150"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Post-CxCParcial",
+                      "nota":  "BG Diff=0.00 cuadra=True; ER=37355.50 RE=37355.50; BC Deb=70718.70 Cred=70718.70"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Pago total CxC",
+                      "nota":  "322"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Post-CxCTotal",
+                      "nota":  "BG Diff=0.00 cuadra=True; ER=37355.50 RE=37355.50; BC Deb=71040.70 Cred=71040.70"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Compra credito para CxP",
+                      "nota":  "orden=11"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Post-CxPCompra",
+                      "nota":  "BG Diff=0.00 cuadra=True; ER=37355.50 RE=37355.50; BC Deb=71182.30 Cred=71182.30"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Pago parcial CxP",
+                      "nota":  "50"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Post-CxPParcial",
+                      "nota":  "BG Diff=0.00 cuadra=True; ER=37355.50 RE=37355.50; BC Deb=71232.30 Cred=71232.30"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Pago total CxP",
+                      "nota":  "91.6"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Post-CxPTotal",
+                      "nota":  "BG Diff=0.00 cuadra=True; ER=37355.50 RE=37355.50; BC Deb=71323.90 Cred=71323.90"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Reverso Venta - asiento ALTA",
+                      "nota":  "id=9428 count=95"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Pre-AnularVenta",
+                      "nota":  "BG Diff=0.00 cuadra=True; ER=37505.50 RE=37505.50; BC Deb=71500.90 Cred=71500.90"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Reverso Venta - asiento REVERSO",
+                      "nota":  "tipos=REVERSO,ALTA,PAGO,PAGO,ALTA,COBRO,COBRO,ALTA,ALTA,ALTA,ALTA,ALTA,ALTA,ALTA,ALTA,ALTA,ALTA,ALTA,ALTA,ALTA,COGS,ALTA,COGS,ALTA,REVERSO,ALTA,REVERSO,ALTA,PAGO,PAGO,ALTA,COBRO,COBRO,ALTA,ALTA,ALTA,ALTA,ALTA,ALTA,ALTA,ALTA,ALTA,ALTA,ALTA,ALTA,ALTA,ALTA,COGS,ALTA,REVERSO,REVERSO,ALTA,COGS,ALTA,ALTA,ALTA,PAGO,PAGO,ALTA,ALTA,COBRO,COBRO,COGS,ALTA,COGS,ALTA,ALTA,ALTA,ALTA,ALTA,ALTA,ALTA,ALTA,ALTA,ALTA,ALTA,ALTA,ALTA,ALTA,ALTA,COGS,ALTA,COGS,ALTA,REVERSO_COGS,REVERSO,PAGO,ALTA,COBRO,ALTA,REVERSO,ALTA,ALTA,ALTA,ALTA,ALTA"
+                  },
+                  {
+                      "resultado":  "GAP",
+                      "caso":  "Reverso Venta - restock inventario",
+                      "nota":  "AnularFactura no repone stock ni revierte MovimientoFinanciero"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Post-AnularVenta",
+                      "nota":  "BG Diff=0.00 cuadra=True; ER=37355.50 RE=37355.50; BC Deb=71677.90 Cred=71677.90"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Reverso Gasto - ALTA",
+                      "nota":  "id=165"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Reverso Gasto - REVERSO",
+                      "nota":  "ok"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Post-AnularGasto",
+                      "nota":  "BG Diff=0.00 cuadra=True; ER=37355.50 RE=37355.50; BC Deb=71721.90 Cred=71721.90"
+                  },
+                  {
+                      "resultado":  "GAP",
+                      "caso":  "Reverso Compra confirmada",
+                      "nota":  "No soportado: {\"success\":false,\"message\":\"Solo se pueden anular borradores, u órdenes emitidas/enviadas aún no fac"
+                  },
+                  {
+                      "resultado":  "GAP",
+                      "caso":  "Reverso Ingreso",
+                      "nota":  "DELETE Ingresos no publica IngresoAnulado ni reverso contable"
+                  },
+                  {
+                      "resultado":  "GAP",
+                      "caso":  "Reverso Nota credito",
+                      "nota":  "No hay endpoint/evento NCAnulada"
+                  },
+                  {
+                      "resultado":  "GAP",
+                      "caso":  "Reverso ajuste inventario",
+                      "nota":  "DELETE movimiento no genera reverso contable"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Nota credito genera asiento",
+                      "nota":  "nc=8"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Post-NC",
+                      "nota":  "BG Diff=0.00 cuadra=True; ER=37305.50 RE=37305.50; BC Deb=72216.90 Cred=72216.90"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "FINAL BG cuadra",
+                      "nota":  "Diff=0.00 Act=44987.50 Pas+Pat=44987.50"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "FINAL ER=RE",
+                      "nota":  "ER=37305.50 RE=37305.50"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "FINAL BC cuadra",
+                      "nota":  "Deb=72216.90 Cred=72216.90"
+                  }
+              ],
+    "incidencias":  [
+                        {
+                            "prioridad":  "P1",
+                            "detalle":  "TotalDescuento y Descuento de linea no reducen SubTotal/Total ni el asiento. Descuento real requiere precioOferta menor.",
+                            "titulo":  "Descuento cosmetico en ProcesarFactura",
+                            "id":  "INC-DESC"
+                        },
+                        {
+                            "prioridad":  "P1",
+                            "detalle":  "MontoCobrado completo va a una sola cuenta (metodo de mayor monto). Tesoreria si registra ambos movimientos.",
+                            "titulo":  "Asiento de venta no divide multi-pago",
+                            "id":  "INC-MULTIPAGO"
+                        },
+                        {
+                            "prioridad":  "P2",
+                            "detalle":  "Producto TipoComportamiento=ActivoFijo suma MontoInventario. Falta cuenta/mapeo de activo fijo.",
+                            "titulo":  "Activo fijo contabiliza como Inventario",
+                            "id":  "INC-AF"
+                        },
+                        {
+                            "prioridad":  "P1",
+                            "detalle":  "Solo reverso contable ALTA/COGS. Caja y existencias quedan sin compensar.",
+                            "titulo":  "Anulacion venta no revierte tesoreria/stock",
+                            "id":  "INC-ANULAR-VENTA-TES"
+                        },
+                        {
+                            "prioridad":  "P0",
+                            "detalle":  "PUT Anular solo permite borrador. Sin evento CompraAnulada ni RevertirAsientosOrigen Compras.",
+                            "titulo":  "No existe reverso contable de compra confirmada",
+                            "id":  "INC-ANULAR-COMPRA"
+                        },
+                        {
+                            "prioridad":  "P1",
+                            "detalle":  "Solo hard-delete. Asiento ALTA queda vivo.",
+                            "titulo":  "Ingreso sin reverso contable",
+                            "id":  "INC-ANULAR-ING"
+                        },
+                        {
+                            "prioridad":  "P1",
+                            "detalle":  "Crear genera asiento; no hay reverso.",
+                            "titulo":  "Nota credito sin anulaciÃ³n contable",
+                            "id":  "INC-ANULAR-NC"
+                        },
+                        {
+                            "prioridad":  "P1",
+                            "detalle":  "Delete ajusta cantidad producto; asiento ALTA permanece.",
+                            "titulo":  "Ajuste inventario sin reverso contable",
+                            "id":  "INC-ANULAR-INV"
+                        }
+                    ]
+}

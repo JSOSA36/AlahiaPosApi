@@ -46,6 +46,12 @@ namespace AlahiaPos.Entities.Dto
         public string? TokenNotificacion { get; set; }
         public string? Longitude { get; set; }
         public string? NombrePlan { get; set; }
+
+        /// <summary>
+        /// Contraseña elegida por el cliente al crear demo (opcional).
+        /// Si viene vacía, el API genera una aleatoria.
+        /// </summary>
+        public string? AdminPassword { get; set; }
     }
 
 }

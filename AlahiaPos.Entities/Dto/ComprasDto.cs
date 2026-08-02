@@ -40,6 +40,15 @@ namespace AlahiaPos.Entities.Dto
         public int? TipoRetencionIsr { get; set; }
         public decimal MontoRetencionRenta { get; set; }
         public DateTime? FechaPagoFiscal { get; set; }
+        /// <summary>Destino ITBIS 1–7 (Anexo A 45–53). Null = pendiente.</summary>
+        public byte? DestinoItbis { get; set; }
+        public byte? DestinoItbisSugerido { get; set; }
+        public bool ClasificacionConfirmada { get; set; }
+        public decimal ItbisComprasLocales { get; set; }
+        public decimal ItbisServicios { get; set; }
+        public decimal ItbisImportaciones { get; set; }
+        public string? CodigoNormaRetencionItbis { get; set; }
+        public decimal BaseRetencionItbis { get; set; }
         public decimal TotalDescuento { get; set; }
         public decimal TotalItbis { get; set; }
         public decimal Total { get; set; }
@@ -78,6 +87,13 @@ namespace AlahiaPos.Entities.Dto
         public int? TipoRetencionIsr { get; set; }
         public decimal MontoRetencionRenta { get; set; }
         public DateTime? FechaPagoFiscal { get; set; }
+        public byte? DestinoItbis { get; set; }
+        public bool ClasificacionConfirmada { get; set; }
+        public decimal? ItbisComprasLocales { get; set; }
+        public decimal? ItbisServicios { get; set; }
+        public decimal? ItbisImportaciones { get; set; }
+        public string? CodigoNormaRetencionItbis { get; set; }
+        public decimal BaseRetencionItbis { get; set; }
         public List<GuardarFacturaCompraDetalleRequest> Detalles { get; set; } = new();
     }
 

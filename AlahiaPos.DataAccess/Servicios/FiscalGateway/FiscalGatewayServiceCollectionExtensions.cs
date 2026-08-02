@@ -27,7 +27,11 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway
                 o.TimeoutSeconds = options.TimeoutSeconds > 0 ? options.TimeoutSeconds : 30;
             });
 
-            services.AddHttpClient<IFiscalGateway, HttpReceiptFiscalGateway>();
+            services.AddHttpClient(nameof(EmpresaFiscalGatewayResolver));
+            services.AddHttpClient(nameof(Http.HttpReceiptFiscalGateway));
+            services.AddScoped<IEmpresaFiscalGatewayResolver, EmpresaFiscalGatewayResolver>();
+            // Transient: resuelve BaseUrl/ApiKey por empresa en cada emisión (no fija BaseAddress).
+            services.AddTransient<IFiscalGateway, Http.HttpReceiptFiscalGateway>();
             services.AddSingleton<IFiscalDocumentoValidator, FiscalDocumentoValidator>();
             return services;
         }

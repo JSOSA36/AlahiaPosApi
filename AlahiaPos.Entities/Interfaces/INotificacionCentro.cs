@@ -25,5 +25,6 @@ namespace AlahiaPos.Entities.Interfaces
     public interface INotificacionRealtime
     {
         Task EmitirNuevaAsync(NotificacionDto notificacion, CancellationToken ct = default);
+        Task EmitirLeidaAsync(int idEmpresa, int idNotificacion, CancellationToken ct = default);
     }
 }

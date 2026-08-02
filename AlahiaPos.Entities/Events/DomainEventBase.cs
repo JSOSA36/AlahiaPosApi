@@ -20,9 +20,16 @@ namespace AlahiaPos.Entities.Events
         public const string NotaCreditoCreada = "NotaCreditoCreada";
         public const string CobroClienteRegistrado = "CobroClienteRegistrado";
         public const string GastoRegistrado = "GastoRegistrado";
+        public const string GastoAnulado = "GastoAnulado";
         public const string IngresoExtraRegistrado = "IngresoExtraRegistrado";
+        public const string IngresoExtraAnulado = "IngresoExtraAnulado";
+        public const string CompraConfirmada = "CompraConfirmada";
+        public const string CompraAnulada = "CompraAnulada";
+        public const string NotaCreditoAnulada = "NotaCreditoAnulada";
+        public const string PagoProveedorRegistrado = "PagoProveedorRegistrado";
         public const string MovimientoBancarioRegistrado = "MovimientoBancarioRegistrado";
         public const string InventarioMovimientoRegistrado = "InventarioMovimientoRegistrado";
+        public const string InventarioMovimientoAnulado = "InventarioMovimientoAnulado";
         /// <summary>Post-commit comercial para consumidores opcionales (DGII fiscal, etc.).</summary>
         public const string DocumentoComercialConfirmado = "DocumentoComercialConfirmado";
         /// <summary>Trabajo fiscal asíncrono (Sprint B.1). No es contable.</summary>

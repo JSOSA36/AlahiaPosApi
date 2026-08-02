@@ -44,17 +44,7 @@ namespace AlahiaPos.DataAccess.Servicios
 
         public async Task MarcarPago(int empresaId)
         {
-            var empresa = await repository.GetByIdAsync(empresaId);
-            if (empresa == null) return;
-
-            empresa.PagadoServicio = true;
-            empresa.EstadoServicio = SuscripcionEstados.Activa;
-            empresa.FechaUltimoPago = DateTime.Now;
-            empresa.FechaProximoPago = new DateTime(DateTime.Now.Year, DateTime.Now.Month,
-                Math.Min(30, DateTime.DaysInMonth(DateTime.Now.Year, DateTime.Now.Month)));
-
-            repository.Update(empresaId, empresa);
-            await _suscripcion.RegistrarEventoAsync(empresaId, "MARCAR_PAGO_MANUAL", "Pago marcado manualmente");
+            await _suscripcion.OnMarcarPagoManualAsync(empresaId, "ADMIN");
         }
 
         public async Task MarcarPendiente(int empresaId)

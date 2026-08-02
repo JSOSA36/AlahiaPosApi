@@ -14,7 +14,6 @@ namespace AlahiaPosApi.Controllers
             _service;
 
         public MovimientoFinancieroController(
-
             IMovimientoFinancieroService
                 service
         )
@@ -22,10 +21,6 @@ namespace AlahiaPosApi.Controllers
             _service =
                 service;
         }
-
-        /* =====================================
-        🔥 GET EMPRESA
-        ===================================== */
 
         [HttpGet("{idEmpresa}")]
         public async Task<IEnumerable<MovimientoFinanciero>>
@@ -39,10 +34,6 @@ namespace AlahiaPosApi.Controllers
                 );
         }
 
-        /* =====================================
-        🔥 GET BY CUENTA
-        ===================================== */
-
         [HttpGet("ByCuenta/{idCuentaFinanciera}")]
         public async Task<IEnumerable<MovimientoFinanciero>>
             GetByCuenta(
@@ -55,35 +46,38 @@ namespace AlahiaPosApi.Controllers
                 );
         }
 
-        /* =====================================
-        🔥 GET BY FECHA
-        ===================================== */
-
         [HttpGet("ByFecha")]
         public async Task<IEnumerable<MovimientoFinanciero>>
             GetByFecha(
-
                 int idEmpresa,
-
                 DateTime desde,
-
                 DateTime hasta
             )
         {
             return await _service
                 .GetByFechaAsync(
-
                     idEmpresa,
-
                     desde,
-
                     hasta
                 );
         }
 
-        /* =====================================
-        🔥 GET BY ID
-        ===================================== */
+        [HttpPost("Consultar")]
+        public async Task<ActionResult<IEnumerable<MovimientoFinancieroListadoDto>>>
+            Consultar([FromBody] MovimientoFinancieroFiltroDto filtro)
+        {
+            return Ok(await _service.ConsultarAsync(filtro));
+        }
+
+        [HttpGet("EstadoCuenta/{idCuentaFinanciera}")]
+        public async Task<ActionResult<EstadoCuentaDto>>
+            EstadoCuenta(
+                int idCuentaFinanciera,
+                [FromQuery] DateTime? desde = null,
+                [FromQuery] DateTime? hasta = null)
+        {
+            return Ok(await _service.GetEstadoCuentaAsync(idCuentaFinanciera, desde, hasta));
+        }
 
         [HttpGet("GetById/{id}")]
         public async Task<MovimientoFinanciero?>
@@ -95,103 +89,88 @@ namespace AlahiaPosApi.Controllers
                 .GetByIdAsync(id);
         }
 
-        /* =====================================
-        🔥 ENTRADA
-        ===================================== */
-
         [HttpPost("Entrada")]
         public async Task<IActionResult>
-RegistrarEntrada(
-
-    [FromBody]
-    EntradaFinancieraDto dto
-)
+            RegistrarEntrada(
+                [FromBody]
+                EntradaFinancieraDto dto
+            )
         {
             await _service
             .RegistrarEntradaAsync(
-
                 dto.IdEmpresa,
-
                 dto.IdUsuario,
-
                 dto.IdCuentaDestino,
-
                 dto.Monto,
-
                 dto.Motivo,
-
-                dto.Observacion
+                dto.Observacion,
+                dto.Categoria,
+                dto.ReferenciaId,
+                dto.ReferenciaTipo,
+                dto.ClaveIdempotencia
             );
 
             return Ok();
         }
-        /* =====================================
-        🔥 SALIDA
-        ===================================== */
 
         [HttpPost("Salida")]
         public async Task<IActionResult>
- RegistrarSalida(
-
-     [FromBody]
-    SalidaFinancieraDto dto
- )
+            RegistrarSalida(
+                [FromBody]
+                SalidaFinancieraDto dto
+            )
         {
             await _service
             .RegistrarSalidaAsync(
-
                 dto.IdEmpresa,
-
                 dto.IdUsuario,
-
                 dto.IdCuentaOrigen,
-
                 dto.Monto,
-
                 dto.Motivo,
-
-                dto.Observacion
+                dto.Observacion,
+                dto.Categoria,
+                dto.ReferenciaId,
+                dto.ReferenciaTipo,
+                dto.ClaveIdempotencia
             );
 
             return Ok();
         }
-
-        /* =====================================
-        🔥 TRANSFERENCIA
-        ===================================== */
 
         [HttpPost("Transferencia")]
         public async Task<IActionResult>
-RegistrarTransferencia(
-
-    [FromBody]
-    TransferenciaFinancieraDto dto
-)
+            RegistrarTransferencia(
+                [FromBody]
+                TransferenciaFinancieraDto dto
+            )
         {
             await _service
             .RegistrarTransferenciaAsync(
-
                 dto.IdEmpresa,
-
                 dto.IdUsuario,
-
                 dto.IdCuentaOrigen,
-
                 dto.IdCuentaDestino,
-
                 dto.Monto,
-
                 dto.Motivo,
-
                 dto.Observacion
             );
 
             return Ok();
         }
 
-        /* =====================================
-        🔥 DELETE
-        ===================================== */
+        [HttpPost("Ajuste")]
+        public async Task<ActionResult<int>> RegistrarAjuste([FromBody] RegistrarAjusteDto dto)
+        {
+            var id = await _service.RegistrarAjusteAsync(dto);
+            return Ok(id);
+        }
+
+        [HttpPost("Anular")]
+        public async Task<IActionResult> Anular([FromBody] AnularMovimientoDto dto)
+        {
+            await _service.AnularMovimientoAsync(dto);
+            return Ok();
+        }
 
         [HttpDelete("{id}")]
         public async Task<IActionResult>

@@ -163,9 +163,12 @@ namespace AlahiaPos.DataAccess.Servicios.Notificaciones
         {
             var n = await ObtenerEditableAsync(idNotificacion, idEmpresa, idUsuario);
             if (n == null) return;
+            if (n.Leida) return;
             n.Leida = true;
             n.FechaLeida = DateTime.Now;
             await _ctx.SaveChangesAsync();
+            try { await _realtime.EmitirLeidaAsync(idEmpresa, idNotificacion); }
+            catch (Exception ex) { _logger.LogWarning(ex, "SignalR leída falló para {Id}", idNotificacion); }
         }
 
         public async Task MarcarNoLeidaAsync(int idNotificacion, int idEmpresa, int? idUsuario)
@@ -189,6 +192,11 @@ namespace AlahiaPos.DataAccess.Servicios.Notificaciones
                 n.FechaLeida = ahora;
             }
             await _ctx.SaveChangesAsync();
+            foreach (var n in list)
+            {
+                try { await _realtime.EmitirLeidaAsync(idEmpresa, n.IdNotificacion); }
+                catch (Exception ex) { _logger.LogWarning(ex, "SignalR leída falló para {Id}", n.IdNotificacion); }
+            }
         }
 
         public async Task ArchivarAsync(int idNotificacion, int idEmpresa, int? idUsuario)
@@ -197,9 +205,15 @@ namespace AlahiaPos.DataAccess.Servicios.Notificaciones
             if (n == null) return;
             n.Archivada = true;
             n.FechaArchivada = DateTime.Now;
+            var eraNoLeida = !n.Leida;
             n.Leida = true;
             n.FechaLeida ??= DateTime.Now;
             await _ctx.SaveChangesAsync();
+            if (eraNoLeida)
+            {
+                try { await _realtime.EmitirLeidaAsync(idEmpresa, idNotificacion); }
+                catch (Exception ex) { _logger.LogWarning(ex, "SignalR leída falló para {Id}", idNotificacion); }
+            }
         }
 
         private IQueryable<Notificacion> QueryVisible(int idEmpresa, int? idUsuario, bool incluirArchivadas)
@@ -320,13 +334,19 @@ namespace AlahiaPos.DataAccess.Servicios.Notificaciones
             }
             if (string.IsNullOrWhiteSpace(to)) return;
 
+            var mensajeHtml = string.Join("<br/>",
+                (evento.Mensaje ?? string.Empty)
+                    .Replace("\r\n", "\n")
+                    .Split('\n')
+                    .Select(WebUtility.HtmlEncode));
+
             var body = $@"
               <div style=""font-family:Segoe UI,Arial,sans-serif;max-width:640px;color:#0f172a;"">
                 <div style=""background:linear-gradient(135deg,#2F80ED,#174A70);padding:16px 20px;border-radius:12px 12px 0 0;border-bottom:3px solid #F2C94C;"">
                   <h2 style=""margin:0;color:#fff;font-size:1.15rem;"">{WebUtility.HtmlEncode(evento.Titulo)}</h2>
                 </div>
                 <div style=""border:1px solid #e2e8f0;border-top:none;border-radius:0 0 12px 12px;padding:18px 20px;background:#fff;"">
-                  <p>{WebUtility.HtmlEncode(evento.Mensaje)}</p>
+                  <p style=""line-height:1.5;"">{mensajeHtml}</p>
                   {(string.IsNullOrWhiteSpace(evento.NombreEmpresa) ? "" : $"<p><strong>Empresa:</strong> {WebUtility.HtmlEncode(evento.NombreEmpresa)}</p>")}
                   <p style=""margin-top:1.25rem;color:#64748b;"">— Alahia ERP / MacroBits</p>
                 </div>

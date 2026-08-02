@@ -21,10 +21,33 @@ namespace AlahiaPos.Entities.Domain
         public int? IdPlan { get; set; }
 
         /// <summary>
-        /// Precio USD del plan solo para esta empresa (descuento/acuerdo especial).
-        /// Null = cobra el PrecioUSD del catálogo PlanesCloud.
+        /// Precio USD del plan solo para esta empresa (legado). Preferir <see cref="MontoServicio"/>.
         /// </summary>
         public decimal? PrecioPlanEspecialUsd { get; set; }
+
+        /// <summary>Monto mensual del servicio acordado con este cliente (USD).</summary>
+        public decimal MontoServicio { get; set; } = 0m;
+
+        /// <summary>
+        /// Tope de facturas (documentos de venta) por mes calendario.
+        /// 0 = sin límite.
+        /// </summary>
+        public int LimiteFacturacion { get; set; } = 0;
+
+        /// <summary>Cargo extra mensual acordado (USD), se suma a <see cref="MontoServicio"/>.</summary>
+        public decimal CargoAdicional { get; set; } = 0m;
+
+        /// <summary>
+        /// Cargo por reconexión en RD$ (pesos). Se aplica solo si <see cref="ReconexionPendiente"/>.
+        /// 0 = este cliente no tiene cargo de reconexión.
+        /// </summary>
+        public decimal CargoReconexionDop { get; set; } = 500m;
+
+        /// <summary>
+        /// True tras suspensión por falta de pago: el próximo cobro incluye cargo de reconexión.
+        /// Se limpia al aprobar el pago / marcar pagado.
+        /// </summary>
+        public bool ReconexionPendiente { get; set; } = false;
 
         /// <summary>Empresa dueña de la plataforma (MacroBits). Exenta de cobros/suspensión.</summary>
         public bool EsEmpresaSistema { get; set; } = false;
@@ -75,9 +98,32 @@ namespace AlahiaPos.Entities.Domain
         public bool? EsEmisorElectronico { get; set; } = false;
 
         /// <summary>
-        /// PRUEBA / PRODUCCION
+        /// Ambiente DGII: testecf | certecf | ecf (solo modo DGII_DIRECTO).
         /// </summary>
         public string? AmbienteFE { get; set; }
+
+        /// <summary>
+        /// Modo de envío FE: DGII_DIRECTO | PROVEEDOR_EXTERNO.
+        /// Null = DGII_DIRECTO (FiscalGateway appsettings).
+        /// </summary>
+        [MaxLength(40)]
+        public string? ProveedorFE { get; set; }
+
+        /// <summary>Nombre amigable del proveedor externo (ej. Pedro).</summary>
+        [MaxLength(100)]
+        public string? ProveedorFE_Nombre { get; set; }
+
+        [MaxLength(500)]
+        public string? ProveedorFE_BaseUrl { get; set; }
+
+        [MaxLength(500)]
+        public string? ProveedorFE_ApiKey { get; set; }
+
+        [MaxLength(200)]
+        public string? ProveedorFE_Usuario { get; set; }
+
+        [MaxLength(500)]
+        public string? ProveedorFE_Password { get; set; }
 
         /// <summary>
         /// Última secuencia utilizada (control interno)

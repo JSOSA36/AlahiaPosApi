@@ -8,6 +8,8 @@ namespace AlahiaPos.Entities.Dto.Fiscal
         public int IdEmpresa { get; set; }
         public int IdDocumentoInterno { get; set; }
         public string TipoDocumentoAlahia { get; set; } = "Venta";
+        /// <summary>Ambiente DGII: testecf | certecf | ecf (desde Empresas.AmbienteFE).</summary>
+        public string? AmbienteDgii { get; set; }
         public FiscalDocumentoEncabezado Encabezado { get; set; } = new();
         public List<FiscalDocumentoLinea> Lineas { get; set; } = new();
         public List<FiscalDocumentoDescuento> Descuentos { get; set; } = new();

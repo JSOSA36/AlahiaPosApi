@@ -17,7 +17,8 @@ namespace AlahiaPos.Entities.Domain
         public string FormaPago { get; set; }
         public decimal Monto { get; set; }
         public string? Nota { get; set; }
-        
 
+        /// <summary>Vínculo explícito al movimiento de tesorería (nullable por históricos).</summary>
+        public int? IdMovimientoFinanciero { get; set; }
     }
 }

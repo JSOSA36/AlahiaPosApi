@@ -12,6 +12,7 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.Transmission.Providers.Dg
     {
         public const string MetaFileName = "fileName";
         public const string MetaIdEmpresa = "idEmpresa";
+        public const string MetaAmbiente = "dgiiAmbiente";
 
         private readonly DgiiRecepcionClient _recepcion;
         private readonly DgiiTransmissionProviderOptions _options;
@@ -40,8 +41,10 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.Transmission.Providers.Dg
             var idEmpresa = 0;
             if (package.ProviderMetadata.TryGetValue(MetaIdEmpresa, out var idStr))
                 int.TryParse(idStr, out idEmpresa);
+            package.ProviderMetadata.TryGetValue(MetaAmbiente, out var ambienteMeta);
 
             var sw = Stopwatch.StartNew();
+            using var _ = DgiiAmbienteContext.Push(ambienteMeta);
             try
             {
                 DgiiHttpResultado resp;
@@ -93,7 +96,9 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.Transmission.Providers.Dg
             var idEmpresa = 0;
             if (package.ProviderMetadata.TryGetValue(MetaIdEmpresa, out var idStr))
                 int.TryParse(idStr, out idEmpresa);
+            package.ProviderMetadata.TryGetValue(MetaAmbiente, out var ambienteMeta);
 
+            using var _ = DgiiAmbienteContext.Push(ambienteMeta);
             try
             {
                 var resp = await _recepcion.ConsultarEstadoAsync(providerReceiptId, idEmpresa, ct);

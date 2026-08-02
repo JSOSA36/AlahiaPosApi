@@ -19,5 +19,13 @@ namespace AlahiaPos.Entities.Dto
         public string Motivo { get; set; } = string.Empty;
 
         public string? Observacion { get; set; }
+
+        public string? Categoria { get; set; }
+
+        public int? ReferenciaId { get; set; }
+
+        public string? ReferenciaTipo { get; set; }
+
+        public string? ClaveIdempotencia { get; set; }
     }
 }

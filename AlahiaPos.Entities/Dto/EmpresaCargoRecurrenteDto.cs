@@ -11,6 +11,7 @@ namespace AlahiaPos.Entities.Dto
         public const string Almacenamiento = "ALMACENAMIENTO";
         public const string Integracion = "INTEGRACION";
         public const string Servicio = "SERVICIO";
+        public const string Reconexion = "RECONEXION";
         public const string Otro = "OTRO";
     }
 
@@ -75,13 +76,21 @@ namespace AlahiaPos.Entities.Dto
     {
         public int IdEmpresa { get; set; }
         public int? IdPlan { get; set; }
+        /// <summary>Nombre dinámico: "Plan {NombreComercial}".</summary>
         public string? NombrePlan { get; set; }
-        /// <summary>Precio de catálogo del plan (antes de acuerdo especial).</summary>
-        public decimal MontoPlanCatalogo { get; set; }
-        /// <summary>Precio especial acordado; null si cobra el de catálogo.</summary>
-        public decimal? PrecioPlanEspecialUsd { get; set; }
-        public bool UsaPrecioPlanEspecial { get; set; }
+        public decimal MontoServicio { get; set; }
+        public decimal CargoAdicional { get; set; }
+        public int LimiteFacturacion { get; set; }
+        /// <summary>Cargo de reconexión en RD$ configurado para la empresa.</summary>
+        public decimal CargoReconexionDop { get; set; }
+        /// <summary>Si true, el total incluye la línea de reconexión.</summary>
+        public bool ReconexionPendiente { get; set; }
+        /// <summary>Monto de reconexión aplicado en este cálculo (USD).</summary>
+        public decimal MontoReconexion { get; set; }
+        public decimal MontoReconexionDop { get; set; }
+        /// <summary>Alias de MontoServicio (compat UI).</summary>
         public decimal MontoPlan { get; set; }
+        /// <summary>Cargos adicionales + reconexión (compat UI desglose).</summary>
         public decimal MontoCargos { get; set; }
         public decimal Total { get; set; }
         /// <summary>Tasa fija USD→DOP (ej. 60).</summary>
@@ -92,10 +101,23 @@ namespace AlahiaPos.Entities.Dto
         public List<SuscripcionLineaFacturaDto> Lineas { get; set; } = new();
     }
 
+    /// <summary>Actualiza tarifa dinámica del cliente (sin catálogo de planes).</summary>
+    public class ActualizarTarifaEmpresaDto
+    {
+        public int IdEmpresa { get; set; }
+        public decimal MontoServicio { get; set; }
+        public decimal CargoAdicional { get; set; }
+        /// <summary>0 = sin límite de facturas mensuales.</summary>
+        public int LimiteFacturacion { get; set; }
+        /// <summary>Cargo por reconexión en RD$. Null = no cambiar.</summary>
+        public decimal? CargoReconexionDop { get; set; }
+        public int? IdUsuario { get; set; }
+    }
+
+    /// <summary>Legado — preferir <see cref="ActualizarTarifaEmpresaDto"/>.</summary>
     public class ActualizarPrecioPlanEspecialDto
     {
         public int IdEmpresa { get; set; }
-        /// <summary>Null o omitido = quitar precio especial y volver al catálogo.</summary>
         public decimal? PrecioPlanEspecialUsd { get; set; }
         public int? IdUsuario { get; set; }
     }

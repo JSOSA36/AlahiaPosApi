@@ -29,5 +29,6 @@ namespace AlahiaPos.Entities.Dto
         public const string Reverso = "REVERSO";
         public const string Cobro = "COBRO";
         public const string Pago = "PAGO";
+        public const string ReclasificarPago = "RECLASIFICAR_PAGO";
     }
 }

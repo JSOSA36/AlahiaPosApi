@@ -47,6 +47,7 @@ namespace AlahiaPos.DataAccess.Servicios
                 OrigenReferenciaId = request.OrigenReferenciaId,
                 EsAutomatico = true,
                 TipoOperacion = request.TipoOperacion,
+                IdAsientoContableOrigen = request.IdAsientoContableOrigen,
                 Detalles = request.Lineas.Select(l => new AsientoContableDetalle
                 {
                     IdCuentaContable = l.IdCuentaContable,
@@ -71,11 +72,13 @@ namespace AlahiaPos.DataAccess.Servicios
                 throw new InvalidOperationException(
                     "La integración automática no está activa para esta empresa.");
 
+            var tipoReverso = TipoReversoDe(tipoOperacion);
+
             var reversoExistente = await BuscarAsientoActivoAsync(
                 idEmpresa,
                 origenModulo,
                 origenReferenciaId,
-                ContabilidadTipoOperacion.Reverso);
+                tipoReverso);
 
             if (reversoExistente != null)
                 return reversoExistente.IdAsientoContable;
@@ -89,11 +92,15 @@ namespace AlahiaPos.DataAccess.Servicios
             if (original == null)
                 throw new InvalidOperationException("No existe asiento original para revertir.");
 
-            original.Detalles = await _context.AsientosContablesDetalle
+            var detalles = await _context.AsientosContablesDetalle
+                .AsNoTracking()
                 .Where(d => d.IdAsientoContable == original.IdAsientoContable)
                 .ToListAsync();
 
-            var lineasReverso = original.Detalles!.Select(d => new ContabilidadIntegracionLinea
+            if (detalles.Count == 0)
+                throw new InvalidOperationException("El asiento original no tiene líneas.");
+
+            var lineasReverso = detalles.Select(d => new ContabilidadIntegracionLinea
             {
                 IdCuentaContable = d.IdCuentaContable,
                 Debito = d.Credito,
@@ -110,19 +117,55 @@ namespace AlahiaPos.DataAccess.Servicios
                     (string.IsNullOrWhiteSpace(motivo) ? "" : $" — {motivo}"),
                 OrigenModulo = origenModulo,
                 OrigenReferenciaId = origenReferenciaId,
-                TipoOperacion = ContabilidadTipoOperacion.Reverso,
+                TipoOperacion = tipoReverso,
+                IdAsientoContableOrigen = original.IdAsientoContable,
                 Lineas = lineasReverso
             };
 
-            var idReverso = await RegistrarAsientoAutomaticoAsync(request);
+            return await RegistrarAsientoAutomaticoAsync(request);
+        }
 
-            var asientoReverso = await _context.AsientosContables
-                .FirstAsync(a => a.IdAsientoContable == idReverso);
-            asientoReverso.IdAsientoContableOrigen = original.IdAsientoContable;
-            _context.AsientosContables.Update(asientoReverso);
-            await _context.SaveChangesAsync();
+        public async Task<IReadOnlyList<int>> RevertirAsientosOrigenAsync(
+            int idEmpresa,
+            string origenModulo,
+            int origenReferenciaId,
+            int idUsuario,
+            string? motivo = null)
+        {
+            if (!await _gatekeeper.IntegracionAutomaticaActivaAsync(idEmpresa))
+                throw new InvalidOperationException(
+                    "La integración automática no está activa para esta empresa.");
 
-            return idReverso;
+            var originales = await _context.AsientosContables
+                .AsNoTracking()
+                .Where(a =>
+                    a.IdEmpresa == idEmpresa &&
+                    a.OrigenModulo == origenModulo &&
+                    a.OrigenReferenciaId == origenReferenciaId &&
+                    a.EsAutomatico &&
+                    a.Estado != ContabilidadConstantes.EstadoAsientoAnulado &&
+                    a.TipoOperacion != null &&
+                    !a.TipoOperacion.StartsWith("REVERSO"))
+                .OrderBy(a => a.IdAsientoContable)
+                .ToListAsync();
+
+            if (originales.Count == 0)
+                throw new InvalidOperationException("No existe asiento original para revertir.");
+
+            var ids = new List<int>();
+            foreach (var original in originales)
+            {
+                var id = await RevertirAsientoAutomaticoAsync(
+                    idEmpresa,
+                    origenModulo,
+                    origenReferenciaId,
+                    original.TipoOperacion!,
+                    idUsuario,
+                    motivo);
+                ids.Add(id);
+            }
+
+            return ids;
         }
 
         private async Task<AsientoContable?> BuscarAsientoActivoAsync(
@@ -131,13 +174,27 @@ namespace AlahiaPos.DataAccess.Servicios
             int origenReferenciaId,
             string tipoOperacion)
         {
-            return await _context.AsientosContables.FirstOrDefaultAsync(a =>
-                a.IdEmpresa == idEmpresa &&
-                a.OrigenModulo == origenModulo &&
-                a.OrigenReferenciaId == origenReferenciaId &&
-                a.TipoOperacion == tipoOperacion &&
-                a.EsAutomatico &&
-                a.Estado != ContabilidadConstantes.EstadoAsientoAnulado);
+            return await _context.AsientosContables
+                .AsNoTracking()
+                .FirstOrDefaultAsync(a =>
+                    a.IdEmpresa == idEmpresa &&
+                    a.OrigenModulo == origenModulo &&
+                    a.OrigenReferenciaId == origenReferenciaId &&
+                    a.TipoOperacion == tipoOperacion &&
+                    a.EsAutomatico &&
+                    a.Estado != ContabilidadConstantes.EstadoAsientoAnulado);
+        }
+
+        private static string TipoReversoDe(string tipoOperacion)
+        {
+            if (string.IsNullOrWhiteSpace(tipoOperacion)
+                || string.Equals(tipoOperacion, ContabilidadTipoOperacion.Alta, StringComparison.OrdinalIgnoreCase))
+                return ContabilidadTipoOperacion.Reverso;
+
+            if (tipoOperacion.StartsWith("REVERSO", StringComparison.OrdinalIgnoreCase))
+                return tipoOperacion;
+
+            return $"REVERSO_{tipoOperacion}";
         }
     }
 }

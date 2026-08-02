@@ -1,0 +1,404 @@
+﻿{
+    "fecha":  "2026-07-20T14:50:12",
+    "totales":  {
+                    "fail":  0,
+                    "pass":  77,
+                    "ejecutados":  77,
+                    "skip":  0
+                },
+    "bgFinal":  {
+                    "diff":  0.00,
+                    "patrimonio":  48499.50,
+                    "pasivos":  10187.60,
+                    "resultadoEjercicio":  48499.50,
+                    "cuadra":  true,
+                    "activos":  58687.10
+                },
+    "casos":  [
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Setup MetodoPago TARJETA",
+                      "nota":  "-\u003e cuenta 19"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Setup MetodoPago TRANSFERENCIA",
+                      "nota":  "-\u003e cuenta 19"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Setup Banco 19",
+                      "nota":  "id=19 cta=4"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Setup Banco 20",
+                      "nota":  "id=20 cta=133"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Baseline",
+                      "nota":  "BG Diff=0.00 cuadra=True; ER=45709.50 RE=45709.50; BC Deb=108507.20 Cred=108507.20"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Venta descuento solo totalDescuento - factura",
+                      "nota":  "factura.total=304.00 esperado=304"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Venta descuento - ALTA existe y cuadrado",
+                      "nota":  "idAsiento=204 Deb=304.00 Cred=304.00"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Post-VentaDescuento",
+                      "nota":  "BG Diff=0.00 cuadra=True; ER=45959.50 RE=45959.50; BC Deb=108811.20 Cred=108811.20"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Venta multi EFECTIVO+TARJETA",
+                      "nota":  "id=9454"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Venta multi asiento split CAJA+BANCO",
+                      "nota":  "cuentasDeb=[3,4] codigos=[1.1.1,1.1.2]"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Post-VentaMulti",
+                      "nota":  "BG Diff=0.00 cuadra=True; ER=46959.50 RE=46959.50; BC Deb=109991.20 Cred=109991.20"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Venta multi EFECTIVO+TRANSFERENCIA",
+                      "nota":  "id=9455"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Post-VentaMulti2",
+                      "nota":  "BG Diff=0.00 cuadra=True; ER=47459.50 RE=47459.50; BC Deb=110581.20 Cred=110581.20"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Venta exenta ITBIS",
+                      "nota":  "id=9456"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Post-VentaExenta",
+                      "nota":  "BG Diff=0.00 cuadra=True; ER=47659.50 RE=47659.50; BC Deb=110781.20 Cred=110781.20"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Venta stock insuficiente",
+                      "nota":  "Rechazada: Error Guardando Movimiento: Stock insuficiente en el almacén para: Pasta Dental Colegate | INNER: "
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Post-StockInsuf",
+                      "nota":  "BG Diff=0.00 cuadra=True; ER=47659.50 RE=47659.50; BC Deb=110781.20 Cred=110781.20"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Compra con ITBIS",
+                      "nota":  "orden=27"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Post-CompraITBIS",
+                      "nota":  "BG Diff=0.00 cuadra=True; ER=47659.50 RE=47659.50; BC Deb=110899.20 Cred=110899.20"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Compra exenta ITBIS",
+                      "nota":  "orden=28"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Post-CompraExenta",
+                      "nota":  "BG Diff=0.00 cuadra=True; ER=47659.50 RE=47659.50; BC Deb=110979.20 Cred=110979.20"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Compra activo fijo confirm",
+                      "nota":  "orden=29"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Compra AF debito ACTIVO_FIJO (cta 9)",
+                      "nota":  "cuentas=[9,7,3] idAsiento=210"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Post-CompraAF",
+                      "nota":  "BG Diff=0.00 cuadra=True; ER=47659.50 RE=47659.50; BC Deb=116879.20 Cred=116879.20"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Gasto desde Caja",
+                      "nota":  "id=175"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Post-GastoCaja",
+                      "nota":  "BG Diff=0.00 cuadra=True; ER=47634.50 RE=47634.50; BC Deb=116904.20 Cred=116904.20"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Gasto desde Banco",
+                      "nota":  "id=176"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Post-GastoBanco",
+                      "nota":  "BG Diff=0.00 cuadra=True; ER=47604.50 RE=47604.50; BC Deb=116934.20 Cred=116934.20"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Ingreso en Caja",
+                      "nota":  "id=8867"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Post-IngresoCaja",
+                      "nota":  "BG Diff=0.00 cuadra=True; ER=47659.50 RE=47659.50; BC Deb=116989.20 Cred=116989.20"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Ingreso en Banco",
+                      "nota":  "id=8868"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Post-IngresoBanco",
+                      "nota":  "BG Diff=0.00 cuadra=True; ER=47719.50 RE=47719.50; BC Deb=117049.20 Cred=117049.20"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Transferencia banco-banco",
+                      "nota":  "19 -\u003e 20"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Transferencia GL dos cuentas (4 y 133)",
+                      "nota":  "cuentas=[133,4] distinct=2"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Post-TransferBancoBanco",
+                      "nota":  "BG Diff=0.00 cuadra=True; ER=47719.50 RE=47719.50; BC Deb=117074.20 Cred=117074.20"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Ajuste inventario ENTRADA",
+                      "nota":  "idMovimiento=408"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Post-InvPos",
+                      "nota":  "BG Diff=0.00 cuadra=True; ER=48119.50 RE=48119.50; BC Deb=117474.20 Cred=117474.20"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Ajuste inventario SALIDA",
+                      "nota":  "idMovimiento=409"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Post-InvNeg",
+                      "nota":  "BG Diff=0.00 cuadra=True; ER=47919.50 RE=47919.50; BC Deb=117674.20 Cred=117674.20"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Venta credito para CxC",
+                      "nota":  "id=9458"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Post-CxCVenta",
+                      "nota":  "BG Diff=0.00 cuadra=True; ER=48319.50 RE=48319.50; BC Deb=118146.20 Cred=118146.20"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Pago parcial CxC",
+                      "nota":  "150"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Post-CxCParcial",
+                      "nota":  "BG Diff=0.00 cuadra=True; ER=48319.50 RE=48319.50; BC Deb=118296.20 Cred=118296.20"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Pago total CxC",
+                      "nota":  "322"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Post-CxCTotal",
+                      "nota":  "BG Diff=0.00 cuadra=True; ER=48319.50 RE=48319.50; BC Deb=118618.20 Cred=118618.20"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Compra credito para CxP",
+                      "nota":  "orden=30"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Post-CxPCompra",
+                      "nota":  "BG Diff=0.00 cuadra=True; ER=48319.50 RE=48319.50; BC Deb=118759.80 Cred=118759.80"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Pago parcial CxP",
+                      "nota":  "50"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Post-CxPParcial",
+                      "nota":  "BG Diff=0.00 cuadra=True; ER=48319.50 RE=48319.50; BC Deb=118809.80 Cred=118809.80"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Pago total CxP",
+                      "nota":  "91.6"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Post-CxPTotal",
+                      "nota":  "BG Diff=0.00 cuadra=True; ER=48319.50 RE=48319.50; BC Deb=118901.40 Cred=118901.40"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Reverso Venta - asiento ALTA",
+                      "nota":  "id=9459"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Pre-AnularVenta",
+                      "nota":  "BG Diff=0.00 cuadra=True; ER=48269.50 RE=48269.50; BC Deb=119278.40 Cred=119278.40"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Reverso Venta - asiento REVERSO",
+                      "nota":  "tipos=REVERSO_COGS,REVERSO,COGS,ALTA"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Reverso Venta - restock operativo",
+                      "nota":  "AnularFactura OK (reverso operativo implementado)"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Post-AnularVenta",
+                      "nota":  "BG Diff=0.00 cuadra=True; ER=48319.50 RE=48319.50; BC Deb=119655.40 Cred=119655.40"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Reverso Gasto - ALTA",
+                      "nota":  "id=177"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Reverso Gasto - REVERSO",
+                      "nota":  "ok"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Post-AnularGasto",
+                      "nota":  "BG Diff=0.00 cuadra=True; ER=48319.50 RE=48319.50; BC Deb=119699.40 Cred=119699.40"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Reverso Compra - ALTA pre",
+                      "nota":  "orden=31"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Reverso Compra confirmada unpaid",
+                      "nota":  "tipos=REVERSO,ALTA"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Post-AnularCompra",
+                      "nota":  "BG Diff=0.00 cuadra=True; ER=48319.50 RE=48319.50; BC Deb=119793.80 Cred=119793.80"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Reverso Ingreso - ALTA",
+                      "nota":  "id=8872"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Reverso Ingreso - DELETE REVERSO",
+                      "nota":  "tipos="
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Post-AnularIngreso",
+                      "nota":  "BG Diff=0.00 cuadra=True; ER=48319.50 RE=48319.50; BC Deb=119859.80 Cred=119859.80"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Reverso NC - ALTA",
+                      "nota":  "nc=10"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Reverso NC - Anular REVERSO",
+                      "nota":  "tipos="
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Post-AnularNC",
+                      "nota":  "BG Diff=0.00 cuadra=True; ER=48499.50 RE=48499.50; BC Deb=120497.00 Cred=120497.00"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Reverso Inventario - ALTA",
+                      "nota":  "idMov=412"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Reverso Inventario - DELETE REVERSO",
+                      "nota":  "tipos="
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Post-AnularInv",
+                      "nota":  "BG Diff=0.00 cuadra=True; ER=48499.50 RE=48499.50; BC Deb=120897.00 Cred=120897.00"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Integridad asientos descuadrados (ult 80)",
+                      "nota":  "bad=0 sample=80 "
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Integridad duplicados ALTA",
+                      "nota":  "dups=0 ej="
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "Integridad docs sin asiento (ventas run)",
+                      "nota":  "checked=7 missing=[]"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "FINAL BG cuadra",
+                      "nota":  "Diff=0.00 Act=58687.10 Pas+Pat=58687.10"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "FINAL ER=RE",
+                      "nota":  "ER=48499.50 RE=48499.50"
+                  },
+                  {
+                      "resultado":  "PASS",
+                      "caso":  "FINAL BC cuadra",
+                      "nota":  "Deb=120897.00 Cred=120897.00"
+                  }
+              ]
+}

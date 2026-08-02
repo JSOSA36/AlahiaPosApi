@@ -100,21 +100,34 @@ namespace AlahiaPosApi.Controllers
                 // 🔔 Obtener alerta con la empresa actualizada
                 var alertaPago = _empresasService.ObtenerAlertaPago(empresa);
 
-                // 🔍 Plan
-                var plan = await _lanesCloud.GetPlanById((int)empresa.IdPlan);
+                // Cobro dinámico por empresa (sin catálogo de planes)
+                var nombrePlanEmpresa = string.IsNullOrWhiteSpace(empresa.NombreComercial)
+                    ? $"Plan Empresa {empresa.IdEmpresa}"
+                    : $"Plan {empresa.NombreComercial.Trim()}";
 
-                if (plan == null)
-                    return StatusCode(403, "La empresa no tiene un plan válido asignado.");
-
-                // 🔥 Validar demo
-                if (plan.PrecioUSD == 0 && empresa.FechaTerminacion.Date < DateTime.Now.Date)
+                // Demo / prueba: MontoServicio = 0
+                if (empresa.MontoServicio <= 0 && empresa.FechaTerminacion.Date < DateTime.Now.Date)
                 {
                     return StatusCode(403, "El período de prueba ha finalizado.");
                 }
 
+                var esDemoVigente = empresa.MontoServicio <= 0
+                    && empresa.FechaTerminacion.Date >= DateTime.Now.Date;
+
+                if (esDemoVigente)
+                {
+                    if (empresa.EstadoServicio != SuscripcionEstados.Activa || !empresa.PagadoServicio)
+                    {
+                        empresa.EstadoServicio = SuscripcionEstados.Activa;
+                        empresa.PagadoServicio = true;
+                        empresa.PoliticasAceptadas = true;
+                        _empresasService.UpdateEmpresas(empresa.IdEmpresa, empresa);
+                    }
+                }
+
                 // 🔴 Suscripción bloqueada (suspendida / pago en validación / cancelada)
                 // Se permite sesión mínima para Reportar Pago, pero el front no entra al ERP.
-                var bloqueado = _suscripcionCobro.EstaBloqueada(empresa);
+                var bloqueado = !esDemoVigente && _suscripcionCobro.EstaBloqueada(empresa);
                 if (bloqueado)
                 {
                     usuarioDb.Token = Guid.NewGuid().ToString();
@@ -170,11 +183,13 @@ namespace AlahiaPosApi.Controllers
                             idEmpresa = empresa.IdEmpresa,
                             nombreComercial = empresa.NombreComercial,
                             idPlan = empresa.IdPlan,
-                            nombrePlan = plan.Nombre,
+                            nombrePlan = factura.NombrePlan ?? nombrePlanEmpresa,
                             estadoServicio = estadoEfectivo,
                             precioPlan = factura.Total,
                             montoPlan = factura.MontoPlan,
                             montoCargos = factura.MontoCargos,
+                            montoServicio = factura.MontoServicio,
+                            cargoAdicional = factura.CargoAdicional,
                             desgloseFactura = factura.Lineas,
                             correElectronico = empresa.CorreElectronico
                         },
@@ -186,30 +201,34 @@ namespace AlahiaPosApi.Controllers
                     });
                 }
 
-                // 🔥 Facturación del mes
-                var fechaInicio = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
-                var fechaFin = fechaInicio.AddMonths(1).AddSeconds(-1);
-
-                var listadoIngresos = await _ingresosService
-                    .GetIngresosByFecha(empresa.IdEmpresa, fechaInicio, fechaFin);
-
-                decimal totalFacturado = listadoIngresos?.Any() == true
-                    ? listadoIngresos.Sum(x => x.Monto)
-                    : 0;
-
-                // 🔴 Validar límite del plan
-                if (plan.LimiteFacturacion > 0 && totalFacturado >= plan.LimiteFacturacion)
+                // Límite mensual de facturas (0 = ilimitado)
+                if (empresa.LimiteFacturacion > 0)
                 {
-                    return Ok(new
+                    var fechaInicio = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
+                    var fechaFin = fechaInicio.AddMonths(1);
+                    var facturasMes = await _ctx.FacturaHeaders.AsNoTracking()
+                        .CountAsync(h =>
+                            h.IdEmpresa == empresa.IdEmpresa
+                            && h.IdTipoDocumentos == 1
+                            && !h.EstaCancelada
+                            && h.FechaInseccion >= fechaInicio
+                            && h.FechaInseccion < fechaFin);
+
+                    if (facturasMes >= empresa.LimiteFacturacion)
                     {
-                        requiereUpgrade = true,
-                        mensaje = "Has alcanzado el límite de facturación de tu plan.",
-                        empresa = new
+                        return Ok(new
                         {
-                            idEmpresa = empresa.IdEmpresa,
-                            idPlan = empresa.IdPlan
-                        }
-                    });
+                            requiereUpgrade = true,
+                            mensaje = $"Ha alcanzado el límite mensual de {empresa.LimiteFacturacion} facturas. Contacte a MacroBits para ampliar su servicio.",
+                            empresa = new
+                            {
+                                idEmpresa = empresa.IdEmpresa,
+                                idPlan = empresa.IdPlan,
+                                limiteFacturacion = empresa.LimiteFacturacion,
+                                facturasMes
+                            }
+                        });
+                    }
                 }
 
                 // ✅ AHORA SÍ → CREAR SESIÓN
@@ -256,10 +275,13 @@ namespace AlahiaPosApi.Controllers
                         nombreComercial = empresa.NombreComercial,
                         apiPrint = empresa.ApiPrint,
                         idPlan = empresa.IdPlan,
-                        nombrePlan = plan.Nombre,
+                        nombrePlan = nombrePlanEmpresa,
                         fechaTerminacion = empresa.FechaTerminacion,
                         estadoServicio = empresa.EstadoServicio,
                         pagadoServicio = empresa.PagadoServicio,
+                        montoServicio = empresa.MontoServicio,
+                        cargoAdicional = empresa.CargoAdicional,
+                        limiteFacturacion = empresa.LimiteFacturacion,
                         PoliticasAceptadas = !politicasEstado.RequiereAceptacion
                     },
                     politicas = politicasEstado,
@@ -270,7 +292,9 @@ namespace AlahiaPosApi.Controllers
                         : new
                         {
                             tipo = alertaPago.Tipo,
-                            mensaje = alertaPago.Mensaje
+                            mensaje = alertaPago.Mensaje,
+                            diaCobro = alertaPago.DiaCobro,
+                            diasRestantes = alertaPago.DiasRestantes
                         },
                     notificacionesNoLeidas = await _notificaciones.ContarNoLeidasAsync(
                         empresa.IdEmpresa, usuarioDb.IdUsuario)

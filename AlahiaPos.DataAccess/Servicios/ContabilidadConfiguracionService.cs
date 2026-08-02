@@ -10,15 +10,18 @@ namespace AlahiaPos.DataAccess.Servicios
         private readonly AlahiaPosContext _context;
         private readonly IContabilidadGatekeeper _gatekeeper;
         private readonly IModulo _modulos;
+        private readonly IContabilidadCuentaMapeoService _mapeo;
 
         public ContabilidadConfiguracionService(
             AlahiaPosContext context,
             IContabilidadGatekeeper gatekeeper,
-            IModulo modulos)
+            IModulo modulos,
+            IContabilidadCuentaMapeoService mapeo)
         {
             _context = context;
             _gatekeeper = gatekeeper;
             _modulos = modulos;
+            _mapeo = mapeo;
         }
 
         public async Task<ContabilidadConfiguracionDto> GetConfiguracionAsync(int idEmpresa)
@@ -55,6 +58,9 @@ namespace AlahiaPos.DataAccess.Servicios
             _context.ContabilidadConfiguracion.Update(config);
             await _context.SaveChangesAsync();
 
+            if (config.IntegracionAutomatica)
+                await _mapeo.EnsureMapeoDefaultAsync(request.IdEmpresa);
+
             return MapToDto(config, moduloContratado: true);
         }
 
@@ -90,6 +96,8 @@ namespace AlahiaPos.DataAccess.Servicios
 
             _context.ContabilidadConfiguracion.Add(config);
             await _context.SaveChangesAsync();
+
+            await _mapeo.EnsureMapeoDefaultAsync(idEmpresa);
 
             return config;
         }

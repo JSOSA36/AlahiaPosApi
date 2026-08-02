@@ -100,6 +100,17 @@ namespace AlahiaPos.DataAccess.Servicios
             }
 
             /* =====================================
+            🔥 VALIDAR VIGENCIA
+            ====================================== */
+
+            if (secuencia.fechaVencimiento.Date < DateTime.Today)
+            {
+                throw new Exception(
+                    "La secuencia de NCF está vencida. Actualice la configuración fiscal."
+                );
+            }
+
+            /* =====================================
             🔥 VALIDAR LÍMITE
             ====================================== */
 

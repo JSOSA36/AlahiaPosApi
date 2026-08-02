@@ -1,0 +1,14 @@
+﻿FkName	ChildTable	ChildCol	ParentTable	ParentCol
+------	----------	--------	-----------	---------
+FK_CotizacionDetalle_Cotizacion	CotizacionDetalle	CotizacionId	Cotizacion	Id
+FK_CotizacionLead_Cotizacion	CotizacionLead	CotizacionId	Cotizacion	Id
+FK_ModuloComercial_Modulos	ModuloComercial	ModuloId	Modulos	Id
+FK_ModuloDependencia_Modulo	ModuloDependencia	ModuloId	Modulos	Id
+FK_ModuloDependencia_Requerido	ModuloDependencia	ModuloRequeridoId	Modulos	Id
+FK_ModuloTipoNegocio_Modulo	ModuloTipoNegocio	ModuloId	Modulos	Id
+FK_ModuloTipoNegocio_Tipo	ModuloTipoNegocio	TipoNegocioId	TipoNegocio	Id
+FK_TesConcAud_Conc	TesoreriaConciliacionAuditoria	IdTesoreriaConciliacion	TesoreriaConciliacion	IdTesoreriaConciliacion
+FK_TesExtImp_Conciliacion	TesoreriaExtractoImport	IdTesoreriaConciliacion	TesoreriaConciliacion	IdTesoreriaConciliacion
+FK_TesExtImp_Cuenta	TesoreriaExtractoImport	IdCuentaFinanciera	CuentaFinanciera	IdCuentaFinanciera
+FK_TesExtLin_Imp	TesoreriaExtractoLinea	IdTesoreriaExtractoImport	TesoreriaExtractoImport	IdTesoreriaExtractoImport
+FK_TesExtLin_Mov	TesoreriaExtractoLinea	IdMovimientoFinanciero	MovimientoFinanciero	IdMovimientoFinanciero

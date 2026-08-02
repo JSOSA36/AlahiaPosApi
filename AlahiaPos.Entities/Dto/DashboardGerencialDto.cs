@@ -7,6 +7,12 @@ namespace AlahiaPos.Entities.Dto
         public DateTime PeriodoHasta { get; set; }
         public string PeriodoLabel { get; set; } = string.Empty;
 
+        /// <summary>Etiqueta del día de hoy (ej. "domingo, 2 de agosto de 2026").</summary>
+        public string PeriodoHoyLabel { get; set; } = string.Empty;
+
+        /// <summary>P&amp;L del día en curso (misma fórmula que el mes).</summary>
+        public DashboardGerencialPlDto PlHoy { get; set; } = new();
+
         public DashboardGerencialPlDto Pl { get; set; } = new();
         public DashboardGerencialIndicadoresDto Indicadores { get; set; } = new();
         public DashboardGerencialChartsDto Charts { get; set; } = new();

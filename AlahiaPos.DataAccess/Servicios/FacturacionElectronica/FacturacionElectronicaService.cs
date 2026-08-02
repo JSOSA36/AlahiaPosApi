@@ -143,6 +143,32 @@ namespace AlahiaPos.DataAccess.Servicios.FacturacionElectronica
             if (!flags.FacturacionElectronicaActiva)
                 return new EmisionEcfResultadoCompleto { Exitoso = false, MensajeError = "Facturación electrónica no está activa" };
 
+            // Reintento: reutilizar ECF ya reservado para este origen (no consumir otra secuencia).
+            var ecfExistente = await _ctx.ECFEncabezados
+                .AsTracking()
+                .Where(e =>
+                    e.IdEmpresa == request.IdEmpresa
+                    && e.OrigenDocumento == (int)request.OrigenDocumento
+                    && e.IdOrigen == request.IdOrigen
+                    && e.TipoECF == request.TipoEcfDgii.ToString())
+                .OrderByDescending(e => e.IdECF)
+                .FirstOrDefaultAsync();
+
+            if (ecfExistente != null
+                && !string.IsNullOrWhiteSpace(ecfExistente.ENCF)
+                && (string.Equals(ecfExistente.EstadoDGII, "Aceptado", StringComparison.OrdinalIgnoreCase)
+                    || (ecfExistente.EstadoDGII ?? "").Contains("Aceptado", StringComparison.OrdinalIgnoreCase)))
+            {
+                return new EmisionEcfResultadoCompleto
+                {
+                    Exitoso = true,
+                    Encf = ecfExistente.ENCF,
+                    IdEcf = ecfExistente.IdECF,
+                    TrackId = ecfExistente.TrackId,
+                    EstadoDgii = ecfExistente.EstadoDGII
+                };
+            }
+
             var resolver = _resolverFactory.Get(request.OrigenDocumento);
             var docInfo = await resolver.ObtenerDocumentoAsync(request.IdOrigen, request.IdEmpresa);
 
@@ -155,84 +181,114 @@ namespace AlahiaPos.DataAccess.Servicios.FacturacionElectronica
                 docInfo.RazonModificacion = request.RazonModificacion;
             }
 
-            var encfPeek = await _secuencias.PeekSiguienteAsync(request.IdEmpresa, request.TipoEcfDgii);
-            if (string.IsNullOrWhiteSpace(encfPeek))
-                return new EmisionEcfResultadoCompleto
-                {
-                    Exitoso = false,
-                    MensajeError = "No hay secuencia e-NCF disponible para este tipo"
-                };
-
             var empresa = await _ctx.Empresas.AsNoTracking()
                 .FirstOrDefaultAsync(e => e.IdEmpresa == request.IdEmpresa);
             var secuencia = await _ctx.SecuenciasECF.AsNoTracking()
                 .FirstOrDefaultAsync(s => s.IdEmpresa == request.IdEmpresa
                     && s.TipoEcfDgii == request.TipoEcfDgii && s.Activo);
 
-            // Validación previa (Motor de Definiciones) sin consumir secuencia
-            var ecfProvisional = new ECFEncabezado
-            {
-                IdEmpresa = request.IdEmpresa,
-                TipoECF = request.TipoEcfDgii.ToString(),
-                ENCF = encfPeek,
-                FechaEmision = docInfo.FechaDocumento,
-                RncReceptor = docInfo.RncCliente,
-                NombreReceptor = docInfo.NombreCliente,
-                MontoGravado = docInfo.SubTotal,
-                TotalITBIS = docInfo.TotalItbis,
-                TotalGeneral = docInfo.Total,
-                OrigenDocumento = (int)request.OrigenDocumento,
-                IdOrigen = request.IdOrigen,
-                NumeroFacturaInterna = docInfo.NumeroDocumentoInterno
-            };
+            ECFEncabezado ecf;
+            string encfReservado;
 
-            var docPrevio = FiscalDocumentoBuilder.Build(
-                ecfProvisional, docInfo, request.IdOrigen, (int)request.OrigenDocumento,
-                request.TipoEcfDgii, empresa, secuencia);
-
-            var validacion = _validator.Validar(docPrevio);
-            if (!validacion.Ok)
+            if (ecfExistente != null && !string.IsNullOrWhiteSpace(ecfExistente.ENCF))
             {
-                _logger.LogWarning(
-                    "Validación FE fallida (sin reservar e-NCF): Empresa={Emp} Tipo={Tipo} Origen={Origen}/{Id} → {Msg}",
-                    request.IdEmpresa, request.TipoEcfDgii, request.OrigenDocumento, request.IdOrigen, validacion.Mensaje);
-                return new EmisionEcfResultadoCompleto
+                encfReservado = ecfExistente.ENCF;
+                ecf = ecfExistente;
+
+                var docPrevioReintento = FiscalDocumentoBuilder.Build(
+                    ecf, docInfo, request.IdOrigen, (int)request.OrigenDocumento,
+                    request.TipoEcfDgii, empresa, secuencia);
+                var validacionReintento = _validator.Validar(docPrevioReintento);
+                if (!validacionReintento.Ok)
                 {
-                    Exitoso = false,
-                    MensajeError = validacion.Mensaje,
-                    MensajesDgii = validacion.Mensajes,
-                    RncEmisor = empresa?.RNC,
-                    RazonSocialEmisor = empresa?.NombreComercial
-                };
+                    return new EmisionEcfResultadoCompleto
+                    {
+                        Exitoso = false,
+                        Encf = encfReservado,
+                        IdEcf = ecf.IdECF,
+                        MensajeError = validacionReintento.Mensaje,
+                        MensajesDgii = validacionReintento.Mensajes,
+                        RncEmisor = empresa?.RNC,
+                        RazonSocialEmisor = empresa?.NombreComercial
+                    };
+                }
             }
-
-            var reserva = await _secuencias.ReservarSiguienteAsync(request.IdEmpresa, request.TipoEcfDgii);
-            if (!reserva.Exitoso)
-                return new EmisionEcfResultadoCompleto { Exitoso = false, MensajeError = reserva.MensajeError };
-
-            await resolver.CrearFotografiaAsync(docInfo);
-
-            var ecf = new ECFEncabezado
+            else
             {
-                IdEmpresa = request.IdEmpresa,
-                TipoECF = request.TipoEcfDgii.ToString(),
-                ENCF = reserva.Encf!,
-                FechaEmision = docInfo.FechaDocumento,
-                RncReceptor = docInfo.RncCliente,
-                NombreReceptor = docInfo.NombreCliente,
-                MontoGravado = docInfo.SubTotal,
-                TotalITBIS = docInfo.TotalItbis,
-                TotalGeneral = docInfo.Total,
-                OrigenDocumento = (int)request.OrigenDocumento,
-                IdOrigen = request.IdOrigen,
-                NumeroFacturaInterna = docInfo.NumeroDocumentoInterno,
-                EstadoDocumento = EstadoDocumentoElectronico.PendienteEnvio,
-                EstadoDGII = "Pendiente",
-                FechaCreacion = DateTime.Now
-            };
+                var encfPeek = await _secuencias.PeekSiguienteAsync(request.IdEmpresa, request.TipoEcfDgii);
+                if (string.IsNullOrWhiteSpace(encfPeek))
+                    return new EmisionEcfResultadoCompleto
+                    {
+                        Exitoso = false,
+                        MensajeError = "No hay secuencia e-NCF disponible para este tipo"
+                    };
 
-            _ctx.ECFEncabezados.Add(ecf);
-            await _ctx.SaveChangesAsync();
+                // Validación previa (Motor de Definiciones) sin consumir secuencia
+                var ecfProvisional = new ECFEncabezado
+                {
+                    IdEmpresa = request.IdEmpresa,
+                    TipoECF = request.TipoEcfDgii.ToString(),
+                    ENCF = encfPeek,
+                    FechaEmision = docInfo.FechaDocumento,
+                    RncReceptor = docInfo.RncCliente,
+                    NombreReceptor = docInfo.NombreCliente,
+                    MontoGravado = docInfo.SubTotal,
+                    TotalITBIS = docInfo.TotalItbis,
+                    TotalGeneral = docInfo.Total,
+                    OrigenDocumento = (int)request.OrigenDocumento,
+                    IdOrigen = request.IdOrigen,
+                    NumeroFacturaInterna = docInfo.NumeroDocumentoInterno
+                };
+
+                var docPrevio = FiscalDocumentoBuilder.Build(
+                    ecfProvisional, docInfo, request.IdOrigen, (int)request.OrigenDocumento,
+                    request.TipoEcfDgii, empresa, secuencia);
+
+                var validacion = _validator.Validar(docPrevio);
+                if (!validacion.Ok)
+                {
+                    _logger.LogWarning(
+                        "Validación FE fallida (sin reservar e-NCF): Empresa={Emp} Tipo={Tipo} Origen={Origen}/{Id} → {Msg}",
+                        request.IdEmpresa, request.TipoEcfDgii, request.OrigenDocumento, request.IdOrigen, validacion.Mensaje);
+                    return new EmisionEcfResultadoCompleto
+                    {
+                        Exitoso = false,
+                        MensajeError = validacion.Mensaje,
+                        MensajesDgii = validacion.Mensajes,
+                        RncEmisor = empresa?.RNC,
+                        RazonSocialEmisor = empresa?.NombreComercial
+                    };
+                }
+
+                var reserva = await _secuencias.ReservarSiguienteAsync(request.IdEmpresa, request.TipoEcfDgii);
+                if (!reserva.Exitoso)
+                    return new EmisionEcfResultadoCompleto { Exitoso = false, MensajeError = reserva.MensajeError };
+
+                encfReservado = reserva.Encf!;
+                await resolver.CrearFotografiaAsync(docInfo);
+
+                ecf = new ECFEncabezado
+                {
+                    IdEmpresa = request.IdEmpresa,
+                    TipoECF = request.TipoEcfDgii.ToString(),
+                    ENCF = encfReservado,
+                    FechaEmision = docInfo.FechaDocumento,
+                    RncReceptor = docInfo.RncCliente,
+                    NombreReceptor = docInfo.NombreCliente,
+                    MontoGravado = docInfo.SubTotal,
+                    TotalITBIS = docInfo.TotalItbis,
+                    TotalGeneral = docInfo.Total,
+                    OrigenDocumento = (int)request.OrigenDocumento,
+                    IdOrigen = request.IdOrigen,
+                    NumeroFacturaInterna = docInfo.NumeroDocumentoInterno,
+                    EstadoDocumento = EstadoDocumentoElectronico.PendienteEnvio,
+                    EstadoDGII = "Pendiente",
+                    FechaCreacion = DateTime.Now
+                };
+
+                _ctx.ECFEncabezados.Add(ecf);
+                await _ctx.SaveChangesAsync();
+            }
 
             var docElectronico = FiscalDocumentoBuilder.Build(
                 ecf, docInfo, request.IdOrigen, (int)request.OrigenDocumento,
@@ -264,17 +320,54 @@ namespace AlahiaPos.DataAccess.Servicios.FacturacionElectronica
 
             await _ctx.SaveChangesAsync();
 
-            // Propagar e-NCF al documento comercial (NC/ND referencian FacturaHeaders.NCF).
+            // Propagar e-NCF al documento comercial.
             // DbContext global es NoTracking → hace falta AsTracking / Attach.
-            if (request.OrigenDocumento == OrigenDocumento.Pos && resultado.Exitoso
-                && !string.IsNullOrWhiteSpace(reserva.Encf))
+            if (resultado.Exitoso && !string.IsNullOrWhiteSpace(encfReservado))
             {
-                var factura = await _ctx.FacturaHeaders
-                    .AsTracking()
-                    .FirstOrDefaultAsync(f => f.IdFacturaHeader == request.IdOrigen);
-                if (factura != null && string.IsNullOrWhiteSpace(factura.NCF))
+                if (request.OrigenDocumento == OrigenDocumento.Pos)
                 {
-                    factura.NCF = reserva.Encf;
+                    var factura = await _ctx.FacturaHeaders
+                        .AsTracking()
+                        .FirstOrDefaultAsync(f => f.IdFacturaHeader == request.IdOrigen);
+                    if (factura != null && string.IsNullOrWhiteSpace(factura.NCF))
+                    {
+                        factura.NCF = encfReservado;
+                        await _ctx.SaveChangesAsync();
+                    }
+                }
+                else if (request.OrigenDocumento == OrigenDocumento.NotaCredito)
+                {
+                    var nc = await _ctx.NotasCredito
+                        .AsTracking()
+                        .FirstOrDefaultAsync(n => n.IdNotaCredito == request.IdOrigen);
+                    if (nc != null)
+                    {
+                        nc.NCF = encfReservado;
+                        nc.IdEcf = ecf.IdECF;
+                        nc.TrackId = resultado.TrackId;
+                        nc.EstadoDgii = ecf.EstadoDGII;
+                        nc.FechaEmisionEcf = DateTime.Now;
+                        nc.CodigoTipoComprobanteDgii = "34";
+                        nc.MensajeEmision = null;
+                        await _ctx.SaveChangesAsync();
+                    }
+                }
+            }
+            else if (request.OrigenDocumento == OrigenDocumento.NotaCredito)
+            {
+                var nc = await _ctx.NotasCredito
+                    .AsTracking()
+                    .FirstOrDefaultAsync(n => n.IdNotaCredito == request.IdOrigen);
+                if (nc != null)
+                {
+                    if (!string.IsNullOrWhiteSpace(encfReservado))
+                        nc.NCF = encfReservado;
+                    nc.IdEcf = ecf.IdECF;
+                    nc.TrackId = resultado.TrackId;
+                    nc.EstadoDgii = string.IsNullOrWhiteSpace(ecf.EstadoDGII) ? "Pendiente" : ecf.EstadoDGII;
+                    nc.FechaEmisionEcf = DateTime.Now;
+                    nc.CodigoTipoComprobanteDgii = "34";
+                    nc.MensajeEmision = string.Join("; ", resultado.Mensajes);
                     await _ctx.SaveChangesAsync();
                 }
             }
@@ -282,9 +375,9 @@ namespace AlahiaPos.DataAccess.Servicios.FacturacionElectronica
             return new EmisionEcfResultadoCompleto
             {
                 Exitoso = resultado.Exitoso,
-                Encf = reserva.Encf,
+                Encf = encfReservado,
                 IdEcf = ecf.IdECF,
-                SecuenciasRestantes = reserva.SecuenciasRestantes,
+                SecuenciasRestantes = 0,
                 TrackId = resultado.TrackId,
                 TransmissionJobId = resultado.TransmissionJobId,
                 EstadoDgii = ecf.EstadoDGII,

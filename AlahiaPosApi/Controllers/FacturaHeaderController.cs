@@ -50,6 +50,9 @@ namespace AlahiaPosApi.Controllers
         IMovimientosInventarioService _movimientosInventario;
         private readonly IFiscalWorkEnqueueService _fiscalEnqueue;
         private readonly IProduccionPosAdapter _produccionPosAdapter;
+        private readonly IContabilidadEventPublisher _contabilidadEvents;
+        private readonly INotasCredito _notasCredito;
+        private readonly IReporte607Service _reporte607;
         public FacturaHeaderController(IMapper mapper, IFacturaHeader facturaHeader,
             IFacturaDetalle facturaDetalle,IProductos productos,
             IProductos Producto, IMesas iMesas, IValidateIMpuesto validateIMpuesto, IClientes Clientes,
@@ -65,7 +68,10 @@ namespace AlahiaPosApi.Controllers
             IMovimientoFinancieroService MovimientoFinancieroService,
             IMovimientosInventarioService movimientosInventario,
             IFiscalWorkEnqueueService fiscalEnqueue,
-            IProduccionPosAdapter produccionPosAdapter
+            IProduccionPosAdapter produccionPosAdapter,
+            IContabilidadEventPublisher contabilidadEvents,
+            INotasCredito notasCredito,
+            IReporte607Service reporte607
           
 
             )
@@ -92,6 +98,9 @@ namespace AlahiaPosApi.Controllers
             _secuenciaDocumentoService = secuenciaDocumentoService;
             _fiscalEnqueue = fiscalEnqueue;
             _produccionPosAdapter = produccionPosAdapter;
+            _contabilidadEvents = contabilidadEvents;
+            _notasCredito = notasCredito;
+            _reporte607 = reporte607;
         }
 
         // GET: api/<FacturaHeaderController>
@@ -823,7 +832,7 @@ namespace AlahiaPosApi.Controllers
                     header.FechaInseccion = DateTime.Now;
                     header.Estado = "Pendiente";
                     header.IDCliente = dto.Header.IDCliente;
-                    header.TotalDescuento = dto.Header.TotalDescuento;
+                    header.TotalDescuento = dto.Header.TotalDescuento < 0 ? 0 : dto.Header.TotalDescuento;
                     header.TipoFactura = NormalizarTipoFactura(
                         dto.Header.TipoFactura,
                         dto.Header.TipoPago);
@@ -887,6 +896,12 @@ namespace AlahiaPosApi.Controllers
                     header.TotalItbis = totalItbis;
                     header.SubTotal = total - totalItbis;
 
+                    if (header.TotalDescuento > 0)
+                    {
+                        header.SubTotal = Math.Max(0, header.SubTotal - header.TotalDescuento);
+                        header.Total = header.SubTotal + header.TotalItbis;
+                    }
+
                     await _facturaHeader.InsertFacturaHeader(header);
                 }
                 else
@@ -917,7 +932,7 @@ namespace AlahiaPosApi.Controllers
                             dto.Header.TipoPago);
                         AplicarPlazoYVencimiento(header, dto.Header);
                         
-                        header.TotalDescuento = dto.Header.TotalDescuento;
+                        header.TotalDescuento = dto.Header.TotalDescuento < 0 ? 0 : dto.Header.TotalDescuento;
                         header.RNC = dto.Header.RNC;
                         header.NombreEmpresa = dto.Header.NombreEmpresa;
                         header.Estado =
@@ -952,8 +967,12 @@ namespace AlahiaPosApi.Controllers
 
                 var pagos = dto.Pagos ?? new List<PagoDTO>();
 
+                var pagosNc = pagos
+                    .Where(x => x.Monto > 0 && FormaPagoNotaCredito.EsNotaCredito(x.Metodo))
+                    .ToList();
+
                 var pagosAgrupados = pagos
-                    .Where(x => x.Monto > 0)
+                    .Where(x => x.Monto > 0 && !FormaPagoNotaCredito.EsNotaCredito(x.Metodo))
                     .GroupBy(x => x.Metodo)
                     .Select(g => new
                     {
@@ -964,12 +983,62 @@ namespace AlahiaPosApi.Controllers
 
                 var metodosPago = pagosAgrupados
                     .Select(x => x.Metodo)
+                    .Concat(pagosNc.Select(_ => FormaPagoNotaCredito.Metodo))
                     .Distinct()
                     .ToList();
 
                 header.FormaPago = metodosPago.Count == 1
                     ? metodosPago.First()
-                    : "Mixto";
+                    : (metodosPago.Count > 1 ? "Mixto" : header.FormaPago);
+
+                // Nota de crédito / saldo a favor (sin entrada de banco)
+                foreach (var pagoNc in pagosNc)
+                {
+                    if (!header.IDCliente.HasValue || header.IDCliente.Value <= 0)
+                        return BadRequest("Para pagar con nota de crédito debe seleccionar un cliente.");
+
+                    await _notasCredito.ConsumirSaldoAFavorEnVentaAsync(
+                        header.IdEmpresa,
+                        header.IdFacturaHeader,
+                        header.IDCliente.Value,
+                        pagoNc.Monto,
+                        pagoNc.IdSaldoAFavor,
+                        pagoNc.IdNotaCredito,
+                        pagoNc.NcfNotaCredito,
+                        header.IdUsuario);
+
+                    totalPagadoAhora += pagoNc.Monto;
+                    header.MontoNotaCredito = Math.Round(header.MontoNotaCredito + pagoNc.Monto, 2);
+
+                    var existeIngresoNc = await _IngresosServices.ExisteIngreso(
+                        header.IdFacturaHeader,
+                        FormaPagoNotaCredito.Metodo);
+                    if (!existeIngresoNc)
+                    {
+                        await _IngresosServices.InsertIngreso(new Ingresos
+                        {
+                            IdEmpresa = header.IdEmpresa,
+                            FechaRegistro = DateTime.Now,
+                            Descripcion = $"Factura #{header.IdFacturaHeader} — NC {pagoNc.NcfNotaCredito}",
+                            Categoria = "Aplicación Nota de Crédito",
+                            Origen = "Sistema",
+                            Monto = pagoNc.Monto,
+                            FormaPago = FormaPagoNotaCredito.Metodo,
+                            Referencia = pagoNc.NcfNotaCredito ?? $"NC-{pagoNc.IdNotaCredito}",
+                            IdFacturaHeader = header.IdFacturaHeader,
+                            IdCliente = header.IDCliente
+                        });
+                    }
+
+                    await _PagoFacturaClientes.InsertPagosFacturasClientes(
+                        new PagosFacturasClientes
+                        {
+                            IdFacturaHeader = header.IdFacturaHeader,
+                            IDCliente = header.IDCliente,
+                            FormaPago = FormaPagoNotaCredito.Metodo,
+                            Monto = pagoNc.Monto
+                        });
+                }
 
                 foreach (var pago in pagosAgrupados)
                 {
@@ -1148,11 +1217,81 @@ namespace AlahiaPosApi.Controllers
                     // Nunca tumbar venta
                 }
 
+                // Contabilidad automática (no-op si Contabilidad apagada)
+                string? contabilidadAdvertencia = null;
+                try
+                {
+                    decimal costoInventario = 0;
+                    foreach (var d in detallesFactura)
+                    {
+                        var producto = _Productos.GetProductoById(d.IdProducto);
+                        // Servicios no generan COGS; productos con costo sí (aunque no controlen stock).
+                        if (producto == null || producto.EsServicio || producto.PrecioCompra <= 0)
+                            continue;
+                        costoInventario += producto.PrecioCompra * d.Cantidad;
+                    }
+
+                    var montoCobrado = header.Pagado;
+                    var montoCredito = header.Pendiente;
+                    if (montoCobrado <= 0 && montoCredito <= 0)
+                        montoCobrado = header.Total;
+
+                    var metodoPrincipal = pagosAgrupados.OrderByDescending(p => p.Monto).FirstOrDefault()?.Metodo;
+
+                    var pagosContab = new List<AlahiaPos.Entities.Events.VentaPagoParte>();
+                    foreach (var p in pagosAgrupados.Where(x => x.Monto > 0))
+                    {
+                        int? idCuentaFin = null;
+                        try
+                        {
+                            var cfg = await _MetodoPagoCuentaService.GetByMetodoAsync(header.IdEmpresa, p.Metodo);
+                            if (cfg != null && cfg.IdCuentaFinanciera > 0)
+                                idCuentaFin = cfg.IdCuentaFinanciera;
+                        }
+                        catch
+                        {
+                            // Contabilidad usa fallback por nombre de método
+                        }
+
+                        pagosContab.Add(new AlahiaPos.Entities.Events.VentaPagoParte
+                        {
+                            Metodo = p.Metodo,
+                            Monto = p.Monto,
+                            IdCuentaFinanciera = idCuentaFin
+                        });
+                    }
+
+                    var contab = await _contabilidadEvents.TryPublishAsync(new AlahiaPos.Entities.Events.VentaConfirmadaEvent
+                    {
+                        IdEmpresa = header.IdEmpresa,
+                        IdUsuario = header.IdUsuario ?? dto.Header.IdUsuario ?? 0,
+                        Fecha = header.FechaInseccion == default ? DateTime.Now : header.FechaInseccion,
+                        ReferenciaId = header.IdFacturaHeader,
+                        ReferenciaTipo = "Venta",
+                        NumeroFactura = header.NumeroDocumento ?? header.IdFacturaHeader.ToString(),
+                        TipoFactura = header.TipoFactura ?? string.Empty,
+                        Subtotal = header.SubTotal,
+                        Itbis = header.TotalItbis,
+                        Total = header.Total,
+                        MontoCobrado = montoCobrado,
+                        MontoCredito = montoCredito,
+                        CostoInventario = costoInventario,
+                        MetodoPago = metodoPrincipal,
+                        Pagos = pagosContab
+                    });
+                    contabilidadAdvertencia = contab.Advertencia;
+                }
+                catch
+                {
+                    // Nunca tumbar venta
+                }
+
                 return Ok(new
                 {
                     message = "Factura procesada correctamente",
                     idFactura = header.IdFacturaHeader,
-                    factura = facturaPrint
+                    factura = facturaPrint,
+                    contabilidadAdvertencia
                 });
             }
             catch (Exception ex)
@@ -1661,6 +1800,103 @@ namespace AlahiaPosApi.Controllers
 
             return Ok(factura);
         }
+
+        /// <summary>
+        /// Genera token firmado para compartir una cotización POS con el cliente final (WhatsApp/link).
+        /// </summary>
+        [HttpPost("cotizacion/{idFacturaHeader}/compartir")]
+        public async Task<IActionResult> CrearLinkCotizacionPublica(
+            int idFacturaHeader,
+            [FromQuery] int idEmpresa,
+            [FromBody] CotizacionCompartirRequest? request)
+        {
+            if (idFacturaHeader <= 0 || idEmpresa <= 0)
+                return BadRequest(new { message = "Cotización o empresa inválida." });
+
+            var link = await _facturaHeader.CrearLinkCotizacionPublicaAsync(
+                idFacturaHeader,
+                idEmpresa);
+
+            if (link == null)
+                return NotFound(new { message = "Cotización no encontrada o no es compartible." });
+
+            var baseUrl = (request?.PublicBaseUrl ?? "").Trim().TrimEnd('/');
+            if (!string.IsNullOrWhiteSpace(baseUrl) &&
+                Uri.TryCreate(baseUrl, UriKind.Absolute, out var baseUri) &&
+                (baseUri.Scheme == Uri.UriSchemeHttp || baseUri.Scheme == Uri.UriSchemeHttps))
+            {
+                // Token sin encode: WhatsApp detecta mejor el URL.
+                link.Url = $"{baseUrl}/cotizacion/ver/{link.Token}";
+                link.UrlCorta = await AcortarUrlParaWhatsAppAsync(link.Url);
+            }
+
+            return Ok(link);
+        }
+
+        /// <summary>
+        /// WhatsApp no convierte localhost en enlace. Genera un https:// corto clickeable.
+        /// </summary>
+        private static async Task<string?> AcortarUrlParaWhatsAppAsync(string url)
+        {
+            if (string.IsNullOrWhiteSpace(url))
+                return null;
+
+            // Si ya es https público (no local), WhatsApp lo linkifica solo.
+            if (Uri.TryCreate(url, UriKind.Absolute, out var uri) &&
+                uri.Scheme == Uri.UriSchemeHttps &&
+                !IsLocalHost(uri.Host))
+            {
+                return url;
+            }
+
+            try
+            {
+                using var http = new System.Net.Http.HttpClient
+                {
+                    Timeout = TimeSpan.FromSeconds(8)
+                };
+                var encoded = Uri.EscapeDataString(url);
+                // TinyURL acepta destinos localhost (is.gd suele rechazarlos).
+                var shortUrl = (await http.GetStringAsync(
+                    $"https://tinyurl.com/api-create.php?url={encoded}")).Trim();
+
+                if (shortUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase) &&
+                    !shortUrl.Contains("Error", StringComparison.OrdinalIgnoreCase))
+                {
+                    return shortUrl;
+                }
+            }
+            catch
+            {
+                // Sin acortador: el cliente usará la URL larga.
+            }
+
+            return null;
+        }
+
+        private static bool IsLocalHost(string host)
+        {
+            if (string.IsNullOrWhiteSpace(host))
+                return true;
+            return host.Equals("localhost", StringComparison.OrdinalIgnoreCase)
+                   || host.Equals("127.0.0.1", StringComparison.OrdinalIgnoreCase)
+                   || host.Equals("::1", StringComparison.OrdinalIgnoreCase)
+                   || host.EndsWith(".local", StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// Vista pública (sin login): el cliente abre el link enviado por WhatsApp/correo.
+        /// </summary>
+        [HttpGet("cotizacion-publica/{token}")]
+        public async Task<IActionResult> GetCotizacionPublica(string token)
+        {
+            var vista = await _facturaHeader.ObtenerCotizacionPublicaAsync(token);
+
+            if (vista == null)
+                return NotFound(new { message = "Cotización no encontrada o enlace inválido." });
+
+            return Ok(vista);
+        }
         // DELETE api/<FacturaHeaderController>/5
         [HttpDelete("{id}")]
         public async Task<IActionResult> EliminarFactura(int id)
@@ -1717,7 +1953,137 @@ namespace AlahiaPosApi.Controllers
                 dto.IdFacturaHeader,
                 dto.IdEmpresa);
 
-            return Ok();
+            var idUsuarioAnula = dto.IdUsuario > 0 ? dto.IdUsuario : (factura.IdUsuario ?? 0);
+
+            // 🔴 reingresar stock (reverso de la salida por venta)
+            try
+            {
+                var detallesFactura = _facturaDetalle
+                    .GetDetalleByIdHeader(dto.IdFacturaHeader);
+
+                var movimientoEntrada = new MovimientosInventario
+                {
+                    TipoMovimiento = "ENTRADA",
+                    Motivo = "ANULACION_VENTA",
+                    Referencia = $"Factura #{dto.IdFacturaHeader}",
+                    Observacion = "Reingreso automático por anulación de venta",
+                    Fecha = DateTime.Now,
+                    IdEmpresa = dto.IdEmpresa,
+                    IdUsuario = idUsuarioAnula,
+                    Activo = true,
+                    Detalles = new List<MovimientosInventarioDetalle>()
+                };
+
+                foreach (var det in detallesFactura)
+                {
+                    var producto = _Productos.GetProductoById(det.IdProducto);
+
+                    if (producto == null)
+                        continue;
+
+                    if (producto.EsServicio)
+                        continue;
+
+                    if (!producto.ControlarStock)
+                        continue;
+
+                    movimientoEntrada.Detalles.Add(
+                        new MovimientosInventarioDetalle
+                        {
+                            IdProducto = producto.IdProducto,
+                            Cantidad = det.Cantidad,
+                            Precio = 0,
+                            SubTotal = 0,
+                            Observacion = $"Anulación factura #{dto.IdFacturaHeader}"
+                        });
+                }
+
+                if (movimientoEntrada.Detalles.Any())
+                    await _movimientosInventario.GuardarMovimiento(movimientoEntrada);
+            }
+            catch
+            {
+                // Nunca tumbar anulación operativa
+            }
+
+            // Restaurar saldos a favor consumidos con NotaCredito en esta venta
+            try
+            {
+                await _notasCredito.RevertirConsumosSaldoPorFacturaAsync(
+                    dto.IdEmpresa,
+                    dto.IdFacturaHeader,
+                    idUsuarioAnula);
+            }
+            catch
+            {
+                // Nunca tumbar anulación operativa
+            }
+
+            // 🔴 revertir tesorería (reverso de las entradas por pagos)
+            try
+            {
+                var pagosFactura = await _PagoFacturaClientes
+                    .GetPagosByFacturaId(dto.IdFacturaHeader);
+
+                var pagosPorMetodo = (pagosFactura ?? Enumerable.Empty<PagosFacturasClientes>())
+                    .Where(p =>
+                        p.Monto > 0
+                        && !string.IsNullOrWhiteSpace(p.FormaPago)
+                        && !FormaPagoNotaCredito.EsNotaCredito(p.FormaPago))
+                    .GroupBy(p => p.FormaPago)
+                    .Select(g => new { Metodo = g.Key, Monto = g.Sum(x => x.Monto) })
+                    .ToList();
+
+                foreach (var pago in pagosPorMetodo)
+                {
+                    var metodoConfigurado = await _MetodoPagoCuentaService
+                        .GetByMetodoAsync(dto.IdEmpresa, pago.Metodo);
+
+                    if (metodoConfigurado != null &&
+                        metodoConfigurado.IdCuentaFinanciera > 0)
+                    {
+                        await _MovimientoFinancieroService.RegistrarSalidaAsync(
+                            dto.IdEmpresa,
+                            idUsuarioAnula,
+                            metodoConfigurado.IdCuentaFinanciera,
+                            pago.Monto,
+                            $"Anulación factura #{dto.IdFacturaHeader}",
+                            $"Reverso automático por anulación de venta ({pago.Metodo})",
+                            categoria: "VENTA",
+                            referenciaId: dto.IdFacturaHeader,
+                            referenciaTipo: "FACTURA",
+                            claveIdempotencia: $"VENTA-ANUL-{dto.IdFacturaHeader}-{pago.Metodo}"
+                        );
+                    }
+                }
+            }
+            catch
+            {
+                // Nunca tumbar anulación operativa
+            }
+
+            // Contabilidad: reverso de asientos ALTA/COGS (no-op si Contabilidad apagada)
+            string? contabilidadAdvertencia = null;
+            try
+            {
+                var contab = await _contabilidadEvents.TryPublishAsync(new AlahiaPos.Entities.Events.VentaAnuladaEvent
+                {
+                    IdEmpresa = dto.IdEmpresa,
+                    IdUsuario = dto.IdUsuario > 0 ? dto.IdUsuario : (factura.IdUsuario ?? 0),
+                    Fecha = DateTime.Now,
+                    ReferenciaId = dto.IdFacturaHeader,
+                    ReferenciaTipo = "VentaAnulada",
+                    Motivo = motivo,
+                    NumeroFactura = factura.NumeroDocumento ?? dto.IdFacturaHeader.ToString()
+                });
+                contabilidadAdvertencia = contab.Advertencia;
+            }
+            catch
+            {
+                // Nunca tumbar anulación operativa
+            }
+
+            return Ok(new { contabilidadAdvertencia });
         }
         [HttpGet]
         [Route("TotalVentaDia")]
@@ -1896,50 +2262,37 @@ GetIngresosCajaAbierta(
 
     
     // ======================================================
-// 🔥 REPORTE 607
-// ======================================================
+    // Formato 607 (DGII) — ventas + NC
+    // ======================================================
 
-[HttpGet]
+        [HttpGet]
         [Route("Reporte607")]
-        public async Task<IActionResult>
-Reporte607(
-    DateTime desde,
-    DateTime hasta,
-    int idEmpresa
-)
+        public async Task<IActionResult> Reporte607(
+            DateTime desde,
+            DateTime hasta,
+            int idEmpresa,
+            string? periodo = null)
         {
             try
             {
-                var result =
-                    await _facturaHeader
-                    .GetReporte607Async(
-                        desde,
-                        hasta,
-                        idEmpresa
-                    );
-
-                if (
-                    result == null ||
-                    !result.Any()
-                )
-                {
-                    return NotFound(
-                        "No existen datos para el rango seleccionado."
-                    );
-
-                }
+                var result = await _reporte607.ObtenerReporte607Async(
+                    idEmpresa,
+                    desde,
+                    hasta,
+                    periodo);
 
                 return Ok(result);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
             }
             catch (Exception ex)
             {
                 return BadRequest(new
                 {
-                    message =
-                        "Error obteniendo reporte 607",
-
-                    error =
-                        ex.Message
+                    message = "Error obteniendo reporte 607",
+                    error = ex.Message
                 });
             }
         }

@@ -4,6 +4,8 @@ namespace AlahiaPos.Entities.Dto
     public class Reporte606LineaDto
     {
         public int IdOrdenCompraHeader { get; set; }
+        /// <summary>Compra | Gasto — origen Alahia del renglón 606.</summary>
+        public string OrigenDocumento { get; set; } = "Compra";
         public string? NumeroDocumento { get; set; }
         public string? ProveedorNombre { get; set; }
 

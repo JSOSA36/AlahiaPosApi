@@ -42,6 +42,7 @@ namespace Alahia.eCF.Api.Controllers
 
             try
             {
+                using var _ = PushAmbienteFromHeader();
                 // Auto-ruta: E32 < 250k → RFCE; E32 ≥ 250k u otros tipos → e-CF.
                 var resp = await _orch.EnviarAsync(documento, ct);
                 return ToActionResult(resp);
@@ -65,6 +66,7 @@ namespace Alahia.eCF.Api.Controllers
 
             try
             {
+                using var _ = PushAmbienteFromHeader();
                 var resp = await _orch.EnviarRfceAsync(documento, ct);
                 return ToActionResult(resp);
             }
@@ -136,6 +138,13 @@ namespace Alahia.eCF.Api.Controllers
 
             var resp = await _orch.ConsultarAsync(trackId, ct);
             return Ok(resp);
+        }
+
+        private IDisposable PushAmbienteFromHeader()
+        {
+            Request.Headers.TryGetValue("X-Dgii-Ambiente", out var values);
+            var ambiente = values.FirstOrDefault();
+            return DgiiAmbienteContext.Push(ambiente);
         }
 
         private static IActionResult ToActionResult(PgTrackIdResponse resp)

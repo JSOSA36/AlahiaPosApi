@@ -42,9 +42,13 @@ namespace AlahiaPos.DataAccess.Servicios
             if (EsAdministrador(usuario.Empleado?.Ocupacion))
                 return true;
 
-            if (!string.IsNullOrWhiteSpace(usuario.Perfil?.Nombre) &&
-                string.Equals(usuario.Perfil.Nombre.Trim(), "Administrador", StringComparison.OrdinalIgnoreCase))
-                return true;
+            if (!string.IsNullOrWhiteSpace(usuario.Perfil?.Nombre))
+            {
+                var nombrePerfil = usuario.Perfil.Nombre.Trim();
+                if (string.Equals(nombrePerfil, "Administrador", StringComparison.OrdinalIgnoreCase)
+                    || nombrePerfil.Contains("ADMIN", StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
 
             if (usuario.Empresa?.EsEmpresaSistema == true)
                 return true;
@@ -76,6 +80,19 @@ namespace AlahiaPos.DataAccess.Servicios
                     RequiereAceptacion = false,
                     EsAdministrador = esAdmin,
                     VersionActiva = null
+                };
+            }
+
+            // Demo / prueba gratis: MontoServicio = 0 y prueba vigente
+            if (usuario?.Empresa != null
+                && usuario.Empresa.MontoServicio <= 0m
+                && usuario.Empresa.FechaTerminacion.Date >= DateTime.Now.Date)
+            {
+                return new PoliticasEstadoDto
+                {
+                    RequiereAceptacion = false,
+                    EsAdministrador = esAdmin,
+                    VersionActiva = MapVersion(versionActiva)
                 };
             }
 

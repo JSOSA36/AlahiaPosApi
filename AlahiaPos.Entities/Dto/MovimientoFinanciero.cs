@@ -91,6 +91,15 @@ namespace AlahiaPos.Entities.Dto
         [MaxLength(20)]
         public string Estado { get; set; } = "CONFIRMADO";
 
+        [MaxLength(20)]
+        public string EstadoConciliacion { get; set; } = "PENDIENTE";
+
+        public int? IdTesoreriaConciliacion { get; set; }
+
+        public DateTime? FechaConciliacion { get; set; }
+
+        public int? IdUsuarioConciliacion { get; set; }
+
         [MaxLength(120)]
         public string? ClaveIdempotencia { get; set; }
 

@@ -1,0 +1,41 @@
+﻿DiffType	TABLE_SCHEMA	TABLE_NAME	COLUMN_NAME	DATA_TYPE	Detail
+--------	------------	----------	-----------	---------	------
+MISSING_COLUMN	dbo	CuentaFinanciera	FechaSaldoInicial	date	 NULL
+MISSING_COLUMN	dbo	CuentaFinanciera	PermiteMovimientosManuales	bit	 NOT NULL
+MISSING_COLUMN	dbo	CuentaFinanciera	RowVersion	timestamp	 NOT NULL
+MISSING_COLUMN	dbo	ECFEncabezado	TransmissionJobId	nvarchar	(100) NULL
+MISSING_COLUMN	dbo	Gastos	FechaComprobante	date	 NULL
+MISSING_COLUMN	dbo	Gastos	IdCategoriaGasto	int	 NULL
+MISSING_COLUMN	dbo	Gastos	NombreEmisorComprobante	nvarchar	(150) NULL
+MISSING_COLUMN	dbo	Gastos	NumeroComprobante	nvarchar	(50) NULL
+MISSING_COLUMN	dbo	Gastos	RncEmisorComprobante	nvarchar	(20) NULL
+MISSING_COLUMN	dbo	Gastos	TipoComprobante	nvarchar	(80) NULL
+MISSING_COLUMN	dbo	Ingresos	IdMovimientoFinanciero	int	 NULL
+MISSING_COLUMN	dbo	MovimientoFinanciero	EstadoConciliacion	nvarchar	(20) NOT NULL
+MISSING_COLUMN	dbo	MovimientoFinanciero	FechaConciliacion	datetime2	 NULL
+MISSING_COLUMN	dbo	MovimientoFinanciero	IdTesoreriaConciliacion	int	 NULL
+MISSING_COLUMN	dbo	MovimientoFinanciero	IdUsuarioConciliacion	int	 NULL
+MISSING_COLUMN	dbo	PagosFacturasClientes	IdMovimientoFinanciero	int	 NULL
+MISSING_COLUMN	dbo	TesoreriaConciliacion	Diferencia	decimal	(18,2) NULL
+MISSING_COLUMN	dbo	TesoreriaConciliacion	FechaReapertura	datetime2	 NULL
+MISSING_COLUMN	dbo	TesoreriaConciliacion	IdExtractoPrincipal	int	 NULL
+MISSING_COLUMN	dbo	TesoreriaConciliacion	IdUsuarioReapertura	int	 NULL
+MISSING_COLUMN	dbo	TesoreriaConciliacion	MotivoReapertura	nvarchar	(500) NULL
+MISSING_COLUMN	dbo	TesoreriaConciliacion	RowVersion	timestamp	 NOT NULL
+MISSING_COLUMN	dbo	TesoreriaConciliacion	SaldoBancoInicial	decimal	(18,2) NULL
+MISSING_COLUMN	dbo	TesoreriaConciliacion	SaldoConciliado	decimal	(18,2) NULL
+MISSING_COLUMN	dbo	TesoreriaConciliacion	ToleranciaDiferencia	decimal	(18,2) NOT NULL
+MISSING_TABLE	dbo	CategoriasGasto	NULL	NULL	NULL
+MISSING_TABLE	dbo	Cotizacion	NULL	NULL	NULL
+MISSING_TABLE	dbo	CotizacionDetalle	NULL	NULL	NULL
+MISSING_TABLE	dbo	CotizacionLead	NULL	NULL	NULL
+MISSING_TABLE	dbo	CotizadorParametro	NULL	NULL	NULL
+MISSING_TABLE	dbo	CotizadorTramoDocumento	NULL	NULL	NULL
+MISSING_TABLE	dbo	ModuloComercial	NULL	NULL	NULL
+MISSING_TABLE	dbo	ModuloDependencia	NULL	NULL	NULL
+MISSING_TABLE	dbo	ModuloTipoNegocio	NULL	NULL	NULL
+MISSING_TABLE	dbo	PagoReclasificacion	NULL	NULL	NULL
+MISSING_TABLE	dbo	TesoreriaConciliacionAuditoria	NULL	NULL	NULL
+MISSING_TABLE	dbo	TesoreriaExtractoImport	NULL	NULL	NULL
+MISSING_TABLE	dbo	TesoreriaExtractoLinea	NULL	NULL	NULL
+MISSING_TABLE	dbo	TipoNegocio	NULL	NULL	NULL

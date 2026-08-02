@@ -52,5 +52,36 @@ namespace AlahiaPos.Entities.Domain
         public byte? TipoIngresoDgii { get; set; }
         public int FotografiaFiscalVersion { get; set; }
         public string? EstadoFiscalDocumento { get; set; }
+
+        /// <summary>Prefijo del comprobante origen (E31, E32, …).</summary>
+        [MaxLength(10)]
+        public string? TipoDocumentoOrigen { get; set; }
+
+        public int? IdEcf { get; set; }
+
+        [MaxLength(100)]
+        public string? TrackId { get; set; }
+
+        [MaxLength(50)]
+        public string? EstadoDgii { get; set; }
+
+        public DateTime? FechaEmisionEcf { get; set; }
+
+        [MaxLength(1000)]
+        public string? MensajeEmision { get; set; }
+
+        public decimal MontoOriginal { get; set; }
+
+        public decimal SaldoDisponible { get; set; }
+
+        /// <summary>Activa | Anulada</summary>
+        [MaxLength(20)]
+        public string Estado { get; set; } = "Activa";
+    }
+
+    public static class NotaCreditoEstado
+    {
+        public const string Activa = "Activa";
+        public const string Anulada = "Anulada";
     }
 }

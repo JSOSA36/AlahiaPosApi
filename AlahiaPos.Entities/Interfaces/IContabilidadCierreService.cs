@@ -7,5 +7,7 @@ namespace AlahiaPos.Entities.Interfaces
         Task<PeriodoContableDto?> GetPeriodoAsync(int idEmpresa, int anio, int mes);
         Task<IEnumerable<PeriodoContableDto>> GetPeriodosAsync(int idEmpresa, int anio);
         Task<PeriodoContableDto> CerrarPeriodoAsync(CerrarPeriodoRequest request);
+        Task<bool> EstaPeriodoBloqueadoAsync(int idEmpresa, DateTime fecha);
+        Task<DateTime?> ResolverFechaContableAbiertaAsync(int idEmpresa, DateTime preferida);
     }
 }

@@ -25,13 +25,15 @@ namespace AlahiaPos.DataAccess.Servicios
         IRepository<Gastos> _GastosRepository;
         IRepository<LavadorConsumo> _ILavadorConsumo;
         IRepository<Ingresos> _Ingresos;
+        IPagoReclasificacionService _reclasificacionService;
         public IFacturaHeaderServices(IRepository<FacturaHeaders> repository,
             IRepository<Empleados> Empleados, IRepository<Productos> Productos,
             IRepository<FacturaDetalles> facturaDetalles, IRepository<EmpleadoAreaComision>
             iEmpleadoComision, IRepository<Clientes> clientes,
              IRepository<Gastos> GastosRepository,
         IRepository<Empresas> empresas,
-            IRepository<LavadorConsumo> LavadorConsumo, IRepository<Ingresos> ingresos)
+            IRepository<LavadorConsumo> LavadorConsumo, IRepository<Ingresos> ingresos,
+            IPagoReclasificacionService reclasificacionService)
         {
             _repository = repository;
             _Empleados = Empleados;
@@ -43,6 +45,7 @@ namespace AlahiaPos.DataAccess.Servicios
             _Empresas = empresas;
             _ILavadorConsumo = LavadorConsumo;
             _Ingresos = ingresos;
+            _reclasificacionService = reclasificacionService;
         }
 
 
@@ -186,7 +189,36 @@ namespace AlahiaPos.DataAccess.Servicios
 
         public async Task InsertFacturaHeader(FacturaHeaders FacturaHeader)
         {
+            await AsegurarLimiteFacturacionAsync(FacturaHeader);
             await _repository.Save(FacturaHeader);
+        }
+
+        /// <summary>
+        /// LimiteFacturacion en Empresa: 0 = ilimitado; &gt;0 = tope de facturas (tipo 1) del mes.
+        /// </summary>
+        private async Task AsegurarLimiteFacturacionAsync(FacturaHeaders header)
+        {
+            if (header == null || header.IdEmpresa <= 0) return;
+            if (header.IdTipoDocumentos != 1) return;
+
+            var emp = await _Empresas.GetByExpresionAsync(e => e.IdEmpresa == header.IdEmpresa);
+            if (emp == null || emp.LimiteFacturacion <= 0) return;
+
+            var inicio = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
+            var fin = inicio.AddMonths(1);
+            var delMes = await _repository.GetAllByExpresionAsync(c =>
+                c.IdEmpresa == header.IdEmpresa
+                && c.IdTipoDocumentos == 1
+                && !c.EstaCancelada
+                && c.FechaInseccion >= inicio
+                && c.FechaInseccion < fin);
+
+            var count = delMes?.Count() ?? 0;
+            if (count >= emp.LimiteFacturacion)
+            {
+                throw new Exception(
+                    $"Ha alcanzado el límite mensual de {emp.LimiteFacturacion} facturas. Contacte a MacroBits para ampliar su servicio.");
+            }
         }
 
         public async void UpdateFacturaHeader(int Id, FacturaHeaders FacturaHeader)
@@ -1024,119 +1056,104 @@ namespace AlahiaPos.DataAccess.Servicios
             return result;
         }
 
-        // ======================================================
-        // 🔥 REPORTE 607
-        // ======================================================
-
-        public async Task<IEnumerable<Reporte607Dto>>
-        GetReporte607Async(
-            DateTime desde,
-            DateTime hasta,
-            int idEmpresa
-        )
+        public async Task<CotizacionPublicaLinkDto?> CrearLinkCotizacionPublicaAsync(
+            int idFacturaHeader,
+            int idEmpresa)
         {
-            var facturas =
-                await _repository
-                .GetAllByExpresionAsync(
+            var factura = await _repository.GetByExpresionAsync(
+                c => c.IdFacturaHeader == idFacturaHeader
+                     && c.IdEmpresa == idEmpresa
+                     && c.IdTipoDocumentos == 2
+                     && !c.EstaCancelada);
 
-                x =>
+            if (factura == null)
+                return null;
 
-                    x.IdEmpresa == idEmpresa
-
-                    &&
-
-                    x.IdTipoDocumentos == 1
-
-                    &&
-
-                    x.EstaCancelada == false
-
-                    &&
-
-                    x.FechaInseccion.Date >=
-                    desde.Date
-
-                    &&
-
-                    x.FechaInseccion.Date <=
-                    hasta.Date
-
-                    &&
-                    x.NCF != string.Empty
-                );
-
-            if (
-                facturas == null ||
-                !facturas.Any()
-            )
+            return new CotizacionPublicaLinkDto
             {
-                return new List<Reporte607Dto>();
-            }
+                Token = CotizacionShareToken.Create(idEmpresa, idFacturaHeader),
+                IdFacturaHeader = idFacturaHeader,
+                NumeroDocumento = string.IsNullOrWhiteSpace(factura.NumeroDocumento)
+                    ? idFacturaHeader.ToString()
+                    : factura.NumeroDocumento.Trim()
+            };
+        }
 
-            var result =
-                facturas
-                .Select(x =>
-                    new Reporte607Dto
-                    {
-                        Fecha =
-                            x.FechaInseccion,
+        public async Task<CotizacionPublicaDto?> ObtenerCotizacionPublicaAsync(string token)
+        {
+            if (!CotizacionShareToken.TryParse(token, out var idEmpresa, out var idFacturaHeader))
+                return null;
 
-                        RNC =
-                            string.IsNullOrEmpty(x.RNC)
-                            ? ""
-                            : x.RNC,
+            var factura = await _repository.GetByExpresionAsync(
+                c => c.IdFacturaHeader == idFacturaHeader
+                     && c.IdEmpresa == idEmpresa
+                     && c.IdTipoDocumentos == 2
+                     && !c.EstaCancelada);
 
-                        NCF =
-                            x.NCF,
+            if (factura == null)
+                return null;
 
-                        FormaPago =
+            var empresa = _Empresas.GetById(idEmpresa);
 
-    x.FormaPago.Contains("Popular")
-    ||
-
-    x.FormaPago.Contains("BHD")
-    ||
-
-    x.FormaPago.Contains("Banreservas")
-    ||
-
-    x.FormaPago.Contains("APAP")
-    ||
-
-    x.FormaPago.Contains("Transfer")
-    ||
-
-    x.FormaPago.Contains("Qik")
-
-        ? "Transferencia"
-
-    :
-
-    x.FormaPago.Contains("Visa")
-    ||
-
-    x.FormaPago.Contains("Mastercard")
-    ||
-
-    x.FormaPago.Contains("Tarjeta")
-
-        ? "Tarjeta"
-
-    :
-
-    "Efectivo",
-
-                        ITBIS =
-                            x.TotalItbis,
-
-                        Total =
-                            x.Total
-                    })
-                .OrderByDescending(x => x.Fecha)
+            var detalles = _FacturaDetalles
+                .GetAllByExpresionNoAsync(d => d.IdFacturaHeader == idFacturaHeader)
                 .ToList();
 
-            return result;
+            var productosIds = detalles.Select(x => x.IdProducto).Distinct().ToList();
+            var productos = productosIds.Count == 0
+                ? new List<Productos>()
+                : _Productos
+                    .GetAllByExpresionNoAsync(p => productosIds.Contains(p.IdProducto))
+                    .ToList();
+
+            Clientes? cliente = null;
+            if (factura.IDCliente != null)
+            {
+                cliente = _Clientes
+                    .GetAllByExpresionNoAsync(c => c.IDCliente == factura.IDCliente)
+                    .FirstOrDefault();
+            }
+
+            var fecha = factura.FechaInseccion;
+            var validez = fecha.AddDays(15);
+
+            return new CotizacionPublicaDto
+            {
+                NumeroDocumento = string.IsNullOrWhiteSpace(factura.NumeroDocumento)
+                    ? idFacturaHeader.ToString()
+                    : factura.NumeroDocumento.Trim(),
+                Fecha = fecha,
+                FechaValidez = validez,
+                NombreEmpresa = empresa?.NombreComercial ?? factura.NombreEmpresa ?? "",
+                TelefonoEmpresa = empresa?.Telefono,
+                DireccionEmpresa = empresa?.Direccion,
+                LogoEmpresa = empresa?.Logo,
+                RncEmpresa = empresa?.RNC,
+                ClienteNombre = cliente?.NombreComercial
+                    ?? (string.IsNullOrWhiteSpace(factura.NombreCuenta) ? "Cliente" : factura.NombreCuenta),
+                SubTotal = factura.SubTotal,
+                TotalItbis = factura.TotalItbis,
+                TotalDescuento = factura.TotalDescuento,
+                Total = factura.Total,
+                Nota = factura.Nota,
+                Moneda = string.IsNullOrWhiteSpace(factura.Moneda) ? "DOP" : factura.Moneda,
+                Lineas = detalles.Select(det =>
+                {
+                    var prod = productos.FirstOrDefault(p => p.IdProducto == det.IdProducto);
+                    var precio = det.PrecioOferta > 0 ? det.PrecioOferta : det.SubTotal;
+                    return new CotizacionPublicaLineaDto
+                    {
+                        Cantidad = det.Cantidad,
+                        Descripcion = prod?.Nombre ?? prod?.Descripcion ?? "Producto",
+                        PrecioUnitario = precio,
+                        SubTotal = det.SubTotal > 0
+                            ? det.SubTotal
+                            : Math.Round(precio * det.Cantidad, 2)
+                    };
+                }).ToList()
+            };
         }
+
         public async Task<TicketFacturaClienteDto?> GetFacturaClienteById(int idFacturaHeader)
         {
             // ⭐ FACTURA
@@ -1397,6 +1414,13 @@ namespace AlahiaPos.DataAccess.Servicios
                 .Concat(ingresosExtra)
                 .ToList();
 
+            // Forma de pago efectiva: reclasificaciones ANTES_CIERRE (caja aún abierta).
+            // No muta Ingresos históricos; solo la proyección del cierre en curso.
+            var metodosEfectivos = await _reclasificacionService
+                .ObtenerMetodosEfectivosAntesCierreAsync(
+                    idEmpresa,
+                    todosLosIngresos.Select(i => i.IdIngreso));
+
             // =====================================
             // 🔥 GASTOS PAGADOS EN EFECTIVO
             // =====================================
@@ -1435,11 +1459,11 @@ namespace AlahiaPos.DataAccess.Servicios
                 - totalGastos;
 
             // =====================================
-            // 🔥 AGRUPAR POR MÉTODO DE PAGO
+            // 🔥 AGRUPAR POR MÉTODO DE PAGO (efectivo si hay reclasificación)
             // =====================================
 
             var resultado = todosLosIngresos
-                .GroupBy(x => x.FormaPago)
+                .GroupBy(x => metodosEfectivos.TryGetValue(x.IdIngreso, out var m) ? m : x.FormaPago)
                 .Select(g => new CierreCajaDto
                 {
                     FormaPago = g.Key,

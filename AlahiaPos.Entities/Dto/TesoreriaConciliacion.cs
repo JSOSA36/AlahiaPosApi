@@ -25,5 +25,29 @@ namespace AlahiaPos.Entities.Dto
         public DateTime? FechaCierre { get; set; }
         [MaxLength(500)]
         public string? Observacion { get; set; }
+
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal ToleranciaDiferencia { get; set; }
+
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal? SaldoConciliado { get; set; }
+
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal? Diferencia { get; set; }
+
+        public int? IdUsuarioReapertura { get; set; }
+
+        public DateTime? FechaReapertura { get; set; }
+
+        [MaxLength(500)]
+        public string? MotivoReapertura { get; set; }
+
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal? SaldoBancoInicial { get; set; }
+
+        public int? IdExtractoPrincipal { get; set; }
+
+        [Timestamp]
+        public byte[]? RowVersion { get; set; }
     }
 }

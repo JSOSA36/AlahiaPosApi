@@ -1,0 +1,31 @@
+---
+description: ALAHIA-CB-01 — En conciliación bancaria, el banco es la fuente de verdad
+alwaysApply: true
+---
+
+# ALAHIA-CB-01 — El banco es la fuente de verdad
+
+En el módulo de **Conciliación Bancaria**, la realidad financiera la define el **banco**,
+no el ERP. Los movimientos del ERP son **referencia**; el estado de cuenta es el hecho.
+
+## Principios
+
+1. **El extracto es la realidad.** Si el banco ejecutó un débito/crédito, el movimiento
+   ocurrió aunque no exista en el ERP. La conciliación lo registra y sincroniza.
+2. **La vista previa es el único punto de corrección** de errores de parser o del usuario;
+   una vez confirmado, el ERP se alinea al banco, no al revés.
+3. **Sin validación de fondos para movimientos del extracto.** Los movimientos creados
+   desde la conciliación (`ReferenciaTipo = "EXTRACTO"`) NO validan "Fondos insuficientes".
+   Los movimientos manuales SÍ siguen validando saldo.
+4. **Monto/fecha/cuenta/dirección vienen del extracto**; el usuario solo edita motivo y
+   categoría al resolver. Corregir importes = vista previa.
+5. **Idempotencia y auditoría:** clave `EXT_<idImport>_<idLinea>`; nunca duplicar; siempre
+   auditar quién/cuándo/qué línea/qué movimiento.
+
+## Al implementar
+
+- No bloquear registro del extracto por fondos; no editar montos fuera de la vista previa;
+  no tratar el ERP como verdad frente a un extracto confirmado.
+- Reutilizar `CrearMovimientoBancarioAsync` / `ResolverLineaAsync`; no crear rutas paralelas.
+
+Doc canónico: `docs/conciliacion-bancaria/Principio-Banco-Fuente-de-Verdad.md` (ALAHIA-CB-01).

@@ -20,6 +20,26 @@ namespace AlahiaPosApi.Controllers
             _Empresa = empresa;
         }
 
+        /// <summary>Valida si el correo ya está registrado (debe ser único en el sistema).</summary>
+        [HttpGet("existe-correo")]
+        public async Task<IActionResult> ExisteCorreo([FromQuery] string correo)
+        {
+            if (string.IsNullOrWhiteSpace(correo) || !correo.Contains('@'))
+                return BadRequest(new { existe = false, message = "Correo inválido." });
+
+            var existe = await _usuarios.ExisteCorreo(correo.Trim());
+            if (!existe)
+                existe = await _usuarios.ExisteUserName(correo.Trim());
+
+            return Ok(new
+            {
+                existe,
+                message = existe
+                    ? "Este correo ya está registrado. Usa otro o inicia sesión."
+                    : "Correo disponible."
+            });
+        }
+
         // 🔹 Listar usuarios por empresa
         [HttpGet("empresa/{empresaId}")]
         public async Task<IActionResult> GetByEmpresa(int empresaId)

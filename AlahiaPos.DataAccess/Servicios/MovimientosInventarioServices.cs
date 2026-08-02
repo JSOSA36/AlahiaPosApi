@@ -1,5 +1,6 @@
 ﻿using AlahiaPos.Entities.Domain;
 using AlahiaPos.Entities.Dto;
+using AlahiaPos.Entities.Events;
 using AlahiaPos.Entities.Interfaces;
 
 namespace AlahiaPos.DataAccess.Servicios
@@ -30,6 +31,8 @@ namespace AlahiaPos.DataAccess.Servicios
         IRepository<Usuarios>
             _usuarios;
 
+        private readonly IContabilidadEventPublisher _contabilidadEvents;
+
         // ======================================================
         // 🔥 CONSTRUCTOR
         // ======================================================
@@ -47,7 +50,9 @@ namespace AlahiaPos.DataAccess.Servicios
 
             IAlmacenes almacenes,
 
-            IRepository<Usuarios> usuarios
+            IRepository<Usuarios> usuarios,
+
+            IContabilidadEventPublisher contabilidadEvents
         )
         {
             _repository = repository;
@@ -61,6 +66,8 @@ namespace AlahiaPos.DataAccess.Servicios
             _almacenes = almacenes;
 
             _usuarios = usuarios;
+
+            _contabilidadEvents = contabilidadEvents;
         }
 
         private static string ResolverNombreUsuario(
@@ -295,11 +302,28 @@ namespace AlahiaPos.DataAccess.Servicios
 
                 await _repository.Save(movimiento);
 
-                // =============================================
-                // 🔥 LIMPIAR NUEVAMENTE
-                // =============================================
+                var monto = movimiento.Detalles?.Sum(d => d.SubTotal) ?? 0;
+                if (monto <= 0 && movimiento.Detalles != null)
+                {
+                    foreach (var d in movimiento.Detalles)
+                    {
+                        var p = _productos.GetById(d.IdProducto);
+                        if (p != null)
+                            monto += p.PrecioCompra * d.Cantidad;
+                    }
+                }
 
-                
+                await _contabilidadEvents.TryPublishAsync(new InventarioMovimientoRegistradoEvent
+                {
+                    IdEmpresa = movimiento.IdEmpresa,
+                    IdUsuario = movimiento.IdUsuario ?? 0,
+                    Fecha = movimiento.Fecha == default ? DateTime.Now : movimiento.Fecha,
+                    ReferenciaId = movimiento.Id,
+                    ReferenciaTipo = "Inventario",
+                    TipoMovimiento = movimiento.TipoMovimiento ?? string.Empty,
+                    Motivo = movimiento.Motivo,
+                    Monto = monto
+                });
 
                 return movimiento;
             }
@@ -756,6 +780,20 @@ namespace AlahiaPos.DataAccess.Servicios
 
                 _detalleRepository.Delete(item.Id);
             }
+
+            // =============================================
+            // 🔥 CONTABILIDAD: reverso del ajuste (no-op si apagada)
+            // =============================================
+
+            await _contabilidadEvents.TryPublishAsync(new InventarioMovimientoAnuladoEvent
+            {
+                IdEmpresa = movimiento.IdEmpresa,
+                IdUsuario = movimiento.IdUsuario ?? 0,
+                Fecha = DateTime.Now,
+                ReferenciaId = movimiento.Id,
+                ReferenciaTipo = "Inventario",
+                Motivo = "Eliminación ajuste"
+            });
 
             // =============================================
             // 🔥 ELIMINAR HEADER

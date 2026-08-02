@@ -40,13 +40,9 @@ CerrarFacturasPendientes(
          int IdEmpresa,
          DateTime fechaDesde,
          DateTime fechaHasta);
-        Task<IEnumerable<Reporte607Dto>>
-        GetReporte607Async(
-        DateTime desde,
-        DateTime hasta,
-        int IdEmpresa
-        );
         Task<TicketFacturaClienteDto?> GetFacturaClienteById(int idFacturaHeader);
+        Task<CotizacionPublicaLinkDto?> CrearLinkCotizacionPublicaAsync(int idFacturaHeader, int idEmpresa);
+        Task<CotizacionPublicaDto?> ObtenerCotizacionPublicaAsync(string token);
         Task<IEnumerable<FacturaHeaders>> GetAllFacturas(int IdEmpresa);
         Task<List<TicketLavadorDto>> GetTicketsLavadorByFactura(int idFacturaHeader);
         public Task<IEnumerable<FacturaHeaders>> GetAllFacturaFacturaHeader(int IdEmpresa);

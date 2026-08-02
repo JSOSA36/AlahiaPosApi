@@ -4,6 +4,7 @@ using AlahiaPos.DataAccess.Repository;
 using AlahiaPos.DataAccess.Servicios;
 using AlahiaPos.DataAccess.Servicios.FiscalGateway;
 using AlahiaPos.Entities.Domain;
+using AlahiaPos.Entities.Dto;
 using AlahiaPos.Entities.Interfaces;
 using AlahiaPos.Entities.Setting;
 using AlahiaPosApi;
@@ -51,6 +52,7 @@ builder.Services.AddScoped<IActivosFijosService, ActivosFijosService>();
 builder.Services.AddScoped<IPoliticasServicioService, PoliticasServicioService>();
 builder.Services.AddScoped<IDashboardGerencialService, DashboardGerencialService>();
 builder.Services.AddScoped<IGastos, GastosServices>();
+builder.Services.AddScoped<ICategoriaGastoService, CategoriaGastoService>();
 builder.Services.AddScoped<IEmpresas, EmpresaServices>();
 builder.Services.AddScoped<ICocinas, CocinaServices>();
 builder.Services.AddScoped<IParametroConfig, IParametroCOnfigServices>();
@@ -87,6 +89,9 @@ builder.Services.AddScoped<IContabilidadCierreService, ContabilidadCierreService
 builder.Services.AddScoped<IContabilidadCatalogoService, ContabilidadCatalogoService>();
 builder.Services.AddScoped<IContabilidadIntegracionService, ContabilidadIntegracionService>();
 builder.Services.AddScoped<IContabilidadGatekeeper, ContabilidadGatekeeper>();
+builder.Services.AddScoped<IContabilidadCuentaMapeoService, ContabilidadCuentaMapeoService>();
+builder.Services.AddScoped<ContabilidadOperacionContext>();
+builder.Services.AddScoped<IContabilidadEventPublisher, ContabilidadEventPublisher>();
 builder.Services.AddScoped<IContabilidadConfiguracionService, ContabilidadConfiguracionService>();
 builder.Services.AddScoped<IContabilidadIntegracionLogService, ContabilidadIntegracionLogService>();
 builder.Services.AddScoped<IDomainEventPublisher, DomainEventPublisher>();
@@ -111,6 +116,8 @@ builder.Services.AddScoped<IFiscalOutboxProcessor, AlahiaPos.DataAccess.Servicio
 builder.Services.AddScoped<IFiscalReconciliacionService, AlahiaPos.DataAccess.Servicios.Dgii.FiscalReconciliacionService>();
 builder.Services.AddScoped<IDgiiConfigService, AlahiaPos.DataAccess.Servicios.Dgii.DgiiConfigService>();
 builder.Services.AddScoped<IDgiiFiscalAuthService, AlahiaPos.DataAccess.Servicios.Dgii.DgiiFiscalAuthService>();
+builder.Services.AddScoped<IReporte607Service, AlahiaPos.DataAccess.Servicios.Dgii.Reporte607Service>();
+builder.Services.AddScoped<IReporteIt1Service, AlahiaPos.DataAccess.Servicios.Dgii.ReporteIt1Service>();
 builder.Services.AddHostedService<AlahiaPosApi.Workers.FiscalOutboxBackgroundService>();
 
 // Facturaci?n Electr?nica ? m?dulo transversal
@@ -129,6 +136,18 @@ builder.Services.AddScoped<IMovimientoFinancieroService, MovimientoFinancieroSer
 builder.Services.AddScoped<IMetodoPagoCuentaService, MetodoPagoCuentaService>();
 builder.Services.AddScoped<ITesoreriaConfiguracionService, TesoreriaConfiguracionService>();
 builder.Services.AddScoped<ITesoreriaCuentaContableMapeoService, TesoreriaCuentaContableMapeoService>();
+builder.Services.AddScoped<ITesoreriaConciliacionService, TesoreriaConciliacionService>();
+builder.Services.AddScoped<ITesoreriaExtractoService, TesoreriaExtractoService>();
+builder.Services.AddScoped<IPagoReclasificacionService, PagoReclasificacionService>();
+builder.Services.AddScoped<AlahiaPos.DataAccess.Servicios.ExtractosBancarios.IBankStatementAdapter,
+    AlahiaPos.DataAccess.Servicios.ExtractosBancarios.ExcelStatementAdapter>();
+builder.Services.AddScoped<AlahiaPos.DataAccess.Servicios.ExtractosBancarios.IBankStatementAdapter,
+    AlahiaPos.DataAccess.Servicios.ExtractosBancarios.PopularTextoStatementAdapter>();
+builder.Services.AddScoped<AlahiaPos.DataAccess.Servicios.ExtractosBancarios.IBankStatementAdapter,
+    AlahiaPos.DataAccess.Servicios.ExtractosBancarios.CsvStatementAdapter>();
+builder.Services.AddScoped<AlahiaPos.DataAccess.Servicios.ExtractosBancarios.IBankStatementParserOrchestrator,
+    AlahiaPos.DataAccess.Servicios.ExtractosBancarios.BankStatementParserOrchestrator>();
+builder.Services.AddSingleton<IPdfTextExtractor, AlahiaPosApi.Servicios.ItextSharpPdfTextExtractor>();
 // ======================================================
 // ?? MOVIMIENTOS INVENTARIO
 // ======================================================
@@ -140,6 +159,9 @@ builder.Services.AddScoped<INotasCredito, NotasCreditoServices>();
 builder.Services.AddScoped<IUsuarios, UsuariosService>();
 builder.Services.AddScoped<IPerfiles, PerfilesService>();
 builder.Services.AddScoped<IPerfilRoles, PerfilRolesService>();
+builder.Services.AddScoped<IDemoEmpresaBootstrap, DemoEmpresaBootstrapService>();
+builder.Services.AddScoped<IEmpresaOperativaSeed, EmpresaOperativaSeedService>();
+builder.Services.AddScoped<IEmpresaAdminService, EmpresaAdminService>();
 builder.Services.AddScoped<ILoginService, LoginService>();
 builder.Services.AddScoped<IEmpleados, EmpleadosService>();
 builder.Services.AddScoped<IParametrosService, ParametrosService>();
@@ -153,6 +175,14 @@ builder.Services.AddScoped<IPrinterTicket, PrinterTicketServices>();
 builder.Services.AddScoped<IPagoEmpresaService, PagoEmpresaService>();
 builder.Services.AddSignalR();
 builder.Services.AddScoped<ITicketsService, TicketsService>();
+
+// =============================
+// Cotizador comercial (web pública)
+// =============================
+builder.Services.AddScoped<AlahiaPos.Entities.Interfaces.ICotizadorRecomendador,
+    AlahiaPos.DataAccess.Servicios.Cotizador.ReglasRecomendador>();
+builder.Services.AddScoped<AlahiaPos.Entities.Interfaces.ICotizadorService,
+    AlahiaPos.DataAccess.Servicios.Cotizador.CotizadorService>();
 
 // =============================
 // Alahia AI (multi-provider)

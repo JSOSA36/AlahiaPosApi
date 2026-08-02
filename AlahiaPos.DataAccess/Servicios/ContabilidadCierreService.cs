@@ -99,9 +99,46 @@ namespace AlahiaPos.DataAccess.Servicios
             await _context.SaveChangesAsync();
 
             var dto = MapToDto(periodo);
-            dto.Mensaje =
-                "Período registrado como cerrado. El bloqueo de asientos se activará en una fase posterior.";
+            dto.Mensaje = "Período cerrado. No se permiten nuevos asientos ni ediciones con fecha en este período.";
             return dto;
+        }
+
+        /// <summary>
+        /// True cuando existe un período marcado como Cerrado para la fecha del asiento.
+        /// Períodos no materializados se consideran abiertos.
+        /// </summary>
+        public async Task<bool> EstaPeriodoBloqueadoAsync(int idEmpresa, DateTime fecha)
+        {
+            var periodo = await _context.PeriodosContables.AsNoTracking()
+                .FirstOrDefaultAsync(p =>
+                    p.IdEmpresa == idEmpresa
+                    && p.Anio == fecha.Year
+                    && p.Mes == fecha.Month);
+
+            return periodo != null
+                && string.Equals(periodo.Estado, ContabilidadConstantes.PeriodoCerrado, StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// Primera fecha válida del período abierto actual (hoy si el mes está abierto;
+        /// si no, el día 1 del próximo mes abierto conocido; null si no hay abierto).
+        /// </summary>
+        public async Task<DateTime?> ResolverFechaContableAbiertaAsync(int idEmpresa, DateTime preferida)
+        {
+            if (!await EstaPeriodoBloqueadoAsync(idEmpresa, preferida))
+                return preferida.Date;
+
+            // Buscar próximos 36 meses abiertos (materializados o inexistentes = abiertos).
+            var cursor = new DateTime(preferida.Year, preferida.Month, 1).AddMonths(1);
+            for (var i = 0; i < 36; i++)
+            {
+                if (!await EstaPeriodoBloqueadoAsync(idEmpresa, cursor))
+                    return cursor;
+
+                cursor = cursor.AddMonths(1);
+            }
+
+            return null;
         }
 
         private static void ValidarPeriodo(int anio, int mes)
@@ -129,6 +166,9 @@ namespace AlahiaPos.DataAccess.Servicios
 
         private static PeriodoContableDto MapToDto(PeriodoContable periodo)
         {
+            var cerrado = string.Equals(
+                periodo.Estado, ContabilidadConstantes.PeriodoCerrado, StringComparison.OrdinalIgnoreCase);
+
             return new PeriodoContableDto
             {
                 IdPeriodoContable = periodo.IdPeriodoContable,
@@ -139,9 +179,9 @@ namespace AlahiaPos.DataAccess.Servicios
                 FechaCierre = periodo.FechaCierre,
                 Observacion = periodo.Observacion,
                 NombreMes = Meses[periodo.Mes],
-                BloqueoActivo = false,
-                Mensaje = periodo.Estado == ContabilidadConstantes.PeriodoCerrado
-                    ? "Período cerrado (sin bloqueo de asientos aún)."
+                BloqueoActivo = cerrado,
+                Mensaje = cerrado
+                    ? "Período cerrado. No se permiten asientos con fecha en este período."
                     : "Período abierto."
             };
         }

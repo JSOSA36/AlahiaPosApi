@@ -1,5 +1,6 @@
 ﻿using AlahiaPos.DataAccess.Servicios;
 using AlahiaPos.Entities.Domain;
+using AlahiaPos.Entities.Dto;
 using AlahiaPos.Entities.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using System;
@@ -19,11 +20,16 @@ namespace AlahiaPos.API.Controllers
         private readonly
         IMovimientoFinancieroService
         _MovimientoFinancieroService;
+        private readonly IContabilidadEventPublisher _contabilidadEvents;
+        private readonly ICuentaFinancieraService _cuentaFinancieraService;
+
         public IngresosController(IIngresos ingresosService, IMetodoPagoCuentaService
             metodoPagoCuentaService,
 
             IMovimientoFinancieroService
-            movimientoFinancieroService)
+            movimientoFinancieroService,
+            IContabilidadEventPublisher contabilidadEvents,
+            ICuentaFinancieraService cuentaFinancieraService)
         {
             _ingresosService = ingresosService;
             _MetodoPagoCuentaService =
@@ -31,6 +37,8 @@ namespace AlahiaPos.API.Controllers
 
             _MovimientoFinancieroService =
                 movimientoFinancieroService;
+            _contabilidadEvents = contabilidadEvents;
+            _cuentaFinancieraService = cuentaFinancieraService;
         }
 
         // ================================================
@@ -66,11 +74,6 @@ namespace AlahiaPos.API.Controllers
         {
             try
             {
-
-                // =========================================
-                // 🔥 VALIDAR
-                // =========================================
-
                 if (ingreso == null)
                 {
                     return BadRequest(new
@@ -80,88 +83,62 @@ namespace AlahiaPos.API.Controllers
                     });
                 }
 
-                // =========================================
-                // 🔥 FECHA
-                // =========================================
-
-                ingreso.FechaRegistro =
-                    DateTime.Now;
-
-                // =========================================
-                // 🔥 GUARDAR INGRESO
-                // =========================================
-
-                await _ingresosService
-                .InsertIngreso(
-                    ingreso
-                );
-
-                // =========================================
-                // 🔥 MÉTODO CONFIGURADO
-                // =========================================
-
-                var metodoCuenta =
-                    await _MetodoPagoCuentaService
-                    .GetByMetodoAsync(
-
-                        ingreso.IdEmpresa,
-
-                        ingreso.FormaPago
-                    );
-
-                // =========================================
-                // 🔥 REGISTRAR MOVIMIENTO
-                // =========================================
-
-                if (
-                    metodoCuenta != null
-                    &&
-                    metodoCuenta
-                    .IdCuentaFinanciera > 0
-                )
+                // Cobros ligados a factura: flujo histórico (sin IngresoExtraRegistrado).
+                if (ingreso.IdFacturaHeader is > 0)
                 {
+                    ingreso.FechaRegistro = DateTime.Now;
+                    await _ingresosService.InsertIngreso(ingreso);
 
-                    await _MovimientoFinancieroService
-                    .RegistrarEntradaAsync(
+                    var metodoCuentaFactura = await _MetodoPagoCuentaService
+                        .GetByMetodoAsync(ingreso.IdEmpresa, ingreso.FormaPago);
 
-                        ingreso.IdEmpresa,
+                    if (metodoCuentaFactura != null && metodoCuentaFactura.IdCuentaFinanciera > 0)
+                    {
+                        await _MovimientoFinancieroService.RegistrarEntradaAsync(
+                            ingreso.IdEmpresa,
+                            ingreso.IdUsuario ?? 0,
+                            metodoCuentaFactura.IdCuentaFinanciera,
+                            ingreso.Monto,
+                            $"Ingreso - {ingreso.Categoria}",
+                            ingreso.Descripcion ?? "Entrada automática por ingreso",
+                            categoria: "INGRESO",
+                            referenciaId: ingreso.IdIngreso > 0 ? ingreso.IdIngreso : null,
+                            referenciaTipo: "INGRESO");
+                    }
 
-                        ingreso.IdUsuario ?? 0,
-
-                        metodoCuenta
-                        .IdCuentaFinanciera,
-
-                        ingreso.Monto,
-
-                        $"Ingreso - {ingreso.Categoria}",
-
-                        ingreso.Descripcion
-                        ??
-                        "Entrada automática por ingreso",
-
-                        categoria: "INGRESO",
-
-                        referenciaId: ingreso.IdIngreso > 0 ? ingreso.IdIngreso : null,
-
-                        referenciaTipo: "INGRESO"
-                    );
+                    return Ok(new
+                    {
+                        message = "Ingreso registrado correctamente.",
+                        idIngreso = ingreso.IdIngreso
+                    });
                 }
+
+                var result = await _ingresosService.RegistrarIngresoExtraCompletoAsync(
+                    new RegistrarIngresoExtraRequest
+                    {
+                        IdEmpresa = ingreso.IdEmpresa,
+                        IdUsuario = ingreso.IdUsuario ?? 0,
+                        Monto = ingreso.Monto,
+                        Descripcion = ingreso.Descripcion,
+                        Categoria = ingreso.Categoria,
+                        Origen = ingreso.Origen,
+                        FormaPago = ingreso.FormaPago,
+                        Referencia = ingreso.Referencia,
+                        Nota = ingreso.Nota,
+                        Fecha = DateTime.Now,
+                        DesdeExtractoBancario = false
+                    });
 
                 return Ok(new
                 {
-                    message =
-                        "Ingreso registrado correctamente ✅"
+                    message = "Ingreso registrado correctamente.",
+                    idIngreso = result.IdIngreso,
+                    contabilidadAdvertencia = result.ContabilidadAdvertencia
                 });
             }
-
             catch (Exception ex)
             {
-
-                return BadRequest(new
-                {
-                    message =
-                        ex.Message
-                });
+                return BadRequest(new { message = ex.Message });
             }
         }
 
@@ -178,10 +155,74 @@ namespace AlahiaPos.API.Controllers
 
         // ✅ DELETE: api/Ingresos/{IdIngreso}
         [HttpDelete("{IdIngreso}")]
-        public IActionResult DeleteIngreso(int IdIngreso)
+        public async Task<IActionResult> DeleteIngreso(int IdIngreso)
         {
-            _ingresosService.DeleteIngreso(IdIngreso);
-            return Ok(new { message = "Ingreso eliminado correctamente ✅" });
+            var ingreso = await _ingresosService.GetIngresoById(IdIngreso);
+            if (ingreso == null)
+                return NotFound(new { message = $"No se encontró el ingreso con ID {IdIngreso}" });
+
+            var esManual = !ingreso.IdFacturaHeader.HasValue || ingreso.IdFacturaHeader.Value <= 0;
+
+            // Ingresos generados por factura se revierten desde la anulación de la factura.
+            if (!esManual)
+            {
+                _ingresosService.DeleteIngreso(IdIngreso);
+                return Ok(new { message = "Ingreso eliminado correctamente ✅" });
+            }
+
+            if (ingreso.EstaAnulado)
+                return BadRequest(new { message = "El ingreso ya está anulado." });
+
+            // 🔴 revertir tesorería (reverso de la entrada por ingreso)
+            try
+            {
+                var metodoCuenta = await _MetodoPagoCuentaService
+                    .GetByMetodoAsync(ingreso.IdEmpresa, ingreso.FormaPago);
+
+                if (metodoCuenta != null
+                    && metodoCuenta.IdCuentaFinanciera > 0
+                    && ingreso.Monto > 0)
+                {
+                    await _MovimientoFinancieroService.RegistrarSalidaAsync(
+                        ingreso.IdEmpresa,
+                        ingreso.IdUsuario ?? 0,
+                        metodoCuenta.IdCuentaFinanciera,
+                        ingreso.Monto,
+                        $"Anulación ingreso - {ingreso.Categoria}",
+                        "Reverso automático por anulación de ingreso",
+                        categoria: "INGRESO",
+                        referenciaId: ingreso.IdIngreso,
+                        referenciaTipo: "INGRESO_ANULACION",
+                        claveIdempotencia: $"INGRESO-ANUL-{ingreso.IdIngreso}");
+                }
+            }
+            catch
+            {
+                // Nunca tumbar anulación operativa
+            }
+
+            // Contabilidad: reverso del asiento de ingreso (no-op si Contabilidad apagada)
+            try
+            {
+                await _contabilidadEvents.TryPublishAsync(new AlahiaPos.Entities.Events.IngresoExtraAnuladoEvent
+                {
+                    IdEmpresa = ingreso.IdEmpresa,
+                    IdUsuario = ingreso.IdUsuario ?? 0,
+                    Fecha = DateTime.Now,
+                    ReferenciaId = ingreso.IdIngreso,
+                    ReferenciaTipo = "Ingreso",
+                    Motivo = "Anulación de ingreso"
+                });
+            }
+            catch
+            {
+                // Nunca tumbar anulación operativa
+            }
+
+            ingreso.EstaAnulado = true;
+            await _ingresosService.UpdateIngreso(ingreso.IdIngreso, ingreso);
+
+            return Ok(new { message = "Ingreso anulado correctamente ✅" });
         }
         [HttpGet("ingresos-por-linea")]
         public async Task<IActionResult>

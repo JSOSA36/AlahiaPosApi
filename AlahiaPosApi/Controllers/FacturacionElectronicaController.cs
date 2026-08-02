@@ -3,8 +3,12 @@ using AlahiaPos.Entities.Dto;
 using AlahiaPos.Entities.Dto.Fiscal;
 using AlahiaPos.Entities.Interfaces;
 using AlahiaPos.DataAccess.Data;
+using AlahiaPos.DataAccess.Servicios.FiscalGateway;
+using AlahiaPos.DataAccess.Servicios.FiscalGateway.DgiiDirecto;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
+using System.Security.Cryptography.X509Certificates;
 
 namespace AlahiaPosApi.Controllers
 {
@@ -15,17 +19,23 @@ namespace AlahiaPosApi.Controllers
         private readonly IFacturacionElectronicaService _feService;
         private readonly ISecuenciaEcfService _secuencias;
         private readonly IFiscalGateway _gateway;
+        private readonly IEmpresaFiscalGatewayResolver _gatewayResolver;
+        private readonly FiscalGatewayOptions _gatewayDefaults;
         private readonly AlahiaPosContext _ctx;
 
         public FacturacionElectronicaController(
             IFacturacionElectronicaService feService,
             ISecuenciaEcfService secuencias,
             IFiscalGateway gateway,
+            IEmpresaFiscalGatewayResolver gatewayResolver,
+            IOptions<FiscalGatewayOptions> gatewayDefaults,
             AlahiaPosContext ctx)
         {
             _feService = feService;
             _secuencias = secuencias;
             _gateway = gateway;
+            _gatewayResolver = gatewayResolver;
+            _gatewayDefaults = gatewayDefaults.Value;
             _ctx = ctx;
         }
 
@@ -140,14 +150,314 @@ namespace AlahiaPosApi.Controllers
         }
 
         // ============================================================
+        // Proveedor fiscal (por empresa)
+        // ============================================================
+
+        [HttpGet("proveedor/{idEmpresa}")]
+        public async Task<IActionResult> GetProveedor(int idEmpresa)
+        {
+            var empresa = await _ctx.Empresas.AsNoTracking()
+                .FirstOrDefaultAsync(e => e.IdEmpresa == idEmpresa);
+            if (empresa == null) return NotFound("Empresa no encontrada");
+
+            var modo = ProveedorFiscalHelper.Normalize(empresa.ProveedorFE);
+            return Ok(BuildProveedorDto(empresa, modo));
+        }
+
+        [HttpPut("proveedor/{idEmpresa}")]
+        public async Task<IActionResult> PutProveedor(int idEmpresa, [FromBody] ProveedorFeRequest body)
+        {
+            if (body == null || string.IsNullOrWhiteSpace(body.Proveedor))
+                return BadRequest("proveedor es requerido (DGII_DIRECTO | PROVEEDOR_EXTERNO)");
+
+            if (!ProveedorFiscalHelper.EsValido(body.Proveedor))
+                return BadRequest("Proveedor inválido. Use DGII_DIRECTO o PROVEEDOR_EXTERNO.");
+
+            var modo = ProveedorFiscalHelper.Normalize(body.Proveedor);
+            var empresa = await _ctx.Empresas.AsTracking()
+                .FirstOrDefaultAsync(e => e.IdEmpresa == idEmpresa);
+            if (empresa == null) return NotFound("Empresa no encontrada");
+
+            if (modo == ProveedorFiscalHelper.ProveedorExterno)
+            {
+                var url = (body.BaseUrl ?? empresa.ProveedorFE_BaseUrl ?? "").Trim();
+                if (string.IsNullOrWhiteSpace(url))
+                    return BadRequest("baseUrl es requerido para PROVEEDOR_EXTERNO");
+                if (!Uri.TryCreate(url, UriKind.Absolute, out var uri)
+                    || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
+                    return BadRequest("baseUrl debe ser una URL http(s) absoluta");
+
+                empresa.ProveedorFE = modo;
+                empresa.ProveedorFE_Nombre = string.IsNullOrWhiteSpace(body.Nombre)
+                    ? empresa.ProveedorFE_Nombre
+                    : body.Nombre.Trim();
+                empresa.ProveedorFE_BaseUrl = url.TrimEnd('/');
+                empresa.ProveedorFE_Usuario = body.Usuario?.Trim();
+
+                if (!string.IsNullOrWhiteSpace(body.ApiKey))
+                    empresa.ProveedorFE_ApiKey = body.ApiKey.Trim();
+                else if (body.ClearApiKey == true)
+                    empresa.ProveedorFE_ApiKey = null;
+
+                if (!string.IsNullOrWhiteSpace(body.Password))
+                    empresa.ProveedorFE_Password = body.Password;
+                else if (body.ClearPassword == true)
+                    empresa.ProveedorFE_Password = null;
+            }
+            else
+            {
+                empresa.ProveedorFE = ProveedorFiscalHelper.DgiiDirecto;
+                // Credenciales externas se conservan por si vuelven a modo externo.
+            }
+
+            await _ctx.SaveChangesAsync();
+            return Ok(BuildProveedorDto(empresa, modo));
+        }
+
+        private object BuildProveedorDto(Empresas empresa, string modo)
+        {
+            var esExterno = ProveedorFiscalHelper.EsExterno(modo);
+            var effectiveUrl = esExterno
+                ? (empresa.ProveedorFE_BaseUrl ?? "")
+                : (_gatewayDefaults.BaseUrl ?? "");
+            return new
+            {
+                proveedor = modo,
+                etiqueta = ProveedorFiscalHelper.Etiqueta(modo),
+                nombre = esExterno ? empresa.ProveedorFE_Nombre : "Alahia.eCF.Api",
+                baseUrl = esExterno ? empresa.ProveedorFE_BaseUrl : _gatewayDefaults.BaseUrl,
+                usuario = esExterno ? empresa.ProveedorFE_Usuario : null,
+                apiKeyConfigurado = esExterno
+                    ? !string.IsNullOrWhiteSpace(empresa.ProveedorFE_ApiKey)
+                    : !string.IsNullOrWhiteSpace(_gatewayDefaults.ApiKey),
+                passwordConfigurado = esExterno && !string.IsNullOrWhiteSpace(empresa.ProveedorFE_Password),
+                endpointEfectivo = string.IsNullOrWhiteSpace(effectiveUrl)
+                    ? null
+                    : effectiveUrl.TrimEnd('/'),
+                contrato = "api/Receipt (X-Api-Key y/o Basic Auth)",
+                ambienteDgiiAplicable = !esExterno
+            };
+        }
+
+        // ============================================================
+        // Certificado digital (modo DGII_DIRECTO)
+        // ============================================================
+
+        [HttpGet("certificado/{idEmpresa}")]
+        public async Task<IActionResult> GetCertificado(int idEmpresa)
+        {
+            var existeEmpresa = await _ctx.Empresas.AsNoTracking()
+                .AnyAsync(e => e.IdEmpresa == idEmpresa);
+            if (!existeEmpresa) return NotFound("Empresa no encontrada");
+
+            var cert = await _ctx.CertificadosDigitales.AsNoTracking()
+                .Where(c => c.IdEmpresa == idEmpresa && c.Activo)
+                .OrderByDescending(c => c.FechaCreacion)
+                .Select(c => new
+                {
+                    c.IdCertificado,
+                    c.NombreArchivo,
+                    c.FechaExpiracion,
+                    c.FechaCreacion,
+                    c.Ambiente,
+                    tieneBytes = c.ArchivoBytes != null && c.ArchivoBytes.Length > 0,
+                    tieneRuta = c.RutaArchivo != null && c.RutaArchivo != ""
+                })
+                .FirstOrDefaultAsync();
+
+            if (cert == null)
+            {
+                return Ok(new
+                {
+                    configurado = false,
+                    mensaje = "No hay certificado digital activo. Suba el .p12/.pfx y la contraseña."
+                });
+            }
+
+            return Ok(new
+            {
+                configurado = true,
+                idCertificado = cert.IdCertificado,
+                nombreArchivo = cert.NombreArchivo,
+                fechaExpiracion = cert.FechaExpiracion,
+                fechaCreacion = cert.FechaCreacion,
+                ambiente = cert.Ambiente,
+                vencido = cert.FechaExpiracion < DateTime.Now,
+                usable = cert.tieneBytes || cert.tieneRuta
+            });
+        }
+
+        [HttpPost("certificado/{idEmpresa}")]
+        [RequestSizeLimit(15_000_000)]
+        public async Task<IActionResult> UploadCertificado(
+            int idEmpresa,
+            IFormFile archivo,
+            [FromForm] string password,
+            [FromForm] string? ambiente = null)
+        {
+            if (archivo == null || archivo.Length == 0)
+                return BadRequest("archivo .p12/.pfx es requerido");
+            if (string.IsNullOrWhiteSpace(password))
+                return BadRequest("password del certificado es requerido");
+
+            var empresa = await _ctx.Empresas.AsNoTracking()
+                .FirstOrDefaultAsync(e => e.IdEmpresa == idEmpresa);
+            if (empresa == null) return NotFound("Empresa no encontrada");
+
+            var name = (archivo.FileName ?? "certificado.p12").Trim();
+            var ext = Path.GetExtension(name).ToLowerInvariant();
+            if (ext is not ".p12" and not ".pfx")
+                return BadRequest("Solo se aceptan archivos .p12 o .pfx");
+
+            byte[] bytes;
+            await using (var ms = new MemoryStream())
+            {
+                await archivo.CopyToAsync(ms);
+                bytes = ms.ToArray();
+            }
+
+            DateTime fechaExp;
+            string? subject;
+            string? thumbprint;
+            try
+            {
+                using var x509 = new X509Certificate2(
+                    bytes,
+                    password,
+                    X509KeyStorageFlags.EphemeralKeySet | X509KeyStorageFlags.Exportable);
+                if (!x509.HasPrivateKey)
+                    return BadRequest("El certificado no contiene llave privada. Use el .p12/.pfx de firma.");
+                fechaExp = x509.NotAfter;
+                subject = x509.Subject;
+                thumbprint = x509.Thumbprint;
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"No se pudo abrir el certificado con esa contraseña: {ex.Message}");
+            }
+
+            var activos = await _ctx.CertificadosDigitales.AsTracking()
+                .Where(c => c.IdEmpresa == idEmpresa && c.Activo)
+                .ToListAsync();
+            foreach (var c in activos)
+                c.Activo = false;
+
+            var ambienteNorm = string.IsNullOrWhiteSpace(ambiente)
+                ? DgiiAmbienteHelper.EtiquetaSecuencia(empresa.AmbienteFE)
+                : ambiente.Trim().ToUpperInvariant();
+
+            var nuevo = new CertificadoDigital
+            {
+                IdEmpresa = idEmpresa,
+                NombreArchivo = Path.GetFileName(name),
+                ArchivoBytes = bytes,
+                PasswordEncriptado = password,
+                FechaExpiracion = fechaExp,
+                Activo = true,
+                Ambiente = ambienteNorm,
+                FechaCreacion = DateTime.Now
+            };
+            _ctx.CertificadosDigitales.Add(nuevo);
+            await _ctx.SaveChangesAsync();
+
+            return Ok(new
+            {
+                configurado = true,
+                idCertificado = nuevo.IdCertificado,
+                nombreArchivo = nuevo.NombreArchivo,
+                fechaExpiracion = nuevo.FechaExpiracion,
+                fechaCreacion = nuevo.FechaCreacion,
+                ambiente = nuevo.Ambiente,
+                subject,
+                thumbprint,
+                vencido = fechaExp < DateTime.Now,
+                usable = true,
+                mensaje = "Certificado digital guardado y activado para esta empresa."
+            });
+        }
+
+        // ============================================================
+        // Ambiente DGII (por empresa)
+        // ============================================================
+
+        [HttpGet("ambiente/{idEmpresa}")]
+        public async Task<IActionResult> GetAmbiente(int idEmpresa)
+        {
+            var empresa = await _ctx.Empresas.AsNoTracking()
+                .FirstOrDefaultAsync(e => e.IdEmpresa == idEmpresa);
+            if (empresa == null) return NotFound("Empresa no encontrada");
+
+            var ambiente = DgiiAmbienteHelper.Normalize(empresa.AmbienteFE);
+            var settings = new DgiiDirectoSettings { Ambiente = ambiente };
+            return Ok(new
+            {
+                ambiente,
+                etiqueta = DgiiAmbienteHelper.EtiquetaUi(ambiente),
+                etiquetaSecuencia = DgiiAmbienteHelper.EtiquetaSecuencia(ambiente),
+                urls = DgiiAmbienteHelper.BuildUrlsDto(settings)
+            });
+        }
+
+        [HttpPut("ambiente/{idEmpresa}")]
+        public async Task<IActionResult> PutAmbiente(int idEmpresa, [FromBody] AmbienteFeRequest body)
+        {
+            if (body == null || string.IsNullOrWhiteSpace(body.Ambiente))
+                return BadRequest("ambiente es requerido (testecf | certecf | ecf)");
+
+            var ambiente = DgiiAmbienteHelper.Normalize(body.Ambiente);
+            if (!DgiiAmbienteHelper.EsValido(body.Ambiente))
+                return BadRequest("Ambiente inválido. Use testecf, certecf o ecf.");
+
+            var empresa = await _ctx.Empresas.AsTracking()
+                .FirstOrDefaultAsync(e => e.IdEmpresa == idEmpresa);
+            if (empresa == null) return NotFound("Empresa no encontrada");
+
+            empresa.AmbienteFE = ambiente;
+
+            var etiquetaSeq = DgiiAmbienteHelper.EtiquetaSecuencia(ambiente);
+            var secuencias = await _ctx.SecuenciasECF.AsTracking()
+                .Where(s => s.IdEmpresa == idEmpresa && s.Activo)
+                .ToListAsync();
+            foreach (var s in secuencias)
+                s.Ambiente = etiquetaSeq;
+
+            await _ctx.SaveChangesAsync();
+
+            var settings = new DgiiDirectoSettings { Ambiente = ambiente };
+            return Ok(new
+            {
+                ambiente,
+                etiqueta = DgiiAmbienteHelper.EtiquetaUi(ambiente),
+                etiquetaSecuencia = etiquetaSeq,
+                secuenciasActualizadas = secuencias.Count,
+                urls = DgiiAmbienteHelper.BuildUrlsDto(settings)
+            });
+        }
+
+        // ============================================================
         // Gateway Fiscal
         // ============================================================
 
         [HttpGet("gateway/health")]
-        public async Task<IActionResult> GatewayHealth()
+        public async Task<IActionResult> GatewayHealth([FromQuery] int? idEmpresa = null)
         {
+            if (idEmpresa is > 0)
+            {
+                var okEmpresa = await _gatewayResolver.VerificarConexionAsync(idEmpresa.Value);
+                var emp = await _ctx.Empresas.AsNoTracking()
+                    .Where(e => e.IdEmpresa == idEmpresa.Value)
+                    .Select(e => new { e.ProveedorFE, e.AmbienteFE })
+                    .FirstOrDefaultAsync();
+                return Ok(new
+                {
+                    conectado = okEmpresa,
+                    proveedor = ProveedorFiscalHelper.Normalize(emp?.ProveedorFE),
+                    ambiente = DgiiAmbienteHelper.Normalize(emp?.AmbienteFE)
+                });
+            }
+
             var ok = await _gateway.VerificarConexionAsync();
-            return Ok(new { conectado = ok });
+            return Ok(new { conectado = ok, proveedor = ProveedorFiscalHelper.DgiiDirecto });
         }
 
         [HttpGet("gateway/consultar/{trackId}")]
@@ -185,10 +495,25 @@ namespace AlahiaPosApi.Controllers
         // ============================================================
 
         [HttpGet("health")]
-        public async Task<IActionResult> Health()
+        public async Task<IActionResult> Health([FromQuery] int? idEmpresa = null)
         {
+            if (idEmpresa is > 0)
+            {
+                var okEmpresa = await _gatewayResolver.VerificarConexionAsync(idEmpresa.Value);
+                var emp = await _ctx.Empresas.AsNoTracking()
+                    .Where(e => e.IdEmpresa == idEmpresa.Value)
+                    .Select(e => new { e.ProveedorFE, e.AmbienteFE })
+                    .FirstOrDefaultAsync();
+                return Ok(new
+                {
+                    conectado = okEmpresa,
+                    proveedor = ProveedorFiscalHelper.Normalize(emp?.ProveedorFE),
+                    ambiente = DgiiAmbienteHelper.Normalize(emp?.AmbienteFE)
+                });
+            }
+
             var ok = await _gateway.VerificarConexionAsync();
-            return Ok(new { conectado = ok });
+            return Ok(new { conectado = ok, proveedor = ProveedorFiscalHelper.DgiiDirecto });
         }
 
         // ============================================================
@@ -309,5 +634,22 @@ namespace AlahiaPosApi.Controllers
                 condicionales
             });
         }
+    }
+
+    public class AmbienteFeRequest
+    {
+        public string Ambiente { get; set; } = "testecf";
+    }
+
+    public class ProveedorFeRequest
+    {
+        public string Proveedor { get; set; } = "DGII_DIRECTO";
+        public string? Nombre { get; set; }
+        public string? BaseUrl { get; set; }
+        public string? ApiKey { get; set; }
+        public string? Usuario { get; set; }
+        public string? Password { get; set; }
+        public bool? ClearApiKey { get; set; }
+        public bool? ClearPassword { get; set; }
     }
 }

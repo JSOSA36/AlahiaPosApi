@@ -44,7 +44,10 @@ namespace AlahiaPos.DataAccess.Servicios
                     Debito = detalle.Debito,
                     Credito = detalle.Credito,
                     Referencia = detalle.Referencia,
-                    OrigenModulo = asiento.OrigenModulo
+                    OrigenModulo = asiento.OrigenModulo,
+                    OrigenReferenciaId = asiento.OrigenReferenciaId,
+                    TipoOperacion = asiento.TipoOperacion,
+                    EsAutomatico = asiento.EsAutomatico
                 };
 
             return await query.ToListAsync();

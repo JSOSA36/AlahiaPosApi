@@ -222,6 +222,18 @@ namespace AlahiaPos.DataAccess.Servicios
             if (string.IsNullOrWhiteSpace(asiento.Concepto))
                 throw new InvalidOperationException("El concepto del asiento es obligatorio.");
 
+            var periodoCerrado = await _context.PeriodosContables.AsNoTracking()
+                .AnyAsync(p =>
+                    p.IdEmpresa == asiento.IdEmpresa
+                    && p.Anio == asiento.Fecha.Year
+                    && p.Mes == asiento.Fecha.Month
+                    && p.Estado == ContabilidadConstantes.PeriodoCerrado);
+
+            if (periodoCerrado)
+                throw new InvalidOperationException(
+                    $"El período contable {asiento.Fecha:yyyy-MM} está cerrado. " +
+                    "Use una fecha en un período abierto o reabra el período.");
+
             var detalles = asiento.Detalles ?? new List<AsientoContableDetalle>();
             if (detalles.Count < 2)
                 throw new InvalidOperationException("El asiento debe tener al menos dos líneas.");

@@ -150,15 +150,21 @@ namespace AlahiaPos.DataAccess.Servicios
 
         public async Task<bool> ExisteUserName(string userName)
         {
+            var key = (userName ?? string.Empty).Trim().ToLower();
+            if (string.IsNullOrEmpty(key)) return false;
+
             return await _usuarioRepo.GetAny(
-                u => u.UserName == userName
+                u => u.UserName != null && u.UserName.ToLower() == key
             );
         }
 
         public async Task<bool> ExisteCorreo(string correo)
         {
+            var key = (correo ?? string.Empty).Trim().ToLower();
+            if (string.IsNullOrEmpty(key)) return false;
+
             return await _usuarioRepo.GetAny(
-                u => u.Correo == correo
+                u => u.Correo != null && u.Correo.ToLower() == key
             );
         }
     }

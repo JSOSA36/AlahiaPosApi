@@ -41,6 +41,8 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.DgiiDirecto
             FiscalDocumentoElectronico documento,
             CancellationToken ct = default)
         {
+            using var _ = DgiiAmbienteContext.Push(documento.AmbienteDgii ?? _settings.Ambiente);
+            var eff = _settings.Effective();
             try
             {
                 var fechaFirma = DateTime.Now;
@@ -55,12 +57,12 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.DgiiDirecto
                     "DgiiDirecto: enviando {Encf} tipo {Tipo} ambiente={Ambiente} cert={Cert}",
                     documento.Encabezado.Encf,
                     documento.Encabezado.TipoEcf,
-                    _settings.AmbientePath,
+                    eff.AmbientePath,
                     material.Source);
 
                 var resp = await _recepcion.EnviarEcfAsync(xmlFirmado, nombre, documento.IdEmpresa, ct);
                 var resultado = DgiiDirectoMapper.ToEnvioResultado(
-                    resp, documento, xmlSinFirmar, xmlFirmado, fechaFirma, _settings);
+                    resp, documento, xmlSinFirmar, xmlFirmado, fechaFirma, eff);
 
                 _logger.LogInformation(
                     "DgiiDirecto: {Encf} Exitoso={Ok} TrackId={TrackId} Estado={Estado}",
@@ -91,6 +93,8 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.DgiiDirecto
             FiscalDocumentoElectronico documento,
             CancellationToken ct = default)
         {
+            using var _ = DgiiAmbienteContext.Push(documento.AmbienteDgii ?? _settings.Ambiente);
+            var eff = _settings.Effective();
             try
             {
                 if (documento.Encabezado.TipoEcf != 32)
@@ -114,13 +118,13 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.DgiiDirecto
 
                 _logger.LogInformation(
                     "DgiiDirecto RFCE: {Encf} monto={Monto} ambiente={Ambiente} codigo={Codigo}",
-                    documento.Encabezado.Encf, documento.Encabezado.MontoTotal, _settings.AmbientePath, codigo);
+                    documento.Encabezado.Encf, documento.Encabezado.MontoTotal, eff.AmbientePath, codigo);
 
                 var resp = await _recepcion.EnviarRfceAsync(rfceFirmado, nombre, documento.IdEmpresa, ct);
                 var resultado = DgiiDirectoMapper.ToEnvioResultado(
-                    resp, documento, rfce, rfceFirmado, fechaFirma, _settings);
+                    resp, documento, rfce, rfceFirmado, fechaFirma, eff);
                 resultado.SecurityCode = codigo;
-                resultado.UrlQR = DgiiDirectoMapper.BuildQrUrl(documento, fechaFirma, codigo, _settings);
+                resultado.UrlQR = DgiiDirectoMapper.BuildQrUrl(documento, fechaFirma, codigo, eff);
                 // Conservar e-CF local firmado en debug (el que no se envía a DGII).
                 if (!resultado.Exitoso)
                     resultado.XmlSinFirmar = xmlEcfFirmado;

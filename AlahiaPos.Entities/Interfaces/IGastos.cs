@@ -1,8 +1,6 @@
 ﻿using AlahiaPos.Entities.Domain;
-using System;
+using AlahiaPos.Entities.Dto;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace AlahiaPos.Entities.Interfaces
@@ -25,5 +23,11 @@ namespace AlahiaPos.Entities.Interfaces
             int idEmpresa,
             string motivoAnulacion,
             string? usuarioAnulo);
+
+        /// <summary>
+        /// Flujo completo de registro de gasto (tesorería + fila + contabilidad).
+        /// Usado por el módulo Gastos y por Conciliación Bancaria.
+        /// </summary>
+        Task<RegistrarGastoResult> RegistrarGastoCompletoAsync(RegistrarGastoRequest request);
     }
 }

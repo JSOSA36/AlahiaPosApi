@@ -29,6 +29,10 @@ namespace AlahiaPosApi.Controllers
         ICuentaFinancieraService
         _CuentaFinancieraService;
 
+        private readonly ISecuenciaEcfService _secuenciaEcf;
+        private readonly IContabilidadEventPublisher _contabilidadEvents;
+        private readonly ICategoriaGastoService _categoriaGastoService;
+
         // ======================================================
         // 🔥 CONSTRUCTOR
         // ======================================================
@@ -44,7 +48,11 @@ namespace AlahiaPosApi.Controllers
             metodoPagoCuentaService,
 
             ICuentaFinancieraService
-            cuentaFinancieraService
+            cuentaFinancieraService,
+
+            ISecuenciaEcfService secuenciaEcf,
+            IContabilidadEventPublisher contabilidadEvents,
+            ICategoriaGastoService categoriaGastoService
         )
         {
             _IGastos =
@@ -58,6 +66,10 @@ namespace AlahiaPosApi.Controllers
 
             _CuentaFinancieraService =
                 cuentaFinancieraService;
+
+            _secuenciaEcf = secuenciaEcf;
+            _contabilidadEvents = contabilidadEvents;
+            _categoriaGastoService = categoriaGastoService;
         }
 
         // ======================================================
@@ -86,20 +98,46 @@ namespace AlahiaPosApi.Controllers
         {
             try
             {
-                // =========================================
-                // 🔥 DATOS AUTOMÁTICOS
-                // =========================================
-
-                value.FechaInseccion = DateTime.Now;
-                value.IdProveedor = 1;
-
                 if (string.IsNullOrWhiteSpace(value.TipoGasto))
                 {
                     return Ok(new
                     {
                         success = false,
-                        message = "Debe seleccionar un tipo de gasto."
+                        message = "Debe seleccionar una categoría de gasto."
                     });
+                }
+
+                if (string.IsNullOrWhiteSpace(value.TipoComprobante))
+                {
+                    value.TipoComprobante = GastoComprobanteTipos.SinComprobante;
+                }
+
+                if (GastoComprobanteTipos.EsGastosMenores(value.TipoComprobante))
+                {
+                    var reserva = await _secuenciaEcf.ReservarSiguienteAsync(
+                        value.IdEmpresa,
+                        GastoComprobanteTipos.TipoEcfGastosMenores);
+
+                    if (reserva.Exitoso && !string.IsNullOrWhiteSpace(reserva.Encf))
+                    {
+                        value.NumeroComprobante = reserva.Encf;
+                        value.FechaComprobante = DateTime.Today;
+                    }
+                    else
+                    {
+                        value.NumeroComprobante = null;
+                        value.FechaComprobante = null;
+                    }
+
+                    value.RncEmisorComprobante = null;
+                    value.NombreEmisorComprobante = null;
+                }
+                else
+                {
+                    value.NumeroComprobante = null;
+                    value.FechaComprobante = null;
+                    value.RncEmisorComprobante = null;
+                    value.NombreEmisorComprobante = null;
                 }
 
                 if (value.Monto <= 0)
@@ -111,116 +149,32 @@ namespace AlahiaPosApi.Controllers
                     });
                 }
 
-                if (string.IsNullOrWhiteSpace(value.FormaPago))
+                var result = await _IGastos.RegistrarGastoCompletoAsync(new RegistrarGastoRequest
                 {
-                    value.FormaPago = "EFECTIVO";
-                }
-
-                if (string.IsNullOrWhiteSpace(value.Orien))
-                {
-                    value.Orien = value.FormaPago;
-                }
-
-                // =========================================
-                // 🔥 OBTENER CUENTA FINANCIERA
-                // =========================================
-
-                if (!value.IdCuentaFinanciera.HasValue)
-                {
-                    var metodoCuenta =
-                        await _MetodoPagoCuentaService
-                        .GetByMetodoAsync(
-
-                            value.IdEmpresa,
-
-                            value.FormaPago
-                        );
-
-                    if (metodoCuenta == null)
-                    {
-                        return Ok(new
-                        {
-                            success = false,
-                            message = "El método de pago seleccionado no tiene una cuenta financiera configurada."
-                        });
-                    }
-
-                    value.IdCuentaFinanciera =
-                        metodoCuenta.IdCuentaFinanciera;
-                }
-
-                // =========================================
-                // 🔥 VALIDAR QUE EXISTA LA CUENTA
-                // =========================================
-
-                var cuenta =
-                    await _CuentaFinancieraService
-                    .GetByIdAsync(
-
-                        value.IdCuentaFinanciera.Value
-                    );
-
-                if (cuenta == null)
-                {
-                    return Ok(new
-                    {
-                        success = false,
-                        message = "La cuenta financiera no existe."
-                    });
-                }
-
-                // =========================================
-                // 🔥 VALIDAR SALDO DISPONIBLE
-                // =========================================
-
-                if (cuenta.SaldoDisponible< value.Monto)
-                {
-                    return Ok(new
-                    {
-                        success = false,
-                        message = "Fondos insuficientes."
-                    });
-                }
-
-                // =========================================
-                // 🔥 REGISTRAR SALIDA
-                // =========================================
-
-                await _MovimientoFinancieroService
-                    .RegistrarSalidaAsync(
-
-                        value.IdEmpresa,
-
-                        value.IdEmpleado ?? 0,
-
-                        cuenta.IdCuentaFinanciera,
-
-                        value.Monto,
-
-                        $"Gasto - {value.TipoGasto}",
-
-                        value.Detalle ??
-                        "Salida automática por gasto",
-
-                        categoria: "GASTO",
-
-                        referenciaTipo: "GASTO"
-                    );
-
-                // =========================================
-                // 🔥 GUARDAR GASTO
-                // =========================================
-
-                await _IGastos.InsertGastos(value);
-
-                // =========================================
-                // 🔥 RESPUESTA
-                // =========================================
+                    IdEmpresa = value.IdEmpresa,
+                    IdUsuario = value.IdUsuario ?? value.IdEmpleado ?? 0,
+                    Monto = value.Monto,
+                    TipoGasto = value.TipoGasto!,
+                    IdCategoriaGasto = value.IdCategoriaGasto,
+                    Detalle = value.Detalle,
+                    FormaPago = value.FormaPago,
+                    IdCuentaFinanciera = value.IdCuentaFinanciera,
+                    Referencia = value.Referencia,
+                    OrigenModulo = string.IsNullOrWhiteSpace(value.OrigenModulo) ? "MANUAL" : value.OrigenModulo,
+                    Fecha = DateTime.Now,
+                    TipoComprobante = value.TipoComprobante,
+                    NumeroComprobante = value.NumeroComprobante,
+                    FechaComprobante = value.FechaComprobante,
+                    IdProveedor = value.IdProveedor > 0 ? value.IdProveedor : 1,
+                    DesdeExtractoBancario = false
+                });
 
                 return Ok(new
                 {
                     success = true,
-                    message = "Gasto registrado correctamente."
+                    message = "Gasto registrado correctamente.",
+                    idGasto = result.IdGasto,
+                    contabilidadAdvertencia = result.ContabilidadAdvertencia
                 });
             }
             catch (Exception ex)
@@ -271,8 +225,51 @@ namespace AlahiaPosApi.Controllers
                     return Ok(new
                     {
                         success = false,
-                        message = "Debe seleccionar un tipo de gasto."
+                        message = "Debe seleccionar una categoría de gasto."
                     });
+                }
+
+                if (string.IsNullOrWhiteSpace(value.TipoComprobante))
+                {
+                    value.TipoComprobante = GastoComprobanteTipos.SinComprobante;
+                }
+
+                if (GastoComprobanteTipos.EsGastosMenores(value.TipoComprobante))
+                {
+                    // Conservar e-NCF ya asignado; si no tiene, intentar reservar sin bloquear
+                    if (!string.IsNullOrWhiteSpace(gastoExistente.NumeroComprobante)
+                        && GastoComprobanteTipos.EsGastosMenores(gastoExistente.TipoComprobante))
+                    {
+                        value.NumeroComprobante = gastoExistente.NumeroComprobante;
+                        value.FechaComprobante = gastoExistente.FechaComprobante ?? DateTime.Today;
+                    }
+                    else
+                    {
+                        var reserva = await _secuenciaEcf.ReservarSiguienteAsync(
+                            gastoExistente.IdEmpresa,
+                            GastoComprobanteTipos.TipoEcfGastosMenores);
+
+                        if (reserva.Exitoso && !string.IsNullOrWhiteSpace(reserva.Encf))
+                        {
+                            value.NumeroComprobante = reserva.Encf;
+                            value.FechaComprobante = DateTime.Today;
+                        }
+                        else
+                        {
+                            value.NumeroComprobante = null;
+                            value.FechaComprobante = null;
+                        }
+                    }
+
+                    value.RncEmisorComprobante = null;
+                    value.NombreEmisorComprobante = null;
+                }
+                else
+                {
+                    value.NumeroComprobante = null;
+                    value.FechaComprobante = null;
+                    value.RncEmisorComprobante = null;
+                    value.NombreEmisorComprobante = null;
                 }
 
                 if (value.Monto <= 0)
@@ -296,6 +293,12 @@ namespace AlahiaPosApi.Controllers
 
                 gastoExistente.IdGasto = id;
                 gastoExistente.TipoGasto = value.TipoGasto;
+                gastoExistente.IdCategoriaGasto = value.IdCategoriaGasto;
+                gastoExistente.TipoComprobante = value.TipoComprobante;
+                gastoExistente.NumeroComprobante = value.NumeroComprobante;
+                gastoExistente.FechaComprobante = value.FechaComprobante;
+                gastoExistente.RncEmisorComprobante = value.RncEmisorComprobante;
+                gastoExistente.NombreEmisorComprobante = value.NombreEmisorComprobante;
                 gastoExistente.Monto = value.Monto;
                 gastoExistente.Orien = value.Orien;
                 gastoExistente.Detalle = value.Detalle;
@@ -365,6 +368,16 @@ namespace AlahiaPosApi.Controllers
                     dto.IdEmpresa,
                     motivo,
                     dto.UsuarioAnulo);
+
+                await _contabilidadEvents.TryPublishAsync(new AlahiaPos.Entities.Events.GastoAnuladoEvent
+                {
+                    IdEmpresa = dto.IdEmpresa,
+                    IdUsuario = 0,
+                    Fecha = DateTime.Now,
+                    ReferenciaId = dto.IdGasto,
+                    ReferenciaTipo = "Gasto",
+                    Motivo = motivo
+                });
 
                 return Ok(new
                 {

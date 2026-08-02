@@ -1,0 +1,14 @@
+---
+description: Prohíbe comprobantes fiscales tradicionales en desarrollo y QA
+alwaysApply: true
+---
+
+# Solo comprobantes fiscales electrónicos
+
+- Toda prueba, seed, fixture, script QA y dato fiscal nuevo debe usar e-CF.
+- Está prohibido generar NCF tradicionales tipo B (`B01`, `B02`, `B03`, `B04`, etc.).
+- Para equivalentes electrónicos, usar los tipos e-CF autorizados (`E31`, `E32`, `E33`, `E34`, etc.) según el caso.
+- No reutilizar secuencias tradicionales existentes para facilitar pruebas.
+- Antes de ejecutar pruebas fiscales, comprobar que el tipo seleccionado comienza con `E`.
+- Si una operación o endpoint solo admite comprobantes B, detener la prueba y corregir el flujo; no crear datos tradicionales como alternativa.
+- Todo SQL y prueba de datos sigue limitado a `AlahiaPos_Dev`.

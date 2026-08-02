@@ -35,5 +35,19 @@ namespace AlahiaPos.Entities.Dto
         public string ProductosDevueltos { get; set; } = "";
 
         public bool TieneComprobante { get; set; }
+
+        public string? TrackId { get; set; }
+
+        public string? EstadoDgii { get; set; }
+
+        public string? TipoDocumentoOrigen { get; set; }
+
+        public decimal SaldoDisponible { get; set; }
+
+        public string Estado { get; set; } = "Activa";
+
+        public bool EmisionPendiente { get; set; }
+
+        public DateTime? FechaEmisionEcf { get; set; }
     }
 }

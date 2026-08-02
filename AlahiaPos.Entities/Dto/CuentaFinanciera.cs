@@ -45,6 +45,11 @@ namespace AlahiaPos.Entities.Dto
         [Column(TypeName = "decimal(18,2)")]
         public decimal BalanceInicial { get; set; }
 
+        [Column(TypeName = "date")]
+        public DateTime? FechaSaldoInicial { get; set; }
+
+        public bool PermiteMovimientosManuales { get; set; } = true;
+
         [MaxLength(30)]
         public string? Color { get; set; }
 

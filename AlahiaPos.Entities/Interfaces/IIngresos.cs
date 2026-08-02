@@ -79,9 +79,14 @@ GetIngresosEncargosPorFecha(
         Task<decimal> GetTotalIngresosMes(int IdEmpresa);
 
         /// <summary>
-        /// Retorna un resumen histórico de ingresos agrupado por mes (últimos 12 meses).
+        /// Retorna el resumen histórico de ingresos agrupado por mes (últimos 12 meses).
         /// </summary>
         Task<IEnumerable<HistoricoIngresosDto>> GetHistoricoIngresos(int IdEmpresa);
 
+        /// <summary>
+        /// Flujo completo de ingreso extraordinario (fila + tesorería + contabilidad).
+        /// Usado por el módulo Ingresos y por Conciliación Bancaria.
+        /// </summary>
+        Task<RegistrarIngresoExtraResult> RegistrarIngresoExtraCompletoAsync(RegistrarIngresoExtraRequest request);
     }
 }

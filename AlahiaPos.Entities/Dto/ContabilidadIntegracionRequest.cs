@@ -12,6 +12,7 @@ namespace AlahiaPos.Entities.Dto
         public string OrigenModulo { get; set; } = string.Empty;
         public int OrigenReferenciaId { get; set; }
         public string TipoOperacion { get; set; } = ContabilidadTipoOperacion.Alta;
+        public int? IdAsientoContableOrigen { get; set; }
         public List<ContabilidadIntegracionLinea> Lineas { get; set; } = new();
     }
 

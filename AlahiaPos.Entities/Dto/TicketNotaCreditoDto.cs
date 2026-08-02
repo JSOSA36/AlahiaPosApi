@@ -33,6 +33,26 @@ namespace AlahiaPos.Entities.Dto
 
         public string DireccionEmpresa { get; set; } = "";
 
+        public string? TrackId { get; set; }
+
+        public string? EstadoDgii { get; set; }
+
+        public string? TipoDocumentoOrigen { get; set; }
+
+        public decimal SaldoDisponible { get; set; }
+
+        public bool EmisionPendiente { get; set; }
+
+        public string? MensajeEmision { get; set; }
+
+        public DateTime? FechaEmisionEcf { get; set; }
+
+        public string? SecurityCode { get; set; }
+
+        public string? UrlQR { get; set; }
+
+        public string? RncEmisor { get; set; }
+
         public List<TicketNotaCreditoDetalleDto> Detalles { get; set; }
             = new();
     }

@@ -1,6 +1,7 @@
 ﻿using AlahiaPos.DataAccess.Data;
 using AlahiaPos.Entities.Domain;
 using AlahiaPos.Entities.Dto;
+using AlahiaPos.Entities.Events;
 using AlahiaPos.Entities.Interfaces;
 using DocumentFormat.OpenXml.InkML;
 using Microsoft.EntityFrameworkCore;
@@ -20,12 +21,25 @@ namespace AlahiaPos.DataAccess.Servicios
         private readonly IRepository<Area> _areaRepository;
         private readonly IRepository<AreaNegocio> _areaNegocioRepository;
         private readonly AlahiaPosContext _alahiaPosContext;
-        public IngresosService(IRepository<Ingresos> repository, 
+        private readonly IPagoReclasificacionService _reclasificacionService;
+        private readonly IMovimientoFinancieroService _movimientoFinancieroService;
+        private readonly IMetodoPagoCuentaService _metodoPagoCuentaService;
+        private readonly ICuentaFinancieraService _cuentaFinancieraService;
+        private readonly IContabilidadEventPublisher _contabilidadEvents;
+
+        public IngresosService(
+            IRepository<Ingresos> repository,
             IRepository<FacturaHeaders> facturaHeaderRepository,
             IRepository<FacturaDetalles> facturaDetalleRepository,
             IRepository<Productos> productoRepository,
             IRepository<Area> areaRepository,
-            IRepository<AreaNegocio> areaNegocioRepository, AlahiaPosContext alahiaPosContext)
+            IRepository<AreaNegocio> areaNegocioRepository,
+            AlahiaPosContext alahiaPosContext,
+            IPagoReclasificacionService reclasificacionService,
+            IMovimientoFinancieroService movimientoFinancieroService,
+            IMetodoPagoCuentaService metodoPagoCuentaService,
+            ICuentaFinancieraService cuentaFinancieraService,
+            IContabilidadEventPublisher contabilidadEvents)
         {
             _repository = repository;
             _facturaHeaderRepository = facturaHeaderRepository;
@@ -34,6 +48,11 @@ namespace AlahiaPos.DataAccess.Servicios
             _areaRepository = areaRepository;
             _areaNegocioRepository = areaNegocioRepository;
             _alahiaPosContext = alahiaPosContext;
+            _reclasificacionService = reclasificacionService;
+            _movimientoFinancieroService = movimientoFinancieroService;
+            _metodoPagoCuentaService = metodoPagoCuentaService;
+            _cuentaFinancieraService = cuentaFinancieraService;
+            _contabilidadEvents = contabilidadEvents;
         }
         public async Task<bool> ExisteIngresoPorCita(int idCita)
         {
@@ -127,9 +146,14 @@ GetIngresosEncargosPorFecha(
                     x.EstaCerrada == false
                 );
 
+            var metodosEfectivos = await _reclasificacionService
+                .ObtenerMetodosEfectivosAntesCierreAsync(
+                    idEmpresa,
+                    ingresos.Select(i => i.IdIngreso));
+
             return ingresos
 
-                .GroupBy(x => x.FormaPago)
+                .GroupBy(x => metodosEfectivos.TryGetValue(x.IdIngreso, out var m) ? m : x.FormaPago)
 
                 .Select(g => new CajaMetodoPagoDto
                 {
@@ -489,6 +513,166 @@ GetIngresosByCajaCierre(
                 .OrderBy(x => x.FormaPago)
 
                 .ToList();
+        }
+
+        public async Task<RegistrarIngresoExtraResult> RegistrarIngresoExtraCompletoAsync(
+            RegistrarIngresoExtraRequest request)
+        {
+            if (request == null)
+                throw new ArgumentNullException(nameof(request));
+
+            if (request.Monto <= 0)
+                throw new InvalidOperationException("Debe ingresar un monto válido.");
+
+            if (!string.IsNullOrWhiteSpace(request.ClaveIdempotencia))
+            {
+                var movExistente = await _alahiaPosContext.MovimientoFinanciero.AsNoTracking()
+                    .FirstOrDefaultAsync(x =>
+                        x.IdEmpresa == request.IdEmpresa
+                        && x.ClaveIdempotencia == request.ClaveIdempotencia);
+
+                if (movExistente != null)
+                {
+                    var ingresoExistente = await _alahiaPosContext.Ingresos.AsNoTracking()
+                        .FirstOrDefaultAsync(i =>
+                            i.IdEmpresa == request.IdEmpresa
+                            && i.IdMovimientoFinanciero == movExistente.IdMovimientoFinanciero
+                            && i.EstaAnulado == false)
+                        ?? await _alahiaPosContext.Ingresos.AsNoTracking()
+                            .FirstOrDefaultAsync(i =>
+                                i.IdEmpresa == request.IdEmpresa
+                                && i.Referencia == (request.Referencia ?? $"EXT-{request.IdTesoreriaExtractoLinea}")
+                                && i.EstaAnulado == false);
+
+                    return new RegistrarIngresoExtraResult
+                    {
+                        IdIngreso = ingresoExistente?.IdIngreso ?? 0,
+                        IdMovimientoFinanciero = movExistente.IdMovimientoFinanciero,
+                        YaExistia = true
+                    };
+                }
+            }
+
+            var formaPago = string.IsNullOrWhiteSpace(request.FormaPago)
+                ? (request.DesdeExtractoBancario ? "TRANSFERENCIA" : "Efectivo")
+                : request.FormaPago.Trim();
+
+            int? idCuenta = request.IdCuentaFinanciera;
+            MetodoPagoCuenta? metodoCuenta = null;
+            if (!idCuenta.HasValue || idCuenta.Value <= 0)
+            {
+                metodoCuenta = await _metodoPagoCuentaService.GetByMetodoAsync(
+                    request.IdEmpresa, formaPago);
+                if (metodoCuenta != null && metodoCuenta.IdCuentaFinanciera > 0)
+                    idCuenta = metodoCuenta.IdCuentaFinanciera;
+            }
+
+            if (request.DesdeExtractoBancario && (idCuenta is not > 0))
+                throw new InvalidOperationException(
+                    "La conciliación requiere una cuenta financiera válida para el ingreso.");
+
+            var fecha = request.Fecha ?? DateTime.Now;
+            var referencia = request.Referencia;
+            if (string.IsNullOrWhiteSpace(referencia) && request.IdTesoreriaExtractoLinea is > 0)
+                referencia = $"EXT-{request.IdTesoreriaExtractoLinea}";
+
+            var ingreso = new Ingresos
+            {
+                IdEmpresa = request.IdEmpresa,
+                FechaRegistro = fecha,
+                Descripcion = string.IsNullOrWhiteSpace(request.Descripcion)
+                    ? (request.Categoria ?? "Ingreso")
+                    : request.Descripcion.Trim(),
+                Categoria = request.Categoria?.Trim(),
+                Origen = string.IsNullOrWhiteSpace(request.Origen)
+                    ? (request.DesdeExtractoBancario ? "Conciliación Bancaria" : null)
+                    : request.Origen.Trim(),
+                Monto = request.Monto,
+                FormaPago = formaPago,
+                Referencia = referencia ?? string.Empty,
+                IdUsuario = request.IdUsuario,
+                Nota = request.Nota,
+                EstaAnulado = false,
+                EstaCerrada = false,
+                IdFacturaHeader = null
+            };
+
+            await _repository.Save(ingreso);
+
+            int? idMov = null;
+            string? tipoCuenta = null;
+
+            if (idCuenta is > 0)
+            {
+                var cuenta = await _cuentaFinancieraService.GetByIdAsync(idCuenta.Value);
+                tipoCuenta = cuenta?.TipoCuenta;
+
+                var referenciaTipoMov = request.DesdeExtractoBancario ? "EXTRACTO" : "INGRESO";
+                var referenciaIdMov = request.DesdeExtractoBancario
+                    ? request.IdTesoreriaExtractoLinea
+                    : (ingreso.IdIngreso > 0 ? ingreso.IdIngreso : (int?)null);
+
+                await _movimientoFinancieroService.RegistrarEntradaAsync(
+                    request.IdEmpresa,
+                    request.IdUsuario,
+                    idCuenta.Value,
+                    request.Monto,
+                    $"Ingreso - {ingreso.Categoria}",
+                    ingreso.Descripcion ?? "Entrada automática por ingreso",
+                    categoria: "INGRESO",
+                    referenciaId: referenciaIdMov,
+                    referenciaTipo: referenciaTipoMov,
+                    claveIdempotencia: request.ClaveIdempotencia);
+
+                if (!string.IsNullOrWhiteSpace(request.ClaveIdempotencia))
+                {
+                    var mov = await _alahiaPosContext.MovimientoFinanciero.AsTracking()
+                        .FirstOrDefaultAsync(x =>
+                            x.IdEmpresa == request.IdEmpresa
+                            && x.ClaveIdempotencia == request.ClaveIdempotencia);
+                    if (mov != null)
+                    {
+                        idMov = mov.IdMovimientoFinanciero;
+                        if (request.FechaMovimiento.HasValue)
+                            mov.FechaMovimiento = request.FechaMovimiento.Value;
+                        if (request.IdTesoreriaConciliacion is > 0)
+                        {
+                            mov.IdTesoreriaConciliacion = request.IdTesoreriaConciliacion;
+                            mov.EstadoConciliacion = "CONCILIADO";
+                            mov.FechaConciliacion = DateTime.UtcNow;
+                            mov.IdUsuarioConciliacion = request.IdUsuario;
+                        }
+                    }
+                }
+
+                if (idMov is > 0)
+                {
+                    ingreso.IdMovimientoFinanciero = idMov;
+                    _repository.Update(ingreso.IdIngreso, ingreso);
+                }
+            }
+
+            var contab = await _contabilidadEvents.TryPublishAsync(new IngresoExtraRegistradoEvent
+            {
+                IdEmpresa = ingreso.IdEmpresa,
+                IdUsuario = ingreso.IdUsuario ?? 0,
+                Fecha = ingreso.FechaRegistro == default ? DateTime.Now : ingreso.FechaRegistro,
+                ReferenciaId = ingreso.IdIngreso,
+                ReferenciaTipo = "Ingreso",
+                Monto = ingreso.Monto,
+                Categoria = ingreso.Categoria,
+                FormaPago = ingreso.FormaPago,
+                TipoCuentaFinanciera = tipoCuenta,
+                Descripcion = ingreso.Descripcion
+            });
+
+            return new RegistrarIngresoExtraResult
+            {
+                IdIngreso = ingreso.IdIngreso,
+                IdMovimientoFinanciero = idMov,
+                ContabilidadAdvertencia = contab.Advertencia,
+                YaExistia = false
+            };
         }
     }
 }

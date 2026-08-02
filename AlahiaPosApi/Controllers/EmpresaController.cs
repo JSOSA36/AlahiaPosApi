@@ -23,6 +23,8 @@ namespace AlahiaPosApi.Controllers
         private readonly IPlanesCloud _PlanesCloud;
         private IEmpleados _empleados;
         private readonly IContabilidadCatalogoService _contabilidadCatalogo;
+        private readonly IDemoEmpresaBootstrap _demoEmpresaBootstrap;
+        private readonly IEmpresaOperativaSeed _operativaSeed;
         public EmpresaController(
             IEmpresas empresas,
             IUsuarios usuarios,
@@ -33,7 +35,9 @@ namespace AlahiaPosApi.Controllers
             ICategorias categorias,
             IEmpleados empleados,
             IPlanesCloud planesCloud,
-            IContabilidadCatalogoService contabilidadCatalogo)
+            IContabilidadCatalogoService contabilidadCatalogo,
+            IDemoEmpresaBootstrap demoEmpresaBootstrap,
+            IEmpresaOperativaSeed operativaSeed)
         {
             _Empresas = empresas;
             _Usuarios = usuarios;
@@ -45,6 +49,8 @@ namespace AlahiaPosApi.Controllers
             _empleados = empleados;
             _PlanesCloud = planesCloud;
             _contabilidadCatalogo = contabilidadCatalogo;
+            _demoEmpresaBootstrap = demoEmpresaBootstrap;
+            _operativaSeed = operativaSeed;
         }
 
         // =====================================================
@@ -110,6 +116,171 @@ namespace AlahiaPosApi.Controllers
                 contentType = "image/gif";
 
             return File(bytes, contentType);
+        }
+
+        // =====================================================
+        // 🔹 DEMO (15 días) — alta pública desde el sitio
+        // Cualquier empresa. Módulos guiados por un perfil con contabilidad.
+        // =====================================================
+        [HttpPost("demo")]
+        public async Task<IActionResult> CrearDemo([FromForm] EmpresaDto value)
+        {
+            try
+            {
+                if (value == null
+                    || string.IsNullOrWhiteSpace(value.NombreComercial)
+                    || string.IsNullOrWhiteSpace(value.Direccion)
+                    || string.IsNullOrWhiteSpace(value.CorreElectronico)
+                    || string.IsNullOrWhiteSpace(value.AdminPassword))
+                {
+                    return BadRequest(new
+                    {
+                        message = "Nombre, dirección, correo y contraseña son obligatorios."
+                    });
+                }
+
+                var correo = value.CorreElectronico.Trim();
+                if (!correo.Contains('@'))
+                    return BadRequest(new { message = "Indica un correo válido." });
+
+                if (value.AdminPassword.Trim().Length < 6)
+                    return BadRequest(new { message = "La contraseña debe tener al menos 6 caracteres." });
+
+                if (await _Usuarios.ExisteCorreo(correo) || await _Usuarios.ExisteUserName(correo))
+                {
+                    return Conflict(new
+                    {
+                        message = "Este correo ya está registrado. Usa otro correo o inicia sesión en el ERP."
+                    });
+                }
+
+                var empresa = new Empresas
+                {
+                    NombreComercial = value.NombreComercial.Trim(),
+                    RNC = value.RNC ?? "",
+                    Direccion = value.Direccion.Trim(),
+                    Telefono = value.Telefono ?? "",
+                    CorreElectronico = correo,
+                    FechaInseccion = DateTime.Now,
+                    FechaTerminacion = DateTime.Now.AddDays(15),
+                    GuidPublico = Guid.NewGuid(),
+                    Estado = true,
+                    EstadoServicio = "ACTIVA",
+                    PagadoServicio = true,
+                    PoliticasAceptadas = true,
+                    IdPlan = 1,
+                    LimiteUsuario = 5,
+                    PrimaryColor = string.IsNullOrWhiteSpace(value.PrimaryColor) ? "#0a3d91" : value.PrimaryColor,
+                    SecondaryColor = string.IsNullOrWhiteSpace(value.SecondaryColor) ? "#f5c518" : value.SecondaryColor,
+                    TertiaryColor = string.IsNullOrWhiteSpace(value.TertiaryColor) ? "#072a66" : value.TertiaryColor,
+                    titleColor = string.IsNullOrWhiteSpace(value.titleColor) ? "#072a66" : value.titleColor,
+                    UsaSSL = value.UsaSSL ?? true,
+                    PuertoSMTP = value.PuertoSMTP ?? 587,
+                };
+
+                await _Empresas.InsertEmpresas(empresa);
+
+                empresa.UrlCitas = Utility.GenerarUrlCita(empresa.GuidPublico);
+                empresa.UrlCatalogo = Utility.GenerarUrlCatalogo(empresa.GuidPublico);
+                _Empresas.UpdateEmpresas(empresa.IdEmpresa, empresa);
+
+                var categoriasBase = new[]
+                {
+                    ("Productos", "Producto", "VENTA"),
+                    ("Servicios", "Servicio", "VENTA"),
+                };
+
+                var prioridad = 1;
+                foreach (var (nombre, tipo, tipoOperacion) in categoriasBase)
+                {
+                    await _Categorias.InsertCategorias(new Categorias
+                    {
+                        Nombre = nombre,
+                        Tipo = tipo,
+                        TipoOperacion = tipoOperacion,
+                        IsActiva = true,
+                        IdEmpresa = empresa.IdEmpresa,
+                        Prioridad = prioridad++
+                    });
+                }
+
+                await _contabilidadCatalogo.SeedCatalogoDefaultAsync(empresa.IdEmpresa);
+                await _operativaSeed.SeedDesdePlantillaAsync(empresa.IdEmpresa);
+
+                // Módulos + perfil Administrador (dinámico; guía = perfil con contabilidad)
+                var idPerfilAdmin = await _demoEmpresaBootstrap.ConfigurarAsync(empresa.IdEmpresa);
+
+                var empleadoAdmin = new Empleados
+                {
+                    Nombre = "Administrador",
+                    Ocupacion = "Administrador",
+                    Estado = true,
+                    IdEmpresa = empresa.IdEmpresa
+                };
+                await _empleados.InsertEmpleados(empleadoAdmin);
+
+                var passwordPlano = value.AdminPassword.Trim();
+                await _Usuarios.Crear(new Usuarios
+                {
+                    Correo = correo,
+                    UserName = correo,
+                    PasswordHash = Utility.EncriptarPassword(passwordPlano),
+                    IdPerfil = idPerfilAdmin,
+                    Estado = true,
+                    IdEmpresa = empresa.IdEmpresa,
+                    FechaCreacion = DateTime.Now,
+                    IdEmpleado = empleadoAdmin.IdEmpleados
+                });
+
+                try
+                {
+                    Utility.Send(
+                        "smtp.gmail.com",
+                        587,
+                        true,
+                        "ing.joelarielsosa@gmail.com",
+                        "wrcsdhewqdgrtula",
+                        "MacroBits Software",
+                        correo,
+                        "Credenciales de acceso - Alahia ERP (Demo)",
+                        $@"
+                        <h3>Bienvenido a Alahia ERP</h3>
+                        <p>Tu demo está lista (15 días).</p>
+                        <p>
+                        <strong>Usuario:</strong> {correo}<br/>
+                        <strong>Contraseña:</strong> {passwordPlano}
+                        </p>
+                        <p>Ya puedes acceder al sistema.</p>
+                       "
+                    );
+                }
+                catch
+                {
+                    // El alta no debe fallar si el correo no sale
+                }
+
+                return Ok(new
+                {
+                    message = "Demo creada correctamente ✅",
+                    idEmpresa = empresa.IdEmpresa,
+                    urlCitas = empresa.UrlCitas,
+                    urlCatalogo = empresa.UrlCatalogo,
+                    user = correo,
+                    password = passwordPlano,
+                    guidPublico = empresa.GuidPublico,
+                    fechaTerminacion = empresa.FechaTerminacion,
+                    idPerfil = idPerfilAdmin
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    error = "Error al crear la demo ❌",
+                    message = ex.Message,
+                    inner = ex.InnerException?.Message
+                });
+            }
         }
 
         // =====================================================
@@ -205,6 +376,7 @@ namespace AlahiaPosApi.Controllers
                     }
 
                     await _contabilidadCatalogo.SeedCatalogoDefaultAsync(empresa.IdEmpresa);
+                    await _operativaSeed.SeedDesdePlantillaAsync(empresa.IdEmpresa);
 
                     var empleadoAdmin = new Empleados
                     {
@@ -216,7 +388,9 @@ namespace AlahiaPosApi.Controllers
 
                     await _empleados.InsertEmpleados(empleadoAdmin);
 
-                    var passwordPlano = Utility.GenerarPasswordAleatoria(6);
+                    var passwordPlano = string.IsNullOrWhiteSpace(value.AdminPassword)
+                        ? Utility.GenerarPasswordAleatoria(6)
+                        : value.AdminPassword.Trim();
 
                     var usuarioAdmin = new Usuarios
                     {
@@ -259,12 +433,11 @@ namespace AlahiaPosApi.Controllers
                     return Ok(new
                     {
                         message = "Empresa creada correctamente ✅",
-                        empresa.IdEmpresa,
-                        empresa.UrlCitas,
-                        empresa.UrlCatalogo,
+                        idEmpresa = empresa.IdEmpresa,
+                        urlCitas = empresa.UrlCitas,
+                        urlCatalogo = empresa.UrlCatalogo,
                         user = value.CorreElectronico,
                         password = passwordPlano,
-                        idempresa = empresa.IdEmpresa,
                         guidPublico = empresa.GuidPublico
                     });
                 }

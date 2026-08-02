@@ -48,6 +48,8 @@ namespace AlahiaPos.Entities.Domain
         // 🧾 Relaciones opcionales
         public int? IdFacturaHeader { get; set; } // si viene de una factura
         public int? IdCliente { get; set; } // si está asociado a un cliente
+        /// <summary>Vínculo explícito al movimiento de tesorería (nullable por históricos).</summary>
+        public int? IdMovimientoFinanciero { get; set; }
         public bool EstaAnulado { get; set; }
         // 📝 Otros datos
         [StringLength(500)]

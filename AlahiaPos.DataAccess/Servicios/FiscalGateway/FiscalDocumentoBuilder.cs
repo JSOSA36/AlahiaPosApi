@@ -1,3 +1,4 @@
+using AlahiaPos.DataAccess.Servicios.FiscalGateway.DgiiDirecto;
 using AlahiaPos.Entities.Domain;
 using AlahiaPos.Entities.Dto.Fiscal;
 using System;
@@ -23,8 +24,13 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway
 
             var doc = new FiscalDocumentoElectronico
             {
+                IdEmpresa = empresa?.IdEmpresa ?? ecf.IdEmpresa,
                 IdDocumentoInterno = idOrigen,
                 TipoDocumentoAlahia = ((OrigenDocumento)origenDocumento).ToString(),
+                AmbienteDgii = DgiiAmbienteHelper.Normalize(
+                    !string.IsNullOrWhiteSpace(empresa?.AmbienteFE)
+                        ? empresa!.AmbienteFE
+                        : secuencia?.Ambiente),
                 Encabezado = new FiscalDocumentoEncabezado
                 {
                     TipoEcf = tipoEcfDgii,
@@ -32,6 +38,11 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway
                     TipoIngreso = 1,
                     TipoPago = 1,
                     IndicadorMontoGravado = hayGravadoItbis ? 0 : null,
+                    IndicadorNotaCredito = tipoEcfDgii == 34
+                        ? CalcularIndicadorNotaCredito(
+                            docInfo.FechaDocumentoModificado,
+                            docInfo.FechaDocumento)
+                        : null,
                     FechaVencimientoSecuencia = secuencia?.fechaVencimiento,
                     FechaEmision = docInfo.FechaDocumento,
                     NumeroFacturaInterna = docInfo.NumeroDocumentoInterno,
@@ -144,7 +155,12 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway
                 });
             }
 
-            if (!doc.FormasPago.Any() && montoTotal > 0)
+            // E34 no usa TablaFormasPago.
+            if (tipoEcfDgii == 34)
+            {
+                doc.FormasPago.Clear();
+            }
+            else if (!doc.FormasPago.Any() && montoTotal > 0)
             {
                 doc.FormasPago.Add(new FiscalDocumentoFormaPagoDgii
                 {
@@ -191,6 +207,20 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway
             if (tasa > 0m && tasa <= 0.16m) return 2;
             if (tasa == 0m) return 3;
             return 1;
+        }
+
+        /// <summary>
+        /// E34: 0 si emisión ≤30 días del NCF modificado; 1 si &gt;30 días.
+        /// </summary>
+        public static int CalcularIndicadorNotaCredito(
+            DateTime? fechaNcfModificado,
+            DateTime fechaEmision)
+        {
+            if (!fechaNcfModificado.HasValue)
+                return 0;
+
+            var dias = (fechaEmision.Date - fechaNcfModificado.Value.Date).TotalDays;
+            return dias > 30 ? 1 : 0;
         }
     }
 }

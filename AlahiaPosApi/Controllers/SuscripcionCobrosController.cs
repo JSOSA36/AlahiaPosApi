@@ -61,9 +61,22 @@ namespace AlahiaPosApi.Controllers
         }
 
         /// <summary>
-        /// Precio especial del plan solo para un cliente (ej. Standard 80 → 70).
-        /// Enviar precioPlanEspecialUsd null para volver al catálogo.
+        /// Tarifa dinámica del cliente: MontoServicio + CargoAdicional + LimiteFacturacion.
         /// </summary>
+        [HttpPut("tarifa-empresa")]
+        public async Task<IActionResult> TarifaEmpresa([FromBody] ActualizarTarifaEmpresaDto dto)
+        {
+            try
+            {
+                return Ok(await _service.ActualizarTarifaEmpresaAsync(dto));
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        /// <summary>Legado: redirige a MontoServicio.</summary>
         [HttpPut("precio-plan-especial")]
         public async Task<IActionResult> PrecioPlanEspecial([FromBody] ActualizarPrecioPlanEspecialDto dto)
         {
@@ -88,6 +101,40 @@ namespace AlahiaPosApi.Controllers
         {
             await _service.ActualizarEstadoEmpresaAsync(idEmpresa);
             return Ok(new { message = "Estado actualizado" });
+        }
+
+        /// <summary>Cuentas bancarias para que el cliente transfiera el pago de suscripción.</summary>
+        [HttpGet("cuentas-cobro")]
+        public async Task<IActionResult> CuentasCobro([FromQuery] bool soloActivas = true)
+        {
+            return Ok(await _service.ListarCuentasCobroAsync(soloActivas));
+        }
+
+        [HttpPost("cuentas-cobro")]
+        public async Task<IActionResult> GuardarCuentaCobro([FromBody] GuardarSuscripcionCuentaCobroDto dto)
+        {
+            try
+            {
+                return Ok(await _service.GuardarCuentaCobroAsync(dto));
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpDelete("cuentas-cobro/{id}")]
+        public async Task<IActionResult> EliminarCuentaCobro(int id)
+        {
+            try
+            {
+                await _service.EliminarCuentaCobroAsync(id);
+                return Ok(new { message = "Cuenta eliminada" });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
     }
 }

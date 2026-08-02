@@ -54,32 +54,32 @@ END
 GO
 
 -- Módulo admin MacroBits (NO se asigna a todas las empresas)
-IF NOT EXISTS (SELECT 1 FROM Modulos WHERE Codigo = 'MACROBITS_ADMIN')
+IF NOT EXISTS (SELECT 1 FROM Modulos WHERE Codigo = N'MACROBITS_ADMIN')
     INSERT INTO Modulos (Codigo, Nombre, Descripcion, PrecioUSD, Activo, FechaCreacion)
     VALUES (
-        'MACROBITS_ADMIN',
-        'Administración MacroBits',
-        'Gestión de políticas del servicio y herramientas internas MacroBits',
+        N'MACROBITS_ADMIN',
+        N'Administración MacroBits',
+        N'Gestión de políticas del servicio y herramientas internas MacroBits',
         0, 1, GETDATE()
     );
 GO
 
-IF NOT EXISTS (SELECT 1 FROM Modulos WHERE Codigo = 'POLITICAS_VERSIONES')
+IF NOT EXISTS (SELECT 1 FROM Modulos WHERE Codigo = N'POLITICAS_VERSIONES')
     INSERT INTO Modulos (Codigo, Nombre, Descripcion, PrecioUSD, Activo, FechaCreacion)
     VALUES (
-        'POLITICAS_VERSIONES',
-        'Políticas del Servicio',
-        'Administrar versiones de políticas del servicio',
+        N'POLITICAS_VERSIONES',
+        N'Políticas del Servicio',
+        N'Administrar versiones de políticas del servicio',
         0, 1, GETDATE()
     );
 GO
 
-IF NOT EXISTS (SELECT 1 FROM Modulos WHERE Codigo = 'POLITICAS_ACEPTACIONES')
+IF NOT EXISTS (SELECT 1 FROM Modulos WHERE Codigo = N'POLITICAS_ACEPTACIONES')
     INSERT INTO Modulos (Codigo, Nombre, Descripcion, PrecioUSD, Activo, FechaCreacion)
     VALUES (
-        'POLITICAS_ACEPTACIONES',
-        'Aceptaciones de Políticas',
-        'Consulta de aceptaciones de políticas por empresa',
+        N'POLITICAS_ACEPTACIONES',
+        N'Aceptaciones de Políticas',
+        N'Consulta de aceptaciones de políticas por empresa',
         0, 1, GETDATE()
     );
 GO

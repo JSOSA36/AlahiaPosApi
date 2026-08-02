@@ -27,12 +27,17 @@ namespace AlahiaPos.Entities.Interfaces
         Task<List<SuscripcionLineaFacturaDto>> ListarDetalleCicloAsync(int idCiclo);
         Task<SuscripcionResumenCobrosDto> ObtenerResumenAsync();
         Task<List<SuscripcionEmpresaCobroDto>> ListarEmpresasCobroAsync();
+        Task<List<SuscripcionCuentaCobroDto>> ListarCuentasCobroAsync(bool soloActivas = true);
+        Task<SuscripcionCuentaCobroDto> GuardarCuentaCobroAsync(GuardarSuscripcionCuentaCobroDto dto);
+        Task EliminarCuentaCobroAsync(int id);
         Task<SuscripcionCalculoFacturaDto> CalcularFacturaAsync(int idEmpresa, DateTime? fechaReferencia = null);
         Task RecalcularCicloAbiertoAsync(int idEmpresa);
+        Task<SuscripcionCalculoFacturaDto> ActualizarTarifaEmpresaAsync(ActualizarTarifaEmpresaDto dto);
         Task<SuscripcionCalculoFacturaDto> ActualizarPrecioPlanEspecialAsync(ActualizarPrecioPlanEspecialDto dto);
         Task OnPagoReportadoAsync(int idEmpresa, int idPago, int? idCiclo);
         Task OnPagoAprobadoAsync(int idEmpresa, int idPago, int? idCiclo, string? usuarioValida);
         Task OnPagoRechazadoAsync(int idEmpresa, int idPago, string? observacion);
+        Task OnMarcarPagoManualAsync(int idEmpresa, string? usuario = null);
         Task OnPlanCambiadoAsync(int idEmpresa, int idPlanAnterior, int idPlanNuevo, int? idUsuario);
     }
 }

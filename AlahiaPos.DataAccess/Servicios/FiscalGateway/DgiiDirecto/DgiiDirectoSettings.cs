@@ -47,5 +47,30 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.DgiiDirecto
         public string ConsultaTimbreBaseUrl => $"{HostEcf.TrimEnd('/')}/{AmbientePath}/ConsultaTimbre";
         public string RecepcionFcBaseUrl => $"{HostFc.TrimEnd('/')}/{AmbientePath}/recepcionfc";
         public string RecepcionRfceEndpoint { get; set; } = "/api/recepcion/ecf";
+
+        /// <summary>Copia con ambiente normalizado (no muta la instancia de DI).</summary>
+        public DgiiDirectoSettings WithAmbiente(string? ambiente)
+        {
+            return new DgiiDirectoSettings
+            {
+                Ambiente = DgiiAmbienteHelper.Normalize(ambiente ?? Ambiente),
+                HostEcf = HostEcf,
+                HostFc = HostFc,
+                SemillaEndpoint = SemillaEndpoint,
+                ValidarSemillaEndpoint = ValidarSemillaEndpoint,
+                RecepcionEcfEndpoint = RecepcionEcfEndpoint,
+                ConsultaEstadoEndpoint = ConsultaEstadoEndpoint,
+                P12Path = P12Path,
+                P12Password = P12Password,
+                PreferSettingsCertificate = PreferSettingsCertificate,
+                TokenFijo = TokenFijo,
+                TimeoutSeconds = TimeoutSeconds,
+                RecepcionRfceEndpoint = RecepcionRfceEndpoint
+            };
+        }
+
+        /// <summary>Settings efectivos: AsyncLocal si hay, si no appsettings.</summary>
+        public DgiiDirectoSettings Effective()
+            => WithAmbiente(DgiiAmbienteContext.Current ?? Ambiente);
     }
 }

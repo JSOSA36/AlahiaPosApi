@@ -64,42 +64,59 @@ namespace AlahiaPos.DataAccess.Servicios.Suscripciones
         {
             if (empresa == null) return false;
             if (empresa.EsEmpresaSistema) return true;
+            if (EsDemoVigente(empresa)) return true;
 
             var estado = NormalizarEstado(empresa.EstadoServicio);
-            return estado == SuscripcionEstados.Activa
-                || estado == SuscripcionEstados.PendientePago;
+            if (estado == SuscripcionEstados.Activa
+                || estado == SuscripcionEstados.PendientePago)
+                return true;
+
+            // Voucher enviado en ventana de pago (día 30–3): puede operar mientras se valida.
+            // Si ya estaba suspendido (día ≥ 4), no opera hasta aprobación admin.
+            if (estado == SuscripcionEstados.PagoReportado)
+                return EstaEnVentanaPago(ObtenerDiaCobro(empresa.IdEmpresa));
+
+            return false;
         }
 
         public bool EstaBloqueada(Empresas empresa)
         {
             if (empresa == null) return true;
             if (empresa.EsEmpresaSistema) return false;
+            if (EsDemoVigente(empresa)) return false;
 
             var estado = NormalizarEstado(empresa.EstadoServicio);
-            return estado == SuscripcionEstados.Suspendida
-                || estado == SuscripcionEstados.PagoReportado
-                || estado == SuscripcionEstados.Cancelada;
+            if (estado == SuscripcionEstados.Suspendida
+                || estado == SuscripcionEstados.Cancelada)
+                return true;
+
+            // Reportó pago ya suspendido (fuera de ventana): bloqueado hasta validar.
+            if (estado == SuscripcionEstados.PagoReportado
+                && !EstaEnVentanaPago(ObtenerDiaCobro(empresa.IdEmpresa)))
+                return true;
+
+            return false;
         }
+
+        /// <summary>Día 30 o días 1–3 del ciclo: periodo de gracia de pago.</summary>
+        private static bool EstaEnVentanaPago(int diaCobro) =>
+            diaCobro == 30 || (diaCobro >= 1 && diaCobro <= 3);
 
         public AlertaPagoDto? ObtenerAlertaPago(Empresas empresa)
         {
             if (empresa == null || empresa.EsEmpresaSistema) return null;
+            if (EsDemoVigente(empresa)) return null;
 
             var dia = ObtenerDiaCobro(empresa.IdEmpresa);
             var estado = NormalizarEstado(empresa.EstadoServicio);
-            var enGracia = dia == 30 || dia == 1 || dia == 2 || dia == 3;
-            var pendienteCobro = !empresa.PagadoServicio
-                || estado == SuscripcionEstados.PendientePago;
 
-            // Bloqueo / validación (pantalla dedicada; no es solo warning)
-            if (estado == SuscripcionEstados.Suspendida || estado == SuscripcionEstados.PagoReportado)
+            // Pantalla de bloqueo (no banner): suspendida / cancelada
+            if (estado == SuscripcionEstados.Suspendida)
             {
                 return new AlertaPagoDto
                 {
                     Tipo = "critico",
-                    Mensaje = estado == SuscripcionEstados.PagoReportado
-                        ? "Su pago está en validación. El acceso se restaurará cuando MacroBits lo apruebe."
-                        : "Su servicio se encuentra suspendido por falta de pago."
+                    Mensaje = "Su servicio está suspendido por falta de pago. Reporte el pago adjuntando su voucher para reactivarlo."
                 };
             }
 
@@ -112,40 +129,26 @@ namespace AlahiaPos.DataAccess.Servicios.Suscripciones
                 };
             }
 
-            // Al día: sin aviso
-            if (empresa.PagadoServicio && estado == SuscripcionEstados.Activa)
+            // Invariante: tras aprobar voucher (ACTIVA / pagado) o con voucher en validación → nunca re-pedir cobro.
+            if (empresa.PagadoServicio
+                || estado == SuscripcionEstados.Activa
+                || estado == SuscripcionEstados.PagoReportado)
                 return null;
 
-            // Warnings informativos en ventana de pago (día 30 → 3)
-            const string msgPendiente =
-                "Su suscripción tiene un pago pendiente. Puede continuar utilizando el sistema hasta el día 3. A partir de esa fecha el acceso será suspendido automáticamente si el pago no ha sido reportado.";
+            var pendienteCobro = estado == SuscripcionEstados.PendientePago;
 
-            if (pendienteCobro && enGracia)
+            // Solo dos avisos UI/correo del ciclo: día 30 (inicio) y día 3 (último)
+            if (!pendienteCobro || (dia != 30 && dia != 3))
+                return null;
+
+            var (titulo, mensaje) = MensajeAviso(TipoAvisoPorDia(dia));
+            return new AlertaPagoDto
             {
-                var diasRestantes = DiasHastaLimitePago(dia);
-                var tipo = dia == 3 ? "critico" : "advertencia";
-                return new AlertaPagoDto
-                {
-                    Tipo = tipo,
-                    Mensaje = msgPendiente,
-                    DiaCobro = dia,
-                    DiasRestantes = diasRestantes
-                };
-            }
-
-            // Pendiente fuera de ventana (estado inconsistente o ciclo abierto)
-            if (pendienteCobro || estado == SuscripcionEstados.PendientePago)
-            {
-                return new AlertaPagoDto
-                {
-                    Tipo = "advertencia",
-                    Mensaje = msgPendiente,
-                    DiaCobro = dia,
-                    DiasRestantes = DiasHastaLimitePago(dia)
-                };
-            }
-
-            return null;
+                Tipo = dia == 3 ? "critico" : "advertencia",
+                Mensaje = $"{titulo}. {mensaje}",
+                DiaCobro = dia,
+                DiasRestantes = DiasHastaLimitePago(dia)
+            };
         }
 
         /// <summary>Días restantes hasta el día 3 (límite de pago).</summary>
@@ -194,32 +197,72 @@ namespace AlahiaPos.DataAccess.Servicios.Suscripciones
             if (NormalizarEstado(emp.EstadoServicio) == SuscripcionEstados.Cancelada)
                 return;
 
+            // Plan Demo / prueba gratis: MontoServicio = 0 mientras FechaTerminacion esté vigente.
+            if (await EsPlanDemoAsync(emp))
+            {
+                if (emp.FechaTerminacion.Date >= DateTime.Now.Date)
+                {
+                    emp.PagadoServicio = true;
+                    emp.EstadoServicio = SuscripcionEstados.Activa;
+                }
+                return;
+            }
+
             var hoy = DateTime.Now;
             var dia = ObtenerDiaCobro(emp.IdEmpresa);
             var tienePendiente = await TienePagoPendienteAsync(emp.IdEmpresa);
             var ciclo = await ObtenerOCrearCicloActualAsync(emp);
 
-            // Día 30: nuevo ciclo / reset
-            if (dia == 30)
+            // ═══════════════════════════════════════════════════════════════
+            // INVARIANTE (admin aprobó voucher): ciclo PAGADO ⇒ no pedir cobro
+            // de nuevo hasta que exista un ciclo NUEVO sin pagar (próximo día 30).
+            // ═══════════════════════════════════════════════════════════════
+            if (ciclo != null && ciclo.Estado == SuscripcionEstados.CicloPagado)
             {
-                if (emp.PagadoServicio)
-                    emp.PagadoServicio = false;
-
-                ciclo = await ObtenerOCrearCicloActualAsync(emp);
-                if (ciclo != null && ciclo.Estado == SuscripcionEstados.CicloPagado && !emp.PagadoServicio)
+                if (tienePendiente)
                 {
-                    // nuevo mes: el ciclo del día 30 es del mes actual
+                    await CerrarPagosPendientesAsync(
+                        emp.IdEmpresa,
+                        exceptoIdPago: null,
+                        motivo: "Descartado: el ciclo vigente ya está pagado (aprobado por admin).",
+                        usuarioValida: "SISTEMA");
+                    tienePendiente = false;
                 }
+
+                emp.PagadoServicio = true;
+                emp.EstadoServicio = SuscripcionEstados.Activa;
+                emp.FechaProximoPago = ProximoDia30(hoy);
+                return;
             }
 
-            if (emp.PagadoServicio && !tienePendiente)
+            // Día 30: abre ciclo del mes actual (ABIERTO). Solo entonces se puede
+            // volver a pedir pago — nunca si el ciclo vigente ya fue aprobado.
+            if (dia == 30)
             {
+                // Solo resetear flag si el último pago no cubre ESTE ciclo nuevo
+                var pagoCubreCicloNuevo = emp.FechaUltimoPago.HasValue
+                    && emp.FechaUltimoPago.Value.Date == hoy.Date;
+                if (emp.PagadoServicio && !pagoCubreCicloNuevo)
+                    emp.PagadoServicio = false;
+            }
+
+            // Pagado (y sin voucher huérfano): activo — sella el ciclo
+            if (emp.PagadoServicio)
+            {
+                if (tienePendiente)
+                {
+                    await CerrarPagosPendientesAsync(
+                        emp.IdEmpresa,
+                        exceptoIdPago: null,
+                        motivo: "Descartado automáticamente: la empresa ya figura como pagada.",
+                        usuarioValida: "SISTEMA");
+                    tienePendiente = false;
+                }
+
                 emp.EstadoServicio = SuscripcionEstados.Activa;
                 emp.FechaProximoPago = ProximoDia30(hoy);
                 if (ciclo != null && ciclo.Estado != SuscripcionEstados.CicloPagado)
-                {
                     ciclo.Estado = SuscripcionEstados.CicloPagado;
-                }
                 return;
             }
 
@@ -231,10 +274,7 @@ namespace AlahiaPos.DataAccess.Servicios.Suscripciones
                     await RegistrarEventoAsync(emp.IdEmpresa, "ESTADO_PAGO_REPORTADO",
                         "Empresa con pago en validación", idCiclo: ciclo?.IdCiclo);
                 }
-
-                if (enviarAvisos && (dia == 30 || dia == 2 || dia == 3))
-                    await EnviarAvisoSiCorrespondeAsync(emp, ciclo, TipoAvisoPorDia(dia));
-
+                // Sin reenviar avisos de cobro: ya subió voucher.
                 return;
             }
 
@@ -251,13 +291,14 @@ namespace AlahiaPos.DataAccess.Servicios.Suscripciones
                         "Periodo de pago del ciclo", idCiclo: ciclo?.IdCiclo);
                 }
 
-                if (enviarAvisos)
+                // Correo + notificación solo día 30 (inicio) y día 3 (último aviso)
+                if (enviarAvisos && (dia == 30 || dia == 3))
                     await EnviarAvisoSiCorrespondeAsync(emp, ciclo, TipoAvisoPorDia(dia));
 
                 return;
             }
 
-            // Día ≥ 4 → suspensión
+            // Día ≥ 4 → suspensión + cargo de reconexión pendiente
             if (dia >= 4)
             {
                 if (ciclo != null && ciclo.Estado == SuscripcionEstados.CicloAbierto)
@@ -266,11 +307,33 @@ namespace AlahiaPos.DataAccess.Servicios.Suscripciones
                 if (emp.EstadoServicio != SuscripcionEstados.Suspendida)
                 {
                     emp.EstadoServicio = SuscripcionEstados.Suspendida;
+                    emp.ReconexionPendiente = true;
+
                     await RegistrarEventoAsync(emp.IdEmpresa, "SUSPENSION",
-                        "Suspensión automática por falta de pago validado", idCiclo: ciclo?.IdCiclo);
+                        "Suspensión automática por falta de pago validado. Cargo de reconexión pendiente.",
+                        idCiclo: ciclo?.IdCiclo);
 
                     if (enviarAvisos)
                         await EnviarAvisoSiCorrespondeAsync(emp, ciclo, SuscripcionEstados.AvisoSuspension);
+
+                    // Recalcular ciclo para incluir cargo de reconexión en el total a pagar
+                    if (ciclo != null && ciclo.Estado != SuscripcionEstados.CicloPagado)
+                    {
+                        var calc = CalcularFacturaDesdeEmpresa(emp);
+                        ciclo.Monto = calc.Total;
+                        await GuardarDetalleCicloAsync(ciclo.IdCiclo, calc);
+                    }
+                }
+                else if (!emp.ReconexionPendiente)
+                {
+                    // Ya estaba suspendida sin flag (datos viejos): asegurar el cargo
+                    emp.ReconexionPendiente = true;
+                    if (ciclo != null && ciclo.Estado != SuscripcionEstados.CicloPagado)
+                    {
+                        var calc = CalcularFacturaDesdeEmpresa(emp);
+                        ciclo.Monto = calc.Total;
+                        await GuardarDetalleCicloAsync(ciclo.IdCiclo, calc);
+                    }
                 }
             }
         }
@@ -278,7 +341,6 @@ namespace AlahiaPos.DataAccess.Servicios.Suscripciones
         private static string TipoAvisoPorDia(int dia) => dia switch
         {
             30 => SuscripcionEstados.AvisoDia30,
-            2 => SuscripcionEstados.AvisoDia2,
             3 => SuscripcionEstados.AvisoDia3,
             _ => SuscripcionEstados.AvisoDia30
         };
@@ -286,6 +348,11 @@ namespace AlahiaPos.DataAccess.Servicios.Suscripciones
         private async Task EnviarAvisoSiCorrespondeAsync(Empresas emp, SuscripcionCiclo? ciclo, string tipoAviso)
         {
             if (ciclo == null) return;
+            // Solo día 30 y día 3 (último). Día 2 y otros no envían.
+            if (tipoAviso != SuscripcionEstados.AvisoDia30
+                && tipoAviso != SuscripcionEstados.AvisoDia3
+                && tipoAviso != SuscripcionEstados.AvisoSuspension)
+                return;
 
             var yaEnviadoCentro = await _ctx.SuscripcionAvisoLog.AnyAsync(a =>
                 a.IdEmpresa == emp.IdEmpresa
@@ -322,62 +389,40 @@ namespace AlahiaPos.DataAccess.Servicios.Suscripciones
                 FechaEnvio = DateTime.Now
             });
 
-            await RegistrarEventoAsync(emp.IdEmpresa, "AVISO_ENVIADO", mensaje, CanalCentro, idCiclo: ciclo.IdCiclo);
-
-            // Canales legacy (WhatsApp stub / log) sin email directo: el Centro ya decide EMAIL.
-            foreach (var canal in _canales.Where(c =>
-                !string.Equals(c.Canal, SuscripcionEstados.CanalEmail, StringComparison.OrdinalIgnoreCase)))
-            {
-                var yaEnviado = await _ctx.SuscripcionAvisoLog.AnyAsync(a =>
-                    a.IdEmpresa == emp.IdEmpresa
-                    && a.IdCiclo == ciclo.IdCiclo
-                    && a.TipoAviso == tipoAviso
-                    && a.Canal == canal.Canal);
-
-                if (yaEnviado) continue;
-
-                await canal.EnviarAsync(new NotificacionSuscripcionMensaje
-                {
-                    IdEmpresa = emp.IdEmpresa,
-                    IdCiclo = ciclo.IdCiclo,
-                    TipoAviso = tipoAviso,
-                    Titulo = titulo,
-                    Mensaje = mensaje,
-                    CorreoDestino = emp.CorreElectronico,
-                    NombreEmpresa = emp.NombreComercial
-                });
-
-                _ctx.SuscripcionAvisoLog.Add(new SuscripcionAvisoLog
-                {
-                    IdEmpresa = emp.IdEmpresa,
-                    IdCiclo = ciclo.IdCiclo,
-                    TipoAviso = tipoAviso,
-                    Canal = canal.Canal,
-                    FechaEnvio = DateTime.Now
-                });
-            }
+            await RegistrarEventoAsync(emp.IdEmpresa, "AVISO_ENVIADO", titulo, CanalCentro, idCiclo: ciclo.IdCiclo);
+            // El correo lo envía NotificacionCentro (canal EMAIL) con el mismo mensaje/instrucciones.
         }
 
-        private static (string titulo, string mensaje) MensajeAviso(string tipo) => tipo switch
+        private static (string titulo, string mensaje) MensajeAviso(string tipo)
         {
-            SuscripcionEstados.AvisoDia30 => (
-                "Renovación de suscripción Alahia ERP",
-                "Su suscripción vence próximamente. Favor realizar su pago antes de la fecha límite (día 3)."
-            ),
-            SuscripcionEstados.AvisoDia2 => (
-                "Recordatorio de pago — Alahia ERP",
-                "Segundo recordatorio: su pago aún no ha sido confirmado. Fecha límite: día 3."
-            ),
-            SuscripcionEstados.AvisoDia3 => (
-                "Último aviso de pago — Alahia ERP",
-                "Último recordatorio: si no se recibe y valida el pago, el servicio será suspendido a partir del día 4."
-            ),
-            SuscripcionEstados.AvisoSuspension => (
-                "Servicio suspendido — Alahia ERP",
-                "Su servicio se encuentra suspendido por falta de pago. Inicie sesión para reportar su pago."
-            ),
-            _ => ("Aviso de suscripción", "Tiene un pendiente relacionado con su suscripción.")
-        };
+            const string pasosVoucher =
+                "Cómo proceder:\n" +
+                "1) Inicie sesión en Alahia ERP.\n" +
+                "2) Vaya a Pago de Suscripción (o use Reportar pago si el servicio está suspendido).\n" +
+                "3) Adjunte la foto o PDF del voucher de transferencia.\n" +
+                "4) Envíe el comprobante.\n" +
+                "Si aún está en el periodo de pago (día 30 al 3), podrá seguir operando mientras se valida. " +
+                "Si el servicio ya fue suspendido, el acceso se restaura solo cuando MacroBits apruebe el pago.\n" +
+                "No es necesario subir el voucher más de una vez.";
+
+            return tipo switch
+            {
+                SuscripcionEstados.AvisoDia30 => (
+                    "Renovación de suscripción Alahia ERP",
+                    "Su ciclo de suscripción inicia hoy (día 30). Tiene hasta el día 3 para reportar el pago; de lo contrario el acceso se suspenderá el día 4.\n\n" + pasosVoucher
+                ),
+                SuscripcionEstados.AvisoDia3 => (
+                    "Último aviso de pago — Alahia ERP",
+                    "Hoy es el último día del periodo de gracia. Si no reporta su voucher hoy, el servicio se suspenderá a partir de mañana (día 4).\n\n" + pasosVoucher
+                ),
+                SuscripcionEstados.AvisoSuspension => (
+                    "Servicio suspendido — Alahia ERP",
+                    "Su servicio está suspendido por falta de pago validado. " +
+                    "Al regularizar deberá pagar también el cargo por reconexión (se muestra en el total a cobrar).\n\n" + pasosVoucher
+                ),
+                _ => ("Aviso de suscripción", "Tiene un pendiente relacionado con su suscripción.\n\n" + pasosVoucher)
+            };
+        }
 
         public async Task<SuscripcionCiclo?> ObtenerOCrearCicloActualAsync(Empresas empresa)
         {
@@ -433,77 +478,105 @@ namespace AlahiaPos.DataAccess.Servicios.Suscripciones
 
         public async Task<SuscripcionCalculoFacturaDto> CalcularFacturaAsync(int idEmpresa, DateTime? fechaReferencia = null)
         {
-            var fecha = (fechaReferencia ?? DateTime.Now).Date;
+            _ = fechaReferencia;
             var empresa = await _ctx.Empresas.AsNoTracking()
                 .FirstOrDefaultAsync(e => e.IdEmpresa == idEmpresa)
                 ?? throw new Exception("Empresa no encontrada.");
 
+            return CalcularFacturaDesdeEmpresa(empresa);
+        }
+
+        private SuscripcionCalculoFacturaDto CalcularFacturaDesdeEmpresa(Empresas empresa)
+        {
+            var idEmpresa = empresa.IdEmpresa;
+            var nombreEmpresa = string.IsNullOrWhiteSpace(empresa.NombreComercial)
+                ? $"Empresa {idEmpresa}"
+                : empresa.NombreComercial.Trim();
+            var nombrePlan = $"Plan {nombreEmpresa}";
+
+            var montoServicio = empresa.MontoServicio < 0 ? 0m : empresa.MontoServicio;
+            var cargoAdicional = empresa.CargoAdicional < 0 ? 0m : empresa.CargoAdicional;
+            var tasa = ObtenerTasaUsdDop();
+            var cargoReconexDop = ObtenerCargoReconexionDop(empresa);
+
             var calc = new SuscripcionCalculoFacturaDto
             {
                 IdEmpresa = idEmpresa,
-                IdPlan = empresa.IdPlan
+                IdPlan = empresa.IdPlan,
+                NombrePlan = nombrePlan,
+                MontoServicio = montoServicio,
+                CargoAdicional = cargoAdicional,
+                LimiteFacturacion = empresa.LimiteFacturacion < 0 ? 0 : empresa.LimiteFacturacion,
+                CargoReconexionDop = cargoReconexDop,
+                ReconexionPendiente = empresa.ReconexionPendiente,
+                MontoPlan = montoServicio,
+                MontoCargos = cargoAdicional,
+                Total = montoServicio + cargoAdicional,
+                TasaUsdDop = tasa
             };
 
-            if (empresa.IdPlan.HasValue)
+            calc.Lineas.Add(new SuscripcionLineaFacturaDto
             {
-                var plan = await _ctx.PlanesCloud.AsNoTracking()
-                    .FirstOrDefaultAsync(p => p.IdPlan == empresa.IdPlan.Value);
-                var precioCatalogo = plan?.PrecioUSD ?? 0;
-                calc.MontoPlanCatalogo = precioCatalogo;
-                calc.NombrePlan = plan?.Nombre ?? "Plan";
-                calc.PrecioPlanEspecialUsd = empresa.PrecioPlanEspecialUsd;
-                calc.UsaPrecioPlanEspecial = empresa.PrecioPlanEspecialUsd.HasValue
-                    && empresa.PrecioPlanEspecialUsd.Value >= 0;
-                calc.MontoPlan = calc.UsaPrecioPlanEspecial
-                    ? empresa.PrecioPlanEspecialUsd!.Value
-                    : precioCatalogo;
+                TipoLinea = TipoCargoRecurrente.Plan,
+                Codigo = $"PLAN_EMP_{idEmpresa}",
+                Nombre = nombrePlan,
+                Monto = montoServicio
+            });
 
-                var nombreLinea = calc.UsaPrecioPlanEspecial
-                    ? $"{calc.NombrePlan} (precio especial)"
-                    : calc.NombrePlan!;
-
-                calc.Lineas.Add(new SuscripcionLineaFacturaDto
-                {
-                    TipoLinea = TipoCargoRecurrente.Plan,
-                    Codigo = $"PLAN_{empresa.IdPlan}",
-                    Nombre = nombreLinea,
-                    Monto = calc.MontoPlan
-                });
-            }
-
-            var cargos = await _ctx.EmpresaCargoRecurrente.AsNoTracking()
-                .Where(c => c.IdEmpresa == idEmpresa && c.Activo)
-                .Where(c => c.FechaInicio.Date <= fecha)
-                .Where(c => c.FechaFin == null || c.FechaFin.Value.Date >= fecha)
-                .OrderBy(c => c.Nombre)
-                .ToListAsync();
-
-            foreach (var c in cargos)
+            if (cargoAdicional > 0)
             {
                 calc.Lineas.Add(new SuscripcionLineaFacturaDto
                 {
-                    TipoLinea = c.TipoCargo,
-                    IdCargo = c.Id,
-                    IdModulo = c.IdModulo,
-                    Codigo = c.Codigo,
-                    Nombre = c.Nombre,
-                    Monto = c.MontoMensual
+                    TipoLinea = TipoCargoRecurrente.Servicio,
+                    Codigo = $"CARGO_ADIC_{idEmpresa}",
+                    Nombre = "Cargo adicional",
+                    Monto = cargoAdicional
                 });
-                calc.MontoCargos += c.MontoMensual;
             }
 
-            calc.Total = calc.MontoPlan + calc.MontoCargos;
+            if (empresa.ReconexionPendiente && cargoReconexDop > 0)
+            {
+                var reconexUsd = RedondearUsd(cargoReconexDop / tasa);
+                calc.MontoReconexion = reconexUsd;
+                calc.MontoReconexionDop = RedondearDop(cargoReconexDop);
+                calc.MontoCargos += reconexUsd;
+                calc.Total += reconexUsd;
 
-            // Cobro en USD; equivalente DOP a tasa fija (config Suscripcion:TasaUsdDop)
-            var tasa = ObtenerTasaUsdDop();
-            calc.TasaUsdDop = tasa;
+                calc.Lineas.Add(new SuscripcionLineaFacturaDto
+                {
+                    TipoLinea = TipoCargoRecurrente.Reconexion,
+                    Codigo = $"RECONEX_{idEmpresa}",
+                    Nombre = "Cargo por reconexión",
+                    Monto = reconexUsd,
+                    MontoDop = calc.MontoReconexionDop
+                });
+            }
+
             calc.MontoPlanDop = RedondearDop(calc.MontoPlan * tasa);
-            calc.MontoCargosDop = RedondearDop(calc.MontoCargos * tasa);
-            calc.TotalDop = RedondearDop(calc.Total * tasa);
+            calc.MontoCargosDop = RedondearDop(calc.CargoAdicional * tasa) + calc.MontoReconexionDop;
+            calc.TotalDop = calc.MontoPlanDop + calc.MontoCargosDop;
             foreach (var linea in calc.Lineas)
-                linea.MontoDop = RedondearDop(linea.Monto * tasa);
+            {
+                if (linea.MontoDop <= 0)
+                    linea.MontoDop = RedondearDop(linea.Monto * tasa);
+            }
 
             return calc;
+        }
+
+        private decimal ObtenerCargoReconexionDop(Empresas empresa)
+        {
+            // 0 = desactivado para ese cliente. Si por algún motivo viniera negativo, usa config/500.
+            if (empresa.CargoReconexionDop >= 0)
+                return empresa.CargoReconexionDop;
+
+            var raw = _config["Suscripcion:CargoReconexionDop"];
+            if (decimal.TryParse(raw, System.Globalization.NumberStyles.Any,
+                    System.Globalization.CultureInfo.InvariantCulture, out var cfg)
+                && cfg >= 0)
+                return cfg;
+
+            return 500m;
         }
 
         private decimal ObtenerTasaUsdDop()
@@ -517,6 +590,9 @@ namespace AlahiaPos.DataAccess.Servicios.Suscripciones
         }
 
         private static decimal RedondearDop(decimal valor) =>
+            Math.Round(valor, 2, MidpointRounding.AwayFromZero);
+
+        private static decimal RedondearUsd(decimal valor) =>
             Math.Round(valor, 2, MidpointRounding.AwayFromZero);
 
         public async Task RecalcularCicloAbiertoAsync(int idEmpresa)
@@ -543,7 +619,7 @@ namespace AlahiaPos.DataAccess.Servicios.Suscripciones
                 idCiclo: tracked.IdCiclo);
         }
 
-        public async Task<SuscripcionCalculoFacturaDto> ActualizarPrecioPlanEspecialAsync(ActualizarPrecioPlanEspecialDto dto)
+        public async Task<SuscripcionCalculoFacturaDto> ActualizarTarifaEmpresaAsync(ActualizarTarifaEmpresaDto dto)
         {
             var emp = await _ctx.Empresas.AsTracking()
                 .FirstOrDefaultAsync(e => e.IdEmpresa == dto.IdEmpresa)
@@ -552,28 +628,51 @@ namespace AlahiaPos.DataAccess.Servicios.Suscripciones
             if (emp.EsEmpresaSistema)
                 throw new Exception("No aplica a la empresa de sistema.");
 
-            var anterior = emp.PrecioPlanEspecialUsd;
-            if (dto.PrecioPlanEspecialUsd.HasValue)
+            if (dto.MontoServicio < 0 || dto.CargoAdicional < 0)
+                throw new Exception("Los montos no pueden ser negativos.");
+            if (dto.LimiteFacturacion < 0)
+                throw new Exception("El límite de facturación no puede ser negativo.");
+
+            var antes =
+                $"servicio={emp.MontoServicio:0.00}; cargo={emp.CargoAdicional:0.00}; limite={emp.LimiteFacturacion}";
+
+            emp.MontoServicio = dto.MontoServicio;
+            emp.CargoAdicional = dto.CargoAdicional;
+            emp.LimiteFacturacion = dto.LimiteFacturacion;
+            if (dto.CargoReconexionDop.HasValue)
             {
-                if (dto.PrecioPlanEspecialUsd.Value < 0)
-                    throw new Exception("El precio especial no puede ser negativo.");
-                emp.PrecioPlanEspecialUsd = dto.PrecioPlanEspecialUsd.Value;
+                if (dto.CargoReconexionDop.Value < 0)
+                    throw new Exception("El cargo de reconexión no puede ser negativo.");
+                emp.CargoReconexionDop = dto.CargoReconexionDop.Value;
             }
-            else
-            {
-                emp.PrecioPlanEspecialUsd = null;
-            }
+            // Mantener legado alineado para reportes antiguos
+            emp.PrecioPlanEspecialUsd = dto.MontoServicio;
 
             await _ctx.SaveChangesAsync();
 
-            await RegistrarEventoAsync(dto.IdEmpresa, "PRECIO_PLAN_ESPECIAL",
-                emp.PrecioPlanEspecialUsd.HasValue
-                    ? $"Precio especial del plan: {(anterior?.ToString("0.00") ?? "catálogo")} → {emp.PrecioPlanEspecialUsd:0.00} USD"
-                    : $"Precio especial removido (antes {(anterior?.ToString("0.00") ?? "n/a")}); vuelve a catálogo",
+            await RegistrarEventoAsync(dto.IdEmpresa, "TARIFA_EMPRESA",
+                $"{antes} → servicio={emp.MontoServicio:0.00}; cargo={emp.CargoAdicional:0.00}; limite={emp.LimiteFacturacion}",
                 idUsuario: dto.IdUsuario);
 
             await RecalcularCicloAbiertoAsync(dto.IdEmpresa);
             return await CalcularFacturaAsync(dto.IdEmpresa);
+        }
+
+        /// <summary>Legado: mapea a MontoServicio.</summary>
+        public async Task<SuscripcionCalculoFacturaDto> ActualizarPrecioPlanEspecialAsync(ActualizarPrecioPlanEspecialDto dto)
+        {
+            var emp = await _ctx.Empresas.AsNoTracking()
+                .FirstOrDefaultAsync(e => e.IdEmpresa == dto.IdEmpresa)
+                ?? throw new Exception("Empresa no encontrada.");
+
+            return await ActualizarTarifaEmpresaAsync(new ActualizarTarifaEmpresaDto
+            {
+                IdEmpresa = dto.IdEmpresa,
+                MontoServicio = dto.PrecioPlanEspecialUsd ?? emp.MontoServicio,
+                CargoAdicional = emp.CargoAdicional,
+                LimiteFacturacion = emp.LimiteFacturacion,
+                IdUsuario = dto.IdUsuario
+            });
         }
 
         private async Task GuardarDetalleCicloAsync(int idCiclo, SuscripcionCalculoFacturaDto calc)
@@ -659,41 +758,96 @@ namespace AlahiaPos.DataAccess.Servicios.Suscripciones
             var emp = await _ctx.Empresas.AsTracking().FirstOrDefaultAsync(e => e.IdEmpresa == idEmpresa);
             if (emp == null) return;
 
+            // Evita que un voucher huérfano vuelva a poner PAGO_REPORTADO tras aprobar
+            await CerrarPagosPendientesAsync(
+                idEmpresa,
+                exceptoIdPago: idPago,
+                motivo: $"Descartado al aprobar pago #{idPago}.",
+                usuarioValida: usuarioValida ?? "ADMIN");
+
             emp.PagadoServicio = true;
             emp.EstadoServicio = SuscripcionEstados.Activa;
+            emp.ReconexionPendiente = false;
             emp.FechaUltimoPago = DateTime.Now;
             emp.FechaProximoPago = ProximoDia30(DateTime.Now);
             _ctx.Empresas.Update(emp);
 
-            if (idCiclo.HasValue)
+            // Sella el ciclo del voucher Y el ciclo vigente: tras aprobar, no se vuelve a pedir pago.
+            var idsCicloSellar = new HashSet<int>();
+            if (idCiclo.HasValue) idsCicloSellar.Add(idCiclo.Value);
+
+            var cicloActual = await ObtenerOCrearCicloActualAsync(emp);
+            if (cicloActual != null) idsCicloSellar.Add(cicloActual.IdCiclo);
+
+            foreach (var id in idsCicloSellar)
             {
                 var ciclo = await _ctx.SuscripcionCiclo.AsTracking()
-                    .FirstOrDefaultAsync(c => c.IdCiclo == idCiclo.Value);
+                    .FirstOrDefaultAsync(c => c.IdCiclo == id);
                 if (ciclo != null)
                 {
                     ciclo.Estado = SuscripcionEstados.CicloPagado;
                     _ctx.SuscripcionCiclo.Update(ciclo);
                 }
             }
-            else
+
+            await RegistrarEventoAsync(idEmpresa, "REACTIVACION",
+                $"Pago #{idPago} aprobado por {usuarioValida}. Servicio reactivado. Ciclo sellado PAGADO.",
+                idCiclo: idCiclo ?? cicloActual?.IdCiclo);
+            await _ctx.SaveChangesAsync();
+        }
+
+        /// <summary>Admin marca pagado sin voucher (o tras validación externa).</summary>
+        public async Task OnMarcarPagoManualAsync(int idEmpresa, string? usuario = null)
+        {
+            var emp = await _ctx.Empresas.AsTracking().FirstOrDefaultAsync(e => e.IdEmpresa == idEmpresa);
+            if (emp == null) return;
+
+            await CerrarPagosPendientesAsync(
+                idEmpresa,
+                exceptoIdPago: null,
+                motivo: "Descartado al marcar pago manualmente.",
+                usuarioValida: usuario ?? "ADMIN");
+
+            emp.PagadoServicio = true;
+            emp.EstadoServicio = SuscripcionEstados.Activa;
+            emp.ReconexionPendiente = false;
+            emp.FechaUltimoPago = DateTime.Now;
+            emp.FechaProximoPago = ProximoDia30(DateTime.Now);
+            _ctx.Empresas.Update(emp);
+
+            var ciclo = await ObtenerOCrearCicloActualAsync(emp);
+            if (ciclo != null)
             {
-                var ciclo = await ObtenerOCrearCicloActualAsync(emp);
-                if (ciclo != null)
+                var tracked = await _ctx.SuscripcionCiclo.AsTracking()
+                    .FirstOrDefaultAsync(c => c.IdCiclo == ciclo.IdCiclo);
+                if (tracked != null)
                 {
-                    var tracked = await _ctx.SuscripcionCiclo.AsTracking()
-                        .FirstOrDefaultAsync(c => c.IdCiclo == ciclo.IdCiclo);
-                    if (tracked != null)
-                    {
-                        tracked.Estado = SuscripcionEstados.CicloPagado;
-                        _ctx.SuscripcionCiclo.Update(tracked);
-                    }
+                    tracked.Estado = SuscripcionEstados.CicloPagado;
+                    _ctx.SuscripcionCiclo.Update(tracked);
                 }
             }
 
-            await RegistrarEventoAsync(idEmpresa, "REACTIVACION",
-                $"Pago #{idPago} aprobado por {usuarioValida}. Servicio reactivado.",
-                idCiclo: idCiclo);
+            await RegistrarEventoAsync(idEmpresa, "MARCAR_PAGO_MANUAL",
+                "Pago marcado manualmente. Servicio activado.", idCiclo: ciclo?.IdCiclo);
             await _ctx.SaveChangesAsync();
+        }
+
+        private async Task CerrarPagosPendientesAsync(
+            int idEmpresa, int? exceptoIdPago, string motivo, string usuarioValida)
+        {
+            var q = _ctx.PagosEmpresa.AsTracking()
+                .Where(p => p.IdEmpresa == idEmpresa && p.Estado == "PENDIENTE");
+            if (exceptoIdPago.HasValue)
+                q = q.Where(p => p.Id != exceptoIdPago.Value);
+
+            var pendientes = await q.ToListAsync();
+            foreach (var p in pendientes)
+            {
+                p.Estado = "DESCARTADO";
+                p.Observacion = motivo;
+                p.FechaValidacion = DateTime.Now;
+                p.UsuarioValida = usuarioValida;
+            }
         }
 
         public async Task OnPagoRechazadoAsync(int idEmpresa, int idPago, string? observacion)
@@ -787,26 +941,106 @@ namespace AlahiaPos.DataAccess.Servicios.Suscripciones
 
         public async Task<List<SuscripcionEmpresaCobroDto>> ListarEmpresasCobroAsync()
         {
-            var rows = await (
-                from e in _ctx.Empresas.AsNoTracking()
-                join p in _ctx.PlanesCloud.AsNoTracking() on e.IdPlan equals p.IdPlan into pj
-                from p in pj.DefaultIfEmpty()
-                where !e.EsEmpresaSistema && e.Estado
-                orderby e.NombreComercial
-                select new SuscripcionEmpresaCobroDto
+            var rows = await _ctx.Empresas.AsNoTracking()
+                .Where(e => !e.EsEmpresaSistema && e.Estado)
+                .OrderBy(e => e.NombreComercial)
+                .Select(e => new SuscripcionEmpresaCobroDto
                 {
                     IdEmpresa = e.IdEmpresa,
-                    NombreComercial = e.NombreComercial,
+                    NombreComercial = e.NombreComercial ?? "",
                     EstadoServicio = e.EstadoServicio ?? SuscripcionEstados.Activa,
                     PagadoServicio = e.PagadoServicio,
                     IdPlan = e.IdPlan,
-                    NombrePlan = p != null ? p.Nombre : null,
-                    PrecioPlanCatalogo = p != null ? p.PrecioUSD : null,
-                    PrecioPlanEspecialUsd = e.PrecioPlanEspecialUsd
-                }
-            ).ToListAsync();
+                    NombrePlan = "Plan " + (e.NombreComercial ?? ("Empresa " + e.IdEmpresa)),
+                    MontoServicio = e.MontoServicio,
+                    CargoAdicional = e.CargoAdicional,
+                    LimiteFacturacion = e.LimiteFacturacion,
+                    CargoReconexionDop = e.CargoReconexionDop,
+                    ReconexionPendiente = e.ReconexionPendiente
+                })
+                .ToListAsync();
 
             return rows;
+        }
+
+        public async Task<List<SuscripcionCuentaCobroDto>> ListarCuentasCobroAsync(bool soloActivas = true)
+        {
+            var q = _ctx.SuscripcionCuentaCobro.AsNoTracking().AsQueryable();
+            if (soloActivas)
+                q = q.Where(c => c.Activo);
+
+            return await q
+                .OrderBy(c => c.Orden)
+                .ThenBy(c => c.Banco)
+                .Select(c => new SuscripcionCuentaCobroDto
+                {
+                    Id = c.Id,
+                    Banco = c.Banco,
+                    NumeroCuenta = c.NumeroCuenta,
+                    Titular = c.Titular,
+                    Cedula = c.Cedula,
+                    Correo = c.Correo,
+                    CuentaEstandar = c.CuentaEstandar,
+                    Activo = c.Activo,
+                    Orden = c.Orden
+                })
+                .ToListAsync();
+        }
+
+        public async Task<SuscripcionCuentaCobroDto> GuardarCuentaCobroAsync(GuardarSuscripcionCuentaCobroDto dto)
+        {
+            if (string.IsNullOrWhiteSpace(dto.Banco)
+                || string.IsNullOrWhiteSpace(dto.NumeroCuenta)
+                || string.IsNullOrWhiteSpace(dto.Titular)
+                || string.IsNullOrWhiteSpace(dto.Cedula))
+                throw new Exception("Banco, número de cuenta, titular y cédula son obligatorios.");
+
+            SuscripcionCuentaCobro entity;
+            if (dto.Id.HasValue && dto.Id.Value > 0)
+            {
+                entity = await _ctx.SuscripcionCuentaCobro.AsTracking()
+                    .FirstOrDefaultAsync(c => c.Id == dto.Id.Value)
+                    ?? throw new Exception("Cuenta de cobro no encontrada.");
+                entity.FechaModificacion = DateTime.Now;
+            }
+            else
+            {
+                entity = new SuscripcionCuentaCobro { FechaCreacion = DateTime.Now };
+                _ctx.SuscripcionCuentaCobro.Add(entity);
+            }
+
+            entity.Banco = dto.Banco.Trim();
+            entity.NumeroCuenta = dto.NumeroCuenta.Trim();
+            entity.Titular = dto.Titular.Trim();
+            entity.Cedula = dto.Cedula.Trim();
+            entity.Correo = string.IsNullOrWhiteSpace(dto.Correo) ? null : dto.Correo.Trim();
+            entity.CuentaEstandar = string.IsNullOrWhiteSpace(dto.CuentaEstandar) ? null : dto.CuentaEstandar.Trim();
+            entity.Activo = dto.Activo;
+            entity.Orden = dto.Orden;
+
+            await _ctx.SaveChangesAsync();
+
+            return new SuscripcionCuentaCobroDto
+            {
+                Id = entity.Id,
+                Banco = entity.Banco,
+                NumeroCuenta = entity.NumeroCuenta,
+                Titular = entity.Titular,
+                Cedula = entity.Cedula,
+                Correo = entity.Correo,
+                CuentaEstandar = entity.CuentaEstandar,
+                Activo = entity.Activo,
+                Orden = entity.Orden
+            };
+        }
+
+        public async Task EliminarCuentaCobroAsync(int id)
+        {
+            var entity = await _ctx.SuscripcionCuentaCobro.AsTracking()
+                .FirstOrDefaultAsync(c => c.Id == id)
+                ?? throw new Exception("Cuenta de cobro no encontrada.");
+            _ctx.SuscripcionCuentaCobro.Remove(entity);
+            await _ctx.SaveChangesAsync();
         }
 
         private static DateTime ProximoDia30(DateTime desde)
@@ -816,6 +1050,17 @@ namespace AlahiaPos.DataAccess.Servicios.Suscripciones
             var next = desde.AddMonths(1);
             return new DateTime(next.Year, next.Month, Math.Min(30, DateTime.DaysInMonth(next.Year, next.Month)));
         }
+
+        /// <summary>Demo / prueba: sin monto de servicio y con fecha de terminación vigente.</summary>
+        private bool EsDemoVigente(Empresas empresa)
+        {
+            if (empresa == null) return false;
+            if (empresa.FechaTerminacion.Date < DateTime.Now.Date) return false;
+            return empresa.MontoServicio <= 0m;
+        }
+
+        private Task<bool> EsPlanDemoAsync(Empresas emp)
+            => Task.FromResult(emp != null && emp.MontoServicio <= 0m);
 
         public static string NormalizarEstado(string? estado)
         {

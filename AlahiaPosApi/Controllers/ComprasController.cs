@@ -17,10 +17,21 @@ namespace AlahiaPosApi.Controllers
         }
 
         [HttpGet("{idEmpresa}")]
-        public async Task<IActionResult> Listar(int idEmpresa, [FromQuery] string? estado = null)
+        public async Task<IActionResult> Listar(
+            int idEmpresa,
+            [FromQuery] string? estado = null,
+            [FromQuery] DateTime? desde = null,
+            [FromQuery] DateTime? hasta = null)
         {
-            var result = await _comprasService.ListarAsync(idEmpresa, estado);
-            return Ok(result);
+            try
+            {
+                var result = await _comprasService.ListarAsync(idEmpresa, estado, desde, hasta);
+                return Ok(result);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         [HttpGet("Detalle/{id}/{idEmpresa}")]
@@ -34,10 +45,25 @@ namespace AlahiaPosApi.Controllers
         }
 
         [HttpGet("Pendientes/{idEmpresa}")]
-        public async Task<IActionResult> Pendientes(int idEmpresa, [FromQuery] int? idProveedor = null)
+        public async Task<IActionResult> Pendientes(
+            int idEmpresa,
+            [FromQuery] int? idProveedor = null,
+            [FromQuery] DateTime? desde = null,
+            [FromQuery] DateTime? hasta = null)
         {
-            var result = await _comprasService.ListarPendientesAsync(idEmpresa, idProveedor);
-            return Ok(result);
+            try
+            {
+                var result = await _comprasService.ListarPendientesAsync(
+                    idEmpresa,
+                    idProveedor,
+                    desde,
+                    hasta);
+                return Ok(result);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         [HttpPost("Borrador")]
@@ -146,10 +172,21 @@ namespace AlahiaPosApi.Controllers
         // ========== Órdenes de compra (tipo 5) ==========
 
         [HttpGet("Ordenes/{idEmpresa}")]
-        public async Task<IActionResult> ListarOrdenes(int idEmpresa, [FromQuery] string? estado = null)
+        public async Task<IActionResult> ListarOrdenes(
+            int idEmpresa,
+            [FromQuery] string? estado = null,
+            [FromQuery] DateTime? desde = null,
+            [FromQuery] DateTime? hasta = null)
         {
-            var result = await _comprasService.ListarOrdenesAsync(idEmpresa, estado);
-            return Ok(result);
+            try
+            {
+                var result = await _comprasService.ListarOrdenesAsync(idEmpresa, estado, desde, hasta);
+                return Ok(result);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         [HttpPost("Ordenes/Borrador")]
