@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using System.Net.Mail;
 using System.Text.Json;
 using System.Threading.Tasks;
 using AlahiaPos.DataAccess.Data;
@@ -391,7 +390,19 @@ namespace AlahiaPos.DataAccess.Servicios.Cotizador
                 + "\n\nEsta estimación es orientativa y no constituye una oferta oficial.\n"
                 + "Equipo Alahia ERP / MacroBits";
 
-            await EnviarSmtpAsync(request.Correo.Trim(), $"Cotización Alahia ERP {cot.Folio}", cuerpo);
+            var html = cuerpo.Replace("\n", "<br/>");
+            await Task.Run(() =>
+                PrinterLibrary.Utility.Send(
+                    "smtp.gmail.com",
+                    587,
+                    true,
+                    "ing.joelarielsosa@gmail.com",
+                    "wrcsdhewqdgrtula",
+                    "MacroBits Software",
+                    request.Correo.Trim(),
+                    $"Cotización Alahia ERP {cot.Folio}",
+                    html
+                ));
 
             _ctx.CotizacionLead.Add(new CotizacionLead
             {
@@ -441,62 +452,47 @@ namespace AlahiaPos.DataAccess.Servicios.Cotizador
             await NotificarLeadPorCorreoAsync(request, tipo);
         }
 
+        /// <summary>
+        /// Mismo envío que el alta de empresas / notificaciones: PrinterLibrary.Utility.Send
+        /// con el SMTP Gmail que ya opera en el API.
+        /// </summary>
         private async Task NotificarLeadPorCorreoAsync(CotizadorSolicitarRequest request, string tipo)
         {
-            try
-            {
-                var to = _config["Cotizador:LeadNotifyTo"]
-                    ?? _config["Smtp:LeadNotifyTo"]
-                    ?? "ing.joelarielsosa@gmail.com";
+            var to = string.IsNullOrWhiteSpace(_config["Cotizador:LeadNotifyTo"])
+                ? "ing.joelarielsosa@gmail.com"
+                : _config["Cotizador:LeadNotifyTo"]!.Trim();
 
-                var host = _config["Smtp:Host"] ?? "smtp.gmail.com";
-                var user = _config["Smtp:User"] ?? "ing.joelarielsosa@gmail.com";
-                var pass = _config["Smtp:Password"] ?? "wrcsdhewqdgrtula";
-                var fromName = _config["Smtp:FromName"] ?? "Alahia ERP Web";
-                var port = int.TryParse(_config["Smtp:Port"], out var p) ? p : 587;
+            var nombre = string.IsNullOrWhiteSpace(request.Nombre) ? "Sin nombre" : request.Nombre.Trim();
+            var correo = string.IsNullOrWhiteSpace(request.Correo) ? "No indicado" : request.Correo.Trim();
+            var telefono = string.IsNullOrWhiteSpace(request.Telefono) ? "No indicado" : request.Telefono.Trim();
+            var mensaje = string.IsNullOrWhiteSpace(request.Mensaje)
+                ? "Sin mensaje adicional."
+                : request.Mensaje.Trim().Replace("\n", "<br/>");
 
-                var nombre = string.IsNullOrWhiteSpace(request.Nombre) ? "Sin nombre" : request.Nombre.Trim();
-                var correo = string.IsNullOrWhiteSpace(request.Correo) ? "No indicado" : request.Correo.Trim();
-                var telefono = string.IsNullOrWhiteSpace(request.Telefono) ? "No indicado" : request.Telefono.Trim();
-                var mensaje = string.IsNullOrWhiteSpace(request.Mensaje)
-                    ? "Sin mensaje adicional."
-                    : request.Mensaje.Trim().Replace("\n", "<br/>");
-
-                var subject = $"Nueva solicitud web ({tipo}) — {nombre}";
-                var body = $@"
+            var subject = $"Nueva solicitud web ({tipo}) — {nombre}";
+            var body = $@"
                     <h2>Nueva solicitud desde Alahia ERP Web</h2>
                     <p><strong>Tipo:</strong> {System.Net.WebUtility.HtmlEncode(tipo)}</p>
                     <p><strong>Contacto:</strong> {System.Net.WebUtility.HtmlEncode(nombre)}</p>
                     <p><strong>Correo:</strong> {System.Net.WebUtility.HtmlEncode(correo)}</p>
-                    <p><strong>Teléfono / WhatsApp:</strong> {System.Net.WebUtility.HtmlEncode(telefono)}</p>
+                    <p><strong>Celular:</strong> {System.Net.WebUtility.HtmlEncode(telefono)}</p>
                     <hr/>
                     <p><strong>Detalle del formulario:</strong></p>
                     <p style=""white-space:pre-wrap;font-family:Segoe UI,Arial,sans-serif;line-height:1.5"">{mensaje}</p>
-                    <hr/>
-                    <p style=""color:#64748b;font-size:12px"">Enviado automáticamente desde Cotizador/solicitar</p>
                 ";
 
-                await Task.Run(() =>
-                    PrinterLibrary.Utility.Send(
-                        host,
-                        port,
-                        true,
-                        user,
-                        pass,
-                        fromName,
-                        to,
-                        subject,
-                        body
-                    ));
-            }
-            catch (Exception ex)
-            {
-                // El lead ya quedó guardado; registrar el fallo de correo para diagnóstico.
-                System.Diagnostics.Debug.WriteLine($"[Cotizador] Fallo al notificar lead por correo: {ex}");
-                Console.Error.WriteLine($"[Cotizador] Fallo al notificar lead por correo: {ex.Message}");
-                if (ex.InnerException != null)
-                    Console.Error.WriteLine($"[Cotizador] Inner: {ex.InnerException.Message}");
-            }
+            await Task.Run(() =>
+                PrinterLibrary.Utility.Send(
+                    "smtp.gmail.com",
+                    587,
+                    true,
+                    "ing.joelarielsosa@gmail.com",
+                    "wrcsdhewqdgrtula",
+                    "MacroBits Software",
+                    to,
+                    subject,
+                    body
+                ));
         }
 
         private async Task<Dictionary<string, string>> ObtenerParametrosAsync()
@@ -511,28 +507,5 @@ namespace AlahiaPos.DataAccess.Servicios.Cotizador
         private static decimal ParseDec(Dictionary<string, string> dict, string key, decimal def)
             => dict.TryGetValue(key, out var v) && decimal.TryParse(v, System.Globalization.NumberStyles.Any,
                 System.Globalization.CultureInfo.InvariantCulture, out var n) ? n : def;
-
-        private async Task EnviarSmtpAsync(string to, string subject, string body)
-        {
-            var host = _config["Smtp:Host"] ?? _config["Email:SmtpHost"];
-            var user = _config["Smtp:User"] ?? _config["Email:User"];
-            var pass = _config["Smtp:Password"] ?? _config["Email:Password"];
-            var from = _config["Smtp:From"] ?? _config["Email:From"] ?? user;
-            var port = int.TryParse(_config["Smtp:Port"] ?? _config["Email:Port"], out var p) ? p : 587;
-
-            if (string.IsNullOrWhiteSpace(host) || string.IsNullOrWhiteSpace(from))
-                throw new Exception("SMTP no configurado en el servidor. La cotización quedó guardada; contacte a soporte.");
-
-            using var client = new SmtpClient(host, port)
-            {
-                EnableSsl = true,
-                Credentials = string.IsNullOrWhiteSpace(user)
-                    ? CredentialCache.DefaultNetworkCredentials
-                    : new NetworkCredential(user, pass)
-            };
-
-            using var msg = new MailMessage(from!, to, subject, body);
-            await client.SendMailAsync(msg);
-        }
     }
 }

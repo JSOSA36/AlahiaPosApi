@@ -220,6 +220,16 @@ namespace AlahiaPosApi.Controllers
                     });
                 }
 
+                if (string.Equals(gastoExistente.OrigenModulo, "NOMINA", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(gastoExistente.OrigenModulo, "COMPRAS", StringComparison.OrdinalIgnoreCase))
+                {
+                    return Ok(new
+                    {
+                        success = false,
+                        message = "Este gasto se originó en otro módulo y no se edita desde aquí."
+                    });
+                }
+
                 if (string.IsNullOrWhiteSpace(value.TipoGasto))
                 {
                     return Ok(new

@@ -15,6 +15,7 @@ namespace AlahiaPos.DataAccess.Servicios.AlahiaAi
         private readonly IAiPermissionService _permissions;
         private readonly IAiUsageMonitor _usage;
         private readonly IAlahiaAiErpGateway _erp;
+        private readonly IAiSqlExecutor _sql;
 
         public AlahiaAiService(
             IOptions<AlahiaAiOptions> options,
@@ -24,7 +25,8 @@ namespace AlahiaPos.DataAccess.Servicios.AlahiaAi
             IAiConversationHistory history,
             IAiPermissionService permissions,
             IAiUsageMonitor usage,
-            IAlahiaAiErpGateway erp)
+            IAlahiaAiErpGateway erp,
+            IAiSqlExecutor sql)
         {
             _options = options.Value;
             _providers = providers;
@@ -34,6 +36,7 @@ namespace AlahiaPos.DataAccess.Servicios.AlahiaAi
             _permissions = permissions;
             _usage = usage;
             _erp = erp;
+            _sql = sql;
         }
 
         public async Task<AlahiaAiChatResponse> ChatAsync(AlahiaAiChatRequest request, CancellationToken ct = default)
@@ -67,6 +70,14 @@ namespace AlahiaPos.DataAccess.Servicios.AlahiaAi
                 Content = request.Message
             });
 
+            // Fase SQL: si está habilitado y no es ayuda, consultar datos vía SELECT + aislamiento SQL
+            if (_sql.IsEnabled && !EsAyuda(request.Message))
+            {
+                var sqlPath = await TrySqlDataPathAsync(request, conversationId, ct);
+                if (sqlPath != null)
+                    return sqlPath;
+            }
+
             var (intent, context) = await _contextBuilder.BuildAsync(
                 request.Message,
                 request.IdEmpresa,
@@ -81,7 +92,7 @@ namespace AlahiaPos.DataAccess.Servicios.AlahiaAi
             string providerName = "Template";
             var completion = new AiCompletionResult();
 
-            var provider = _providers.GetCurrent();
+            var provider = await _providers.ResolveForEmpresaAsync(request.IdEmpresa, ct);
             if (provider.IsConfigured)
             {
                 completion = await provider.CompleteAsync(new AiCompletionRequest
@@ -168,7 +179,7 @@ namespace AlahiaPos.DataAccess.Servicios.AlahiaAi
             var usedLlm = false;
             var providerName = "Template";
 
-            var provider = _providers.GetCurrent();
+            var provider = await _providers.ResolveForEmpresaAsync(idEmpresa, ct);
             if (provider.IsConfigured)
             {
                 var completion = await provider.CompleteAsync(new AiCompletionRequest
@@ -306,6 +317,105 @@ namespace AlahiaPos.DataAccess.Servicios.AlahiaAi
             }
             catch { }
             return new List<string>();
+        }
+
+        private static bool EsAyuda(string message)
+        {
+            var t = (message ?? string.Empty).Trim().ToLowerInvariant();
+            return t.Contains("ayuda") || t.Contains("cómo") || t.Contains("como uso") || t.Contains("manual");
+        }
+
+        private async Task<AlahiaAiChatResponse?> TrySqlDataPathAsync(
+            AlahiaAiChatRequest request,
+            string conversationId,
+            CancellationToken ct)
+        {
+            var provider = await _providers.ResolveForEmpresaAsync(request.IdEmpresa, ct);
+            if (!provider.IsConfigured)
+                return null;
+
+            var catalog = await _sql.GetCatalogAsync(ct);
+            var gen = await provider.CompleteAsync(new AiCompletionRequest
+            {
+                SystemPrompt =
+                    "Eres un generador de SQL Server de solo lectura para Alahia ERP. " +
+                    "Responde únicamente con una sentencia SELECT sobre vistas ai.v_*.",
+                UserPrompt = _prompts.BuildSqlGenerationPrompt(request.Message, catalog),
+                Temperature = 0,
+                MaxTokens = 400
+            }, ct);
+
+            if (!gen.Success || string.IsNullOrWhiteSpace(gen.Text))
+                return null;
+
+            var sql = ExtraerSql(gen.Text);
+            var exec = await _sql.ExecuteAsync(request.IdEmpresa, sql, requireTenantContext: true, ct);
+            if (!exec.Success)
+                return null;
+
+            var answerCompletion = await provider.CompleteAsync(new AiCompletionRequest
+            {
+                SystemPrompt = _prompts.GetSystemPrompt(),
+                UserPrompt = _prompts.BuildSqlAnswerPrompt(request.Message, exec.SqlExecuted ?? sql, exec.JsonRows),
+                Temperature = 0.2,
+                MaxTokens = 700
+            }, ct);
+
+            var answer = answerCompletion.Success && !string.IsNullOrWhiteSpace(answerCompletion.Text)
+                ? answerCompletion.Text
+                : $"Consulté los datos ({exec.RowCount} filas). No pude redactar la respuesta con el LLM.";
+
+            _history.AddMessage(conversationId, new AiConversationMessage
+            {
+                Role = "assistant",
+                Content = answer,
+                Intent = "sql_select"
+            });
+
+            await _usage.TrackAsync(new AiUsageLogEntry
+            {
+                IdEmpresa = request.IdEmpresa,
+                IdUsuario = request.IdUsuario,
+                Provider = provider.ProviderId,
+                Model = answerCompletion.Model ?? gen.Model,
+                Feature = "chat_sql",
+                Intent = "sql_select",
+                PromptTokens = gen.PromptTokens + answerCompletion.PromptTokens,
+                CompletionTokens = gen.CompletionTokens + answerCompletion.CompletionTokens,
+                EstimatedCostUsd = gen.EstimatedCostUsd + answerCompletion.EstimatedCostUsd,
+                Success = true
+            }, ct);
+
+            return new AlahiaAiChatResponse
+            {
+                ConversationId = conversationId,
+                Answer = answer,
+                Intent = "sql_select",
+                UsedLlm = true,
+                Provider = provider.ProviderId,
+                SuggestTicket = false,
+                Insights = new List<string>
+                {
+                    exec.Truncated ? $"Resultado truncado a {_options.Sql.MaxRows} filas." : $"{exec.RowCount} filas."
+                },
+                ContextPreview = new
+                {
+                    sql = exec.SqlExecuted,
+                    rowCount = exec.RowCount,
+                    truncated = exec.Truncated
+                }
+            };
+        }
+
+        private static string ExtraerSql(string raw)
+        {
+            var t = (raw ?? string.Empty).Trim();
+            if (t.StartsWith("```", StringComparison.Ordinal))
+            {
+                var lines = t.Split('\n');
+                t = string.Join('\n', lines.Skip(1).TakeWhile(l => !l.TrimStart().StartsWith("```")));
+            }
+            return t.Trim().TrimEnd(';');
         }
     }
 }

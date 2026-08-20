@@ -1,6 +1,7 @@
 ﻿using AlahiaPos.Entities.Dto;
 using AlahiaPos.Entities.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using System.Linq;
 
 namespace AlahiaPosApi.Controllers
 {
@@ -26,7 +27,14 @@ namespace AlahiaPosApi.Controllers
 
             var modulos = await _perfilRoles.ObtenerModulos(perfilId, idEmpresa);
 
-            return Ok(modulos);
+            var dtos = modulos.Select(m => new UsuarioModulo
+            {
+                ModuloId = m.Id,
+                Codigo = m.Codigo,
+                Nombre = m.Nombre
+            });
+
+            return Ok(dtos);
         }
 
 

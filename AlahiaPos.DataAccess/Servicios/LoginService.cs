@@ -29,7 +29,7 @@ namespace AlahiaPos.DataAccess.Servicios
         // =====================================================
         // 🔐 LOGIN
         // =====================================================
-        public async Task<LoginResponse> Login(
+        public async Task<LoginResponse?> Login(
         Usuarios usuario,
         string password
     )
@@ -37,7 +37,7 @@ namespace AlahiaPos.DataAccess.Servicios
             var passwordHash = Utility.EncriptarPassword(password);
 
             if (usuario.PasswordHash != passwordHash)
-                throw new Exception("Usuario o contraseña inválidos");
+                return null;
 
             var empresa = await _empresaRepository.GetByIdAsync(usuario.IdEmpresa);
 

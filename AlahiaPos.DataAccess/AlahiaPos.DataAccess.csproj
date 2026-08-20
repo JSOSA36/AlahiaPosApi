@@ -12,6 +12,7 @@
     <PackageReference Include="ESCPOS_NET" Version="3.0.0" />
     <PackageReference Include="ExcelDataReader" Version="3.9.0" />
     <PackageReference Include="FirebaseAdminCore" Version="2.0.0" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.2" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="7.0.10" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="7.0.10" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="7.0.10">
@@ -22,11 +23,13 @@
     <PackageReference Include="Microsoft.Extensions.Http" Version="7.0.0" />
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="7.0.0" />
     <PackageReference Include="System.Security.Cryptography.Xml" Version="11.0.0-preview.1.26104.118" />
+    <PackageReference Include="Tesseract" Version="5.2.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\AlahiaPos.Entities\AlahiaPos.Entities.csproj" />
     <ProjectReference Include="..\PrinterLibrary\PrinterLibrary.csproj" />
+    <ProjectReference Include="..\AlahiaPos.Payroll.Infrastructure\AlahiaPos.Payroll.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

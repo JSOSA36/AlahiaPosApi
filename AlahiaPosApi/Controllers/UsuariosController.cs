@@ -116,13 +116,25 @@ namespace AlahiaPosApi.Controllers
       [FromBody] UsuarioCreateDto dto
   )
         {
-            // 🔎 1. Buscar usuario real en DB
+            if (dto == null)
+                return BadRequest("Datos inválidos");
+
+            if (dto.IdPerfil <= 0)
+                return BadRequest("Debe seleccionar un perfil.");
+
+            if (dto.IdEmpleado <= 0)
+                return BadRequest("Debe seleccionar un empleado.");
+
             var usuario = await _usuarios.ObtenerPorId(idusuario);
 
             if (usuario == null)
                 return NotFound("Usuario no encontrado");
 
-            // 🔄 2. Actualizar solo campos editables
+            // EF restaura el FK si Perfil/Empleado siguen cargados.
+            usuario.Perfil = null;
+            usuario.Empleado = null;
+            usuario.Empresa = null;
+
             usuario.IdEmpresa = dto.IdEmpresa;
             usuario.IdEmpleado = dto.IdEmpleado;
             usuario.IdPerfil = dto.IdPerfil;
@@ -134,14 +146,10 @@ namespace AlahiaPosApi.Controllers
             usuario.PuedeDisminuirCantidadCarrito = dto.PuedeDisminuirCantidadCarrito;
             usuario.PuedeEditarPrecioCarrito = dto.PuedeEditarPrecioCarrito;
 
-            // 🔐 3. Solo actualizar password si viene nuevo
             if (!string.IsNullOrWhiteSpace(dto.Password))
             {
                 usuario.PasswordHash = Utility.EncriptarPassword(dto.Password);
             }
-
-            // ❌ NO tocar FechaCreacion
-            // FechaCreacion debe mantenerse intacta
 
             var ok = await _usuarios.Actualizar(usuario);
 
@@ -151,7 +159,8 @@ namespace AlahiaPosApi.Controllers
             return Ok(new
             {
                 success = true,
-                message = "Usuario actualizado correctamente"
+                message = "Usuario actualizado correctamente",
+                idPerfil = usuario.IdPerfil
             });
         }
 

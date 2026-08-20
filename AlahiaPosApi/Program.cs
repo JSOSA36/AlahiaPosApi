@@ -7,9 +7,13 @@ using AlahiaPos.Entities.Domain;
 using AlahiaPos.Entities.Dto;
 using AlahiaPos.Entities.Interfaces;
 using AlahiaPos.Entities.Setting;
+using AlahiaPos.Payroll.Infrastructure;
 using AlahiaPosApi;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
+using System.Text.Json.Serialization;
 using PrinterLibrary;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -17,7 +21,11 @@ var builder = WebApplication.CreateBuilder(args);
 // =============================
 // Controllers + Swagger
 // =============================
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(o =>
+    {
+        o.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+    });
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -164,15 +172,33 @@ builder.Services.AddScoped<IEmpresaOperativaSeed, EmpresaOperativaSeedService>()
 builder.Services.AddScoped<IEmpresaAdminService, EmpresaAdminService>();
 builder.Services.AddScoped<ILoginService, LoginService>();
 builder.Services.AddScoped<IEmpleados, EmpleadosService>();
+builder.Services.AddScoped<IEmpleadoLaboralService, EmpleadoLaboralService>();
+builder.Services.AddScoped<IRrhhCatalogoService, AlahiaPos.DataAccess.Servicios.Rrhh.RrhhCatalogoService>();
+builder.Services.AddScoped<IRrhhPonchadorService, AlahiaPos.DataAccess.Servicios.Rrhh.RrhhPonchadorService>();
+builder.Services.AddScoped<IRrhhKioscoService, AlahiaPos.DataAccess.Servicios.Rrhh.RrhhKioscoService>();
+builder.Services.AddScoped<IRrhhDispositivoService, AlahiaPos.DataAccess.Servicios.Rrhh.RrhhDispositivoService>();
+builder.Services.AddScoped<IRrhhAusenciaService, AlahiaPos.DataAccess.Servicios.Rrhh.RrhhAusenciaService>();
+builder.Services.AddScoped<IRrhhAsistenciaService, AlahiaPos.DataAccess.Servicios.Rrhh.RrhhAsistenciaService>();
+builder.Services.AddScoped<INominaProcesoService, AlahiaPos.DataAccess.Servicios.Rrhh.NominaProcesoService>();
+builder.Services.AddScoped<INominaReciboEnvioService, AlahiaPosApi.Servicios.NominaReciboEnvioService>();
+builder.Services.AddSingleton<AlahiaPos.Payroll.Abstractions.IPayrollRulePack>(_ => AlahiaPos.Payroll.Rules.DO.DominicanRulePack.Create());
+builder.Services.AddPayrollInfrastructure(options =>
+{
+    options.UseSqlServer(builder.Configuration.GetConnectionString("Default"));
+});
+builder.Services.AddSingleton<AlahiaPos.Payroll.Abstractions.IPayrollEngine, AlahiaPos.Payroll.Core.Engine.PayrollEngine>();
 builder.Services.AddScoped<IParametrosService, ParametrosService>();
 builder.Services.AddScoped<IPlantillasDocumentosClinicos, PlantillasDocumentosClinicosService>();
 builder.Services.AddScoped<IDocumentosClinicos, DocumentosClinicosService>();
+builder.Services.AddScoped<IFichaClinica, FichaClinicaService>();
 builder.Services.AddScoped<IHistorialServicios, HistorialServiciosService>();
 builder.Services.AddScoped<IPrinterTicket, PrinterTicketServices>();
 
 
 
 builder.Services.AddScoped<IPagoEmpresaService, PagoEmpresaService>();
+builder.Services.AddScoped<IVoucherMontoReader, AlahiaPos.DataAccess.Servicios.Suscripciones.VoucherMontoReader>();
+
 builder.Services.AddSignalR();
 builder.Services.AddScoped<ITicketsService, TicketsService>();
 
@@ -217,6 +243,8 @@ builder.Services.AddSingleton<AlahiaPos.Entities.Interfaces.AlahiaAi.IAiConversa
 builder.Services.AddScoped<AlahiaPos.Entities.Interfaces.AlahiaAi.IAiPermissionService, AlahiaPos.DataAccess.Servicios.AlahiaAi.AiPermissionService>();
 builder.Services.AddSingleton<AlahiaPos.Entities.Interfaces.AlahiaAi.IAiUsageMonitor, AlahiaPos.DataAccess.Servicios.AlahiaAi.AiUsageMonitor>();
 builder.Services.AddScoped<AlahiaPos.Entities.Interfaces.AlahiaAi.IAlahiaAiErpGateway, AlahiaPos.DataAccess.Servicios.AlahiaAi.AlahiaAiErpGateway>();
+builder.Services.AddScoped<AlahiaPos.DataAccess.Servicios.AlahiaAi.IEmpresaAiConfigService, AlahiaPos.DataAccess.Servicios.AlahiaAi.EmpresaAiConfigService>();
+builder.Services.AddScoped<AlahiaPos.Entities.Interfaces.AlahiaAi.IAiSqlExecutor, AlahiaPos.DataAccess.Servicios.AlahiaAi.AiSqlExecutor>();
 builder.Services.AddScoped<AlahiaPos.Entities.Interfaces.AlahiaAi.IAlahiaAiService, AlahiaPos.DataAccess.Servicios.AlahiaAi.AlahiaAiService>();
 
 builder.Services.AddScoped<INotificacionCentro, AlahiaPos.DataAccess.Servicios.Notificaciones.NotificacionCentroService>();
@@ -304,6 +332,23 @@ if (app.Environment.IsDevelopment())
 app.UseRouting();
 
 app.UseCors("PolicyConfig");
+
+// Archivos estáticos de updates (instalador Printer Agent, latest.json, etc.)
+// Carpeta física: {ContentRoot}/updates  →  URL: /updates/...
+// En IIS demo: C:\inetpub\wwwroot\AlahiaPosApi_Demo\updates\printer\...
+var updatesPath = Path.Combine(app.Environment.ContentRootPath, "updates");
+Directory.CreateDirectory(updatesPath);
+var contentTypes = new FileExtensionContentTypeProvider();
+contentTypes.Mappings[".zip"] = "application/zip";
+contentTypes.Mappings[".json"] = "application/json";
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(updatesPath),
+    RequestPath = "/updates",
+    ContentTypeProvider = contentTypes,
+    ServeUnknownFileTypes = true,
+    DefaultContentType = "application/octet-stream"
+});
 
 app.UseAuthentication();
 app.UseAuthorization();

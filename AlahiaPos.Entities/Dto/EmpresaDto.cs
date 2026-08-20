@@ -47,6 +47,12 @@ namespace AlahiaPos.Entities.Dto
         public string? Longitude { get; set; }
         public string? NombrePlan { get; set; }
 
+        /// <summary>STANDARD | GOLD | PREMIUM. Solo lectura en PUT de empresa; se administra en EmpresaAdmin.</summary>
+        public string? NivelSoporte { get; set; }
+
+        /// <summary>URL del agente local de impresión (PrinterApi), ej. http://localhost:5045</summary>
+        public string? ApiPrint { get; set; }
+
         /// <summary>
         /// Contraseña elegida por el cliente al crear demo (opcional).
         /// Si viene vacía, el API genera una aleatoria.

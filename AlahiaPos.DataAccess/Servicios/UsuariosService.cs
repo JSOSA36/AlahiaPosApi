@@ -87,9 +87,12 @@ namespace AlahiaPos.DataAccess.Servicios
 
         public async Task<bool> Actualizar(Usuarios usuario)
         {
-            var existente = await ObtenerPorId(usuario.IdUsuario);
-            if (existente == null)
+            if (usuario == null || usuario.IdUsuario <= 0)
                 return false;
+
+            usuario.Perfil = null;
+            usuario.Empleado = null;
+            usuario.Empresa = null;
 
             _usuarioRepo.Update(usuario.IdUsuario, usuario);
             return true;
@@ -117,6 +120,7 @@ namespace AlahiaPos.DataAccess.Servicios
             if (usuario == null)
                 return false;
 
+            usuario.Perfil = null;
             usuario.IdPerfil = idPerfil;
             _usuarioRepo.Update(usuario.IdUsuario, usuario);
             return true;
@@ -133,13 +137,15 @@ namespace AlahiaPos.DataAccess.Servicios
                 return Enumerable.Empty<Modulo>();
 
             var modulos = await _perfilRolRepo.GetAllByExpresionAsync(
-                p => p.IdPerfil == usuario.IdPerfil,
+                p => p.IdPerfil == usuario.IdPerfil
+                  && p.IdEmpresa == usuario.IdEmpresa
+                  && p.Activo,
                 "Modulos"
             );
 
             return modulos
                 .Select(m => m.Modulos)
-                .Where(m => m.Activo)
+                .Where(m => m != null && m.Activo)
                 .Distinct()
                 .ToList();
         }

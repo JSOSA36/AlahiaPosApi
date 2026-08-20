@@ -29,6 +29,35 @@ namespace AlahiaPos.DataAccess.Data
         public DbSet<ParametrosConfigs> ParametrosConfigs { get; set; }
         public DbSet<ImpresorasZonas> ImpresorasZonas { get; set; }
         public DbSet<Empleados> EmpleadosP { get; set; }
+        public DbSet<EmpleadoLaboral> EmpleadoLaboral { get; set; }
+        public DbSet<EmpleadoSalarioHistorial> EmpleadoSalarioHistorial { get; set; }
+        public DbSet<NominaConcepto> NominaConcepto { get; set; }
+        public DbSet<NominaConceptoAsignacion> NominaConceptoAsignacion { get; set; }
+        public DbSet<RrhhDepartamento> RrhhDepartamento { get; set; }
+        public DbSet<RrhhCargo> RrhhCargo { get; set; }
+        public DbSet<RrhhBeneficio> RrhhBeneficio { get; set; }
+        public DbSet<RrhhCargoBeneficio> RrhhCargoBeneficio { get; set; }
+        public DbSet<RrhhCargoSalarioHistorial> RrhhCargoSalarioHistorial { get; set; }
+        public DbSet<RrhhJornada> RrhhJornada { get; set; }
+        public DbSet<RrhhJornadaDia> RrhhJornadaDia { get; set; }
+        public DbSet<RrhhTurno> RrhhTurno { get; set; }
+        public DbSet<RrhhEmpleadoHorario> RrhhEmpleadoHorario { get; set; }
+        public DbSet<RrhhPonchada> RrhhPonchada { get; set; }
+        public DbSet<RrhhPonchadaCorreccion> RrhhPonchadaCorreccion { get; set; }
+        public DbSet<RrhhEmpleadoRostro> RrhhEmpleadoRostro { get; set; }
+        public DbSet<RrhhKioscoEvento> RrhhKioscoEvento { get; set; }
+        public DbSet<RrhhPonchadorDispositivo> RrhhPonchadorDispositivo { get; set; }
+        public DbSet<RrhhPonchadorPersona> RrhhPonchadorPersona { get; set; }
+        public DbSet<RrhhPonchadorIngesta> RrhhPonchadorIngesta { get; set; }
+        public DbSet<RrhhTipoAusencia> RrhhTipoAusencia { get; set; }
+        public DbSet<RrhhSolicitudAusencia> RrhhSolicitudAusencia { get; set; }
+        public DbSet<RrhhAsistenciaDia> RrhhAsistenciaDia { get; set; }
+        public DbSet<RrhhPrestamo> RrhhPrestamo { get; set; }
+        public DbSet<RrhhPrestamoCuota> RrhhPrestamoCuota { get; set; }
+        public DbSet<RrhhAnticipo> RrhhAnticipo { get; set; }
+        public DbSet<NominaProceso> NominaProceso { get; set; }
+        public DbSet<NominaProcesoEmpleado> NominaProcesoEmpleado { get; set; }
+        public DbSet<NominaProcesoEvento> NominaProcesoEvento { get; set; }
         public DbSet<PagosFacturasClientes> PagosFacturasClientes { get; set; }
         public DbSet<Empresas> Empresas { get; set; }
         public DbSet<Gastos> Gastos { get; set; }
@@ -120,6 +149,7 @@ namespace AlahiaPos.DataAccess.Data
         public DbSet<ConduceDetalle> ConduceDetalle { get; set; }
         public DbSet<DgiiCatalogo> DgiiCatalogo { get; set; }
         public DbSet<DgiiConfiguracionEmpresa> DgiiConfiguracionEmpresa { get; set; }
+        public DbSet<EmpresaAiConfig> EmpresaAiConfig { get; set; }
         public DbSet<DgiiConfiguracionAuditoria> DgiiConfiguracionAuditoria { get; set; }
         public DbSet<NotasCredito> NotasCredito { get; set; }
         public DbSet<NotasCreditoDetalle> NotasCreditoDetalle { get; set; }
@@ -127,6 +157,7 @@ namespace AlahiaPos.DataAccess.Data
         public DbSet<ClienteSaldoAFavor> ClienteSaldoAFavor { get; set; }
         public DbSet<PlantillasDocumentosClinicos> PlantillasDocumentosClinicos { get; set; }
         public DbSet<DocumentosClinicos> DocumentosClinicos { get; set; }
+        public DbSet<FichasClinicas> FichasClinicas { get; set; }
         public DbSet<CuentaContable> CuentasContables { get; set; }
         public DbSet<AsientoContable> AsientosContables { get; set; }
         public DbSet<AsientoContableDetalle> AsientosContablesDetalle { get; set; }
@@ -213,6 +244,16 @@ namespace AlahiaPos.DataAccess.Data
                 .HasForeignKey(d => d.IdCliente)
                 .HasPrincipalKey(c => c.IDCliente);
 
+            modelBuilder.Entity<FichasClinicas>()
+                .HasOne(f => f.Cliente)
+                .WithMany()
+                .HasForeignKey(f => f.IdCliente)
+                .HasPrincipalKey(c => c.IDCliente);
+
+            modelBuilder.Entity<FichasClinicas>()
+                .HasIndex(f => new { f.IdEmpresa, f.IdCliente })
+                .IsUnique();
+
             modelBuilder.Entity<OrdenCompraDetalle>(e =>
             {
                 e.Ignore(d => d.Productos);
@@ -248,6 +289,36 @@ namespace AlahiaPos.DataAccess.Data
             {
                 e.HasIndex(x => x.Folio).IsUnique();
             });
+
+            modelBuilder.Entity<RrhhJornada>()
+                .HasMany(j => j.Dias)
+                .WithOne(d => d.Jornada)
+                .HasForeignKey(d => d.IdJornada)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<RrhhCargo>()
+                .HasMany(c => c.Beneficios)
+                .WithOne(b => b.Cargo)
+                .HasForeignKey(b => b.IdCargo)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<RrhhPrestamo>()
+                .HasMany(p => p.CuotasDetalle)
+                .WithOne(c => c.Prestamo)
+                .HasForeignKey(c => c.IdPrestamo)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<NominaProceso>()
+                .HasMany(p => p.Empleados)
+                .WithOne(e => e.Proceso)
+                .HasForeignKey(e => e.IdNominaProceso)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<NominaProceso>()
+                .HasMany(p => p.Eventos)
+                .WithOne()
+                .HasForeignKey(e => e.IdNominaProceso)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

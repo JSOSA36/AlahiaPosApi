@@ -20,7 +20,9 @@ namespace AlahiaPosApi.Mapper
             CreateMap<FacturaHeaders, FacturaHeaderDto>();
             CreateMap<FacturaHeaderDto, FacturaHeaders>();
 
-            CreateMap<FacturaDetalles, FacturaDetallesDto>();
+            CreateMap<FacturaDetalles, FacturaDetallesDto>()
+                .ForMember(d => d.FacturaHeader, o => o.Ignore())
+                .ForMember(d => d.Libras, o => o.NullSubstitute(0m));
             CreateMap<FacturaDetallesDto, FacturaDetalles>();
 
             // ===============================

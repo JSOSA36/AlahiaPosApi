@@ -76,6 +76,19 @@ namespace AlahiaPos.Entities.Dto
         public string? DireccionEmpresa { get; set; }
         public virtual ClienteDto? Clientes { get; set; }
         public string? NumeroDocumento { get; set; }
-       
+
+        /// <summary>Datos e-CF DGII para impresión de recibo (sin TrackId).</summary>
+        public bool EsComprobanteElectronico { get; set; }
+        public string? TipoECF { get; set; }
+        public string? SecurityCode { get; set; }
+        public string? UrlQR { get; set; }
+        public DateTime? FechaFirma { get; set; }
+        public DateTime? FechaEmisionEcf { get; set; }
+        public string? EstadoDgii { get; set; }
+
+        public int? IdEmpleadoConsumo { get; set; }
+        public decimal? PorcentajeDescuentoEmpleado { get; set; }
+        public bool CargarConsumoNomina { get; set; }
+        public int? IdNominaDescuento { get; set; }
     }
 }

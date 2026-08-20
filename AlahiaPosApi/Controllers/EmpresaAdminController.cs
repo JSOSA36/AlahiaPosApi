@@ -46,6 +46,14 @@ namespace AlahiaPosApi.Controllers
             return Ok(await _service.CatalogoModulosAsync(idEmpresa));
         }
 
+        [HttpGet("verticales")]
+        public async Task<IActionResult> Verticales([FromHeader(Name = "X-IdUsuario")] int idUsuario = 0)
+        {
+            if (!await EsMacroBitsAsync(idUsuario))
+                return StatusCode(403, new { message = "Solo MacroBits puede gestionar empresas." });
+            return Ok(await _service.ListarVerticalesAsync());
+        }
+
         [HttpGet("{idEmpresa:int}")]
         public async Task<IActionResult> Detalle(int idEmpresa, [FromHeader(Name = "X-IdUsuario")] int idUsuario = 0)
         {
@@ -88,6 +96,25 @@ namespace AlahiaPosApi.Controllers
             try
             {
                 await _service.ActualizarDemoAsync(idEmpresa, req);
+                return Ok(new { ok = true });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpPut("{idEmpresa:int}/nivel-soporte")]
+        public async Task<IActionResult> NivelSoporte(
+            int idEmpresa,
+            [FromBody] EmpresaAdminNivelSoporteRequest req,
+            [FromHeader(Name = "X-IdUsuario")] int idUsuario = 0)
+        {
+            if (!await EsMacroBitsAsync(idUsuario))
+                return StatusCode(403, new { message = "Solo MacroBits puede gestionar empresas." });
+            try
+            {
+                await _service.ActualizarNivelSoporteAsync(idEmpresa, req);
                 return Ok(new { ok = true });
             }
             catch (InvalidOperationException ex)

@@ -55,45 +55,70 @@
   .header {
     display: flex;
     justify-content: space-between;
-    align-items: flex-start;
+    align-items: stretch;
     gap: 16px;
     margin-bottom: 18px;
   }
-  .brand {
+  .cabecera-clinica {
+    flex: 1;
+    border: 1.5px solid #1e3a8a;
+    border-radius: 10px;
+    padding: 10px 14px 8px;
+  }
+  .cabecera-top {
     display: flex;
     align-items: center;
     gap: 12px;
-    max-width: 62%;
   }
   .logo-box {
     width: 58px;
-    height: 58px;
-    border-radius: 14px;
-    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    height: 64px;
+    background: transparent;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #fff;
-    font-size: 28px;
     flex-shrink: 0;
   }
-  .logo-img {
-    width: 58px;
-    height: 58px;
-    object-fit: contain;
-    border-radius: 14px;
+  .logo-box svg {
+    width: 52px;
+    height: 62px;
   }
-  .brand h1 {
-    font-size: 20px;
+  .cabecera-clinica h1 {
+    font-size: 22px;
     font-weight: 800;
-    letter-spacing: 0.3px;
-    color: #1e40af;
-    line-height: 1.15;
+    letter-spacing: 0.2px;
+    color: #1e3a8a;
+    line-height: 1.1;
+    font-family: Georgia, 'Times New Roman', serif;
   }
-  .brand p {
+  .cabecera-linea2 {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    margin-top: 3px;
+  }
+  .eslogan {
+    font-size: 12px;
+    color: #1e3a8a;
+  }
+  .doctor-header {
+    font-size: 15px;
+    font-weight: 800;
+    color: #1e3a8a;
+    font-family: Georgia, 'Times New Roman', serif;
+    white-space: nowrap;
+  }
+  .cabecera-bottom {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 8px;
+    padding-top: 6px;
+    border-top: 1px solid #cbd5e1;
     font-size: 11px;
-    color: #64748b;
-    margin-top: 4px;
+    color: #1e3a8a;
+    font-weight: 600;
   }
   .meta-doc {
     text-align: right;
@@ -168,8 +193,8 @@
   }
   .campo-inline {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
+    grid-template-columns: 1fr 0.55fr 1fr;
+    gap: 16px;
   }
 
   .seccion-label {
@@ -338,8 +363,9 @@
     .pagina { max-width: none; min-height: auto; padding-bottom: 0; }
     .deco-top { background: #93c5fd !important; opacity: 0.35 !important; }
     .deco-bottom { background: #60a5fa !important; opacity: 0.25 !important; }
-    .logo-box { background: #2563eb !important; color: #fff !important; }
-    .brand h1 { color: #1e40af !important; }
+    .logo-box { background: transparent !important; }
+    .cabecera-clinica h1, .eslogan, .doctor-header, .cabecera-bottom { color: #1e3a8a !important; }
+    .cabecera-clinica { border-color: #1e3a8a !important; }
     .numero-badge { background: #1e3a8a !important; color: #fff !important; }
     .titulo-wrap h2 { color: #1e3a8a !important; }
     .subtitulo { color: #3b82f6 !important; }
@@ -363,11 +389,24 @@
 
   <div class="contenido">
     <div class="header">
-      <div class="brand">
-        <div class="logo-box">🦷</div>
-        <div>
-          <h1>CLÍNICA DENTAL SENA</h1>
-          <p>Cuidamos tu sonrisa, cuidamos de ti</p>
+      <div class="cabecera-clinica">
+        <div class="cabecera-top">
+          <div class="logo-box">
+            <svg viewBox="0 0 64 80" aria-hidden="true">
+              <path fill="#1e3a8a" d="M16 16c-6 0-10 8-8 18 1 6 4 11 6 16l-3 18c-1 7 1 12 6 12 5 0 7-6 8-12l4-20c1-2 3-2 4 0l4 20c1 6 3 12 8 12 5 0 7-5 6-12l-3-18c2-5 5-10 6-16 2-10-2-18-8-18-5 0-8 4-10 4s-5-4-10-4z"/>
+            </svg>
+          </div>
+          <div style="flex:1;min-width:0;">
+            <h1>{{NOMBRE_EMPRESA}}</h1>
+            <div class="cabecera-linea2">
+              <span class="eslogan">{{ESLOGAN}}</span>
+              <span class="doctor-header">{{DOCTOR}}</span>
+            </div>
+          </div>
+        </div>
+        <div class="cabecera-bottom">
+          <span>{{DIRECCION}}</span>
+          <span>Tel.: {{TELEFONO}}</span>
         </div>
       </div>
       <div class="meta-doc">
@@ -392,6 +431,10 @@
       <div class="campo">
         <label>CÉDULA</label>
         <div class="valor">{{CEDULA}}</div>
+      </div>
+      <div class="campo">
+        <label>EDAD</label>
+        <div class="valor">{{EDAD}}</div>
       </div>
       <div class="campo">
         <label>FECHA DE ATENCIÓN</label>
@@ -425,17 +468,15 @@
         <div class="firma-img">{{FIRMA}}</div>
         <div class="linea-firma">
           <div class="nombre-doctor">{{DOCTOR}}</div>
-          <div class="titulo-doctor">ODONTÓLOGA</div>
+          <div class="titulo-doctor">{{CARGO_DOCTOR}}</div>
         </div>
       </div>
       <div class="sello-area">{{SELLO}}</div>
     </div>
 
     <div class="footer-contacto">
-      <div class="footer-item">📍 Av. Principal #123, Santo Domingo, RD</div>
-      <div class="footer-item">📞 (809) 123-4567</div>
-      <div class="footer-item">✉ info@clinicadentalsena.com</div>
-      <div class="footer-item">🌐 www.clinicadentalsena.com</div>
+      <div class="footer-item">📍 {{DIRECCION}}</div>
+      <div class="footer-item">📞 {{TELEFONO}}</div>
     </div>
   </div>
 </div>

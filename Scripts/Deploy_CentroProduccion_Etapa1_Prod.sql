@@ -505,7 +505,7 @@ BEGIN
         (IdFlujo, Codigo, NombreVisible, Orden, EsInicial, EsTerminal, CuentaParaCompletar, ColorHint)
     VALUES
         (@IdFlujo, N'PENDIENTE',       N'Pendiente',        1, 1, 0, 1, N'neutral'),
-        (@IdFlujo, N'EN_PREPARACION',  N'En preparación',   2, 0, 0, 1, N'info'),
+        (@IdFlujo, N'EN_PREPARACION',  N'Preparación',      2, 0, 0, 1, N'info'),
         (@IdFlujo, N'LISTA',           N'Lista',            3, 0, 0, 1, N'success'),
         (@IdFlujo, N'ENTREGADA',       N'Entregada',        4, 0, 1, 1, N'success'),
         (@IdFlujo, N'CANCELADA',       N'Cancelada',        99, 0, 1, 0, N'danger');

@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <RootNamespace>AlahiaPos.Payroll.Infrastructure.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="7.0.10" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AlahiaPos.Payroll.Infrastructure\AlahiaPos.Payroll.Infrastructure.csproj" />
+    <ProjectReference Include="..\AlahiaPos.Payroll.Abstractions\AlahiaPos.Payroll.Abstractions.csproj" />
+    <ProjectReference Include="..\AlahiaPos.Payroll.Core\AlahiaPos.Payroll.Core.csproj" />
+    <ProjectReference Include="..\AlahiaPos.Payroll.Rules.DO\AlahiaPos.Payroll.Rules.DO.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -38,6 +38,11 @@ namespace PrinterApi.Dto
         /// </summary>
         public static void SendBytesToPrinter(string printerName, byte[] bytes)
         {
+            if (string.IsNullOrWhiteSpace(printerName))
+                throw new Exception(
+                    "No hay impresora configurada en el agente. " +
+                    "En el PC de la caja: Configuración → Impresión térmica, o PUT /api/Printer/settings.");
+
             IntPtr hPrinter;
 
             var docInfo = new DOCINFOA()
@@ -46,8 +51,14 @@ namespace PrinterApi.Dto
                 pDataType = "RAW"
             };
 
-            if (!OpenPrinter(printerName, out hPrinter, IntPtr.Zero))
-                throw new Exception("No se pudo abrir la impresora");
+            if (!OpenPrinter(printerName.Trim(), out hPrinter, IntPtr.Zero))
+            {
+                var err = Marshal.GetLastWin32Error();
+                throw new Exception(
+                    $"No se pudo abrir la impresora \"{printerName.Trim()}\" (Win32={err}). " +
+                    "Verifique que el nombre coincida exactamente con Windows " +
+                    "(Impresoras y escáneres) y que el servicio AlahiaPrinterApi esté en ese mismo PC.");
+            }
 
             if (!StartDocPrinter(hPrinter, 1, docInfo))
                 throw new Exception("No se pudo iniciar documento de impresión");

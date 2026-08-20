@@ -17,6 +17,10 @@ namespace AlahiaPos.Entities.Dto
         public string? LogoEmpresa { get; set; }
         public string? RncEmpresa { get; set; }
         public string ClienteNombre { get; set; } = "";
+        public string? ClienteTelefono { get; set; }
+        public string? ClienteRnc { get; set; }
+        public string? ClienteDireccion { get; set; }
+        public string? ClienteCorreo { get; set; }
         public decimal SubTotal { get; set; }
         public decimal TotalItbis { get; set; }
         public decimal TotalDescuento { get; set; }

@@ -30,6 +30,25 @@ namespace AlahiaPos.DataAccess.Servicios.AlahiaAi
             "2) Entre 4 y 6 viñetas accionables (facturas por cobrar, stock crítico, ventas, pagos, flujo de caja).\n" +
             "No inventes datos fuera del JSON.";
 
+        public string BuildSqlGenerationPrompt(string userMessage, string catalogJson) =>
+            "Genera UNA sola consulta SQL Server de solo lectura para responder la pregunta.\n" +
+            "Reglas estrictas:\n" +
+            "- Solo SELECT (o WITH ... SELECT).\n" +
+            "- Usa únicamente vistas del schema ai (ej. ai.v_FacturaHeaders).\n" +
+            "- NO filtres por IdEmpresa: el aislamiento lo aplica SQL Server.\n" +
+            "- Prefiere agregaciones (SUM, COUNT, TOP 20).\n" +
+            "- Fechas en República Dominicana; mes actual si no se indica.\n" +
+            "- Facturas de venta típicas: IdTipoDocumentos = 1 y EstaCancelada = 0.\n" +
+            "- Responde SOLO con el SQL, sin markdown ni explicación.\n\n" +
+            "Catálogo de vistas:\n" + catalogJson + "\n\n" +
+            "Pregunta: " + userMessage;
+
+        public string BuildSqlAnswerPrompt(string userMessage, string sql, string rowsJson) =>
+            "Pregunta del usuario: " + userMessage + "\n" +
+            "SQL ejecutado (solo lectura):\n" + sql + "\n" +
+            "Resultado JSON (puede estar truncado):\n" + rowsJson + "\n\n" +
+            "Responde en español claro como asesor Alahia AI. Usa RD$. No inventes filas que no estén en el JSON.";
+
         public string BuildTemplateAnswer(string intent, string contextJson)
         {
             try

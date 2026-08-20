@@ -3,9 +3,13 @@ using AlahiaPos.Entities.Domain;
 using AlahiaPos.Entities.Dto;
 using AlahiaPos.Entities.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using PrinterLibrary;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace AlahiaPos.DataAccess.Servicios
@@ -13,19 +17,26 @@ namespace AlahiaPos.DataAccess.Servicios
     public class PagoEmpresaService : IPagoEmpresaService
     {
         private const string CorreoAdminFallback = "ing.joelarielsosa@gmail.com";
+        private const decimal ToleranciaDopDefault = 1m;
 
         private readonly AlahiaPosContext _ctx;
         private readonly ISuscripcionCobroService _suscripcion;
         private readonly INotificacionCentro _notificaciones;
+        private readonly IVoucherMontoReader _voucherReader;
+        private readonly IConfiguration _config;
 
         public PagoEmpresaService(
             AlahiaPosContext ctx,
             ISuscripcionCobroService suscripcion,
-            INotificacionCentro notificaciones)
+            INotificacionCentro notificaciones,
+            IVoucherMontoReader voucherReader,
+            IConfiguration config)
         {
             _ctx = ctx;
             _suscripcion = suscripcion;
             _notificaciones = notificaciones;
+            _voucherReader = voucherReader;
+            _config = config;
         }
 
         public async Task CrearPagoAsync(CrearPagoDto dto)
@@ -37,11 +48,62 @@ namespace AlahiaPos.DataAccess.Servicios
             var yaPendiente = await _ctx.PagosEmpresa.AnyAsync(p =>
                 p.IdEmpresa == dto.IdEmpresa && p.Estado == "PENDIENTE");
             if (yaPendiente)
-                throw new Exception("Ya tiene un pago en validación. Espere la aprobación de MacroBits.");
+                throw new InvalidOperationException(
+                    "Ya tiene un pago en validación. Espere la aprobación de MacroBits.");
+
+            if (dto.ImagenBytes == null || dto.ImagenBytes.Length == 0)
+                throw new InvalidOperationException("Debe subir un comprobante (foto del voucher).");
+
+            var calc = await _suscripcion.CalcularFacturaAsync(dto.IdEmpresa);
+            var totalDop = calc.TotalDop;
+            var tolerancia = ObtenerToleranciaDop();
+
+            // El sistema lee el monto de la imagen; el cliente no lo digita.
+            var lectura = await _voucherReader.LeerMontoAsync(
+                dto.ImagenBytes,
+                dto.ImagenContentType);
+
+            if (!lectura.Ok || !lectura.Monto.HasValue || lectura.Monto.Value <= 0)
+            {
+                throw new InvalidOperationException(
+                    lectura.Error
+                    ?? "No se pudo leer el monto del voucher. Suba una foto clara del comprobante.");
+            }
+
+            var montoLeidoDop = lectura.Monto.Value;
+            if (string.Equals(lectura.Moneda, "USD", StringComparison.OrdinalIgnoreCase))
+            {
+                var tasa = calc.TasaUsdDop > 0 ? calc.TasaUsdDop : 60m;
+                montoLeidoDop = Math.Round(lectura.Monto.Value * tasa, 2, MidpointRounding.AwayFromZero);
+            }
+
+            if (montoLeidoDop + tolerancia < totalDop)
+            {
+                throw new MontoVoucherInsuficienteException(
+                    montoLeidoDop,
+                    totalDop,
+                    calc.MontoReconexionDop,
+                    calc.MontoPlanDop);
+            }
+
+            // Solo si el monto alcanza: subir archivo y registrar.
+            var ext = Path.GetExtension(dto.ImagenFileName ?? "");
+            if (string.IsNullOrWhiteSpace(ext))
+                ext = GuessExtension(dto.ImagenContentType);
+            dto.ArchivoUrl = Utility.UploadFileFtp(
+                dto.ImagenBytes,
+                Guid.NewGuid() + ext);
+
+            dto.Monto = calc.Total;
 
             var ciclo = await _suscripcion.ObtenerOCrearCicloActualAsync(empresa);
             var estadoPrevio = (empresa.EstadoServicio ?? string.Empty).Trim().ToUpperInvariant();
             var estabaSuspendida = estadoPrevio is "SUSPENDIDA" or "BLOQUEADO";
+
+            var obs = estabaSuspendida ? "[HUBO_SUSPENSION]" : null;
+            var marcaVoucher =
+                $"[VOUCHER_DOP:{montoLeidoDop:0.00}|RAW:{lectura.Monto:0.00} {lectura.Moneda}]";
+            obs = string.IsNullOrWhiteSpace(obs) ? marcaVoucher : $"{obs} {marcaVoucher}";
 
             var pago = new PagoEmpresa
             {
@@ -55,8 +117,7 @@ namespace AlahiaPos.DataAccess.Servicios
                 IdCiclo = ciclo?.IdCiclo,
                 IdUsuarioReporta = dto.IdUsuarioReporta,
                 Estado = "PENDIENTE",
-                // Marcador interno (no visible al cliente). Se limpia al aprobar/rechazar.
-                Observacion = estabaSuspendida ? "[HUBO_SUSPENSION]" : null
+                Observacion = obs
             };
 
             _ctx.PagosEmpresa.Add(pago);
@@ -64,7 +125,29 @@ namespace AlahiaPos.DataAccess.Servicios
 
             await _suscripcion.OnPagoReportadoAsync(dto.IdEmpresa, pago.Id, ciclo?.IdCiclo);
 
-            await NotificarAdminPagoReportadoAsync(empresa, pago);
+            await NotificarAdminPagoReportadoAsync(empresa, pago, montoLeidoDop);
+        }
+
+        private decimal ObtenerToleranciaDop()
+        {
+            var raw = _config["Suscripcion:ToleranciaMontoVoucherDop"];
+            if (decimal.TryParse(raw, System.Globalization.NumberStyles.Any,
+                    System.Globalization.CultureInfo.InvariantCulture, out var t)
+                && t >= 0)
+                return t;
+            return ToleranciaDopDefault;
+        }
+
+        private static string GuessExtension(string? contentType)
+        {
+            var mime = (contentType ?? "").Split(';')[0].Trim().ToLowerInvariant();
+            return mime switch
+            {
+                "image/png" => ".png",
+                "image/webp" => ".webp",
+                "image/gif" => ".gif",
+                _ => ".jpg"
+            };
         }
 
         public async Task<List<PagoEmpresaDto>> ObtenerPagosAsync()
@@ -231,7 +314,10 @@ namespace AlahiaPos.DataAccess.Servicios
                 && e.Fecha >= DateTime.Now.AddDays(-40));
         }
 
-        private async Task NotificarAdminPagoReportadoAsync(Empresas empresa, PagoEmpresa pago)
+        private async Task NotificarAdminPagoReportadoAsync(
+            Empresas empresa,
+            PagoEmpresa pago,
+            decimal montoVoucherDop)
         {
             var admin = await _ctx.Empresas.AsNoTracking()
                 .Where(e => e.EsEmpresaSistema && e.Estado)
@@ -252,7 +338,10 @@ namespace AlahiaPos.DataAccess.Servicios
                 DestinoTipo = NotificacionDestinos.Empresa,
                 Prioridad = NotificacionPrioridades.Advertencia,
                 Titulo = $"Pago pendiente de aprobar — {empresa.NombreComercial}",
-                Mensaje = $"{empresa.NombreComercial} reportó un pago de USD {(pago.Monto ?? 0):0.00} (ref: {pago.Referencia ?? "—"}). Revise Cobros y Suscripciones.",
+                Mensaje =
+                    $"{empresa.NombreComercial} reportó un pago de USD {(pago.Monto ?? 0):0.00} " +
+                    $"(voucher leído RD$ {montoVoucherDop:0.00}, ref: {pago.Referencia ?? "—"}). " +
+                    "Revise Cobros y Suscripciones.",
                 Ruta = "/cobros-admin",
                 ReferenciaTipo = "PagoEmpresa",
                 ReferenciaId = pago.Id,
@@ -264,7 +353,14 @@ namespace AlahiaPos.DataAccess.Servicios
         private static string? LimpiarMarcadorInterno(string? observacion)
         {
             if (string.IsNullOrWhiteSpace(observacion)) return observacion;
-            var limpio = observacion.Replace("[HUBO_SUSPENSION]", string.Empty, StringComparison.OrdinalIgnoreCase).Trim();
+            var limpio = observacion
+                .Replace("[HUBO_SUSPENSION]", string.Empty, StringComparison.OrdinalIgnoreCase)
+                .Trim();
+            limpio = Regex.Replace(
+                limpio,
+                @"\[VOUCHER_DOP:[^\]]*\]",
+                string.Empty,
+                RegexOptions.IgnoreCase).Trim();
             return string.IsNullOrWhiteSpace(limpio) ? null : limpio;
         }
     }

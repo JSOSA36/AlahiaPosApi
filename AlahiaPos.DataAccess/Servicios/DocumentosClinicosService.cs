@@ -64,6 +64,17 @@ namespace AlahiaPos.DataAccess.Servicios
             if (string.IsNullOrWhiteSpace(documento.Estado))
                 documento.Estado = "EMITIDO";
 
+            if (string.IsNullOrWhiteSpace(documento.NumeroDocumento))
+            {
+                documento.NumeroDocumento = await GenerarSiguienteNumero(
+                    documento.IdEmpresa,
+                    documento.TipoDocumento);
+            }
+
+            documento.ContenidoHTMLFinal = ReemplazarNumeroEnHtml(
+                documento.ContenidoHTMLFinal,
+                documento.NumeroDocumento);
+
             await _repository.Save(documento);
         }
 
@@ -77,6 +88,33 @@ namespace AlahiaPos.DataAccess.Servicios
         {
             _repository.Delete(idDocumentoClinico);
             return Task.CompletedTask;
+        }
+
+        private async Task<string> GenerarSiguienteNumero(int idEmpresa, string tipoDocumento)
+        {
+            var existentes = await _repository.GetAllByExpresionAsync(
+                d => d.IdEmpresa == idEmpresa
+                     && d.TipoDocumento == tipoDocumento);
+
+            var maximo = 0;
+            foreach (var doc in existentes)
+            {
+                if (int.TryParse((doc.NumeroDocumento ?? "").Trim(), out var numero)
+                    && numero > maximo)
+                {
+                    maximo = numero;
+                }
+            }
+
+            return (maximo + 1).ToString();
+        }
+
+        private static string ReemplazarNumeroEnHtml(string html, string numero)
+        {
+            if (string.IsNullOrWhiteSpace(html) || string.IsNullOrWhiteSpace(numero))
+                return html ?? string.Empty;
+
+            return html.Replace("{{NUMERO_DOCUMENTO}}", numero);
         }
     }
 }

@@ -17,6 +17,11 @@ namespace AlahiaPos.Entities.Interfaces
         public Task RegistrarPagoFactura(int IdFactura, PagosFacturasClientes pago);
 
         /// <summary>
+        /// Recibo de abono para impresión (cliente + factura + saldos).
+        /// </summary>
+        Task<TicketReciboAbonoDto?> GetReciboAbonoByPagoIdAsync(int idPago);
+
+        /// <summary>
         /// Registra cobros a varias facturas del mismo cliente en una sola transacción.
         /// </summary>
         Task<RegistrarPagoLoteResult> RegistrarPagoLoteAsync(RegistrarPagoLoteRequest request);

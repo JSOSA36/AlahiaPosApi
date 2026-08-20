@@ -128,12 +128,26 @@ namespace AlahiaPosApi.Controllers
 
                 p.EsServicio = value.EsServicio ?? false;
 
+                // Servicio ofrecido: nunca controla existencia.
+                if (p.EsServicio)
+                {
+                    p.ControlarStock = false;
+                    p.Cantidad = 0;
+                    if (TipoComportamientoConstantes.Normalizar(p.TipoComportamiento)
+                        == TipoComportamientoConstantes.Inventario
+                        || TipoComportamientoConstantes.Normalizar(p.TipoComportamiento)
+                        == TipoComportamientoConstantes.ActivoFijo)
+                    {
+                        p.TipoComportamiento = TipoComportamientoConstantes.Servicio;
+                    }
+                }
+
                 p.Descuento = 0;
                 p.IsActivo = true;
 
-                if (string.IsNullOrWhiteSpace(value.TipoComportamiento)
-                    && TipoComportamientoConstantes.Normalizar(p.TipoComportamiento) == TipoComportamientoConstantes.Inventario
-                    && value.EsServicio != true)
+                if (!p.EsServicio
+                    && string.IsNullOrWhiteSpace(value.TipoComportamiento)
+                    && TipoComportamientoConstantes.Normalizar(p.TipoComportamiento) == TipoComportamientoConstantes.Inventario)
                 {
                     p.ControlarStock = value.ControlarStock;
                 }
@@ -144,17 +158,22 @@ namespace AlahiaPosApi.Controllers
                 p.IdEmpresa = value.IdEmpresa;
                 p.EsProductoBelleza = value.isproductobelleza ?? false;
 
-                // 🔥 IMAGEN
+                // 🔥 IMAGEN — nombre único (evita choque FTP/caché entre productos)
                 if (value.Imagen != null)
                 {
                     using var ms = new MemoryStream();
                     await value.Imagen.CopyToAsync(ms);
                     byte[] imagenBytes = ms.ToArray();
 
-                    p.Imagen1 = Utility.UploadFileFtp(
-                        imagenBytes,
-                        GlobalParamter.IdEmpresa + value.nombre + ".jpg"
-                    );
+                    var idEmpresa = value.IdEmpresa > 0 ? value.IdEmpresa : p.IdEmpresa;
+                    var idProd = value.idProducto > 0 ? value.idProducto : 0;
+                    var fileName = $"{idEmpresa}_{idProd}_{Guid.NewGuid():N}.jpg";
+
+                    var url = Utility.UploadFileFtp(imagenBytes, fileName);
+                    if (!string.IsNullOrWhiteSpace(url))
+                        p.Imagen1 = url;
+                    else
+                        return BadRequest("No se pudo subir la imagen. Intente de nuevo.");
                 }
 
                 // 🔥 GUARDAR SEGÚN CASO
@@ -185,18 +204,23 @@ namespace AlahiaPosApi.Controllers
 
         // PUT api/<ProductosController>/5
         [HttpPut()]
-        public async Task Put([FromForm] ProductosDto value)
+        public async Task<IActionResult> Put([FromForm] ProductosDto value)
         {
             var Producto =  services.GetProductoById(value.idProducto);
+            if (Producto == null)
+                return NotFound("Producto no encontrado");
            
             if (value.Imagen != null)
             {
-
                 using var ms = new MemoryStream();
                 await value.Imagen.CopyToAsync(ms);
                 byte[] imagenBytes = ms.ToArray();
-                Producto.Imagen1 = Utility.UploadFileFtp(imagenBytes,
-                Guid.NewGuid().ToString()+ ".jpg");
+                var fileName = $"{Producto.IdEmpresa}_{Producto.IdProducto}_{Guid.NewGuid():N}.jpg";
+                var url = Utility.UploadFileFtp(imagenBytes, fileName);
+                if (!string.IsNullOrWhiteSpace(url))
+                    Producto.Imagen1 = url;
+                else
+                    return BadRequest("No se pudo subir la imagen. Intente de nuevo.");
             }
 
 
@@ -223,7 +247,20 @@ namespace AlahiaPosApi.Controllers
                 Producto,
                 value.TipoComportamiento);
 
+            if (Producto.EsServicio)
+            {
+                Producto.ControlarStock = false;
+                Producto.Cantidad = 0;
+                var tipoPut = TipoComportamientoConstantes.Normalizar(Producto.TipoComportamiento);
+                if (tipoPut == TipoComportamientoConstantes.Inventario
+                    || tipoPut == TipoComportamientoConstantes.ActivoFijo)
+                {
+                    Producto.TipoComportamiento = TipoComportamientoConstantes.Servicio;
+                }
+            }
+
             services.UpdateProductos(value.idProducto,Producto);
+            return Ok(new { message = "Producto actualizado ✅" });
         }
         [HttpGet("ProductosLite/{IdEmpresa}")]
         public async Task<IEnumerable<ProductoLiteDto>> GetLite(int IdEmpresa)

@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>AlahiaPos.Payroll.Abstractions</RootNamespace>
+    <AssemblyName>AlahiaPos.Payroll.Abstractions</AssemblyName>
+    <Description>Contratos del Payroll Engine (ALAHIA-PE-01). Sin SQL, EF ni HTTP.</Description>
+  </PropertyGroup>
+
+</Project>

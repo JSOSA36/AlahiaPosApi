@@ -11,17 +11,24 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.PgEInvoicing
         {
             var enc = doc.Encabezado;
 
+            var esE34 = enc.TipoEcf == 34;
+
             var idDoc = new PgIdDocDto
             {
                 TipoeCF = enc.TipoEcf,
                 ENCF = enc.Encf,
-                TipoIngresos = enc.TipoIngreso,
-                TipoPago = enc.TipoPago,
+                IndicadorNotaCredito = enc.IndicadorNotaCredito,
                 IndicadorMontoGravado = enc.IndicadorMontoGravado,
-                FechaVencimientoSecuencia = enc.FechaVencimientoSecuencia?.ToString("yyyy-MM-ddTHH:mm:ss")
+                // E34: FechaVencimientoSecuencia no existe en XSD; no enviar.
+                FechaVencimientoSecuencia = esE34
+                    ? null
+                    : enc.FechaVencimientoSecuencia?.ToString("yyyy-MM-ddTHH:mm:ss"),
+                TipoIngresos = enc.TipoIngreso,
+                TipoPago = enc.TipoPago
             };
 
-            if (doc.FormasPago.Any())
+            // E34: TablaFormasPago prohibida en IdDoc (DGII rechaza por XSD).
+            if (!esE34 && doc.FormasPago.Any())
             {
                 idDoc.TablaFormasPago = doc.FormasPago.Select(f => new PgFormaPagoDto
                 {

@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>AlahiaPos.Payroll.Core</RootNamespace>
+    <AssemblyName>AlahiaPos.Payroll.Core</AssemblyName>
+    <Description>Payroll Engine Core — DAG + runner (ALAHIA-PE-01). Solo referencia Abstractions.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AlahiaPos.Payroll.Abstractions\AlahiaPos.Payroll.Abstractions.csproj" />
+  </ItemGroup>
+
+</Project>

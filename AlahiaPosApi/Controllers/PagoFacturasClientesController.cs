@@ -91,7 +91,15 @@ namespace AlahiaPosApi.Controllers
             try
             {
                 await _pagosService.RegistrarPagoFactura(IdFactura, pago);
-                return Ok(new { message = "Pago registrado y factura actualizada correctamente" });
+                return Ok(new
+                {
+                    message = "Pago registrado y factura actualizada correctamente",
+                    idPago = pago.Id,
+                    idFacturaHeader = IdFactura,
+                    monto = pago.Monto,
+                    formaPago = pago.FormaPago,
+                    nota = pago.Nota
+                });
             }
             catch (ArgumentException ex)
             {
@@ -101,6 +109,20 @@ namespace AlahiaPosApi.Controllers
             {
                 return NotFound(new { message = ex.Message });
             }
+        }
+
+        /// <summary>Datos del recibo de abono para impresión térmica.</summary>
+        [HttpGet("recibo/{idPago:int}")]
+        public async Task<IActionResult> GetReciboAbono(int idPago)
+        {
+            if (idPago <= 0)
+                return BadRequest(new { message = "IdPago inválido" });
+
+            var recibo = await _pagosService.GetReciboAbonoByPagoIdAsync(idPago);
+            if (recibo == null)
+                return NotFound(new { message = "Pago no encontrado" });
+
+            return Ok(recibo);
         }
 
         /// <summary>

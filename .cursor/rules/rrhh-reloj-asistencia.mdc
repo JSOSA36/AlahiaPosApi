@@ -1,0 +1,20 @@
+---
+description: Relojes de asistencia físicos — cable o WiFi, IP local, ingest a RrhhPonchada, sin suscripción del fabricante.
+globs: "**/RrhhDispositivo*.cs,**/RrhhIclock*.cs,**/RrhhPonchador*.cs"
+alwaysApply: false
+---
+
+# Relojes de asistencia (ponchador físico)
+
+El dispositivo marca; Alahia ingesta a `RrhhPonchada`. No reloj en el celular como método principal.
+
+## Red
+
+- Modelos con **Ethernet** y modelos con **WiFi**. El medio no importa: se trabaja con **IP + puerto** (y serial si existe).
+- ZKTeco SDK típico: **4370**. ADMS/iClock es push HTTP al ERP, no ZKBioTime de pago.
+- Nube vs LAN: API en internet ⇒ agente local o push. API en la misma red ⇒ TCP/SDK a la IP.
+
+## Proveedores
+
+Nuevo fabricante ⇒ nuevo conector. No cambiar el núcleo de ponchada/asistencia/nómina.
+Idempotencia `ClaveExterna`. PIN del reloj mapeado a `IdEmpleados`.

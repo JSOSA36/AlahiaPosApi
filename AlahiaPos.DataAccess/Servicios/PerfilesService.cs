@@ -63,7 +63,7 @@ namespace AlahiaPos.DataAccess.Servicios
             );
 
             var perfilRoles = await _perfilRolesRepo.GetAllByExpresionAsync(
-                pr => pr.IdEmpresa == idEmpresa 
+                pr => pr.IdEmpresa == idEmpresa && pr.Activo
             );
 
             var result = perfiles.Select(p => new PerfilWithModulosDto
@@ -76,6 +76,7 @@ namespace AlahiaPos.DataAccess.Servicios
                 Modulos = perfilRoles
                     .Where(r => r.IdPerfil == p.IdPerfil)
                     .Select(r => r.IdModulo)
+                    .Distinct()
                     .ToList()
             });
 

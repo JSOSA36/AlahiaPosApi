@@ -64,15 +64,39 @@ namespace AlahiaPos.DataAccess.Servicios.AlahiaAi.Providers
                     msg.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _apiKey);
             }
 
+            object userContent;
+            if (!string.IsNullOrWhiteSpace(request.ImageBase64))
+            {
+                var mime = string.IsNullOrWhiteSpace(request.ImageMimeType)
+                    ? "image/jpeg"
+                    : request.ImageMimeType!.Trim();
+                userContent = new object[]
+                {
+                    new { type = "text", text = request.UserPrompt },
+                    new
+                    {
+                        type = "image_url",
+                        image_url = new
+                        {
+                            url = $"data:{mime};base64,{request.ImageBase64}"
+                        }
+                    }
+                };
+            }
+            else
+            {
+                userContent = request.UserPrompt;
+            }
+
             var payload = new
             {
                 model = _model,
                 temperature = request.Temperature,
                 max_tokens = request.MaxTokens,
-                messages = new[]
+                messages = new object[]
                 {
                     new { role = "system", content = request.SystemPrompt },
-                    new { role = "user", content = request.UserPrompt }
+                    new { role = "user", content = userContent }
                 }
             };
 
@@ -225,14 +249,36 @@ namespace AlahiaPos.DataAccess.Servicios.AlahiaAi.Providers
             });
     }
 
+    /// <summary>OpenAI-compatible con key/modelo en runtime (config por empresa).</summary>
+    public sealed class RuntimeOpenAiProvider : OpenAiCompatibleProvider
+    {
+        public RuntimeOpenAiProvider(HttpClient http, string providerId, string apiKey, string model, string baseUrl)
+            : base(
+                http,
+                string.IsNullOrWhiteSpace(providerId) ? "OpenAI" : providerId,
+                apiKey,
+                string.IsNullOrWhiteSpace(model) ? "gpt-4o-mini" : model,
+                string.IsNullOrWhiteSpace(baseUrl) ? "https://api.openai.com/v1" : baseUrl.TrimEnd('/'))
+        {
+        }
+    }
+
     public sealed class AiProviderFactory : IAiProviderFactory
     {
         private readonly IReadOnlyDictionary<string, IAiProvider> _providers;
         private readonly AlahiaAiOptions _options;
+        private readonly IHttpClientFactory _httpFactory;
+        private readonly IEmpresaAiConfigService _empresaAi;
 
-        public AiProviderFactory(IEnumerable<IAiProvider> providers, IOptions<AlahiaAiOptions> options)
+        public AiProviderFactory(
+            IEnumerable<IAiProvider> providers,
+            IOptions<AlahiaAiOptions> options,
+            IHttpClientFactory httpFactory,
+            IEmpresaAiConfigService empresaAi)
         {
             _options = options.Value;
+            _httpFactory = httpFactory;
+            _empresaAi = empresaAi;
             _providers = providers.ToDictionary(p => p.ProviderId, StringComparer.OrdinalIgnoreCase);
         }
 
@@ -249,6 +295,39 @@ namespace AlahiaPos.DataAccess.Servicios.AlahiaAi.Providers
                 return provider;
 
             throw new InvalidOperationException($"Proveedor de IA no registrado: {providerId}");
+        }
+
+        public async Task<IAiProvider> ResolveForEmpresaAsync(int idEmpresa, CancellationToken ct = default)
+        {
+            var runtime = await _empresaAi.ObtenerRuntimeAsync(idEmpresa, ct);
+            if (runtime == null || !runtime.Activo || string.IsNullOrWhiteSpace(runtime.ApiKey))
+                return GetCurrent();
+
+            var providerId = runtime.Provider;
+            // OpenAI / Ollama compatible endpoint
+            if (providerId.Equals("OpenAI", StringComparison.OrdinalIgnoreCase)
+                || providerId.Equals("Ollama", StringComparison.OrdinalIgnoreCase))
+            {
+                var http = _httpFactory.CreateClient("AlahiaAi");
+                var baseUrl = runtime.BaseUrl;
+                if (providerId.Equals("Ollama", StringComparison.OrdinalIgnoreCase))
+                {
+                    baseUrl = string.IsNullOrWhiteSpace(baseUrl)
+                        ? "http://localhost:11434/v1"
+                        : baseUrl.TrimEnd('/').TrimEnd('/') + (baseUrl.Contains("/v1") ? "" : "/v1");
+                    if (!baseUrl.EndsWith("/v1", StringComparison.OrdinalIgnoreCase))
+                        baseUrl = baseUrl.TrimEnd('/') + "/v1";
+                }
+                else if (string.IsNullOrWhiteSpace(baseUrl))
+                {
+                    baseUrl = "https://api.openai.com/v1";
+                }
+
+                return new RuntimeOpenAiProvider(http, providerId, runtime.ApiKey, runtime.Model, baseUrl);
+            }
+
+            // Azure / otros: por ahora fallback al registrado global si no hay runtime OpenAI
+            return GetCurrent();
         }
     }
 }

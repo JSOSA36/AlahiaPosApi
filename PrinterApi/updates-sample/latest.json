@@ -1,0 +1,10 @@
+﻿{
+    "version":  "1.0.10",
+    "url":  "https://alahiaposapidemo.alahiapos.com/updates/printer/AlahiaPrinterApi-1.0.10.zip",
+    "sha256":  "621F4FB035AA82F3FAB6BC10D3EC93D01BF936A922FE5C56799F7531B38A78C6",
+    "mandatory":  false,
+    "notes":  "Hora en F.Firma; tipo y forma de pago debajo de e-NCF; sin monto duplicado bajo el total.",
+    "released":  "2026-08-18T20:16:42.8488918Z",
+    "runtime":  "win-x64",
+    "selfContained":  true
+}

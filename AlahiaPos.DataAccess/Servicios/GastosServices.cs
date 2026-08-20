@@ -79,9 +79,10 @@ namespace AlahiaPos.DataAccess.Servicios
                 throw new InvalidOperationException(
                     "No se puede anular un gasto ya cerrado en caja.");
 
-            if (string.Equals(gasto.OrigenModulo, "COMPRAS", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(gasto.OrigenModulo, "COMPRAS", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(gasto.OrigenModulo, "NOMINA", StringComparison.OrdinalIgnoreCase))
                 throw new InvalidOperationException(
-                    "Los gastos generados por compras deben anularse desde el módulo de compras.");
+                    "Este gasto se originó en otro módulo. Anúlelo o reviértalo desde su origen.");
 
             var idCuentaFinanciera = gasto.IdCuentaFinanciera;
 

@@ -1,0 +1,24 @@
+---
+description: Camino canónico e-CF vía proveedor externo (Invoice /api/Receipt)
+globs: "**/FiscalGateway/**/*.cs,**/FacturacionElectronica/**/*.cs,**/FacturacionElectronicaController.cs,**/docs/dgii-ecf/**"
+alwaysApply: false
+---
+
+# ALAHIA-FE-EXT-01 — Proveedor externo (Invoice)
+
+Doc canónico: `docs/dgii-ecf/Camino-Proveedor-Externo-Invoice.md`
+
+## Camino obligatorio
+
+1. Empresa: `ProveedorFE = PROVEEDOR_EXTERNO` + `ProveedorFE_BaseUrl` + `ProveedorFE_ApiKey` (no hardcodear URL en lógica de emisión).
+2. Envío: `HttpReceiptFiscalGateway` → `POST {BaseUrl}/api/Receipt` + `X-Api-Key`.
+3. Trama: solo `PgEInvoicingMapper.ToProviderModel` (mismo wire que sandbox Invoice).
+4. Emisión de prueba/POS: `POST /api/FacturacionElectronica/emitir-enviar`.
+
+## No romper
+
+- **E34:** mapear `IndicadorNotaCredito`; omitir `FechaVencimientoSecuencia` y `TablaFormasPago`; orden IdDoc: eNCF → IndicadorNotaCredito → IndicadorMontoGravado.
+- **E32:** trackId en ceros puede ser válido; confirmar con `facturasconsumo`.
+- **Health:** `GET /api/Receipt` da 405 en Invoice — no implica desconexión.
+- No crear adaptadores paralelos ni cambiar el contrato `/api/Receipt` sin actualizar el doc canónico.
+- Modo `DGII_DIRECTO` = Alahia.eCF.Api; no mezclar headers `X-Dgii-Ambiente` en modo externo.

@@ -9,7 +9,7 @@ namespace AlahiaPos.Entities.Interfaces
 {
     public interface ILoginService
     {
-        Task<LoginResponse> Login(
+        Task<LoginResponse?> Login(
     Usuarios usuario,
     string password
         );

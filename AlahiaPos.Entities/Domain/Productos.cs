@@ -91,7 +91,7 @@ namespace AlahiaPos.Entities.Domain
         public bool IsActivo { get; set; }
        
         public decimal Ganancia { get; set; }
-        public int IdCocina { get; set; }
+        public int? IdCocina { get; set; }
         public bool? EsProductoBelleza { get; set; }
         public int DuracionServicio { get; set; } = 60; // minutos por defecto
         public bool DisponibleEnCitas { get; set; } = true;

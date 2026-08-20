@@ -113,104 +113,67 @@ namespace AlahiaPosApi.Controllers
         [Route("GetAllOrdenes")]
         public async Task<IEnumerable<FacturaHeaderDto>> GetAllOrdenes(int IdEmpresa)
         {
-            var listaReturn = new List<FacturaHeaders>();
-
             var headers = await _facturaHeader.GetAllOrdenes(IdEmpresa);
-
-            if (headers == null || !headers.Any())
-                return new List<FacturaHeaderDto>();
-
-            foreach (var item in headers)
-            {
-                var detalles = await _facturaDetalle.GetOrdenesByHeader(item.IdFacturaHeader);
-
-                if (detalles == null || !detalles.Any())
-                    continue;
-
-                var listaDetalles = new List<FacturaDetalles>();
-
-                foreach (var d in detalles)
-                {
-                    if (d.StatuItem == false)
-                    {
-                        // ⭐ cargar producto
-                        var producto = await _Productos.GetAllProductosById(d.IdProducto);
-                        d.Productos = producto;
-
-                        // ⭐ cargar nombre lavador comisión
-                        if (d.IdEmpleadoComision != null)
-                        {
-                            var emp = await _IEmpleado.GetEmpleadoById((int)d.IdEmpleadoComision);
-                            d.NombreEmpleadoComision = emp?.Nombre;
-                        }
-                        else
-                        {
-                            d.NombreEmpleadoComision = "No asignado";
-                        }
-
-                        listaDetalles.Add(d);
-                    }
-                }
-
-                if (listaDetalles.Any())
-                {
-                    item.FacturaDetalles = listaDetalles;
-                    listaReturn.Add(item);
-                }
-            }
-
-            return _Mapper.Map<FacturaHeaderDto[]>(listaReturn);
+            return await MapListadoOrdenesAsync(headers, IdEmpresa);
         }
 
         [HttpGet]
         [Route("GetAllCotizaciones")]
         public async Task<IEnumerable<FacturaHeaderDto>> GetAllCotizaciones(int IdEmpresa)
         {
-            var listaReturn = new List<FacturaHeaders>();
-
             var headers = await _facturaHeader.GetAllCotizaciones(IdEmpresa);
+            return await MapListadoOrdenesAsync(headers, IdEmpresa);
+        }
 
-            if (headers == null || !headers.Any())
-                return new List<FacturaHeaderDto>();
+        /// <summary>
+        /// Arma el listado con productos ya incluidos y nombres de empleado en un solo pase.
+        /// Evita N+1 (detalle/producto/empleado por cada línea).
+        /// </summary>
+        private async Task<IEnumerable<FacturaHeaderDto>> MapListadoOrdenesAsync(
+            IEnumerable<FacturaHeaders> headers,
+            int idEmpresa)
+        {
+            var lista = headers?.ToList() ?? new List<FacturaHeaders>();
+            if (lista.Count == 0)
+                return Array.Empty<FacturaHeaderDto>();
 
-            foreach (var item in headers)
+            var empleados = (await _IEmpleado.GetAllEmpleados(idEmpresa) ?? Enumerable.Empty<Empleados>())
+                .GroupBy(e => e.IdEmpleados)
+                .ToDictionary(g => g.Key, g => g.First().Nombre);
+
+            var resultado = new List<FacturaHeaders>(lista.Count);
+            foreach (var item in lista)
             {
-                var detalles = await _facturaDetalle.GetOrdenesByHeader(item.IdFacturaHeader);
+                var detalles = (item.FacturaDetalles ?? Enumerable.Empty<FacturaDetalles>())
+                    .Where(d => d.StatuItem == false)
+                    .ToList();
 
-                if (detalles == null || !detalles.Any())
+                if (detalles.Count == 0)
                     continue;
-
-                var listaDetalles = new List<FacturaDetalles>();
 
                 foreach (var d in detalles)
                 {
-                    if (d.StatuItem == false)
+                    d.FacturaHeader = null;
+                    if (d.Productos != null)
+                        d.Productos.MovimientosInventarioDetalle = new List<MovimientosInventarioDetalle>();
+
+                    if (d.IdEmpleadoComision is int idEmp &&
+                        empleados.TryGetValue(idEmp, out var nombre) &&
+                        !string.IsNullOrWhiteSpace(nombre))
                     {
-                        var producto = await _Productos.GetAllProductosById(d.IdProducto);
-                        d.Productos = producto;
-
-                        if (d.IdEmpleadoComision != null)
-                        {
-                            var emp = await _IEmpleado.GetEmpleadoById((int)d.IdEmpleadoComision);
-                            d.NombreEmpleadoComision = emp?.Nombre;
-                        }
-                        else
-                        {
-                            d.NombreEmpleadoComision = "No asignado";
-                        }
-
-                        listaDetalles.Add(d);
+                        d.NombreEmpleadoComision = nombre;
+                    }
+                    else
+                    {
+                        d.NombreEmpleadoComision = "No asignado";
                     }
                 }
 
-                if (listaDetalles.Any())
-                {
-                    item.FacturaDetalles = listaDetalles;
-                    listaReturn.Add(item);
-                }
+                item.FacturaDetalles = detalles;
+                resultado.Add(item);
             }
 
-            return _Mapper.Map<FacturaHeaderDto[]>(listaReturn);
+            return _Mapper.Map<FacturaHeaderDto[]>(resultado);
         }
 
         [HttpGet()]
@@ -816,12 +779,12 @@ namespace AlahiaPosApi.Controllers
         [Route("ProcesarFactura")]
         public async Task<IActionResult> ProcesarFactura([FromBody] FacturaDirectaDTO dto)
         {
+            FacturaHeaders? header = null;
             try
             {
                 if (dto == null || dto.Header == null)
                     return BadRequest("Header vacío");
 
-                FacturaHeaders header;
 
                 if (dto.Header.IdFacturaHeader == 0)
                 {
@@ -837,7 +800,8 @@ namespace AlahiaPosApi.Controllers
                         dto.Header.TipoFactura,
                         dto.Header.TipoPago);
                     header.IdUsuario = dto.Header.IdUsuario;
-                    header.IdTipoDocumentos = dto.Header.IdTipoDocumentos;
+                    // Cobro siempre genera factura (tipo 1), nunca orden/cotización.
+                    header.IdTipoDocumentos = 1;
                     header.TipoOrden = dto.Header.TipoOrden;
                     AplicarPlazoYVencimiento(header, dto.Header);
 
@@ -864,11 +828,20 @@ namespace AlahiaPosApi.Controllers
 
                     header.IdEmpleadoComision = dto.Header.IdMoso;
                     header.IdEmpleados = dto.Header.IdMoso;
+                    header.IdEmpleadoConsumo = dto.Header.IdEmpleadoConsumo is > 0
+                        ? dto.Header.IdEmpleadoConsumo
+                        : null;
+                    header.PorcentajeDescuentoEmpleado = dto.Header.PorcentajeDescuentoEmpleado;
+                    header.CargarConsumoNomina = dto.Header.CargarConsumoNomina
+                        && header.IdEmpleadoConsumo is > 0;
                     header.IdUsuario = dto.Header.IdUsuario;
                     header.PrintAcount = false;
                     header.IdMesa = 1;
                     header.RNC = dto.Header.RNC;
                     header.NombreEmpresa = dto.Header.NombreEmpresa;
+                    header.NombreCuenta = !string.IsNullOrWhiteSpace(dto.Header.NombreCuenta)
+                        ? dto.Header.NombreCuenta
+                        : dto.Header.NombreEmpresa;
 
                     decimal total = 0;
                     decimal totalItbis = 0;
@@ -876,6 +849,8 @@ namespace AlahiaPosApi.Controllers
                     foreach (var item in header.FacturaDetalles)
                     {
                         var prod = _Productos.GetProductoById(item.IdProducto);
+                        if (prod == null)
+                            return BadRequest($"Producto {item.IdProducto} no encontrado.");
 
                         decimal precio = item.PrecioOferta > 0
                             ? item.PrecioOferta
@@ -906,57 +881,134 @@ namespace AlahiaPosApi.Controllers
                 }
                 else
                 {
-                    
+                    // Cotización / orden existente → convertir a factura sincronizando el carrito actual
+                    header = _facturaHeader.GetById(dto.Header.IdFacturaHeader)
+                        ?? throw new Exception("Documento no encontrado.");
 
+                    if (dto.Header.FacturaDetalles == null || dto.Header.FacturaDetalles.Count == 0)
+                        return BadRequest("Sin líneas para facturar. Agrega productos al carrito.");
 
-                        // Es una orden existente
-
-                        header = _facturaHeader.GetById(dto.Header.IdFacturaHeader);
                     switch (dto.Header.IdTipoDocumentos)
                     {
-                        case 1: // Orden
+                        case 1: // Ya es factura
+                        case 2: // Cotización → factura
+                        case 10: // Orden → factura
                             header.IdTipoDocumentos = 1;
-                            break;
-
-                        case 10: // Cotización (futuro)
-                            header.IdTipoDocumentos = 10;
                             break;
 
                         default:
                             throw new Exception(
                                 "Este documento no puede convertirse en factura.");
                     }
+
                     header.FechaInseccion = DateTime.Now;
-                        header.TipoFactura = NormalizarTipoFactura(
-                            dto.Header.TipoFactura,
-                            dto.Header.TipoPago);
-                        AplicarPlazoYVencimiento(header, dto.Header);
-                        
-                        header.TotalDescuento = dto.Header.TotalDescuento < 0 ? 0 : dto.Header.TotalDescuento;
-                        header.RNC = dto.Header.RNC;
-                        header.NombreEmpresa = dto.Header.NombreEmpresa;
-                        header.Estado =
-                        header.Pendiente > 0
-                        ? "Pendiente"
-                        : "Pagada";
+                    header.TipoFactura = NormalizarTipoFactura(
+                        dto.Header.TipoFactura,
+                        dto.Header.TipoPago);
+                    AplicarPlazoYVencimiento(header, dto.Header);
+
+                    header.TotalDescuento = dto.Header.TotalDescuento < 0 ? 0 : dto.Header.TotalDescuento;
+                    header.RNC = dto.Header.RNC;
+                    header.NombreEmpresa = dto.Header.NombreEmpresa;
+                    header.NombreCuenta = !string.IsNullOrWhiteSpace(dto.Header.NombreCuenta)
+                        ? dto.Header.NombreCuenta
+                        : dto.Header.NombreEmpresa;
+                    if (dto.Header.IDCliente.HasValue && dto.Header.IDCliente.Value > 0)
+                        header.IDCliente = dto.Header.IDCliente;
+                    header.IdEmpleadoConsumo = dto.Header.IdEmpleadoConsumo is > 0
+                        ? dto.Header.IdEmpleadoConsumo
+                        : header.IdEmpleadoConsumo;
+                    header.PorcentajeDescuentoEmpleado = dto.Header.PorcentajeDescuentoEmpleado
+                        ?? header.PorcentajeDescuentoEmpleado;
+                    header.CargarConsumoNomina = dto.Header.CargarConsumoNomina
+                        && (header.IdEmpleadoConsumo is > 0);
+
                     var esEcf2 = dto.Header.TipoComprobante == "Crédito Fiscal"
                               || dto.Header.TipoComprobante == "Consumidor Final"
                               || dto.Header.TipoComprobante == "Gubernamental";
 
                     if (!esEcf2 && dto.Header.TipoComprobante != "FACT")
-                        {
-                            header.NCF =
-                                await _INCF_Secuencias.GenerarNCF(
-                                    header.IdEmpresa,
-                                    dto.Header.TipoComprobante);
-                        }
+                    {
+                        header.NCF =
+                            await _INCF_Secuencias.GenerarNCF(
+                                header.IdEmpresa,
+                                dto.Header.TipoComprobante);
+                    }
 
-                        header.NumeroDocumento =
-                            await _secuenciaDocumentoService
-                                .GenerarDocumentoAsync(
-                                    header.IdEmpresa,
-                                    1);
-               }
+                    header.NumeroDocumento =
+                        await _secuenciaDocumentoService
+                            .GenerarDocumentoAsync(
+                                header.IdEmpresa,
+                                1);
+
+                    // =====================================================
+                    // Sync detalles: reemplazar líneas BD con el carrito POS
+                    // =====================================================
+                    var detallesPrevios = _facturaDetalle
+                        .GetDetalleByIdHeader(header.IdFacturaHeader)
+                        ?.ToList() ?? new List<FacturaDetalles>();
+
+                    foreach (var prev in detallesPrevios)
+                        _facturaDetalle.DeleteFacturaDetalle(prev.IdFacturaDetalle);
+
+                    decimal total = 0;
+                    decimal totalItbis = 0;
+                    var nuevosDetalles = new List<FacturaDetalles>();
+
+                    foreach (var itemDto in dto.Header.FacturaDetalles)
+                    {
+                        var prod = _Productos.GetProductoById(itemDto.IdProducto);
+                        if (prod == null)
+                            return BadRequest($"Producto {itemDto.IdProducto} no encontrado.");
+
+                        decimal precio = itemDto.PrecioOferta > 0
+                            ? itemDto.PrecioOferta
+                            : prod.PrecioVenta;
+
+                        var itbis = itemDto.Itbis < 0 ? 0 : itemDto.Itbis;
+                        var detalle = new FacturaDetalles
+                        {
+                            IdFacturaDetalle = 0,
+                            IdFacturaHeader = header.IdFacturaHeader,
+                            IdProducto = itemDto.IdProducto,
+                            Cantidad = itemDto.Cantidad,
+                            PrecioOferta = precio,
+                            Descuento = itemDto.Descuento < 0 ? 0 : itemDto.Descuento,
+                            Itbis = itbis,
+                            IdEmpleadoComision = itemDto.IdEmpleadoComision ?? 0,
+                            IdEmpresa = header.IdEmpresa,
+                            FechaInseccion = DateTime.Now,
+                            SubTotal = (precio * itemDto.Cantidad) + itbis,
+                            Comentario = itemDto.Comentario ?? "",
+                            TipoMasa = itemDto.TipoMasa,
+                            TipoRelleno = itemDto.TipoRelleno,
+                            Libras = itemDto.Libras,
+                            Productos = null,
+                            FacturaHeader = null
+                        };
+
+                        total += detalle.SubTotal;
+                        totalItbis += detalle.Itbis;
+                        nuevosDetalles.Add(detalle);
+                    }
+
+                    await _facturaDetalle.InsertFactDetalleRange(nuevosDetalles);
+
+                    header.Total = total;
+                    header.TotalItbis = totalItbis;
+                    header.SubTotal = total - totalItbis;
+
+                    if (header.TotalDescuento > 0)
+                    {
+                        header.SubTotal = Math.Max(0, header.SubTotal - header.TotalDescuento);
+                        header.Total = header.SubTotal + header.TotalItbis;
+                    }
+
+                    // Pendiente se recalcula tras pagos; estado provisional
+                    header.Pendiente = header.Total - header.Pagado;
+                    header.Estado = header.Pendiente > 0 ? "Pendiente" : "Pagada";
+                    header.FacturaDetalles = null;
+                }
                 
 
                 // =====================================================
@@ -991,6 +1043,37 @@ namespace AlahiaPosApi.Controllers
                     ? metodosPago.First()
                     : (metodosPago.Count > 1 ? "Mixto" : header.FormaPago);
 
+                var proyectadoPagadoAhora =
+                    pagosAgrupados.Sum(p => p.Monto) + pagosNc.Sum(p => p.Monto);
+                var pendienteProyectado =
+                    header.Total - header.Pagado - proyectadoPagadoAhora;
+
+                // Contado subpagado → crédito antes de registrar ingresos/histórico
+                if (string.Equals(header.TipoFactura, "Contado", StringComparison.OrdinalIgnoreCase)
+                    && pendienteProyectado > 0.02m)
+                {
+                    if ((header.IDCliente == null || header.IDCliente <= 0)
+                        && header.IdEmpleadoConsumo is not > 0)
+                    {
+                        return BadRequest(
+                            "Para dejar saldo pendiente debe indicar un cliente o un colaborador (la factura pasa a crédito).");
+                    }
+
+                    header.TipoFactura = "Credito";
+                    var diasPlazo = ExtraerDiasPlazo(header.Plazo);
+                    if (diasPlazo <= 0)
+                        diasPlazo = 30;
+                    header.Plazo = $"{diasPlazo} día{(diasPlazo == 1 ? "" : "s")}";
+                    header.FechaBencimiento = header.FechaInseccion.Date.AddDays(diasPlazo);
+                }
+
+                var esAbonoInicialCredito =
+                    string.Equals(header.TipoFactura, "Credito", StringComparison.OrdinalIgnoreCase)
+                    && proyectadoPagadoAhora > 0.009m;
+
+                static string NotaPrimerAbono(decimal monto, string metodo) =>
+                    $"Primer abono de RD$ {monto:N2} — {metodo}";
+
                 // Nota de crédito / saldo a favor (sin entrada de banco)
                 foreach (var pagoNc in pagosNc)
                 {
@@ -1010,6 +1093,10 @@ namespace AlahiaPosApi.Controllers
                     totalPagadoAhora += pagoNc.Monto;
                     header.MontoNotaCredito = Math.Round(header.MontoNotaCredito + pagoNc.Monto, 2);
 
+                    var notaNc = esAbonoInicialCredito
+                        ? NotaPrimerAbono(pagoNc.Monto, FormaPagoNotaCredito.Metodo)
+                        : $"Aplicación NC {pagoNc.NcfNotaCredito}";
+
                     var existeIngresoNc = await _IngresosServices.ExisteIngreso(
                         header.IdFacturaHeader,
                         FormaPagoNotaCredito.Metodo);
@@ -1019,14 +1106,19 @@ namespace AlahiaPosApi.Controllers
                         {
                             IdEmpresa = header.IdEmpresa,
                             FechaRegistro = DateTime.Now,
-                            Descripcion = $"Factura #{header.IdFacturaHeader} — NC {pagoNc.NcfNotaCredito}",
-                            Categoria = "Aplicación Nota de Crédito",
+                            Descripcion = esAbonoInicialCredito
+                                ? $"{NotaPrimerAbono(pagoNc.Monto, FormaPagoNotaCredito.Metodo)} — Factura #{header.IdFacturaHeader}"
+                                : $"Factura #{header.IdFacturaHeader} — NC {pagoNc.NcfNotaCredito}",
+                            Categoria = esAbonoInicialCredito
+                                ? "Abono a Crédito"
+                                : "Aplicación Nota de Crédito",
                             Origen = "Sistema",
                             Monto = pagoNc.Monto,
                             FormaPago = FormaPagoNotaCredito.Metodo,
                             Referencia = pagoNc.NcfNotaCredito ?? $"NC-{pagoNc.IdNotaCredito}",
                             IdFacturaHeader = header.IdFacturaHeader,
-                            IdCliente = header.IDCliente
+                            IdCliente = header.IDCliente,
+                            Nota = notaNc
                         });
                     }
 
@@ -1034,15 +1126,21 @@ namespace AlahiaPosApi.Controllers
                         new PagosFacturasClientes
                         {
                             IdFacturaHeader = header.IdFacturaHeader,
+                            NumeroDocumento = header.NumeroDocumento ?? "",
                             IDCliente = header.IDCliente,
                             FormaPago = FormaPagoNotaCredito.Metodo,
-                            Monto = pagoNc.Monto
+                            Monto = pagoNc.Monto,
+                            Nota = notaNc
                         });
                 }
 
                 foreach (var pago in pagosAgrupados)
                 {
                     totalPagadoAhora += pago.Monto;
+
+                    var notaPago = esAbonoInicialCredito
+                        ? NotaPrimerAbono(pago.Monto, pago.Metodo)
+                        : null;
 
                     var existeIngreso = await _IngresosServices.ExisteIngreso(
                         header.IdFacturaHeader,
@@ -1055,7 +1153,9 @@ namespace AlahiaPosApi.Controllers
                         {
                             IdEmpresa = header.IdEmpresa,
                             FechaRegistro = DateTime.Now,
-                            Descripcion = $"Factura #{header.IdFacturaHeader}",
+                            Descripcion = esAbonoInicialCredito
+                                ? $"{NotaPrimerAbono(pago.Monto, pago.Metodo)} — Factura #{header.IdFacturaHeader}"
+                                : $"Factura #{header.IdFacturaHeader}",
                             Categoria = header.TipoFactura == "Contado"
                                 ? "Venta de Contado"
                                 : "Abono a Crédito",
@@ -1064,42 +1164,75 @@ namespace AlahiaPosApi.Controllers
                             FormaPago = pago.Metodo,
                             Referencia = $"Factura #{header.IdFacturaHeader}",
                             IdFacturaHeader = header.IdFacturaHeader,
-                            IdCliente = header.IDCliente
+                            IdCliente = header.IDCliente,
+                            Nota = notaPago
                         });
                     }
 
-                    var metodoConfigurado = await _MetodoPagoCuentaService
-                        .GetByMetodoAsync(header.IdEmpresa, pago.Metodo);
-
-                    if (metodoConfigurado != null &&
-                        metodoConfigurado.IdCuentaFinanciera > 0)
+                    try
                     {
-                        await _MovimientoFinancieroService.RegistrarEntradaAsync(
-                            header.IdEmpresa,
-                            header.IdEmpleados ?? 0,
-                            metodoConfigurado.IdCuentaFinanciera,
-                            pago.Monto,
-                            $"Factura #{header.IdFacturaHeader}",
-                            $"Ingreso automático desde ventas ({pago.Metodo})",
-                            categoria: "VENTA",
-                            referenciaId: header.IdFacturaHeader,
-                            referenciaTipo: "FACTURA",
-                            claveIdempotencia: $"VENTA-{header.IdFacturaHeader}-{pago.Metodo}"
-                        );
+                        var metodoConfigurado = await _MetodoPagoCuentaService
+                            .GetByMetodoAsync(header.IdEmpresa, pago.Metodo);
+
+                        if (metodoConfigurado != null &&
+                            metodoConfigurado.IdCuentaFinanciera > 0)
+                        {
+                            await _MovimientoFinancieroService.RegistrarEntradaAsync(
+                                header.IdEmpresa,
+                                header.IdUsuario ?? header.IdEmpleados ?? 0,
+                                metodoConfigurado.IdCuentaFinanciera,
+                                pago.Monto,
+                                $"Factura #{header.IdFacturaHeader}",
+                                esAbonoInicialCredito
+                                    ? $"Primer abono ({pago.Metodo}) — Factura #{header.IdFacturaHeader}"
+                                    : $"Ingreso automático desde ventas ({pago.Metodo})",
+                                categoria: esAbonoInicialCredito ? "COBRO_CXC" : "VENTA",
+                                referenciaId: header.IdFacturaHeader,
+                                referenciaTipo: "FACTURA",
+                                claveIdempotencia: $"VENTA-{header.IdFacturaHeader}-{pago.Metodo}"
+                            );
+                        }
+                    }
+                    catch (Exception exTesoreria)
+                    {
+                        Console.WriteLine(
+                            $"Tesorería omitida en ProcesarFactura #{header.IdFacturaHeader}: {exTesoreria.Message}");
                     }
 
                     await _PagoFacturaClientes.InsertPagosFacturasClientes(
                         new PagosFacturasClientes
                         {
                             IdFacturaHeader = header.IdFacturaHeader,
+                            NumeroDocumento = header.NumeroDocumento ?? "",
                             IDCliente = header.IDCliente,
                             FormaPago = pago.Metodo,
-                            Monto = pago.Monto
+                            Monto = pago.Monto,
+                            Nota = notaPago
                         });
                 }
 
                 header.Pagado += totalPagadoAhora;
                 header.Pendiente = header.Total - header.Pagado;
+
+                // Defensa: Contado con saldo no debe quedar como Contado
+                if (string.Equals(header.TipoFactura, "Contado", StringComparison.OrdinalIgnoreCase)
+                    && header.Pendiente > 0.02m)
+                {
+                    if ((header.IDCliente == null || header.IDCliente <= 0)
+                        && header.IdEmpleadoConsumo is not > 0)
+                    {
+                        return BadRequest(
+                            "Para dejar saldo pendiente debe indicar un cliente o un colaborador (la factura pasa a crédito).");
+                    }
+
+                    header.TipoFactura = "Credito";
+                    var diasPlazo = ExtraerDiasPlazo(header.Plazo);
+                    if (diasPlazo <= 0)
+                        diasPlazo = 30;
+                    header.Plazo = $"{diasPlazo} día{(diasPlazo == 1 ? "" : "s")}";
+                    header.FechaBencimiento = header.FechaInseccion.Date.AddDays(diasPlazo);
+                }
+
                 header.Estado = header.Pendiente > 0 ? "Pendiente" : "Pagada";
                 header.Clientes = null;
                 header.TipoOrden = "";
@@ -1151,7 +1284,17 @@ namespace AlahiaPosApi.Controllers
                 }
 
                 if (movimientoInventario.Detalles.Any())
-                    await _movimientosInventario.GuardarMovimiento(movimientoInventario);
+                {
+                    try
+                    {
+                        await _movimientosInventario.GuardarMovimiento(movimientoInventario);
+                    }
+                    catch (Exception exInv)
+                    {
+                        Console.WriteLine(
+                            $"Inventario omitido en ProcesarFactura #{header.IdFacturaHeader}: {exInv.Message}");
+                    }
+                }
 
                 // =====================================================
                 // 🔥 DATOS PARA PRINT Y e-CF
@@ -1174,7 +1317,7 @@ namespace AlahiaPosApi.Controllers
 
                     var precio = d.PrecioOferta > 0
                         ? d.PrecioOferta
-                        : producto.PrecioVenta;
+                        : (producto?.PrecioVenta ?? 0);
 
                     itemsPrint.Add(new FacturaItemPrintDTO
                     {
@@ -1296,7 +1439,33 @@ namespace AlahiaPosApi.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(ex.Message);
+                var detalle = ex.InnerException?.Message ?? ex.Message;
+                Console.WriteLine($"ProcesarFactura error: {detalle}");
+
+                // Si el documento ya se guardó, no devolver error: el cobro ocurrió
+                // y debe verse como factura (tipo 1).
+                if (header != null && header.IdFacturaHeader > 0)
+                {
+                    try
+                    {
+                        header.IdTipoDocumentos = 1;
+                        header.Clientes = null;
+                        _facturaHeader.UpdateFacturaHeader(header.IdFacturaHeader, header);
+                    }
+                    catch (Exception exUpdate)
+                    {
+                        Console.WriteLine($"ProcesarFactura no pudo marcar tipo 1: {exUpdate.Message}");
+                    }
+
+                    return Ok(new
+                    {
+                        message = "Factura procesada correctamente",
+                        idFactura = header.IdFacturaHeader,
+                        advertencia = detalle
+                    });
+                }
+
+                return BadRequest(detalle);
             }
         }
         [HttpPost()]
@@ -1538,6 +1707,8 @@ namespace AlahiaPosApi.Controllers
         [Route("GenerateFacts")]
         public async Task<IActionResult> GenerateFacts([FromBody] FacturaCierreDTO dto)
         {
+            try
+            {
             decimal totalPagadoAhora = 0;
             var header = _facturaHeader.GetById(dto.IdFactura);
             if (header == null)
@@ -1600,6 +1771,34 @@ namespace AlahiaPosApi.Controllers
                             await _IngresosServices.InsertIngreso(ingreso);
                         }
 
+                        // Tesorería: no tumbar el cobro si la cuenta/método falla
+                        try
+                        {
+                            var metodoConfigurado = await _MetodoPagoCuentaService
+                                .GetByMetodoAsync(header.IdEmpresa, pago.Metodo);
+
+                            if (metodoConfigurado != null &&
+                                metodoConfigurado.IdCuentaFinanciera > 0)
+                            {
+                                await _MovimientoFinancieroService.RegistrarEntradaAsync(
+                                    header.IdEmpresa,
+                                    header.IdUsuario ?? header.IdEmpleados ?? 0,
+                                    metodoConfigurado.IdCuentaFinanciera,
+                                    pago.Monto,
+                                    $"Factura #{header.IdFacturaHeader}",
+                                    $"Ingreso automático desde ventas ({pago.Metodo})",
+                                    categoria: "VENTA",
+                                    referenciaId: header.IdFacturaHeader,
+                                    referenciaTipo: "FACTURA",
+                                    claveIdempotencia: $"VENTA-{header.IdFacturaHeader}-{pago.Metodo}"
+                                );
+                            }
+                        }
+                        catch (Exception exTesoreria)
+                        {
+                            Console.WriteLine(
+                                $"Tesorería omitida en GenerateFacts #{header.IdFacturaHeader}: {exTesoreria.Message}");
+                        }
 
                         var pagoCliente = new PagosFacturasClientes
                         {
@@ -1672,6 +1871,34 @@ namespace AlahiaPosApi.Controllers
 
                         await _IngresosServices.InsertIngreso(ingreso);
 
+                        try
+                        {
+                            var metodoConfiguradoCredito = await _MetodoPagoCuentaService
+                                .GetByMetodoAsync(header.IdEmpresa, pago.Metodo);
+
+                            if (metodoConfiguradoCredito != null &&
+                                metodoConfiguradoCredito.IdCuentaFinanciera > 0)
+                            {
+                                await _MovimientoFinancieroService.RegistrarEntradaAsync(
+                                    header.IdEmpresa,
+                                    header.IdUsuario ?? header.IdEmpleados ?? 0,
+                                    metodoConfiguradoCredito.IdCuentaFinanciera,
+                                    pago.Monto,
+                                    $"Factura #{header.IdFacturaHeader}",
+                                    $"Abono ({pago.Metodo}) — Factura #{header.IdFacturaHeader}",
+                                    categoria: "COBRO_CXC",
+                                    referenciaId: header.IdFacturaHeader,
+                                    referenciaTipo: "FACTURA",
+                                    claveIdempotencia: $"ABONO-{header.IdFacturaHeader}-{pago.Metodo}-{DateTime.Now:yyyyMMddHHmmss}"
+                                );
+                            }
+                        }
+                        catch (Exception exTesoreria)
+                        {
+                            Console.WriteLine(
+                                $"Tesorería omitida en GenerateFacts abono #{header.IdFacturaHeader}: {exTesoreria.Message}");
+                        }
+
                         var pagoCliente = new PagosFacturasClientes
                         {
                             IdFacturaHeader = header.IdFacturaHeader,
@@ -1707,12 +1934,12 @@ namespace AlahiaPosApi.Controllers
                 header.Pendiente = header.Total - header.Pagado;
                 header.TipoFactura = "Credito";
                 header.Estado = header.Pendiente > 0 ? "Pendiente" : "Pagada";
-                header.NumeroDocumento = await _secuenciaDocumentoService
-                       .GenerarDocumentoAsync(header.IdEmpresa, 1);
             }
 
             header.FechaInseccion = DateTime.Now;
             header.IdTipoDocumentos = 1;
+            header.NumeroDocumento = await _secuenciaDocumentoService
+                   .GenerarDocumentoAsync(header.IdEmpresa, 1);
 
             _facturaHeader.UpdateFacturaHeader(header.IdFacturaHeader, header);
 
@@ -1772,13 +1999,28 @@ namespace AlahiaPosApi.Controllers
 
             if (movimientoInventario.Detalles.Any())
             {
-                await _movimientosInventario
-                    .GuardarMovimiento(
-                        movimientoInventario
-                    );
+                try
+                {
+                    await _movimientosInventario
+                        .GuardarMovimiento(
+                            movimientoInventario
+                        );
+                }
+                catch (Exception exInv)
+                {
+                    Console.WriteLine(
+                        $"Inventario omitido en GenerateFacts #{header.IdFacturaHeader}: {exInv.Message}");
+                }
             }
 
-            return Ok(new { message = "Factura generada correctamente." });
+            return Ok(new { message = "Factura generada correctamente.", idFactura = header.IdFacturaHeader });
+            }
+            catch (Exception ex)
+            {
+                var detalle = ex.InnerException?.Message ?? ex.Message;
+                Console.WriteLine($"GenerateFacts error: {detalle}");
+                return BadRequest(detalle);
+            }
         }
         [HttpGet("ticket-lavador/{idFactura}")]
         public async Task<IActionResult> GetTicketLavador(int idFactura)
@@ -1793,12 +2035,23 @@ namespace AlahiaPosApi.Controllers
         [HttpGet("factura-cliente/{idFactura}")]
         public async Task<IActionResult> GetFacturaCliente(int idFactura)
         {
-            var factura = await _facturaHeader.GetFacturaClienteById(idFactura);
+            try
+            {
+                var factura = await _facturaHeader.GetFacturaClienteById(idFactura);
 
-            if (factura == null)
-                return NotFound("Factura no encontrada");
+                if (factura == null)
+                    return NotFound("Factura no encontrada");
 
-            return Ok(factura);
+                return Ok(factura);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    message = ex.Message,
+                    detail = ex.InnerException?.Message
+                });
+            }
         }
 
         /// <summary>
@@ -1941,10 +2194,12 @@ namespace AlahiaPosApi.Controllers
                 motivo = $"[{dto.UsuarioAnulo.Trim()}] {motivo}";
             }
 
-            // 🔴 marcar cancelada
+            // 🔴 marcar cancelada y cerrar CxC (saldo)
             factura.EstaCancelada = true;
             factura.MotivoAnulacion = motivo;
-            factura.FechaInseccion = DateTime.Now;
+            factura.Pendiente = 0;
+            factura.Estado = "Anulada";
+            // No sobrescribir FechaInseccion: es la fecha del documento original.
             factura.Clientes = null;
             _facturaHeader.UpdateFacturaHeader(dto.IdFacturaHeader, factura);
 

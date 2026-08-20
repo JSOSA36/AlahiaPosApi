@@ -13,6 +13,9 @@ namespace AlahiaPos.Entities.Dto
         public string AdminPassword { get; set; } = "";
         public int LimiteUsuario { get; set; } = 5;
 
+        /// <summary>STANDARD | GOLD | PREMIUM. Default STANDARD.</summary>
+        public string NivelSoporte { get; set; } = "STANDARD";
+
         /// <summary>Si true: MontoServicio=0 y FechaTerminacion = hoy + DiasDemo.</summary>
         public bool EsDemo { get; set; } = true;
         public int DiasDemo { get; set; } = 15;
@@ -50,6 +53,12 @@ namespace AlahiaPos.Entities.Dto
         public bool EsDemoVigente { get; set; }
         public int CantidadModulos { get; set; }
         public int? LimiteUsuario { get; set; }
+        public string NivelSoporte { get; set; } = "STANDARD";
+    }
+
+    public class EmpresaAdminNivelSoporteRequest
+    {
+        public string NivelSoporte { get; set; } = "STANDARD";
     }
 
     public class EmpresaAdminDetalleDto : EmpresaAdminListItemDto
@@ -66,6 +75,14 @@ namespace AlahiaPos.Entities.Dto
         public string Nombre { get; set; } = "";
         public bool Asignable { get; set; }
         public bool Seleccionado { get; set; }
+    }
+
+    public class EmpresaAdminVerticalPresetDto
+    {
+        public string Codigo { get; set; } = "";
+        public string Nombre { get; set; } = "";
+        public string Descripcion { get; set; } = "";
+        public List<string> CodigosModulo { get; set; } = new();
     }
 
     public class EmpresaAdminAltaResultDto

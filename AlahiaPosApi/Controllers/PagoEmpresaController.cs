@@ -25,29 +25,38 @@ namespace AlahiaPosApi.Controllers
             try
             {
                 if (dto.Imagen == null || dto.Imagen.Length == 0)
-                    return BadRequest("Debe subir un comprobante.");
+                    return BadRequest(new { message = "Debe subir un comprobante." });
 
-                string archivoUrl;
-
-                using (var ms = new MemoryStream())
-                {
-                    await dto.Imagen.CopyToAsync(ms);
-
-                    archivoUrl = Utility.UploadFileFtp(
-                        ms.ToArray(),
-                        Guid.NewGuid() + Path.GetExtension(dto.Imagen.FileName)
-                    );
-                }
-
-                dto.ArchivoUrl = archivoUrl;
+                await using var ms = new MemoryStream();
+                await dto.Imagen.CopyToAsync(ms);
+                dto.ImagenBytes = ms.ToArray();
+                dto.ImagenContentType = dto.Imagen.ContentType;
+                dto.ImagenFileName = dto.Imagen.FileName;
 
                 await _pagoService.CrearPagoAsync(dto);
 
                 return Ok(new
                 {
                     message = "Pago enviado correctamente ⏳. Pendiente de validación.",
-                    archivo = archivoUrl
+                    archivo = dto.ArchivoUrl
                 });
+            }
+            catch (MontoVoucherInsuficienteException ex)
+            {
+                return BadRequest(new
+                {
+                    codigo = "MONTO_INSUFICIENTE",
+                    message = ex.Message,
+                    montoVoucherDop = ex.MontoVoucherDop,
+                    totalAdeudadoDop = ex.TotalAdeudadoDop,
+                    montoReconexionDop = ex.MontoReconexionDop,
+                    montoPlanDop = ex.MontoPlanDop,
+                    faltanteDop = Math.Round(ex.TotalAdeudadoDop - ex.MontoVoucherDop, 2)
+                });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
             }
             catch (Exception ex)
             {

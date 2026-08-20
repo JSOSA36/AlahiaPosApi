@@ -48,7 +48,8 @@ public class FacturaDetalles : BaseEntity
     // 🔥 PERSONALIZACIÓN DE PRODUCTO (BIZCOCHO)
     public string? TipoMasa { get; set; }
     public string? TipoRelleno { get; set; }
-    public decimal Libras { get; set; }
+    /// <summary>Bizcocho; histórico en Prod puede ser NULL.</summary>
+    public decimal? Libras { get; set; }
 
     // Fotografía fiscal línea (Sprint A)
     public decimal? TasaItbis { get; set; }

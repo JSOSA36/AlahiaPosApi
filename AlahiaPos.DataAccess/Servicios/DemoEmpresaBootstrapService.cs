@@ -9,25 +9,32 @@ namespace AlahiaPos.DataAccess.Servicios
     /// <summary>
     /// Demo/alta genérica: clona módulos de un perfil de referencia
     /// (o usa códigos explícitos), excluyendo módulos internos MacroBits.
+    /// Verticales (salón, carwash, etc.) solo entran si se piden en códigos.
     /// </summary>
     public class DemoEmpresaBootstrapService : IDemoEmpresaBootstrap
     {
-        internal static readonly HashSet<string> CodigosExcluidos = new(StringComparer.OrdinalIgnoreCase)
+        /// <summary>Compat: solo internos. Preferir DemoVerticalPresets.CodigosInternosNunca.</summary>
+        internal static readonly HashSet<string> CodigosExcluidos = DemoVerticalPresets.CodigosInternosNunca;
+
+        /// <summary>
+        /// Verticales / add-ons: no se copian del perfil guía; sí si el alta los pide.
+        /// </summary>
+        private static readonly HashSet<string> CodigosVerticalesSoloExplicitos = new(StringComparer.OrdinalIgnoreCase)
         {
-            "ALAHIA_AI",
             "AREAS",
             "CITAS",
             "HORARIO_ESTILISTA",
             "EMPLEADOS_COMISION",
             "DOCUMENTOS_CLINICOS",
+            "FICHA_CLINICA",
             "HISTORIAL_SERVICIOS",
-            "POLITICAS_VERSIONES",
-            "POLITICAS_ACEPTACIONES",
-            "MACROBITS_ADMIN",
-            "SUSCRIPCIONES_COBROS",
-            "PAGO_SUSCRIPCION",
-            "TICKETS_ADMIN",
-            "EMPRESAS_ADMIN",
+            "BIZCOCHO_ENCARGO",
+            "CONSUMO_LAVADORES",
+            "CENTRO_PRODUCCION",
+            "PRODUCCION_CANCELAR",
+            "PRODUCCION_CONFIG",
+            "PRODUCCION_GESTIONAR",
+            "PRODUCCION_PRIORIDAD",
         };
 
         private readonly AlahiaPosContext _db;
@@ -57,16 +64,22 @@ namespace AlahiaPos.DataAccess.Servicios
                 .GroupBy(m => m.Codigo.Trim(), StringComparer.OrdinalIgnoreCase)
                 .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
 
-            var origen = codigos != null && codigos.Any(c => !string.IsNullOrWhiteSpace(c))
-                ? codigos.Where(c => !string.IsNullOrWhiteSpace(c)).Select(c => c.Trim()).ToList()
+            var tieneCodigosExplicitos = codigos != null && codigos.Any(c => !string.IsNullOrWhiteSpace(c));
+            var origen = tieneCodigosExplicitos
+                ? codigos!.Where(c => !string.IsNullOrWhiteSpace(c)).Select(c => c.Trim()).ToList()
                 : await ObtenerCodigosPerfilReferenciaAsync();
 
             var elegidos = new List<Modulo>();
             foreach (var codigo in origen)
             {
-                if (string.IsNullOrWhiteSpace(codigo) || CodigosExcluidos.Contains(codigo))
+                if (string.IsNullOrWhiteSpace(codigo))
                     continue;
-                if (catalogo.TryGetValue(codigo.Trim(), out var modulo))
+                var code = codigo.Trim();
+                if (DemoVerticalPresets.CodigosInternosNunca.Contains(code))
+                    continue;
+                if (!tieneCodigosExplicitos && CodigosVerticalesSoloExplicitos.Contains(code))
+                    continue;
+                if (catalogo.TryGetValue(code, out var modulo))
                     elegidos.Add(modulo);
             }
 
@@ -77,6 +90,13 @@ namespace AlahiaPos.DataAccess.Servicios
             {
                 if (elegidos.All(e => e.Id != m.Id))
                     elegidos.Add(m);
+            }
+
+            if (elegidos.Any(m => m.Codigo.Equals("DOCUMENTOS_CLINICOS", StringComparison.OrdinalIgnoreCase))
+                && catalogo.TryGetValue("FICHA_CLINICA", out var fichaClinica)
+                && elegidos.All(e => e.Id != fichaClinica.Id))
+            {
+                elegidos.Add(fichaClinica);
             }
 
             elegidos = elegidos

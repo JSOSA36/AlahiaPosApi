@@ -1,17 +1,21 @@
-﻿using ESCPOS_NET;
+using ESCPOS_NET;
 using ESCPOS_NET.Emitters;
 using ESCPOS_NET.Utilities;
-using AlahiaPos.Entities.Dto;
 using PrinterApi.Dto;
 using PrinterApi.Dto.PrinterApi.Dto;
 using PrinterApi.Interfaz;
+using PrinterApi.Servicios;
 using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Printing;
 using System.Net;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http.Json;
-using System.Net.Mail;
 using System.Text;
+
+using TicketNotaCreditoDto = AlahiaPos.Entities.Dto.TicketNotaCreditoDto;
+using TicketFechaHora = AlahiaPos.Entities.Dto.TicketFechaHora;
 
 
 
@@ -19,19 +23,20 @@ public class PrinterTicketServices : IPrinterTicket
 {
     private readonly HttpClient _http;
     private readonly string _baseUrl;
-    private readonly string _printerFactura;
-    private readonly string _printerLavador;
+    private readonly IPrinterLocalSettings _printerSettings;
 
-    public PrinterTicketServices(HttpClient http, IConfiguration config)
+    public PrinterTicketServices(HttpClient http, IConfiguration config, IPrinterLocalSettings printerSettings)
     {
         _http = http;
         _baseUrl = config["ApiBaseUrl"];
-        _printerFactura = config["PrinterSettings:Factura"];
-        _printerLavador = config["PrinterSettings:Lavador"];
+        _printerSettings = printerSettings;
     }
 
+    private string PrinterFactura => _printerSettings.Factura;
+    private string PrinterLavador => _printerSettings.Lavador;
+
     // ============================
-    // 🔹 TICKET LAVADOR
+    // ?? TICKET LAVADOR
     // ============================
     public async Task GenerateTicketLavador(int idFacturaHeader)
     {
@@ -97,8 +102,8 @@ public class PrinterTicketServices : IPrinterTicket
                 bytes.AddRange(emitter.FeedLines(4));
                 bytes.AddRange(emitter.FullCut());
 
-                // ✅ USA CONFIG
-                RawPrinterHelper.SendBytesToPrinter(_printerLavador, bytes.ToArray());
+                // ? USA CONFIG
+                RawPrinterHelper.SendBytesToPrinter(PrinterLavador, bytes.ToArray());
             }
         }
         catch (Exception ex)
@@ -121,11 +126,11 @@ public class PrinterTicketServices : IPrinterTicket
 
             PrintDocument pd = new PrintDocument();
 
-            // 🔥 AQUÍ eliges la impresora
-            //pd.PrinterSettings.PrinterName = _printerFactura;
-            pd.PrinterSettings.PrinterName = "Microsoft Print to PDF";
+            // ?? AQU? eliges la impresora
+            //pd.PrinterSettings.PrinterName = PrinterFactura;
+            pd.PrinterSettings.PrinterName = PrinterFactura;
 
-            pd.PrintController = new StandardPrintController(); // 🔥 SIN DIÁLOGO
+            pd.PrintController = new StandardPrintController(); // ?? SIN DI?LOGO
 
             pd.PrintPage += (sender, e) =>
             {
@@ -135,7 +140,7 @@ public class PrinterTicketServices : IPrinterTicket
                 Font normal = new Font("Arial", 10);
                 Font bold = new Font("Arial", 12, FontStyle.Bold);
 
-                // 🔷 EMPRESA
+                // ?? EMPRESA
                 e.Graphics.DrawString(factura.NombreEmpresa, bold, Brushes.Black, left, y);
                 y += 25;
 
@@ -148,7 +153,7 @@ public class PrinterTicketServices : IPrinterTicket
                 e.Graphics.DrawString("--------------------------------------------", normal, Brushes.Black, left, y);
                 y += 20;
 
-                // 🔷 INFO
+                // ?? INFO
                 e.Graphics.DrawString($"Factura: {factura.NumeroFactura}", normal, Brushes.Black, left, y);
                 y += 20;
 
@@ -156,12 +161,59 @@ public class PrinterTicketServices : IPrinterTicket
                 y += 20;
 
                 e.Graphics.DrawString($"Cliente: {factura.Cliente}", normal, Brushes.Black, left, y);
-                y += 25;
+                y += 20;
+
+                if (!string.IsNullOrWhiteSpace(factura.RncCliente))
+                {
+                    e.Graphics.DrawString($"RNC/Ced: {factura.RncCliente}", normal, Brushes.Black, left, y);
+                    y += 20;
+                }
+
+                if (!string.IsNullOrWhiteSpace(factura.NCF))
+                {
+                    e.Graphics.DrawString(
+                        factura.EsComprobanteElectronico
+                            ? $"e-NCF: {factura.NCF}"
+                            : $"NCF: {factura.NCF}",
+                        normal, Brushes.Black, left, y);
+                    y += 20;
+                }
+
+                if (!string.IsNullOrWhiteSpace(factura.TipoFactura))
+                {
+                    e.Graphics.DrawString($"Tipo: {factura.TipoFactura}", normal, Brushes.Black, left, y);
+                    y += 20;
+                }
+
+                if (!string.IsNullOrWhiteSpace(factura.FormaPago))
+                {
+                    e.Graphics.DrawString($"Forma Pago: {factura.FormaPago}", normal, Brushes.Black, left, y);
+                    y += 20;
+                }
+
+                if (!string.IsNullOrWhiteSpace(factura.SecurityCode))
+                {
+                    e.Graphics.DrawString($"Cod. Seguridad: {factura.SecurityCode}", normal, Brushes.Black, left, y);
+                    y += 20;
+                }
+
+                var ff = TicketFechaHora.ParaImpresion(
+                    factura.FechaFirma,
+                    factura.FechaEmisionEcf,
+                    factura.Fecha,
+                    factura.Hora);
+                if (ff.HasValue)
+                {
+                    e.Graphics.DrawString($"F. Firma: {ff:dd/MM/yyyy HH:mm}", normal, Brushes.Black, left, y);
+                    y += 20;
+                }
+
+                y += 5;
 
                 e.Graphics.DrawString("--------------------------------------------", normal, Brushes.Black, left, y);
                 y += 20;
 
-                // 🔷 DETALLE
+                // ?? DETALLE
                 foreach (var det in factura.Detalles)
                 {
                     e.Graphics.DrawString($"{det.Cantidad} x {det.Descripcion}", normal, Brushes.Black, left, y);
@@ -176,23 +228,31 @@ public class PrinterTicketServices : IPrinterTicket
                 e.Graphics.DrawString("--------------------------------------------", normal, Brushes.Black, left, y);
                 y += 20;
 
-                // 🔷 TOTAL
+                // ?? TOTAL
                 e.Graphics.DrawString($"TOTAL: RD$ {factura.Total:N2}", bold, Brushes.Black, left, y);
                 y += 30;
+
+                if (!string.IsNullOrWhiteSpace(factura.UrlQR))
+                {
+                    e.Graphics.DrawString("Consulte el e-CF (QR) en DGII", normal, Brushes.Black, left, y);
+                    y += 20;
+                    e.Graphics.DrawString(factura.UrlQR, new Font("Arial", 7), Brushes.Black, left, y);
+                    y += 25;
+                }
 
                 e.Graphics.DrawString("GRACIAS POR SU COMPRA", normal, Brushes.Black, left, y);
             };
 
-            // 🔥 AQUÍ SE MANDA DIRECTO A LA IMPRESORA
+            // ?? AQU? SE MANDA DIRECTO A LA IMPRESORA
             pd.Print();
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error impresión directa: {ex.Message}");
+            Console.WriteLine($"Error impresi?n directa: {ex.Message}");
         }
     }
     // ============================
-    // 🔹 FACTURA CLIENTE
+    // ?? FACTURA CLIENTE
     // ============================
 
   
@@ -202,21 +262,48 @@ public async Task GenerateTicketBizcocho(int idFacturaHeader, int idEmpresa)
     try
     {
         Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-        var enc = Encoding.GetEncoding(850); // Español / acentos / ñ
+        var enc = Encoding.GetEncoding(850); // Español / acentos
 
-        var factura = await _http.GetFromJsonAsync<FacturaHeaderDto>(
-            $"{_baseUrl}/api/BizcochoEncargo/print" +
-            $"?IdFacturaHeader={idFacturaHeader}" +
-            $"&IdEmpresa={idEmpresa}"
-        );
+        if (string.IsNullOrWhiteSpace(_baseUrl))
+            throw new InvalidOperationException(
+                "ApiBaseUrl no configurado en PrinterApi (appsettings.Local.json).");
+
+        if (string.IsNullOrWhiteSpace(PrinterFactura))
+            throw new InvalidOperationException(
+                "Impresora de factura no configurada en el agente de impresión.");
+
+        FacturaHeaderDto? factura = null;
+        try
+        {
+            factura = await _http.GetFromJsonAsync<FacturaHeaderDto>(
+                $"{_baseUrl}/api/BizcochoEncargo/print" +
+                $"?IdFacturaHeader={idFacturaHeader}" +
+                $"&IdEmpresa={idEmpresa}"
+            );
+        }
+        catch (Exception ex)
+        {
+            // Listado de facturas / POS: si falla el endpoint de encargo, usar ticket cliente.
+            Console.WriteLine(
+                $"Bizcocho/print falló ({ex.Message}). Reintento con factura-cliente {idFacturaHeader}.");
+            await GenerateTicketFacturaCliente(idFacturaHeader);
+            return;
+        }
 
         if (factura == null ||
             factura.FacturaDetalles == null ||
             !factura.FacturaDetalles.Any())
         {
-            Console.WriteLine("Encargo no encontrado.");
+            await GenerateTicketFacturaCliente(idFacturaHeader);
             return;
         }
+
+            // Factura de venta POS → ticket cliente (TOTAL / PAGADO / PENDIENTE + e-CF)
+            if (factura.IdTipoDocumentos == 1)
+            {
+                await GenerateTicketFacturaCliente(idFacturaHeader);
+                return;
+            }
 
             bool esEncargo = factura.IdTipoDocumentos == 14;
             bool esOrden = factura.IdTipoDocumentos == 10;
@@ -265,7 +352,7 @@ public async Task GenerateTicketBizcocho(int idFacturaHeader, int idEmpresa)
 
         bytes.AddRange(emitter.Initialize());
 
-        // 🔥 Tabla de caracteres español CP850
+        // ?? Tabla de caracteres espa?ol CP850
         bytes.AddRange(new byte[] { 0x1B, 0x74, 0x02 });
 
         // ============================
@@ -305,7 +392,10 @@ public async Task GenerateTicketBizcocho(int idFacturaHeader, int idEmpresa)
 
         bytes.AddRange(emitter.SetStyles(PrintStyle.Bold));
             if (esFacturaFinal)
-                CenterLine("FACTURA");
+                CenterLine(TituloComprobanteElectronico(
+                    factura.EsComprobanteElectronico,
+                    factura.TipoECF,
+                    factura.NCF));
             else if (esOrden)
                 CenterLine("ORDEN");
             else if (esCotizacion)
@@ -348,14 +438,19 @@ public async Task GenerateTicketBizcocho(int idFacturaHeader, int idEmpresa)
         if (esFacturaFinal)
         {
             if (!string.IsNullOrWhiteSpace(factura.NCF))
-                LeftLine($"NCF        : {factura.NCF}");
+            {
+                LeftLine(factura.EsComprobanteElectronico
+                    ? $"e-NCF      : {factura.NCF}"
+                    : $"NCF        : {factura.NCF}");
+            }
 
+            // NombreEmpresa en FacturaHeader = nombre del cliente en POS (no la razón social del emisor).
             string clienteFactura =
                 !string.IsNullOrWhiteSpace(factura.NombreEmpresa)
                     ? factura.NombreEmpresa
                     : !string.IsNullOrWhiteSpace(factura.cliente)
                         ? factura.cliente
-                        : "Al Portador";
+                        : "Consumidor Final";
 
             WrappedLeft($"Cliente    : {clienteFactura}", 32);
 
@@ -390,7 +485,11 @@ public async Task GenerateTicketBizcocho(int idFacturaHeader, int idEmpresa)
             var subtotalLinea = totalLinea - itbisLinea;
 
             bytes.AddRange(emitter.SetStyles(PrintStyle.Bold));
-            WrappedLeft(det.Productos?.nombre ?? "Producto", 32);
+            var nombreProducto =
+                !string.IsNullOrWhiteSpace(det.Descripcion)
+                    ? det.Descripcion
+                    : (det.Productos?.nombre ?? "Producto");
+            WrappedLeft(nombreProducto!, 32);
             bytes.AddRange(emitter.SetStyles(PrintStyle.None));
 
             if (!string.IsNullOrWhiteSpace(det.TipoMasa))
@@ -444,6 +543,12 @@ public async Task GenerateTicketBizcocho(int idFacturaHeader, int idEmpresa)
 
             LeftLine($"TOTAL     : RD$ {totalFinal:N2}");
 
+            if (esFacturaFinal && factura.Pendiente > 0.02m)
+            {
+                LeftLine($"PAGADO    : RD$ {factura.Pagado:N2}");
+                LeftLine($"PENDIENTE : RD$ {factura.Pendiente:N2}");
+            }
+
             bytes.AddRange(emitter.SetStyles(PrintStyle.None));
 
         Separator();
@@ -465,46 +570,39 @@ public async Task GenerateTicketBizcocho(int idFacturaHeader, int idEmpresa)
                 Separator();
             }
 
+            if (esFacturaFinal)
+            {
+                AppendEcfFiscalBlockEscPos(
+                    bytes,
+                    emitter,
+                    factura.EsComprobanteElectronico,
+                    factura.TipoECF,
+                    factura.SecurityCode,
+                    factura.UrlQR,
+                    factura.FechaFirma ?? factura.FechaEmisionEcf,
+                    factura.EstadoDgii,
+                    factura.RNCEmpresa,
+                    factura.RNC,
+                    factura.NCF,
+                    factura.Total,
+                    factura.FechaEmisionEcf ?? factura.FechaInseccion,
+                    factura.Hora,
+                    factura.FechaInseccion);
+            }
+
             bytes.AddRange(emitter.FeedLines(4));
         bytes.AddRange(emitter.CashDrawerOpenPin2());
         bytes.AddRange(emitter.FullCut());
 
             RawPrinterHelper.SendBytesToPrinter(
-            _printerFactura,
+            PrinterFactura,
                 bytes.ToArray()
             );
-
-            //try
-            //{
-                //var ticketTexto = enc.GetString(bytes.ToArray());
-
-                //var ruta = Path.Combine(
-                    //AppDomain.CurrentDomain.BaseDirectory,
-                    //"TicketBizcocho.txt"
-                //);
-
-                //File.WriteAllText(ruta, ticketTexto, enc);
-
-                // 🔥 Abrir automáticamente
-                //Process.Start(new ProcessStartInfo
-                //{
-                   // FileName = ruta,
-                   // UseShellExecute = true
-                //});
-            //}
-           // catch (Exception ex)
-            //{
-                //Console.WriteLine($"Error generando TXT: {ex.Message}");
-            //}
-
-            //RawPrinterHelper.SendBytesToPrinter(
-               // _printerFactura,
-                //bytes.ToArray()
-            //);
         }
     catch (Exception ex)
     {
-        Console.WriteLine($"Error ticket bizcocho: {ex.Message}");
+        Console.WriteLine($"Error ticket bizcocho: {ex}");
+        throw;
     }
 }
 
@@ -514,14 +612,14 @@ private static string LimpiarTextoTicket(string texto)
         return "";
 
     return texto
-        .Replace("≤", "ó")
-        .Replace("❤", "")
-        .Replace("❤️", "")
-        .Replace("–", "-")
-        .Replace("—", "-")
-        .Replace("“", "\"")
-        .Replace("”", "\"")
-        .Replace("’", "'")
+        .Replace("=", "?")
+        .Replace("?", "")
+        .Replace("??", "")
+        .Replace("?", "-")
+        .Replace("?", "-")
+        .Replace("?", "\"")
+        .Replace("?", "\"")
+        .Replace("?", "'")
         .Trim();
 }
 
@@ -561,14 +659,20 @@ public async Task GenerateTicketFacturaCliente(int idFactura)
     {
         try
         {
+            if (string.IsNullOrWhiteSpace(_baseUrl))
+                throw new InvalidOperationException(
+                    "ApiBaseUrl no configurado en PrinterApi (appsettings.Local.json).");
+
+            if (string.IsNullOrWhiteSpace(PrinterFactura))
+                throw new InvalidOperationException(
+                    "Impresora de factura no configurada en el agente.");
+
             var factura = await _http.GetFromJsonAsync<TicketFacturaClienteDto>(
                 $"{_baseUrl}/api/FacturaHeader/factura-cliente/{idFactura}");
 
             if (factura == null)
-            {
-                Console.WriteLine("Factura no encontrada.");
-                return;
-            }
+                throw new InvalidOperationException(
+                    $"Factura {idFactura} no encontrada en la API ({_baseUrl}).");
 
             var emitter = new EPSON();
             var bytes = new List<byte>();
@@ -577,24 +681,46 @@ public async Task GenerateTicketFacturaCliente(int idFactura)
 
             bytes.AddRange(emitter.CenterAlign());
             bytes.AddRange(emitter.SetStyles(PrintStyle.Bold | PrintStyle.DoubleWidth | PrintStyle.DoubleHeight));
-            bytes.AddRange(emitter.PrintLine(factura.NombreEmpresa));
+            bytes.AddRange(emitter.PrintLine(factura.NombreEmpresa ?? ""));
 
             bytes.AddRange(emitter.SetStyles(PrintStyle.None));
-            bytes.AddRange(emitter.PrintLine(factura.DireccionEmpresa));
+            bytes.AddRange(emitter.PrintLine(factura.DireccionEmpresa ?? ""));
+            if (!string.IsNullOrWhiteSpace(factura.RncEmpresa))
+                bytes.AddRange(emitter.PrintLine($"RNC: {factura.RncEmpresa}"));
             bytes.AddRange(emitter.PrintLine($"Tel: {factura.TelefonoEmpresa}"));
 
             bytes.AddRange(emitter.PrintLine("--------------------------------"));
 
             bytes.AddRange(emitter.CenterAlign());
             bytes.AddRange(emitter.SetStyles(PrintStyle.Bold));
-            bytes.AddRange(emitter.PrintLine("FACTURA CLIENTE"));
+            bytes.AddRange(emitter.PrintLine(
+                TituloComprobanteElectronico(
+                    factura.EsComprobanteElectronico,
+                    factura.TipoECF,
+                    factura.NCF,
+                    facturaCliente: true)));
 
             bytes.AddRange(emitter.PrintLine("--------------------------------"));
 
             bytes.AddRange(emitter.LeftAlign());
-            bytes.AddRange(emitter.PrintLine($"Factura : {factura.NumeroFactura}"));
+            bytes.AddRange(emitter.PrintLine(
+                !string.IsNullOrWhiteSpace(factura.NumeroDocumento)
+                    ? $"Documento: {factura.NumeroDocumento}"
+                    : $"Factura : {factura.NumeroFactura}"));
             bytes.AddRange(emitter.PrintLine($"Fecha   : {factura.Fecha:dd/MM/yyyy} {factura.Hora}"));
             bytes.AddRange(emitter.PrintLine($"Cliente : {factura.Cliente}"));
+            if (!string.IsNullOrWhiteSpace(factura.RncCliente))
+                bytes.AddRange(emitter.PrintLine($"RNC/Ced : {factura.RncCliente}"));
+
+            if (!string.IsNullOrWhiteSpace(factura.NCF))
+            {
+                bytes.AddRange(emitter.PrintLine(
+                    factura.EsComprobanteElectronico
+                        ? $"e-NCF   : {factura.NCF}"
+                        : $"NCF     : {factura.NCF}"));
+            }
+
+            AppendTipoYFormaPagoEscPos(bytes, emitter, factura);
 
             bytes.AddRange(emitter.PrintLine("--------------------------------"));
 
@@ -611,28 +737,266 @@ public async Task GenerateTicketFacturaCliente(int idFactura)
 
             bytes.AddRange(emitter.PrintLine("--------------------------------"));
 
+            if (factura.SubTotal > 0)
+                bytes.AddRange(emitter.PrintLine($"SubTotal RD$ {factura.SubTotal:N2}"));
+            if (factura.TotalDescuento > 0)
+                bytes.AddRange(emitter.PrintLine($"Desc.    RD$ {factura.TotalDescuento:N2}"));
+            if (factura.TotalItbis > 0)
+                bytes.AddRange(emitter.PrintLine($"ITBIS    RD$ {factura.TotalItbis:N2}"));
+
             bytes.AddRange(emitter.CenterAlign());
             bytes.AddRange(emitter.SetStyles(PrintStyle.Bold | PrintStyle.DoubleWidth | PrintStyle.DoubleHeight));
             bytes.AddRange(emitter.PrintLine($"TOTAL RD$ {factura.Total:N2}"));
 
             bytes.AddRange(emitter.SetStyles(PrintStyle.None));
+            bytes.AddRange(emitter.LeftAlign());
+            if (factura.Pendiente > 0.02m)
+            {
+                bytes.AddRange(emitter.PrintLine($"PAGADO   RD$ {factura.Pagado:N2}"));
+                bytes.AddRange(emitter.PrintLine($"PENDIENTE RD$ {factura.Pendiente:N2}"));
+            }
+
             bytes.AddRange(emitter.PrintLine("--------------------------------"));
+
+            AppendEcfFiscalBlockEscPos(
+                bytes,
+                emitter,
+                factura.EsComprobanteElectronico,
+                factura.TipoECF,
+                factura.SecurityCode,
+                factura.UrlQR,
+                factura.FechaFirma ?? factura.FechaEmisionEcf,
+                factura.EstadoDgii,
+                factura.RncEmpresa,
+                factura.RncCliente,
+                factura.NCF,
+                factura.Total,
+                factura.FechaEmisionEcf ?? factura.Fecha,
+                factura.Hora,
+                factura.Fecha);
 
             bytes.AddRange(emitter.CenterAlign());
             bytes.AddRange(emitter.PrintLine("GRACIAS POR PREFERIRNOS"));
 
             bytes.AddRange(emitter.FeedLines(4));
-            // Abrir cajón (pin 2)
+            // Abrir caj?n (pin 2)
             bytes.AddRange(emitter.CashDrawerOpenPin2());
             bytes.AddRange(emitter.FullCut());
 
-            // ✅ USA CONFIG
-            RawPrinterHelper.SendBytesToPrinter(_printerFactura, bytes.ToArray());
+            // ? USA CONFIG
+            RawPrinterHelper.SendBytesToPrinter(PrinterFactura, bytes.ToArray());
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error factura: {ex.Message}");
+            throw;
         }
+    }
+
+    public async Task<byte[]> PreviewTicketFacturaClientePdfAsync(int idFactura)
+    {
+        var factura = await _http.GetFromJsonAsync<TicketFacturaClienteDto>(
+            $"{_baseUrl}/api/FacturaHeader/factura-cliente/{idFactura}");
+
+        if (factura == null)
+            throw new InvalidOperationException($"Factura {idFactura} no encontrada.");
+
+        return PrinterApi.Servicios.TicketFacturaPreviewPdf.Build(factura);
+    }
+
+    private static void AppendTipoYFormaPagoEscPos(
+        List<byte> bytes,
+        EPSON emitter,
+        TicketFacturaClienteDto factura)
+    {
+        var pagos = (factura.Pagos ?? new List<TicketFacturaClientePagoDto>())
+            .Where(p => p != null && p.Monto > 0 && !string.IsNullOrWhiteSpace(p.Metodo))
+            .ToList();
+
+        var formaPago = (factura.FormaPago ?? "").Trim();
+        if (string.IsNullOrWhiteSpace(formaPago) && pagos.Count == 1)
+            formaPago = pagos[0].Metodo;
+        else if (string.IsNullOrWhiteSpace(formaPago) && pagos.Count > 1)
+            formaPago = "Mixto";
+
+        if (string.IsNullOrWhiteSpace(factura.TipoFactura)
+            && string.IsNullOrWhiteSpace(formaPago))
+            return;
+
+        bytes.AddRange(emitter.LeftAlign());
+        bytes.AddRange(emitter.SetStyles(PrintStyle.None));
+
+        if (!string.IsNullOrWhiteSpace(factura.TipoFactura))
+            bytes.AddRange(emitter.PrintLine($"Tipo     : {factura.TipoFactura}"));
+
+        if (!string.IsNullOrWhiteSpace(formaPago))
+            bytes.AddRange(emitter.PrintLine($"Forma Pago: {formaPago}"));
+    }
+
+    /// <summary>
+    /// Bloque fiscal e-CF para recibo: e-NCF ya va arriba; aquí código seguridad + QR.
+    /// Nunca imprime TrackId (uso interno).
+    /// UrlQR debe ser URL de ConsultaTimbre (no data:image). Si viene imagen truncada,
+    /// se reconstruye la URL con RNC/e-NCF/código de seguridad.
+    /// </summary>
+    private static void AppendEcfFiscalBlockEscPos(
+        List<byte> bytes,
+        EPSON emitter,
+        bool esElectronico,
+        string? tipoEcf,
+        string? securityCode,
+        string? urlQr,
+        DateTime? fechaFirma,
+        string? estadoDgii,
+        string? rncEmisor = null,
+        string? rncComprador = null,
+        string? encf = null,
+        decimal? montoTotal = null,
+        DateTime? fechaEmision = null,
+        string? hora = null,
+        DateTime? fechaDocumento = null)
+    {
+        if (!esElectronico
+            && string.IsNullOrWhiteSpace(securityCode)
+            && string.IsNullOrWhiteSpace(urlQr))
+            return;
+
+        bytes.AddRange(emitter.CenterAlign());
+        bytes.AddRange(emitter.SetStyles(PrintStyle.Bold));
+        bytes.AddRange(emitter.PrintLine("DATOS DGII e-CF"));
+        bytes.AddRange(emitter.SetStyles(PrintStyle.None));
+
+        bytes.AddRange(emitter.LeftAlign());
+        if (!string.IsNullOrWhiteSpace(tipoEcf))
+            bytes.AddRange(emitter.PrintLine($"Tipo e-CF: {tipoEcf}"));
+
+        if (!string.IsNullOrWhiteSpace(securityCode))
+            bytes.AddRange(emitter.PrintLine($"Cod.Seguridad: {securityCode}"));
+
+        var fFirmaVisible = TicketFechaHora.ParaImpresion(
+            fechaFirma,
+            fechaEmision,
+            fechaDocumento,
+            hora);
+        if (fFirmaVisible.HasValue)
+            bytes.AddRange(emitter.PrintLine($"F.Firma : {fFirmaVisible:dd/MM/yyyy HH:mm}"));
+
+        // Estado legible al cliente solo si es Aceptado (no TrackId)
+        if (!string.IsNullOrWhiteSpace(estadoDgii)
+            && estadoDgii.Contains("Acept", StringComparison.OrdinalIgnoreCase))
+        {
+            bytes.AddRange(emitter.PrintLine($"Estado  : {estadoDgii}"));
+        }
+
+        var qrPayload = ResolveQrPayloadForThermal(
+            urlQr,
+            securityCode,
+            rncEmisor,
+            rncComprador,
+            encf,
+            montoTotal,
+            fechaEmision,
+            fechaFirma);
+
+        if (!string.IsNullOrWhiteSpace(qrPayload))
+        {
+            bytes.AddRange(emitter.CenterAlign());
+            bytes.AddRange(emitter.PrintLine("Escanee el codigo QR"));
+            bytes.AddRange(emitter.PrintQRCode(
+                qrPayload,
+                TwoDimensionCodeType.QRCODE_MODEL2,
+                Size2DCode.NORMAL,
+                CorrectionLevel2DCode.PERCENT_15));
+            bytes.AddRange(emitter.FeedLines(1));
+        }
+
+        bytes.AddRange(emitter.PrintLine("--------------------------------"));
+    }
+
+    private static string TituloComprobanteElectronico(
+        bool esElectronico,
+        string? tipoEcf,
+        string? ncf,
+        bool facturaCliente = false)
+    {
+        if (!esElectronico)
+            return facturaCliente ? "FACTURA CLIENTE" : "FACTURA";
+
+        var tipo = (tipoEcf ?? "").Trim();
+        if (tipo.Length == 0 && !string.IsNullOrWhiteSpace(ncf) && ncf.Length >= 3
+            && ncf.StartsWith("E", StringComparison.OrdinalIgnoreCase))
+            tipo = ncf.Substring(1, 2);
+
+        // "32" / "E32" / "Tipo 32"
+        if (tipo.StartsWith("E", StringComparison.OrdinalIgnoreCase) && tipo.Length >= 3)
+            tipo = tipo.Substring(1, 2);
+        if (tipo.Length > 2)
+            tipo = new string(tipo.Where(char.IsDigit).Take(2).ToArray());
+
+        return tipo switch
+        {
+            "31" => "FACTURA CREDITO FISCAL e-CF",
+            "32" => "FACTURA DE CONSUMO e-CF",
+            "33" => "NOTA DE DEBITO e-CF",
+            "34" => "NOTA DE CREDITO e-CF",
+            "41" => "COMPROBANTE COMPRAS e-CF",
+            "43" => "COMPROBANTE GASTOS MENORES e-CF",
+            "44" => "COMPROBANTE REGIMEN ESPECIAL e-CF",
+            "45" => "COMPROBANTE GUBERNAMENTAL e-CF",
+            "46" => "COMPROBANTE EXPORTACION e-CF",
+            "47" => "COMPROBANTE PAGOS AL EXTERIOR e-CF",
+            _ => "COMPROBANTE FISCAL ELECTRONICO"
+        };
+    }
+
+    /// <summary>
+    /// ESC/POS PrintQRCode necesita texto/URL corta. data:image (Invoice) no sirve.
+    /// </summary>
+    private static string? ResolveQrPayloadForThermal(
+        string? urlQr,
+        string? securityCode,
+        string? rncEmisor,
+        string? rncComprador,
+        string? encf,
+        decimal? montoTotal,
+        DateTime? fechaEmision,
+        DateTime? fechaFirma)
+    {
+        if (!string.IsNullOrWhiteSpace(urlQr))
+        {
+            var u = urlQr.Trim();
+            if (u.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
+                || u.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+                return u;
+        }
+
+        if (string.IsNullOrWhiteSpace(securityCode)
+            || string.IsNullOrWhiteSpace(encf)
+            || string.IsNullOrWhiteSpace(rncEmisor))
+            return null;
+
+        static string Digitos(string? s) =>
+            string.IsNullOrWhiteSpace(s)
+                ? ""
+                : new string(s.Where(char.IsDigit).ToArray());
+
+        var firma = fechaFirma ?? DateTime.Now;
+        var emision = fechaEmision ?? firma;
+        var monto = (montoTotal ?? 0m).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture);
+
+        // Misma forma que DgiiDirectoMapper.BuildQrUrl (producción).
+        var qs = string.Join("&", new[]
+        {
+            "RncEmisor=" + Uri.EscapeDataString(Digitos(rncEmisor)),
+            "RncComprador=" + Uri.EscapeDataString(Digitos(rncComprador)),
+            "ENCF=" + Uri.EscapeDataString(encf.Trim()),
+            "FechaEmision=" + Uri.EscapeDataString(emision.ToString("dd-MM-yyyy", System.Globalization.CultureInfo.InvariantCulture)),
+            "MontoTotal=" + Uri.EscapeDataString(monto),
+            "FechaFirma=" + Uri.EscapeDataString(firma.ToString("dd-MM-yyyy HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture)),
+            "CodigoSeguridad=" + Uri.EscapeDataString(securityCode.Trim())
+        });
+
+        return "https://ecf.dgii.gov.do/ecf/ConsultaTimbre?" + qs;
     }
 
     public async Task GenerateTicketNotaCredito(
@@ -646,7 +1010,7 @@ public async Task GenerateTicketFacturaCliente(int idFactura)
 
             if (nota == null)
             {
-                Console.WriteLine("Nota de crédito no encontrada.");
+                Console.WriteLine("Nota de cr?dito no encontrada.");
                 return;
             }
 
@@ -672,7 +1036,10 @@ public async Task GenerateTicketFacturaCliente(int idFactura)
 
             if (!string.IsNullOrWhiteSpace(nota.NCF))
             {
-                bytes.AddRange(emitter.PrintLine($"NCF NC  : {nota.NCF}"));
+                bytes.AddRange(emitter.PrintLine(
+                    nota.NCF.StartsWith("E", StringComparison.OrdinalIgnoreCase)
+                        ? $"e-NCF NC: {nota.NCF}"
+                        : $"NCF NC  : {nota.NCF}"));
             }
 
             if (!string.IsNullOrWhiteSpace(nota.NCFModificado))
@@ -719,19 +1086,131 @@ public async Task GenerateTicketFacturaCliente(int idFactura)
                 $"TOTAL RD$ {nota.Total:N2}"));
             bytes.AddRange(emitter.SetStyles(PrintStyle.None));
             bytes.AddRange(emitter.PrintLine("--------------------------------"));
+
+            var esEcfNc = !string.IsNullOrWhiteSpace(nota.NCF)
+                && nota.NCF.StartsWith("E", StringComparison.OrdinalIgnoreCase);
+            AppendEcfFiscalBlockEscPos(
+                bytes,
+                emitter,
+                esEcfNc,
+                "34",
+                nota.SecurityCode,
+                nota.UrlQR,
+                nota.FechaEmisionEcf,
+                nota.EstadoDgii,
+                nota.RncEmisor,
+                nota.RNC,
+                nota.NCF,
+                nota.Total,
+                nota.FechaEmisionEcf ?? nota.Fecha);
+
             bytes.AddRange(emitter.CenterAlign());
             bytes.AddRange(emitter.PrintLine("DEVOLUCION DE MERCANCIA"));
             bytes.AddRange(emitter.FeedLines(4));
             bytes.AddRange(emitter.FullCut());
 
             RawPrinterHelper.SendBytesToPrinter(
-                _printerFactura,
+                PrinterFactura,
                 bytes.ToArray());
         }
         catch (Exception ex)
         {
             Console.WriteLine(
                 $"Error nota credito: {ex.Message}");
+        }
+    }
+
+    public async Task GenerateTicketReciboAbono(int idPago)
+    {
+        try
+        {
+            var recibo = await _http.GetFromJsonAsync<AlahiaPos.Entities.Dto.TicketReciboAbonoDto>(
+                $"{_baseUrl}/api/PagoFacturasClientes/recibo/{idPago}");
+
+            if (recibo == null)
+            {
+                Console.WriteLine("Recibo de abono no encontrado.");
+                return;
+            }
+
+            var emitter = new EPSON();
+            var bytes = new List<byte>();
+
+            bytes.AddRange(emitter.Initialize());
+            bytes.AddRange(emitter.CenterAlign());
+            bytes.AddRange(emitter.SetStyles(
+                PrintStyle.Bold | PrintStyle.DoubleWidth | PrintStyle.DoubleHeight));
+            bytes.AddRange(emitter.PrintLine(recibo.NombreEmpresa ?? ""));
+            bytes.AddRange(emitter.SetStyles(PrintStyle.None));
+
+            if (!string.IsNullOrWhiteSpace(recibo.DireccionEmpresa))
+                bytes.AddRange(emitter.PrintLine(recibo.DireccionEmpresa));
+            if (!string.IsNullOrWhiteSpace(recibo.RncEmpresa))
+                bytes.AddRange(emitter.PrintLine($"RNC: {recibo.RncEmpresa}"));
+            if (!string.IsNullOrWhiteSpace(recibo.TelefonoEmpresa))
+                bytes.AddRange(emitter.PrintLine($"Tel: {recibo.TelefonoEmpresa}"));
+
+            bytes.AddRange(emitter.PrintLine("--------------------------------"));
+            bytes.AddRange(emitter.CenterAlign());
+            bytes.AddRange(emitter.SetStyles(PrintStyle.Bold));
+            bytes.AddRange(emitter.PrintLine("RECIBO DE ABONO"));
+            bytes.AddRange(emitter.SetStyles(PrintStyle.None));
+            bytes.AddRange(emitter.PrintLine("--------------------------------"));
+
+            bytes.AddRange(emitter.LeftAlign());
+            bytes.AddRange(emitter.PrintLine(
+                $"Factura : {recibo.NumeroDocumento}"));
+            if (!string.IsNullOrWhiteSpace(recibo.NcfFactura))
+            {
+                bytes.AddRange(emitter.PrintLine(
+                    recibo.NcfFactura.StartsWith("E", StringComparison.OrdinalIgnoreCase)
+                        ? $"e-NCF   : {recibo.NcfFactura}"
+                        : $"NCF     : {recibo.NcfFactura}"));
+            }
+
+            bytes.AddRange(emitter.PrintLine(
+                $"Fecha   : {recibo.FechaPago:dd/MM/yyyy hh:mm tt}"));
+            bytes.AddRange(emitter.PrintLine(
+                $"Cliente : {recibo.Cliente}"));
+            if (!string.IsNullOrWhiteSpace(recibo.RncCliente))
+                bytes.AddRange(emitter.PrintLine($"RNC/Ced : {recibo.RncCliente}"));
+
+            bytes.AddRange(emitter.PrintLine("--------------------------------"));
+            bytes.AddRange(emitter.PrintLine(
+                $"Forma pago: {recibo.FormaPago}"));
+
+            if (!string.IsNullOrWhiteSpace(recibo.Nota))
+            {
+                foreach (var line in DividirTextoTicket(recibo.Nota, 32))
+                    bytes.AddRange(emitter.PrintLine(line));
+            }
+
+            bytes.AddRange(emitter.PrintLine("--------------------------------"));
+            bytes.AddRange(emitter.PrintLine(
+                $"Total factura RD$ {recibo.TotalFactura:N2}"));
+            bytes.AddRange(emitter.SetStyles(PrintStyle.Bold));
+            bytes.AddRange(emitter.PrintLine(
+                $"ABONO        RD$ {recibo.MontoAbono:N2}"));
+            bytes.AddRange(emitter.SetStyles(PrintStyle.None));
+            bytes.AddRange(emitter.PrintLine(
+                $"Pagado acum. RD$ {recibo.PagadoAcumulado:N2}"));
+            bytes.AddRange(emitter.PrintLine(
+                $"PENDIENTE    RD$ {recibo.Pendiente:N2}"));
+            bytes.AddRange(emitter.PrintLine("--------------------------------"));
+
+            bytes.AddRange(emitter.CenterAlign());
+            bytes.AddRange(emitter.PrintLine("GRACIAS POR SU PAGO"));
+            bytes.AddRange(emitter.FeedLines(4));
+            bytes.AddRange(emitter.FullCut());
+
+            RawPrinterHelper.SendBytesToPrinter(
+                PrinterFactura,
+                bytes.ToArray());
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error recibo abono: {ex.Message}");
+            throw;
         }
     }
     
@@ -754,20 +1233,39 @@ public async Task GenerateTicketFacturaCliente(int idFactura)
 
             bytes.AddRange(emitter.Initialize());
 
-            /* =====================================
-            🔥 HEADER
-            ====================================== */
-
             bytes.AddRange(emitter.CenterAlign());
             bytes.AddRange(emitter.SetStyles(
                 PrintStyle.Bold |
                 PrintStyle.DoubleWidth |
                 PrintStyle.DoubleHeight
             ));
+            bytes.AddRange(emitter.PrintLine("CIERRE DE CAJA"));
+            bytes.AddRange(emitter.SetStyles(PrintStyle.None));
+            bytes.AddRange(emitter.PrintLine("--------------------------------"));
+
+            bytes.AddRange(emitter.LeftAlign());
+            var fechaCierre = cierre.FechaCierre ?? DateTime.Now;
+            bytes.AddRange(emitter.PrintLine(
+                $"Apertura : {cierre.FechaApertura:dd/MM/yyyy hh:mm tt}"
+            ));
+            bytes.AddRange(emitter.PrintLine(
+                $"Cierre   : {fechaCierre:dd/MM/yyyy hh:mm tt}"
+            ));
+            if (!string.IsNullOrWhiteSpace(cierre.UsuarioCierre)
+                || !string.IsNullOrWhiteSpace(cierre.UsuarioApertura))
+            {
+                bytes.AddRange(emitter.PrintLine(
+                    $"Usuario  : {(cierre.UsuarioCierre ?? cierre.UsuarioApertura)}"
+                ));
+            }
+            if (cierre.IdCajaCierre > 0)
+            {
+                bytes.AddRange(emitter.PrintLine($"Caja #   : {cierre.IdCajaCierre}"));
+            }
             bytes.AddRange(emitter.PrintLine("--------------------------------"));
 
             /* =====================================
-            🔥 RESUMEN DE VENTAS
+            ?? RESUMEN DE VENTAS
             ===================================== */
 
             bytes.AddRange(emitter.SetStyles(PrintStyle.Bold));
@@ -803,7 +1301,7 @@ public async Task GenerateTicketFacturaCliente(int idFactura)
             bytes.AddRange(emitter.PrintLine("--------------------------------"));
 
             /* =====================================
-            🔥 FORMAS DE PAGO
+            ?? FORMAS DE PAGO
             ===================================== */
 
             bytes.AddRange(emitter.SetStyles(PrintStyle.Bold));
@@ -838,7 +1336,7 @@ public async Task GenerateTicketFacturaCliente(int idFactura)
             }
 
             /* =====================================
-            🔥 CUADRE DE CAJA
+            ?? CUADRE DE CAJA
             ===================================== */
 
             bytes.AddRange(emitter.SetStyles(PrintStyle.Bold));
@@ -893,7 +1391,7 @@ public async Task GenerateTicketFacturaCliente(int idFactura)
             bytes.AddRange(emitter.PrintLine("--------------------------------"));
 
             /* =====================================
-            🔥 PRODUCTOS
+            ?? PRODUCTOS
             ====================================== */
 
             if (cierre.ProductosVendidos != null &&
@@ -928,7 +1426,7 @@ public async Task GenerateTicketFacturaCliente(int idFactura)
             }
 
             /* =====================================
-            🔥 OBSERVACIÓN
+            ?? OBSERVACI?N
             ====================================== */
 
             if (!string.IsNullOrWhiteSpace(cierre.Observacion))
@@ -942,7 +1440,7 @@ public async Task GenerateTicketFacturaCliente(int idFactura)
             }
 
             /* =====================================
-            🔥 FOOTER
+            ?? FOOTER
             ====================================== */
 
             bytes.AddRange(emitter.CenterAlign());
@@ -959,7 +1457,7 @@ public async Task GenerateTicketFacturaCliente(int idFactura)
             bytes.AddRange(emitter.FullCut());
 
             RawPrinterHelper.SendBytesToPrinter(
-            _printerFactura,
+            PrinterFactura,
             bytes.ToArray()
             );
 
@@ -974,7 +1472,7 @@ public async Task GenerateTicketFacturaCliente(int idFactura)
                 //bytes.ToArray()
             //);
 
-            // Abrir automáticamente
+            // Abrir autom?ticamente
             //System.Diagnostics.Process.Start(new ProcessStartInfo
             //{
                // FileName = ruta,
@@ -995,7 +1493,7 @@ public async Task GenerateTicketFacturaCliente(int idFactura)
         try
         {
             /* =====================================
-            🔥 CONSUMIR API
+            ?? CONSUMIR API
             ====================================== */
 
             var cierre =
@@ -1020,7 +1518,7 @@ public async Task GenerateTicketFacturaCliente(int idFactura)
             }
 
             /* =====================================
-            🔥 EMITTER
+            ?? EMITTER
             ====================================== */
 
             var emitter = new EPSON();
@@ -1032,7 +1530,7 @@ public async Task GenerateTicketFacturaCliente(int idFactura)
             );
 
             /* =====================================
-            🔥 HEADER
+            ?? HEADER
             ====================================== */
 
             bytes.AddRange(
@@ -1064,7 +1562,7 @@ public async Task GenerateTicketFacturaCliente(int idFactura)
 
             bytes.AddRange(
                 emitter.PrintLine(
-                    $"{cierre.Fecha:dd/MM/yyyy}"
+                    $"{cierre.Fecha:dd/MM/yyyy hh:mm tt}"
                 )
             );
 
@@ -1075,7 +1573,7 @@ public async Task GenerateTicketFacturaCliente(int idFactura)
             );
 
             /* =====================================
-            🔥 RESUMEN
+            ?? RESUMEN
             ====================================== */
 
             bytes.AddRange(
@@ -1125,7 +1623,7 @@ public async Task GenerateTicketFacturaCliente(int idFactura)
             );
 
             /* =====================================
-            🔥 METODOS DE PAGO
+            ?? METODOS DE PAGO
             ====================================== */
 
             if (
@@ -1175,7 +1673,7 @@ public async Task GenerateTicketFacturaCliente(int idFactura)
             }
 
             /* =====================================
-            🔥 DETALLE ENCARGOS
+            ?? DETALLE ENCARGOS
             ====================================== */
 
             if (
@@ -1285,7 +1783,7 @@ public async Task GenerateTicketFacturaCliente(int idFactura)
             }
 
             /* =====================================
-            🔥 FOOTER
+            ?? FOOTER
             ====================================== */
 
             bytes.AddRange(
@@ -1313,19 +1811,19 @@ public async Task GenerateTicketFacturaCliente(int idFactura)
             );
 
             /* =====================================
-            🔥 IMPRIMIR
+            ?? IMPRIMIR
             ====================================== */
 
             RawPrinterHelper
             .SendBytesToPrinter(
 
-            _printerFactura,
+            PrinterFactura,
 
             bytes.ToArray()
             );
 
             /* =====================================
-🔥 GENERAR ARCHIVO DE PRUEBA
+?? GENERAR ARCHIVO DE PRUEBA
 ===================================== */
             //var ruta = @"C:\Temp\TicketPrueba.bin";
 
@@ -1338,7 +1836,7 @@ public async Task GenerateTicketFacturaCliente(int idFactura)
                // bytes.ToArray()
             //);
 
-            // Abrir automáticamente
+            // Abrir autom?ticamente
             //System.Diagnostics.Process.Start(new ProcessStartInfo
             //{
                 //FileName = ruta,

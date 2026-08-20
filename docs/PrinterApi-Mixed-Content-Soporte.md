@@ -108,14 +108,29 @@ Repetir en **cada** equipo/navegador que necesite llamar al PrinterApi por HTTP.
 
 ---
 
+## Mitigación en producto (código)
+
+Si el POS corre en **HTTPS** y `ApiPrint` es `http://IP-LAN:5045` (no localhost), el frontend **no usa XHR**: abre una navegación corta a `/api/Printer/...?nav=1`. Eso evita el bloqueo Mixed Content del `XMLHttpRequest`.
+
+El PrinterApi responde HTML mínimo y cierra la pestaña; la impresión térmica ocurre igual.
+
+También: CORS `AllowAnyOrigin` + header `Access-Control-Allow-Private-Network` (Chrome PNA) cuando el sitio permite contenido inseguro / XHR.
+
+### Qué desplegar
+
+1. Frontend con `PrintService.agentGet` / navegación Mixed Content.
+2. PrinterApi actualizado (`PrintOk` + PNA) en la PC del cliente.
+
+Si el navegador bloquea popups, permitir ventanas emergentes para el dominio del POS.
+
 ## Mejora de producto (pendiente)
 
-Servir PrinterApi por **HTTPS** (certificado local o hostname interno) para eliminar el ajuste manual de Mixed Content en todos los clientes.
+Servir PrinterApi por **HTTPS** (certificado local o hostname interno) para eliminar popups y flags de Chrome.
 
 ---
 
 ## Referencia código
 
-- Frontend: `PrintService` → `parametros.ApiPrint` + `/api/Printer/ticket/{id}/{idEmpresa}`
+- Frontend: `PrintService` → `parametros.ApiPrint` + `/api/Printer/ticket/{id}/{idEmpresa}` (+ `?nav=1` si HTTPS→HTTP LAN)
 - Login carga: `empresa.apiPrint` → `ParametrosService.ApiPrint`
 - Backend local: proyecto `PrinterApi` (ticket, lavador, cierre, encargos, etc.)

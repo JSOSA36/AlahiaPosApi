@@ -73,6 +73,13 @@ namespace PrinterApi.Dto
         public string? DireccionEmpresa { get; set; }
         public virtual ClienteDto? Clientes { get; set; }
         public string? NumeroDocumento { get; set; }
-       
+
+        public bool EsComprobanteElectronico { get; set; }
+        public string? TipoECF { get; set; }
+        public string? SecurityCode { get; set; }
+        public string? UrlQR { get; set; }
+        public DateTime? FechaFirma { get; set; }
+        public DateTime? FechaEmisionEcf { get; set; }
+        public string? EstadoDgii { get; set; }
     }
 }

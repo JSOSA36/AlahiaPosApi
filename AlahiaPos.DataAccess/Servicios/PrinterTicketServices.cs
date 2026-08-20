@@ -182,6 +182,17 @@ public class PrinterTicketServices: IPrinterTicket
             bytes.AddRange(emitter.SetStyles(PrintStyle.None));
             bytes.AddRange(emitter.PrintLine("--------------------------------"));
 
+            bytes.AddRange(emitter.LeftAlign());
+            if (!string.IsNullOrWhiteSpace(factura.TipoFactura))
+                bytes.AddRange(emitter.PrintLine($"Tipo     : {factura.TipoFactura}"));
+            if (!string.IsNullOrWhiteSpace(factura.FormaPago))
+                bytes.AddRange(emitter.PrintLine($"Forma Pago: {factura.FormaPago}"));
+            if (factura.Pagos != null)
+            {
+                foreach (var pago in factura.Pagos.Where(p => p.Monto > 0 && !string.IsNullOrWhiteSpace(p.Metodo)))
+                    bytes.AddRange(emitter.PrintLine($"  {pago.Metodo} RD$ {pago.Monto:N2}"));
+            }
+
             bytes.AddRange(emitter.CenterAlign());
             bytes.AddRange(emitter.PrintLine("GRACIAS POR PREFERIRNOS"));
 

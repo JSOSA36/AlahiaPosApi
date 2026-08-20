@@ -320,6 +320,10 @@ GetIngresosEncargosPorFecha(
       DateTime fechaInicio,
       DateTime fechaFin)
         {
+            // Rango inclusivo de días calendario (evita perder ventas si fechaFin llega a 00:00:00).
+            var desde = fechaInicio.Date;
+            var hastaExclusivo = fechaFin.Date.AddDays(1);
+
             var resultado = await (
                 from d in _alahiaPosContext.FacturaDetalles
                 join h in _alahiaPosContext.FacturaHeaders
@@ -334,10 +338,12 @@ GetIngresosEncargosPorFecha(
                     on h.IdFacturaHeader equals i.IdFacturaHeader
 
                 where h.IdEmpresa == idEmpresa
-                      && h.FechaInseccion >= fechaInicio
-                      && h.FechaInseccion <= fechaFin
+                      && h.FechaInseccion >= desde
+                      && h.FechaInseccion < hastaExclusivo
                       && h.EstaCancelada == false
                       && i.EstaAnulado == false
+                      && a.IdEmpresa == idEmpresa
+                      && an.IdEmpresa == idEmpresa
                       
 
                 // 🔥 total de la factura

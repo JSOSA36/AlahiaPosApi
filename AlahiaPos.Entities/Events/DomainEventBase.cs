@@ -30,6 +30,7 @@ namespace AlahiaPos.Entities.Events
         public const string MovimientoBancarioRegistrado = "MovimientoBancarioRegistrado";
         public const string InventarioMovimientoRegistrado = "InventarioMovimientoRegistrado";
         public const string InventarioMovimientoAnulado = "InventarioMovimientoAnulado";
+        public const string NominaPagada = "NominaPagada";
         /// <summary>Post-commit comercial para consumidores opcionales (DGII fiscal, etc.).</summary>
         public const string DocumentoComercialConfirmado = "DocumentoComercialConfirmado";
         /// <summary>Trabajo fiscal asíncrono (Sprint B.1). No es contable.</summary>

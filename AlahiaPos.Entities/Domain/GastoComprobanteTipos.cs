@@ -39,6 +39,7 @@ namespace AlahiaPos.Entities.Domain
             ("Honorarios", 10),
             ("Impuestos", 11),
             ("Caja chica", 12),
+            ("Nómina", 13),
             ("Otros", 99),
         };
     }

@@ -29,11 +29,12 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.PgEInvoicing
         public int TipoeCF { get; set; }
         [JsonPropertyName("eNCF")]
         public string ENCF { get; set; } = "";
+        /// <summary>E34: debe ir antes de IndicadorMontoGravado (orden XSD DGII).</summary>
+        public int? IndicadorNotaCredito { get; set; }
+        public int? IndicadorMontoGravado { get; set; }
+        public string? FechaVencimientoSecuencia { get; set; }
         public int? TipoIngresos { get; set; }
         public int? TipoPago { get; set; }
-        public int? IndicadorMontoGravado { get; set; }
-        public int? IndicadorNotaCredito { get; set; }
-        public string? FechaVencimientoSecuencia { get; set; }
         public List<PgFormaPagoDto>? TablaFormasPago { get; set; }
     }
 

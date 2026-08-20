@@ -739,14 +739,18 @@ namespace AlahiaPos.DataAccess.Servicios
                 - model.TotalGastos;
 
             /* =====================================
-            🔥 DIFERENCIA
+            🔥 DIFERENCIA (efectivo físico no puede ser negativo)
             ====================================== */
+
+            var esperadoFisico =
+
+                model.DebeHaber < 0 ? 0m : model.DebeHaber;
 
             model.Diferencia =
 
                 model.MontoRealCaja
 
-                - model.DebeHaber;
+                - esperadoFisico;
 
             /* =====================================
             🔥 GUARDAR CIERRE

@@ -12,6 +12,9 @@ namespace AlahiaPos.Entities.Dto
 
         public string Empleados { get; set; }
 
+        /// <summary>Suma de subtotales sin ITBIS (base) de donde se calculó la comisión.</summary>
+        public decimal MontoBase { get; set; }
+
         // Total generado en comisiones
         public decimal TotalComisiones { get; set; }
 

@@ -91,6 +91,10 @@ namespace AlahiaPos.Entities.Domain
 
         public int? LimiteUsuario { get; set; }
 
+        /// <summary>Nivel de soporte contratado: STANDARD | GOLD | PREMIUM.</summary>
+        [MaxLength(20)]
+        public string NivelSoporte { get; set; } = NivelesSoporte.Standard;
+
         // ======================================================
         // 🔥 FACTURACIÓN ELECTRÓNICA
         // ======================================================

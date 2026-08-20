@@ -44,6 +44,23 @@ namespace PrinterLibrary
          string body
      )
         {
+            Send(smtpServer, smtpPort, enableSsl, smtpUser, smtpPassword, fromName, to, subject, body, null, null);
+        }
+
+        public static void Send(
+         string smtpServer,
+         int smtpPort,
+         bool enableSsl,
+         string smtpUser,
+         string smtpPassword,
+         string fromName,
+         string to,
+         string subject,
+         string body,
+         byte[]? attachmentBytes,
+         string? attachmentName
+     )
+        {
             var mail = new MailMessage
             {
                 From = new MailAddress(smtpUser, fromName),
@@ -53,14 +70,29 @@ namespace PrinterLibrary
             };
 
             mail.To.Add(to);
-
-            var smtp = new SmtpClient(smtpServer, smtpPort)
+            Attachment? attachment = null;
+            try
             {
-                Credentials = new NetworkCredential(smtpUser, smtpPassword),
-                EnableSsl = enableSsl
-            };
+                if (attachmentBytes != null && attachmentBytes.Length > 0)
+                {
+                    var stream = new MemoryStream(attachmentBytes);
+                    attachment = new Attachment(stream, string.IsNullOrWhiteSpace(attachmentName) ? "recibo.pdf" : attachmentName, "application/pdf");
+                    mail.Attachments.Add(attachment);
+                }
 
-            smtp.Send(mail);
+                var smtp = new SmtpClient(smtpServer, smtpPort)
+                {
+                    Credentials = new NetworkCredential(smtpUser, smtpPassword),
+                    EnableSsl = enableSsl
+                };
+
+                smtp.Send(mail);
+            }
+            finally
+            {
+                attachment?.Dispose();
+                mail.Dispose();
+            }
         }
 
         public static string ObtenerImagenCategoriaPorDefecto(string referencia)
@@ -108,29 +140,66 @@ namespace PrinterLibrary
 
         public static string UploadFileFtp(byte[] imageBytes, string imageName)
         {
-            string publicUrl = $"https://alahiaupdate.alahiapos.com/{imageName}";
-            string ftpUrl = $"ftp://alahiaupdate.alahiapos.com/{imageName}";
+            if (imageBytes == null || imageBytes.Length == 0)
+                return null;
+
+            var safeName = SanitizarNombreArchivoFtp(imageName);
+            string publicUrl = $"https://alahiaupdate.alahiapos.com/{safeName}";
+            string ftpUrl = $"ftp://alahiaupdate.alahiapos.com/{safeName}";
 
             try
             {
                 FtpWebRequest request = (FtpWebRequest)WebRequest.Create(ftpUrl);
                 request.Method = WebRequestMethods.Ftp.UploadFile;
                 request.UsePassive = true;
+                request.UseBinary = true;
+                request.KeepAlive = false;
                 request.EnableSsl = false;
                 request.Credentials = new NetworkCredential("administrator", "JoelAriel8787");
+                request.ContentLength = imageBytes.Length;
 
                 using (Stream ftpStream = request.GetRequestStream())
                 {
                     ftpStream.Write(imageBytes, 0, imageBytes.Length);
                 }
 
-                return publicUrl; // Éxito
+                // Cerrar bien la operación FTP; sin GetResponse la conexión queda a medias
+                // y el siguiente upload puede fallar hasta reiniciar el proceso.
+                using (FtpWebResponse response = (FtpWebResponse)request.GetResponse())
+                {
+                    _ = response.StatusDescription;
+                }
+
+                return publicUrl;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error al subir archivo: {ex.Message}");
+                Console.WriteLine($"Error al subir archivo '{safeName}': {ex.Message}");
                 return null;
             }
+        }
+
+        private static string SanitizarNombreArchivoFtp(string imageName)
+        {
+            var raw = Path.GetFileName(string.IsNullOrWhiteSpace(imageName)
+                ? Guid.NewGuid().ToString("N") + ".jpg"
+                : imageName.Trim());
+
+            var sb = new StringBuilder(raw.Length);
+            foreach (var ch in raw)
+            {
+                if (char.IsLetterOrDigit(ch) || ch is '.' or '-' or '_')
+                    sb.Append(ch);
+                else
+                    sb.Append('_');
+            }
+
+            var safe = sb.ToString().Trim('_');
+            if (string.IsNullOrWhiteSpace(safe) || safe == "." || safe == "..")
+                safe = Guid.NewGuid().ToString("N") + ".jpg";
+            if (!safe.Contains('.'))
+                safe += ".jpg";
+            return safe;
         }
 
         // 🔐 Encriptar un texto (ej. id de empresa)

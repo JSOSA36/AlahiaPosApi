@@ -25,6 +25,7 @@ namespace AlahiaPos.DataAccess.Servicios
         private readonly IRepository<Productos> _RproductosServices;
         private readonly INCF_Secuencias _Secuencias;
         private readonly ISecuenciaDocumentoService _secuenciaDocumentoService;
+        private readonly IRepository<ECFEncabezado> _ecfEncabezados;
 
         public BizcochoEncargoServices(
             IRepository<FacturaHeaders> repository,
@@ -35,7 +36,8 @@ namespace AlahiaPos.DataAccess.Servicios
             IRepository<Productos> RproductosServices,
             IRepository<Empresas> RepositoryEmpresa,
             IMetodoPagoCuentaService metodoPagoCuentaService,
-            IMovimientoFinancieroService movimientoFinancieroService
+            IMovimientoFinancieroService movimientoFinancieroService,
+            IRepository<ECFEncabezado> ecfEncabezados
 
             )
         {
@@ -48,11 +50,9 @@ namespace AlahiaPos.DataAccess.Servicios
             _facturaDetalleRepository = facturaDetalleRepository;
             _ingresos = ingresos;
             _Secuencias = secuencias;
-            _MetodoPagoCuentaService =
-    metodoPagoCuentaService;
-
-            _MovimientoFinancieroService =
-                movimientoFinancieroService;
+            _MetodoPagoCuentaService = metodoPagoCuentaService;
+            _MovimientoFinancieroService = movimientoFinancieroService;
+            _ecfEncabezados = ecfEncabezados;
         }
 
         private static void ValidateCreateRequest(RequestBizcochoEncargoDto request)
@@ -516,19 +516,44 @@ namespace AlahiaPos.DataAccess.Servicios
                         Cantidad = d.Cantidad,
                         SubTotal = d.SubTotal,
                         Itbis = d.Itbis,
+                        Descripcion = prod?.Nombre ?? "Producto",
                         // 🔥 BIZCOCHO
-                        Libras = d.Libras,
+                        Libras = d.Libras ?? 0,
                         TipoMasa = d.TipoMasa,
                         TipoRelleno = d.TipoRelleno,
 
-                        // 🔥 PRODUCTO
-                        Productos = prod
+                        // Solo datos de impresión (evita ciclos / payloads pesados)
+                        Productos = prod == null
+                            ? null
+                            : new Productos
+                            {
+                                IdProducto = prod.IdProducto,
+                                Nombre = prod.Nombre
+                            }
                     }
                 );
             }
 
+            // 🔥 e-CF (si aplica) — sin TrackId en el ticket
+            var ecf = _ecfEncabezados
+                .GetAllByExpresionNoAsync(e =>
+                    e.IdEmpresa == x.IdEmpresa
+                    && (
+                        (e.IdOrigen == x.IdFacturaHeader
+                            && (e.OrigenDocumento == (int)OrigenDocumento.Pos
+                                || e.OrigenDocumento == (int)OrigenDocumento.Facturacion))
+                        || e.IdFacturaInterna == x.IdFacturaHeader
+                        || (!string.IsNullOrWhiteSpace(x.NCF) && e.ENCF == x.NCF)
+                    ))
+                .OrderByDescending(e => e.IdECF)
+                .FirstOrDefault();
+
+            var ncf = !string.IsNullOrWhiteSpace(ecf?.ENCF) ? ecf!.ENCF : (x.NCF ?? "");
+            var esElectronico = !string.IsNullOrWhiteSpace(ncf)
+                && ncf.StartsWith("E", StringComparison.OrdinalIgnoreCase);
+
             // 🔥 RETURN
-            return new FacturaHeaderDto
+            var dto = new FacturaHeaderDto
             {
                 // HEADER
                 IdFacturaHeader = x.IdFacturaHeader,
@@ -543,7 +568,15 @@ namespace AlahiaPos.DataAccess.Servicios
                 Estado = x.Estado,
                 RNC = x.RNC,
                 Nota = x.Nota,
-                NCF = x.NCF,
+                NCF = ncf,
+                TipoComprobante = x.TipoFactura,
+                EsComprobanteElectronico = esElectronico || ecf != null,
+                TipoECF = ecf?.TipoECF,
+                SecurityCode = ecf?.SecurityCode,
+                UrlQR = ecf?.UrlQR,
+                FechaFirma = ecf?.FechaFirma,
+                FechaEmisionEcf = ecf?.FechaEmision,
+                EstadoDgii = ecf?.EstadoDGII,
                 
                 // FECHAS
                 FechaInseccion = x.FechaInseccion,
@@ -596,6 +629,30 @@ namespace AlahiaPos.DataAccess.Servicios
                 // 🔥 DETALLES
                 FacturaDetalles = listaDetalles
             };
+
+            if (dto.EsComprobanteElectronico
+                && !string.IsNullOrWhiteSpace(dto.SecurityCode)
+                && !FiscalGateway.EcfQrUrlHelper.IsUsableHttpUrl(dto.UrlQR))
+            {
+                dto.UrlQR = FiscalGateway.EcfQrUrlHelper.ResolveFromEncabezadoFields(
+                    dto.UrlQR,
+                    _Empresa.AmbienteFE,
+                    dto.RNCEmpresa ?? "",
+                    dto.RNC,
+                    dto.NCF ?? "",
+                    dto.FechaEmisionEcf ?? dto.FechaInseccion,
+                    dto.Total,
+                    dto.FechaFirma,
+                    dto.SecurityCode);
+            }
+
+            dto.FechaFirma = TicketFechaHora.ParaImpresion(
+                dto.FechaFirma,
+                dto.FechaEmisionEcf,
+                dto.FechaInseccion,
+                x.Hora);
+
+            return dto;
         }
         // 🔥 GET BY ID
         public async Task<FacturaHeaders?> GetByIdAsync(int id, int idEmpresa)
@@ -699,7 +756,7 @@ namespace AlahiaPos.DataAccess.Servicios
                         IdProducto = d.IdProducto,
                         Cantidad = d.Cantidad,
                         SubTotal = d.SubTotal,
-                        Libras = d.Libras,
+                        Libras = d.Libras ?? 0,
                         TipoMasa = d.TipoMasa,
                         TipoRelleno = d.TipoRelleno
                     }).ToList()

@@ -90,7 +90,18 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.Http
                 }
 
                 var wireResp = JsonSerializer.Deserialize<PgTrackIdResponse>(responseBody, JsonRead);
-                return PgEInvoicingMapper.ToEnvioResultado(wireResp, documento.Encabezado.TipoEcf);
+                var resultado = PgEInvoicingMapper.ToEnvioResultado(wireResp, documento.Encabezado.TipoEcf);
+                // Invoice devuelve qr como data:image; ECFEncabezado.UrlQR es NVARCHAR(500)
+                // y la térmica necesita URL de ConsultaTimbre para PrintQRCode.
+                if (resultado.Exitoso || !string.IsNullOrWhiteSpace(resultado.SecurityCode))
+                {
+                    resultado.UrlQR = EcfQrUrlHelper.ResolveForStorage(
+                        resultado.UrlQR,
+                        documento,
+                        resultado.FechaFirma,
+                        resultado.SecurityCode);
+                }
+                return resultado;
             }
             catch (TaskCanceledException)
             {
@@ -143,7 +154,34 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.Http
                 }
 
                 var wireResp = JsonSerializer.Deserialize<PgTrackIdResponse>(responseBody, JsonRead);
-                return PgEInvoicingMapper.ToConsultaResultado(wireResp, trackId);
+                var consulta = PgEInvoicingMapper.ToConsultaResultado(wireResp, trackId);
+
+                if (!string.IsNullOrWhiteSpace(consulta.SecurityCode) || !string.IsNullOrWhiteSpace(consulta.UrlQR))
+                {
+                    var ecf = await _ctx.ECFEncabezados.AsNoTracking()
+                        .FirstOrDefaultAsync(e => e.TrackId == trackId, ct);
+                    if (ecf != null)
+                    {
+                        var empresa = await _ctx.Empresas.AsNoTracking()
+                            .FirstOrDefaultAsync(e => e.IdEmpresa == ecf.IdEmpresa, ct);
+                        consulta.UrlQR = EcfQrUrlHelper.ResolveFromEncabezadoFields(
+                            consulta.UrlQR,
+                            empresa?.AmbienteFE,
+                            empresa?.RNC ?? "",
+                            ecf.RncReceptor,
+                            ecf.ENCF ?? consulta.Encf ?? "",
+                            ecf.FechaEmision,
+                            ecf.TotalGeneral,
+                            consulta.FechaFirma ?? ecf.FechaFirma,
+                            consulta.SecurityCode ?? ecf.SecurityCode);
+                    }
+                    else if (!EcfQrUrlHelper.IsUsableHttpUrl(consulta.UrlQR))
+                    {
+                        consulta.UrlQR = null;
+                    }
+                }
+
+                return consulta;
             }
             catch (Exception ex)
             {
@@ -163,10 +201,15 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.Http
             try
             {
                 var ep = DefaultEndpoint();
-                using var request = new HttpRequestMessage(HttpMethod.Get, $"{ep.BaseUrl}/api/Receipt");
+                // Alahia.eCF.Api acepta GET /api/Receipt; Invoice no — usar pendienteAprobacion si BaseUrl parece externo.
+                var path = ep.BaseUrl.Contains("einvoicing", StringComparison.OrdinalIgnoreCase)
+                    ? $"{ep.BaseUrl}/api/Receipt/pendienteAprobacion"
+                    : $"{ep.BaseUrl}/api/Receipt";
+                using var request = new HttpRequestMessage(HttpMethod.Get, path);
                 ApplyAuth(request, ep);
                 using var response = await SendAsync(request, Math.Min(15, ep.TimeoutSeconds), ct);
-                return response.IsSuccessStatusCode;
+                var code = (int)response.StatusCode;
+                return response.IsSuccessStatusCode || code is 401 or 403 or 404;
             }
             catch
             {

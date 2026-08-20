@@ -2,12 +2,14 @@ using System;
 using System.Threading.Tasks;
 using AlahiaPos.Entities.Dto.Cotizador;
 using AlahiaPos.Entities.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AlahiaPosApi.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [AllowAnonymous]
     public class CotizadorController : ControllerBase
     {
         private readonly ICotizadorService _cotizador;

@@ -14,6 +14,9 @@ namespace AlahiaPos.DataAccess.Servicios.AlahiaAi
         public AnthropicProviderOptions Anthropic { get; set; } = new();
         public GeminiProviderOptions Gemini { get; set; } = new();
         public OllamaProviderOptions Ollama { get; set; } = new();
+
+        /// <summary>Consultas SQL de solo lectura con aislamiento por SESSION_CONTEXT.</summary>
+        public AiSqlOptions Sql { get; set; } = new();
     }
 
     public class OpenAiProviderOptions

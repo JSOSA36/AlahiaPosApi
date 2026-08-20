@@ -61,7 +61,7 @@ namespace AlahiaPosApi.Controllers
         }
 
         /// <summary>
-        /// Tarifa dinámica del cliente: MontoServicio + CargoAdicional + LimiteFacturacion.
+        /// Tarifa dinámica del cliente: MontoServicio + CargoAdicional + LimiteFacturacion (tope ingresos RD$/mes).
         /// </summary>
         [HttpPut("tarifa-empresa")]
         public async Task<IActionResult> TarifaEmpresa([FromBody] ActualizarTarifaEmpresaDto dto)

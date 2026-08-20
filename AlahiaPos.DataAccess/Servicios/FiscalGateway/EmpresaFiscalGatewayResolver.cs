@@ -87,7 +87,12 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway
                 var ep = await ResolveAsync(idEmpresa, ct);
                 var client = _httpFactory.CreateClient(nameof(EmpresaFiscalGatewayResolver));
                 client.Timeout = TimeSpan.FromSeconds(Math.Min(30, Math.Max(5, ep.TimeoutSeconds)));
-                using var req = new HttpRequestMessage(HttpMethod.Get, $"{ep.BaseUrl}/api/Receipt");
+                // Invoice (PG.eInvoicing) no admite GET /api/Receipt (solo POST) → 405.
+                // pendienteAprobacion es el ping compatible del contrato OpenAPI.
+                var healthPath = ProveedorFiscalHelper.EsExterno(ep.Modo)
+                    ? $"{ep.BaseUrl}/api/Receipt/pendienteAprobacion"
+                    : $"{ep.BaseUrl}/api/Receipt";
+                using var req = new HttpRequestMessage(HttpMethod.Get, healthPath);
                 if (!string.IsNullOrWhiteSpace(ep.ApiKey))
                     req.Headers.TryAddWithoutValidation("X-Api-Key", ep.ApiKey);
                 if (!string.IsNullOrWhiteSpace(ep.Usuario) && !string.IsNullOrWhiteSpace(ep.Password))
@@ -100,10 +105,12 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway
 
                 _logger.LogInformation(
                     "Health gateway empresa={Empresa} modo={Modo} url={Url}",
-                    idEmpresa, ep.Modo, ep.BaseUrl);
+                    idEmpresa, ep.Modo, healthPath);
 
                 using var res = await client.SendAsync(req, ct);
-                return res.IsSuccessStatusCode;
+                // 2xx = OK; 401/403 = llegó al host (credencial mala); 404 en Alahia ping también cuenta.
+                var code = (int)res.StatusCode;
+                return res.IsSuccessStatusCode || code is 401 or 403 or 404;
             }
             catch (Exception ex)
             {

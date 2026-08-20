@@ -223,6 +223,14 @@ namespace AlahiaPos.DataAccess.Servicios
                         break;
                     }
 
+                    case DomainEventTypes.NominaPagada:
+                        await ProcesarRequestsAsync(
+                            evento,
+                            await ContabilidadAsientoBuilders.DesdeNominaPagadaAsync(
+                                Deserialize<NominaPagadaEvent>(evento),
+                                _mapeo));
+                        break;
+
                     default:
                         await _log.RegistrarAsync(
                             evento.IdEmpresa,

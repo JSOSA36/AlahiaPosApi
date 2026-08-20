@@ -14,6 +14,8 @@ namespace AlahiaPos.Entities.Interfaces.AlahiaAi
         IAiProvider GetCurrent();
         IAiProvider Get(string providerId);
         IReadOnlyList<string> AvailableProviders { get; }
+        /// <summary>Proveedor de la empresa si tiene config activa; si no, el global.</summary>
+        Task<IAiProvider> ResolveForEmpresaAsync(int idEmpresa, CancellationToken ct = default);
     }
 
     public interface IAiPromptManager
@@ -22,6 +24,8 @@ namespace AlahiaPos.Entities.Interfaces.AlahiaAi
         string BuildAnswerPrompt(string userMessage, string intent, string contextJson);
         string BuildResumenPrompt(string contextJson);
         string BuildTemplateAnswer(string intent, string contextJson);
+        string BuildSqlGenerationPrompt(string userMessage, string catalogJson);
+        string BuildSqlAnswerPrompt(string userMessage, string sql, string rowsJson);
     }
 
     public interface IAiContextBuilder
@@ -72,6 +76,17 @@ namespace AlahiaPos.Entities.Interfaces.AlahiaAi
         Task<object> GetConteoClientesAsync(int idEmpresa, CancellationToken ct = default);
         Task<object> GetResumenOperativoAsync(int idEmpresa, CancellationToken ct = default);
         Task<object> GetAyudaDocumentalAsync(string pregunta, CancellationToken ct = default);
+    }
+
+    public interface IAiSqlExecutor
+    {
+        bool IsEnabled { get; }
+        Task<string> GetCatalogAsync(CancellationToken ct = default);
+        Task<AiSqlExecutionResult> ExecuteAsync(
+            int idEmpresa,
+            string sql,
+            bool requireTenantContext = true,
+            CancellationToken ct = default);
     }
 
     public interface IAlahiaAiService

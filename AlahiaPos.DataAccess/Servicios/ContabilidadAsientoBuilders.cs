@@ -12,7 +12,7 @@ namespace AlahiaPos.DataAccess.Servicios
         private static readonly HashSet<string> CategoriasTesoreriaYaContabilizadas = new(StringComparer.OrdinalIgnoreCase)
         {
             "VENTA", "GASTO", "COMPRA", "COBRO", "PAGO", "PAGO_PROVEEDOR", "PAGO_CLIENTE",
-            "INGRESO", "INGRESO_EXTRA", "TRANSFERENCIA"
+            "INGRESO", "INGRESO_EXTRA", "TRANSFERENCIA", "NOMINA"
         };
 
         public static async Task<List<ContabilidadIntegracionRequest>> DesdeGastoAsync(
@@ -431,6 +431,78 @@ namespace AlahiaPos.DataAccess.Servicios
             }
 
             return new List<ContabilidadIntegracionRequest>();
+        }
+
+        public static async Task<List<ContabilidadIntegracionRequest>> DesdeNominaPagadaAsync(
+            NominaPagadaEvent e,
+            IContabilidadCuentaMapeoService mapeo)
+        {
+            var creditos = new List<ContabilidadIntegracionLinea>();
+
+            async Task CreditarSiHay(string concepto, decimal monto, string referencia)
+            {
+                if (monto <= 0)
+                    return;
+                var id = await mapeo.ResolverAsync(e.IdEmpresa, concepto);
+                if (id is not > 0)
+                    return;
+                creditos.Add(new ContabilidadIntegracionLinea
+                {
+                    IdCuentaContable = id.Value,
+                    Credito = monto,
+                    Referencia = referencia
+                });
+            }
+
+            await CreditarSiHay(ContabilidadConceptosMapeo.AfpPorPagar, e.TotalAfp, "AFP por pagar");
+            await CreditarSiHay(ContabilidadConceptosMapeo.SfsPorPagar, e.TotalSfs, "SFS por pagar");
+            await CreditarSiHay(ContabilidadConceptosMapeo.IsrPorPagar, e.TotalIsr, "ISR por pagar");
+            await CreditarSiHay(ContabilidadConceptosMapeo.PrestamosEmpleados, e.TotalPrestamos, "Préstamos");
+            await CreditarSiHay(ContabilidadConceptosMapeo.AnticiposEmpleados, e.TotalAnticipos, "Anticipos");
+
+            if (e.TotalNeto > 0)
+            {
+                var idTesoreria = await mapeo.ResolverTesoreriaPorCuentaAsync(
+                    e.IdEmpresa,
+                    e.IdCuentaFinanciera,
+                    tipoCuentaFinanciera: e.TipoCuentaFinanciera);
+                creditos.Add(new ContabilidadIntegracionLinea
+                {
+                    IdCuentaContable = idTesoreria,
+                    Credito = e.TotalNeto,
+                    Referencia = "Pago de nómina"
+                });
+            }
+
+            var totalCredito = creditos.Sum(l => l.Credito);
+            if (totalCredito <= 0)
+                return new List<ContabilidadIntegracionRequest>();
+
+            var idGasto = await mapeo.ResolverAsync(e.IdEmpresa, ContabilidadConceptosMapeo.GastoNomina);
+            if (idGasto is not > 0)
+                idGasto = await mapeo.ResolverRequeridoAsync(e.IdEmpresa, ContabilidadConceptosMapeo.GastoOperativo);
+
+            var lineas = new List<ContabilidadIntegracionLinea>
+            {
+                new()
+                {
+                    IdCuentaContable = idGasto.Value,
+                    Debito = totalCredito,
+                    Referencia = "Gasto de nómina"
+                }
+            };
+            lineas.AddRange(creditos);
+            CuadrarEnPrimeraLineaDebito(lineas);
+
+            return new List<ContabilidadIntegracionRequest>
+            {
+                CrearRequest(
+                    e,
+                    ContabilidadConstantes.OrigenNomina,
+                    ContabilidadTipoOperacion.Alta,
+                    e.Detalle ?? $"Nómina {e.PeriodKey}",
+                    lineas.ToArray())
+            };
         }
 
         public static async Task<List<ContabilidadIntegracionRequest>> DesdeInventarioAsync(

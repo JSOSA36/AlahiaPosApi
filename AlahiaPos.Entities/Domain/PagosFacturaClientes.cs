@@ -12,9 +12,9 @@ namespace AlahiaPos.Entities.Domain
         [Key]
         public int Id { get; set; }
         public int IdFacturaHeader { get; set; }
-        public string NumeroDocumento { get; set; }
+        public string? NumeroDocumento { get; set; }
         public int? IDCliente { get; set; }
-        public string FormaPago { get; set; }
+        public string? FormaPago { get; set; }
         public decimal Monto { get; set; }
         public string? Nota { get; set; }
 

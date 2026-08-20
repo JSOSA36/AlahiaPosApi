@@ -4,6 +4,7 @@ using AlahiaPos.Entities.Dto;
 using AlahiaPos.Entities.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace AlahiaPos.DataAccess.Servicios
@@ -54,29 +55,19 @@ namespace AlahiaPos.DataAccess.Servicios
         }
         public async Task<IEnumerable<Productos>> GetAllProductosVenta(int IdEmpresa)
         {
-            return await Repository
-.GetAllByExpresionAsync(
+            var productos = (await Repository
+                .GetAllByExpresionAsync(
+                    c =>
+                        c.IdEmpresa == IdEmpresa
+                        && (
+                            c.EsServicio
+                            || c.TipoOperacion == "VENTA"
+                            || c.TipoOperacion == "AMBAS"
+                        )))
+                .ToList();
 
-    c =>
-
-        c.IdEmpresa
-        == IdEmpresa
-
-        &&
-
-        (
-            c.EsServicio
-            ||
-
-            c.TipoOperacion
-            == "VENTA"
-
-            ||
-
-            c.TipoOperacion
-            == "AMBAS"
-        )
-);
+            await AplicarExistenciaRealAsync(IdEmpresa, productos);
+            return productos;
         }
 
         public async Task<Productos> GetAllProductosById(int IdProductos)
@@ -91,7 +82,58 @@ namespace AlahiaPos.DataAccess.Servicios
 
         public async Task<Productos> GetProductByBarcCode(string BarCode, int IdEmpresa)
         {
-            return await Repository.GetByExpresionAsync(c => c.CodigoBarra == BarCode && c.IdEmpresa == IdEmpresa);
+            var producto = await Repository.GetByExpresionAsync(c => c.CodigoBarra == BarCode && c.IdEmpresa == IdEmpresa);
+            if (producto != null)
+                await AplicarExistenciaRealAsync(IdEmpresa, new List<Productos> { producto });
+            return producto;
+        }
+
+        /// <summary>
+        /// Fuente de verdad de stock para POS/venta: AlmacenExistencias (suma).
+        /// Productos.Cantidad es legado y no debe mostrarse como disponible.
+        /// Servicios no controlan existencia: Cantidad=0 y ControlarStock=false en la respuesta.
+        /// </summary>
+        private async Task AplicarExistenciaRealAsync(int idEmpresa, List<Productos> productos)
+        {
+            if (productos == null || productos.Count == 0)
+                return;
+
+            var idsControlados = productos
+                .Where(p => !p.EsServicio && p.ControlarStock)
+                .Select(p => p.IdProducto)
+                .Distinct()
+                .ToList();
+
+            Dictionary<int, decimal> mapa = new();
+            if (idsControlados.Count > 0)
+            {
+                var filas = await _context.AlmacenExistencia
+                    .AsNoTracking()
+                    .Where(e =>
+                        e.IdEmpresa == idEmpresa
+                        && idsControlados.Contains(e.IdProducto))
+                    .GroupBy(e => e.IdProducto)
+                    .Select(g => new { IdProducto = g.Key, Total = g.Sum(x => x.Cantidad) })
+                    .ToListAsync();
+
+                mapa = filas.ToDictionary(x => x.IdProducto, x => x.Total);
+            }
+
+            foreach (var p in productos)
+            {
+                if (p.EsServicio)
+                {
+                    // Misconfiguración frecuente: servicio con ControlarStock/Cantidad inventada.
+                    p.ControlarStock = false;
+                    p.Cantidad = 0;
+                    continue;
+                }
+
+                if (!p.ControlarStock)
+                    continue;
+
+                p.Cantidad = mapa.TryGetValue(p.IdProducto, out var total) ? total : 0m;
+            }
         }
 
         public async Task InsertProductos(Productos Productos)

@@ -57,7 +57,8 @@ namespace AlahiaPosApi.Controllers
                 return Ok(new
                 {
                     message = "Documento clínico creado correctamente",
-                    idDocumentoClinico = documento.IdDocumentoClinico
+                    idDocumentoClinico = documento.IdDocumentoClinico,
+                    numeroDocumento = documento.NumeroDocumento
                 });
             }
             catch (Exception ex)

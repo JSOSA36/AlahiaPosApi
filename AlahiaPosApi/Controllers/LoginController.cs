@@ -82,8 +82,10 @@ namespace AlahiaPosApi.Controllers
                 if (usuarioDb == null)
                     return Unauthorized("Usuario no encontrado");
 
-                // 🔐 Validar credenciales
+                // 🔐 Validar credenciales (401, nunca 500)
                 var loginResponse = await _loginService.Login(usuarioDb, dto.Password);
+                if (loginResponse == null)
+                    return Unauthorized("Usuario o contraseña inválidos");
 
                 // 🔍 Empresa
                 var empresa = await _empresasService.GetEmpresaById(usuarioDb.IdEmpresa);
@@ -91,11 +93,19 @@ namespace AlahiaPosApi.Controllers
                 if (empresa == null)
                     return Unauthorized("Empresa no encontrada");
 
-                // 🔥 Actualizar estado automático
-                await _empresasService.ActualizarEstadoEmpresa(empresa.IdEmpresa);
-
-                // 🔄 Refrescar empresa después del update
-                empresa = await _empresasService.GetEmpresaById(usuarioDb.IdEmpresa);
+                // El ciclo de suscripción NO puede bloquear el login (504 en IIS).
+                // Si SQL está lento o con lock, se usa el estado ya guardado.
+                try
+                {
+                    await _empresasService.ActualizarEstadoEmpresa(empresa.IdEmpresa)
+                        .WaitAsync(TimeSpan.FromSeconds(4));
+                    empresa = await _empresasService.GetEmpresaById(usuarioDb.IdEmpresa)
+                        ?? empresa;
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Login: suscripción omitida ({ex.Message})");
+                }
 
                 // 🔔 Obtener alerta con la empresa actualizada
                 var alertaPago = _empresasService.ObtenerAlertaPago(empresa);
@@ -184,6 +194,7 @@ namespace AlahiaPosApi.Controllers
                             nombreComercial = empresa.NombreComercial,
                             idPlan = empresa.IdPlan,
                             nombrePlan = factura.NombrePlan ?? nombrePlanEmpresa,
+                            nivelSoporte = NivelesSoporte.Normalizar(empresa.NivelSoporte),
                             estadoServicio = estadoEfectivo,
                             precioPlan = factura.Total,
                             montoPlan = factura.MontoPlan,
@@ -201,33 +212,43 @@ namespace AlahiaPosApi.Controllers
                     });
                 }
 
-                // Límite mensual de facturas (0 = ilimitado)
+                // Límite mensual de ingresos RD$ (0 = ilimitado).
+                // No puede tumbar el login si FacturaHeaders está lenta o con lock.
                 if (empresa.LimiteFacturacion > 0)
                 {
-                    var fechaInicio = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
-                    var fechaFin = fechaInicio.AddMonths(1);
-                    var facturasMes = await _ctx.FacturaHeaders.AsNoTracking()
-                        .CountAsync(h =>
-                            h.IdEmpresa == empresa.IdEmpresa
-                            && h.IdTipoDocumentos == 1
-                            && !h.EstaCancelada
-                            && h.FechaInseccion >= fechaInicio
-                            && h.FechaInseccion < fechaFin);
-
-                    if (facturasMes >= empresa.LimiteFacturacion)
+                    try
                     {
-                        return Ok(new
+                        var fechaInicio = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
+                        var fechaFin = fechaInicio.AddMonths(1);
+                        var ingresosMes = await _ctx.FacturaHeaders.AsNoTracking()
+                            .Where(h =>
+                                h.IdEmpresa == empresa.IdEmpresa
+                                && h.IdTipoDocumentos == 1
+                                && !h.EstaCancelada
+                                && h.FechaInseccion >= fechaInicio
+                                && h.FechaInseccion < fechaFin)
+                            .SumAsync(h => (decimal?)h.Total)
+                            .WaitAsync(TimeSpan.FromSeconds(4)) ?? 0m;
+
+                        if (ingresosMes >= empresa.LimiteFacturacion)
                         {
-                            requiereUpgrade = true,
-                            mensaje = $"Ha alcanzado el límite mensual de {empresa.LimiteFacturacion} facturas. Contacte a MacroBits para ampliar su servicio.",
-                            empresa = new
+                            return Ok(new
                             {
-                                idEmpresa = empresa.IdEmpresa,
-                                idPlan = empresa.IdPlan,
-                                limiteFacturacion = empresa.LimiteFacturacion,
-                                facturasMes
-                            }
-                        });
+                                requiereUpgrade = true,
+                                mensaje = $"Ha llegado al límite de ingresos de su plan contratado (RD$ {empresa.LimiteFacturacion:N0}). Debe ponerse en contacto con nosotros para ampliar su servicio.",
+                                empresa = new
+                                {
+                                    idEmpresa = empresa.IdEmpresa,
+                                    idPlan = empresa.IdPlan,
+                                    limiteFacturacion = empresa.LimiteFacturacion,
+                                    ingresosMes
+                                }
+                            });
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Login: límite facturación omitido ({ex.Message})");
                     }
                 }
 
@@ -238,10 +259,32 @@ namespace AlahiaPosApi.Controllers
 
                 await _usuariosService.Actualizar(usuarioDb);
 
-                var politicasEstado = await _politicasServicio
-                    .ObtenerEstadoAsync(usuarioDb.IdEmpresa, usuarioDb.IdUsuario);
+                var politicasEstado = new PoliticasEstadoDto { RequiereAceptacion = false };
+                try
+                {
+                    politicasEstado = await _politicasServicio
+                        .ObtenerEstadoAsync(usuarioDb.IdEmpresa, usuarioDb.IdUsuario)
+                        .WaitAsync(TimeSpan.FromSeconds(4));
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Login: políticas omitidas ({ex.Message})");
+                }
+
                 var esAdministrador = politicasEstado?.EsAdministrador == true
                     || _politicasServicio.EsAdministrador(usuarioDb.Empleado?.Ocupacion);
+
+                int notificacionesNoLeidas = 0;
+                try
+                {
+                    notificacionesNoLeidas = await _notificaciones.ContarNoLeidasAsync(
+                        empresa.IdEmpresa, usuarioDb.IdUsuario)
+                        .WaitAsync(TimeSpan.FromSeconds(3));
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Login: notificaciones omitidas ({ex.Message})");
+                }
 
                 // ✅ RESPUESTA FINAL
                 return Ok(new
@@ -249,6 +292,7 @@ namespace AlahiaPosApi.Controllers
                     usuario = new
                     {
                         idUsuario = usuarioDb.IdUsuario,
+                        idEmpleado = usuarioDb.IdEmpleado,
                         userName = usuarioDb.UserName,
                         nombre =
                             usuarioDb.Empleado != null
@@ -273,16 +317,22 @@ namespace AlahiaPosApi.Controllers
                     {
                         idEmpresa = empresa.IdEmpresa,
                         nombreComercial = empresa.NombreComercial,
+                        rnc = empresa.RNC,
+                        direccion = empresa.Direccion,
+                        telefono = empresa.Telefono,
+                        correElectronico = empresa.CorreElectronico,
+                        logo = empresa.Logo,
                         apiPrint = empresa.ApiPrint,
                         idPlan = empresa.IdPlan,
                         nombrePlan = nombrePlanEmpresa,
+                        nivelSoporte = NivelesSoporte.Normalizar(empresa.NivelSoporte),
                         fechaTerminacion = empresa.FechaTerminacion,
                         estadoServicio = empresa.EstadoServicio,
                         pagadoServicio = empresa.PagadoServicio,
                         montoServicio = empresa.MontoServicio,
                         cargoAdicional = empresa.CargoAdicional,
                         limiteFacturacion = empresa.LimiteFacturacion,
-                        PoliticasAceptadas = !politicasEstado.RequiereAceptacion
+                        PoliticasAceptadas = !(politicasEstado?.RequiereAceptacion ?? false)
                     },
                     politicas = politicasEstado,
                     modulos = loginResponse.Modulos,
@@ -296,8 +346,7 @@ namespace AlahiaPosApi.Controllers
                             diaCobro = alertaPago.DiaCobro,
                             diasRestantes = alertaPago.DiasRestantes
                         },
-                    notificacionesNoLeidas = await _notificaciones.ContarNoLeidasAsync(
-                        empresa.IdEmpresa, usuarioDb.IdUsuario)
+                    notificacionesNoLeidas
                 });
             }
             catch (Exception ex)

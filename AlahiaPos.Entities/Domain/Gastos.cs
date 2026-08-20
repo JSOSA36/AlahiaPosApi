@@ -61,7 +61,7 @@ namespace AlahiaPos.Entities.Domain
         [StringLength(100)]
         public string? Referencia { get; set; }
 
-        /// <summary>COMPRAS | MANUAL | CONCILIACION — origen del registro de gasto.</summary>
+        /// <summary>COMPRAS | MANUAL | CONCILIACION | NOMINA — origen del registro de gasto.</summary>
         [StringLength(30)]
         public string? OrigenModulo { get; set; }
 

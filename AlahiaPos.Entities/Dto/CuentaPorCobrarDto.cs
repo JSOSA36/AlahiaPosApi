@@ -12,5 +12,7 @@ namespace AlahiaPos.Entities.Dto
         public string NombreCliente { get; set; } = string.Empty;
         public string Telefono { get; set; } = string.Empty;
         public decimal TotalDeuda { get; set; }
+        public int? IdEmpleados { get; set; }
+        public bool EsEmpleado { get; set; }
     }
 }

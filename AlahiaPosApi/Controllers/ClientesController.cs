@@ -41,11 +41,17 @@ namespace AlahiaPosApi.Controllers
             if (cliente == null)
                 return Ok(null); // 👈 CLAVE
 
+            var tel =
+                !string.IsNullOrWhiteSpace(cliente.Celular) ? cliente.Celular
+                : (cliente.Telefono ?? "");
+
             return Ok(new
             {
                 idCliente = cliente.IDCliente,
                 nombre = cliente.NombreComercial,
-                telefono = cliente.Telefono,
+                nombreComercial = cliente.NombreComercial,
+                telefono = tel,
+                celular = tel,
                 correo = cliente.Email
             });
         }

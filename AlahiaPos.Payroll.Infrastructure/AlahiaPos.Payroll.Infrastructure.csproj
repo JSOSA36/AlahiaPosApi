@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>AlahiaPos.Payroll.Infrastructure</RootNamespace>
+    <AssemblyName>AlahiaPos.Payroll.Infrastructure</AssemblyName>
+    <Description>Persistencia y carga de contexto del Payroll Engine (ALAHIA-PE-01). Sin lógica fiscal.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="7.0.10" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="7.0.10" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="7.0.10" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="7.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AlahiaPos.Payroll.Abstractions\AlahiaPos.Payroll.Abstractions.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -95,6 +95,7 @@ namespace AlahiaPos.DataAccess.Servicios
                 EsDemoVigente = item.EsDemoVigente,
                 CantidadModulos = item.CantidadModulos,
                 LimiteUsuario = item.LimiteUsuario,
+                NivelSoporte = item.NivelSoporte,
                 Direccion = e.Direccion,
                 CodigosModulo = codigos,
                 ModulosDisponibles = await CatalogoModulosAsync(idEmpresa)
@@ -123,7 +124,7 @@ namespace AlahiaPos.DataAccess.Servicios
             return all.Select(m =>
             {
                 var codigo = m.Codigo.Trim();
-                var excluido = DemoEmpresaBootstrapService.CodigosExcluidos.Contains(codigo);
+                var excluido = DemoVerticalPresets.CodigosInternosNunca.Contains(codigo);
                 return new ModuloCatalogoItemDto
                 {
                     Id = m.Id,
@@ -133,6 +134,18 @@ namespace AlahiaPos.DataAccess.Servicios
                     Seleccionado = seleccion.Contains(codigo)
                 };
             }).ToList();
+        }
+
+        public Task<List<EmpresaAdminVerticalPresetDto>> ListarVerticalesAsync()
+        {
+            var list = DemoVerticalPresets.All.Select(p => new EmpresaAdminVerticalPresetDto
+            {
+                Codigo = p.Codigo,
+                Nombre = p.Nombre,
+                Descripcion = p.Descripcion,
+                CodigosModulo = p.CodigosModulo.ToList()
+            }).ToList();
+            return Task.FromResult(list);
         }
 
         public async Task<EmpresaAdminAltaResultDto> AltaAsync(EmpresaAdminAltaRequest req)
@@ -176,6 +189,7 @@ namespace AlahiaPos.DataAccess.Servicios
                 PoliticasAceptadas = true,
                 IdPlan = 1,
                 LimiteUsuario = req.LimiteUsuario > 0 ? req.LimiteUsuario : 5,
+                NivelSoporte = NivelesSoporte.Normalizar(req.NivelSoporte),
                 MontoServicio = req.EsDemo ? 0m : req.MontoServicio,
                 PrecioPlanEspecialUsd = req.EsDemo ? 0m : req.MontoServicio,
                 PrimaryColor = "#0a3d91",
@@ -273,6 +287,16 @@ namespace AlahiaPos.DataAccess.Servicios
                 IdPerfil = idPerfilAdmin,
                 Message = "Empresa creada correctamente."
             };
+        }
+
+        public async Task ActualizarNivelSoporteAsync(int idEmpresa, EmpresaAdminNivelSoporteRequest req)
+        {
+            var e = await _db.Empresas.AsTracking()
+                .FirstOrDefaultAsync(x => x.IdEmpresa == idEmpresa && !x.EsEmpresaSistema)
+                ?? throw new InvalidOperationException("Empresa no encontrada.");
+
+            e.NivelSoporte = NivelesSoporte.Normalizar(req?.NivelSoporte);
+            await _db.SaveChangesAsync();
         }
 
         public async Task ActualizarDemoAsync(int idEmpresa, EmpresaAdminDemoRequest req)
@@ -413,7 +437,8 @@ namespace AlahiaPos.DataAccess.Servicios
                 FechaTerminacion = e.FechaTerminacion,
                 EsDemoVigente = demo,
                 CantidadModulos = modulos,
-                LimiteUsuario = e.LimiteUsuario
+                LimiteUsuario = e.LimiteUsuario,
+                NivelSoporte = NivelesSoporte.Normalizar(e.NivelSoporte)
             };
         }
     }

@@ -54,8 +54,27 @@ namespace AlahiaPos.DataAccess.Servicios
 
         public async Task<IEnumerable<PagosFacturasClientes>> GetPagosByFacturaId(int IdFactura)
         {
-            var pagos = await _repository.GetAllByExpresionAsync(p => p.IdFacturaHeader == IdFactura);
-            return pagos.OrderByDescending(p => p.FechaInseccion);
+            // Lectura tolerante a NULLs históricos (NumeroDocumento / FormaPago).
+            var pagos = await _context.PagosFacturasClientes
+                .AsNoTracking()
+                .Where(p => p.IdFacturaHeader == IdFactura)
+                .OrderByDescending(p => p.FechaInseccion)
+                .Select(p => new PagosFacturasClientes
+                {
+                    Id = p.Id,
+                    IdFacturaHeader = p.IdFacturaHeader,
+                    NumeroDocumento = p.NumeroDocumento ?? "",
+                    IDCliente = p.IDCliente,
+                    FormaPago = p.FormaPago ?? "",
+                    Monto = p.Monto,
+                    Nota = p.Nota,
+                    IdMovimientoFinanciero = p.IdMovimientoFinanciero,
+                    IdEmpresa = p.IdEmpresa,
+                    FechaInseccion = p.FechaInseccion
+                })
+                .ToListAsync();
+
+            return pagos;
         }
 
         public async Task InsertPagosFacturasClientes(PagosFacturasClientes pago)
@@ -92,6 +111,13 @@ namespace AlahiaPos.DataAccess.Servicios
 
             if (string.IsNullOrWhiteSpace(pago.NumeroDocumento))
                 pago.NumeroDocumento = factura.NumeroDocumento ?? string.Empty;
+
+            if (string.IsNullOrWhiteSpace(pago.Nota))
+            {
+                pago.Nota = factura.Pendiente - pago.Monto > 0.02m
+                    ? $"Abono de RD$ {pago.Monto:N2} — {formaPago}"
+                    : $"Saldo de factura RD$ {pago.Monto:N2} — {formaPago}";
+            }
 
             await _repository.Save(pago);
 
@@ -157,6 +183,53 @@ namespace AlahiaPos.DataAccess.Servicios
                 FormaPago = formaPago,
                 IdFacturaHeader = IdFactura
             });
+        }
+
+        public async Task<TicketReciboAbonoDto?> GetReciboAbonoByPagoIdAsync(int idPago)
+        {
+            if (idPago <= 0)
+                return null;
+
+            var pago = await _repository.GetByIdAsync(idPago);
+            if (pago == null)
+                return null;
+
+            var factura = await _facturaRepository.GetByIdAsync(pago.IdFacturaHeader);
+            if (factura == null)
+                return null;
+
+            var empresa = await _context.Empresas
+                .AsNoTracking()
+                .FirstOrDefaultAsync(e => e.IdEmpresa == factura.IdEmpresa);
+
+            Clientes? cliente = null;
+            if (factura.IDCliente.HasValue && factura.IDCliente.Value > 0)
+            {
+                cliente = await _clientesRepository.GetByIdAsync(factura.IDCliente.Value);
+            }
+
+            return new TicketReciboAbonoDto
+            {
+                IdPago = pago.Id,
+                IdFacturaHeader = factura.IdFacturaHeader,
+                NumeroDocumento = !string.IsNullOrWhiteSpace(factura.NumeroDocumento)
+                    ? factura.NumeroDocumento
+                    : $"FACT-{factura.IdFacturaHeader}",
+                NcfFactura = factura.NCF,
+                FechaPago = pago.FechaInseccion == default ? DateTime.Now : pago.FechaInseccion,
+                Cliente = cliente?.NombreComercial ?? "Cliente",
+                RncCliente = cliente?.CedulaRNC,
+                FormaPago = pago.FormaPago ?? "",
+                MontoAbono = pago.Monto,
+                TotalFactura = factura.Total,
+                PagadoAcumulado = factura.Pagado,
+                Pendiente = factura.Pendiente,
+                Nota = pago.Nota,
+                NombreEmpresa = empresa?.NombreComercial ?? "",
+                TelefonoEmpresa = empresa?.Telefono ?? "",
+                DireccionEmpresa = empresa?.Direccion ?? "",
+                RncEmpresa = empresa?.RNC
+            };
         }
 
         public async Task<RegistrarPagoLoteResult> RegistrarPagoLoteAsync(RegistrarPagoLoteRequest request)

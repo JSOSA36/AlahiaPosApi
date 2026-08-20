@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>AlahiaPos.Payroll.Rules.DO</RootNamespace>
+    <AssemblyName>AlahiaPos.Payroll.Rules.DO</AssemblyName>
+    <Description>RulePack DO-2026.01 — calculators dominicanos (solo Abstractions).</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AlahiaPos.Payroll.Abstractions\AlahiaPos.Payroll.Abstractions.csproj" />
+  </ItemGroup>
+
+</Project>

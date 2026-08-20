@@ -74,8 +74,35 @@ namespace AlahiaPosApi.Controllers
             // ============================
             var plan = await _PlanesCloud.GetPlanById((int)empresa.IdPlan);
             dto.NombrePlan = plan?.Nombre ?? "Demo";
+            dto.NivelSoporte = NivelesSoporte.Normalizar(empresa.NivelSoporte);
 
             return Ok(dto);
+        }
+
+        /// <summary>
+        /// Actualiza solo ApiPrint (URL del agente de impresión local).
+        /// Usado por la guía de instalación del ERP.
+        /// </summary>
+        [HttpPut("{id}/api-print")]
+        public async Task<IActionResult> SetApiPrint(int id, [FromBody] SetApiPrintRequest body)
+        {
+            var empresa = await _Empresas.GetEmpresaById(id);
+            if (empresa == null) return NotFound();
+
+            var url = (body?.ApiPrint ?? string.Empty).Trim().TrimEnd('/');
+            if (string.IsNullOrWhiteSpace(url))
+                return BadRequest(new { message = "ApiPrint es requerido." });
+
+            if (!url.StartsWith("http://", StringComparison.OrdinalIgnoreCase) &&
+                !url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+            {
+                return BadRequest(new { message = "ApiPrint debe iniciar con http:// o https://" });
+            }
+
+            empresa.ApiPrint = url;
+            _Empresas.UpdateEmpresas(empresa.IdEmpresa, empresa);
+
+            return Ok(new { message = "ApiPrint actualizado", apiPrint = url });
         }
 
         // =====================================================
@@ -315,6 +342,7 @@ namespace AlahiaPosApi.Controllers
                         titleColor = value.titleColor,
 
                         IdPlan = 1,
+                        NivelSoporte = NivelesSoporte.Standard,
 
                         CorreoSMTP = value.CorreoSMTP,
                         PasswordSMTP = value.PasswordSMTP,
@@ -463,6 +491,9 @@ namespace AlahiaPosApi.Controllers
                 empresa.UsaSSL = value.UsaSSL;
                 empresa.NombreRemitente = value.NombreRemitente;
 
+                if (!string.IsNullOrWhiteSpace(value.ApiPrint))
+                    empresa.ApiPrint = value.ApiPrint.Trim().TrimEnd('/');
+
                 if (value.Imagen != null && value.Imagen.Length > 0)
                 {
                     using var ms = new MemoryStream();
@@ -571,5 +602,10 @@ namespace AlahiaPosApi.Controllers
                 }).ToList()
             });
         }
+    }
+
+    public class SetApiPrintRequest
+    {
+        public string? ApiPrint { get; set; }
     }
 }

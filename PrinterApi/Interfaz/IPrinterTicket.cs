@@ -8,6 +8,11 @@
         );
         public Task GenerateTicketFacturaCliente(int idFactura);
         public Task GenerateFactDirect(int idFactura);
+
+        /// <summary>
+        /// PDF preview del ticket 80mm (con QR e-CF). No imprime.
+        /// </summary>
+        Task<byte[]> PreviewTicketFacturaClientePdfAsync(int idFactura);
         Task ImprimirCierre(
 
     int idCajaCierre
@@ -19,5 +24,7 @@
         Task GenerateTicketNotaCredito(
             int idNotaCredito,
             int idEmpresa);
+
+        Task GenerateTicketReciboAbono(int idPago);
     }
 }

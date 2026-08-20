@@ -43,7 +43,10 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway
                             docInfo.FechaDocumentoModificado,
                             docInfo.FechaDocumento)
                         : null,
-                    FechaVencimientoSecuencia = secuencia?.fechaVencimiento,
+                    // E34: FechaVencimientoSecuencia no aplica en XSD.
+                    FechaVencimientoSecuencia = tipoEcfDgii == 34
+                        ? null
+                        : secuencia?.fechaVencimiento,
                     FechaEmision = docInfo.FechaDocumento,
                     NumeroFacturaInterna = docInfo.NumeroDocumentoInterno,
 

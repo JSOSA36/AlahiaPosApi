@@ -111,5 +111,11 @@ namespace AlahiaPos.Entities.Domain
         public DateTime? FechaFotografiaFiscal { get; set; }
         public string? EstadoFiscalDocumento { get; set; }
 
+        /// <summary>Colaborador que consume (distinto del mesero IdEmpleados/IdMoso).</summary>
+        public int? IdEmpleadoConsumo { get; set; }
+        public decimal? PorcentajeDescuentoEmpleado { get; set; }
+        public bool CargarConsumoNomina { get; set; }
+        public int? IdNominaDescuento { get; set; }
+
     }
 }

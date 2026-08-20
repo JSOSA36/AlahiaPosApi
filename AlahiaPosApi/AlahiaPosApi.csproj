@@ -19,6 +19,16 @@
 
   <ItemGroup>
     <ProjectReference Include="..\AlahiaPos.DataAccess\AlahiaPos.DataAccess.csproj" />
+    <ProjectReference Include="..\AlahiaPos.Payroll.Core\AlahiaPos.Payroll.Core.csproj" />
+    <ProjectReference Include="..\AlahiaPos.Payroll.Rules.DO\AlahiaPos.Payroll.Rules.DO.csproj" />
+    <ProjectReference Include="..\AlahiaPos.Payroll.Infrastructure\AlahiaPos.Payroll.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <!-- OCR local (Tesseract): gratis, sin API de IA -->
+  <ItemGroup>
+    <None Update="tessdata\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>

@@ -37,6 +37,10 @@ namespace AlahiaPos.Entities.Dto.AlahiaAi
         public string UserPrompt { get; set; } = string.Empty;
         public double Temperature { get; set; } = 0.2;
         public int MaxTokens { get; set; } = 800;
+
+        /// <summary>Imagen opcional (visión): base64 sin prefijo data:.</summary>
+        public string? ImageBase64 { get; set; }
+        public string? ImageMimeType { get; set; }
     }
 
     public class AiCompletionResult
@@ -73,5 +77,16 @@ namespace AlahiaPos.Entities.Dto.AlahiaAi
         public bool Success { get; set; }
         public string? Error { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    }
+
+    public class AiSqlExecutionResult
+    {
+        public bool Success { get; set; }
+        public string JsonRows { get; set; } = "[]";
+        public int RowCount { get; set; }
+        public bool Truncated { get; set; }
+        public string? SqlExecuted { get; set; }
+        public string? Error { get; set; }
+        public string? Detail { get; set; }
     }
 }

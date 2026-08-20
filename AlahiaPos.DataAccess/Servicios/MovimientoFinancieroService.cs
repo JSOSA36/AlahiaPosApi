@@ -17,7 +17,7 @@ namespace AlahiaPos.DataAccess.Servicios
         private static readonly HashSet<string> CategoriasSinEventoBancario = new(StringComparer.OrdinalIgnoreCase)
         {
             "VENTA", "GASTO", "COMPRA", "COBRO", "PAGO", "PAGO_PROVEEDOR", "PAGO_CLIENTE",
-            "INGRESO", "INGRESO_EXTRA", "CIERRE_CAJA"
+            "INGRESO", "INGRESO_EXTRA", "CIERRE_CAJA", "NOMINA"
         };
 
         private static readonly HashSet<string> CategoriasEventoBancario = new(StringComparer.OrdinalIgnoreCase)
