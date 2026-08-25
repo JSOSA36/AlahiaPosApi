@@ -1,6 +1,7 @@
 using AlahiaPos.Entities.Domain;
 using AlahiaPos.Entities.Dto;
 using AlahiaPos.Entities.Interfaces;
+using AlahiaPosApi.Servicios;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AlahiaPosApi.Controllers
@@ -9,11 +10,25 @@ namespace AlahiaPosApi.Controllers
     [ApiController]
     public class ComprasController : ControllerBase
     {
-        private readonly IComprasService _comprasService;
+        private static readonly HashSet<string> ImagenMimes = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif"
+        };
 
-        public ComprasController(IComprasService comprasService)
+        private static readonly HashSet<string> PdfMimes = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "application/pdf", "application/x-pdf"
+        };
+
+        private readonly IComprasService _comprasService;
+        private readonly IFacturaCompraImagenService _imagenService;
+
+        public ComprasController(
+            IComprasService comprasService,
+            IFacturaCompraImagenService imagenService)
         {
             _comprasService = comprasService;
+            _imagenService = imagenService;
         }
 
         [HttpGet("{idEmpresa}")]
@@ -329,5 +344,89 @@ namespace AlahiaPosApi.Controllers
                 return BadRequest(new { success = false, message });
             }
         }
+
+        /// <summary>
+        /// Lee una foto o PDF de factura de proveedor y propone encabezado + líneas.
+        /// No graba: el usuario revisa y guarda el borrador.
+        /// </summary>
+        [HttpPost("InterpretarImagen")]
+        [RequestSizeLimit(12 * 1024 * 1024)]
+        [RequestFormLimits(MultipartBodyLengthLimit = 12 * 1024 * 1024)]
+        public async Task<IActionResult> InterpretarImagen(
+            [FromForm] int idEmpresa,
+            [FromForm] int idUsuario,
+            IFormFile? archivo,
+            IFormFile? imagen)
+        {
+            try
+            {
+                var file = archivo ?? imagen;
+                if (file == null || file.Length == 0)
+                    return BadRequest(new { success = false, message = "Adjunte una foto o un PDF de la factura." });
+
+                await using var ms = new MemoryStream();
+                await file.CopyToAsync(ms);
+                var bytes = ms.ToArray();
+                var mime = (file.ContentType ?? "").Split(';')[0].Trim();
+                var ext = Path.GetExtension(file.FileName ?? "").ToLowerInvariant();
+                var esPdf = PdfMimes.Contains(mime) || ext == ".pdf" || EsPdf(bytes);
+                var extImgOk = ext is ".jpg" or ".jpeg" or ".png" or ".webp" or ".gif";
+
+                FacturaCompraInterpretarRequest request;
+                if (esPdf)
+                {
+                    request = FacturaCompraPdfReader.Preparar(idEmpresa, idUsuario, bytes);
+                }
+                else if (ImagenMimes.Contains(mime) || extImgOk)
+                {
+                    request = new FacturaCompraInterpretarRequest
+                    {
+                        IdEmpresa = idEmpresa,
+                        IdUsuario = idUsuario,
+                        Paginas =
+                        {
+                            new FacturaCompraInterpretarPagina
+                            {
+                                Bytes = bytes,
+                                Mime = string.IsNullOrWhiteSpace(mime) ? "image/jpeg" : mime
+                            }
+                        }
+                    };
+                }
+                else
+                {
+                    return BadRequest(new
+                    {
+                        success = false,
+                        message = "Use una foto JPG/PNG/WEBP o un PDF de la factura."
+                    });
+                }
+
+                var result = await _imagenService.InterpretarAsync(request);
+                return Ok(result);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { success = false, message = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { success = false, message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                var message = ex.InnerException?.Message ?? ex.Message;
+                return StatusCode(500, new
+                {
+                    success = false,
+                    message = string.IsNullOrWhiteSpace(message)
+                        ? "No se pudo leer el archivo."
+                        : message
+                });
+            }
+        }
+
+        private static bool EsPdf(byte[] bytes) =>
+            bytes.Length >= 4 && bytes[0] == 0x25 && bytes[1] == 0x50 && bytes[2] == 0x44 && bytes[3] == 0x46;
     }
 }

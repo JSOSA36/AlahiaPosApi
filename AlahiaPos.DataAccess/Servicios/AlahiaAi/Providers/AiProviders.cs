@@ -65,23 +65,12 @@ namespace AlahiaPos.DataAccess.Servicios.AlahiaAi.Providers
             }
 
             object userContent;
-            if (!string.IsNullOrWhiteSpace(request.ImageBase64))
+            var visionParts = BuildVisionParts(request);
+            if (visionParts.Count > 0)
             {
-                var mime = string.IsNullOrWhiteSpace(request.ImageMimeType)
-                    ? "image/jpeg"
-                    : request.ImageMimeType!.Trim();
-                userContent = new object[]
-                {
-                    new { type = "text", text = request.UserPrompt },
-                    new
-                    {
-                        type = "image_url",
-                        image_url = new
-                        {
-                            url = $"data:{mime};base64,{request.ImageBase64}"
-                        }
-                    }
-                };
+                var parts = new List<object> { new { type = "text", text = request.UserPrompt } };
+                parts.AddRange(visionParts);
+                userContent = parts;
             }
             else
             {
@@ -149,6 +138,29 @@ namespace AlahiaPos.DataAccess.Servicios.AlahiaAi.Providers
 
         protected virtual decimal EstimateCost(int promptTokens, int completionTokens)
             => (promptTokens * 0.00000015m) + (completionTokens * 0.0000006m);
+
+        private static List<object> BuildVisionParts(AiCompletionRequest request)
+        {
+            var parts = new List<object>();
+            void Add(string? b64, string? mime)
+            {
+                if (string.IsNullOrWhiteSpace(b64))
+                    return;
+                var tipo = string.IsNullOrWhiteSpace(mime) ? "image/jpeg" : mime.Trim();
+                parts.Add(new
+                {
+                    type = "image_url",
+                    image_url = new { url = $"data:{tipo};base64,{b64}" }
+                });
+            }
+
+            Add(request.ImageBase64, request.ImageMimeType);
+            if (request.ExtraImages == null)
+                return parts;
+            foreach (var extra in request.ExtraImages.Take(3))
+                Add(extra?.Base64, extra?.MimeType);
+            return parts;
+        }
 
         private static string Truncate(string s, int max)
             => string.IsNullOrEmpty(s) || s.Length <= max ? s : s[..max] + "…";

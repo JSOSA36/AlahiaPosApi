@@ -4,6 +4,7 @@ using AlahiaPos.Entities.Dto;
 using AlahiaPos.Entities.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using PrinterLibrary;
+using System.Linq;
 
 namespace AlahiaPos.DataAccess.Servicios
 {
@@ -20,6 +21,7 @@ namespace AlahiaPos.DataAccess.Servicios
         private readonly IModulo _modulos;
         private readonly IEmpresaModulos _empresaModulos;
         private readonly IPerfilRoles _perfilRoles;
+        private readonly IPerfiles _perfiles;
         private readonly IContabilidadConfiguracionService _contabilidadConfig;
 
         public EmpresaAdminService(
@@ -34,6 +36,7 @@ namespace AlahiaPos.DataAccess.Servicios
             IModulo modulos,
             IEmpresaModulos empresaModulos,
             IPerfilRoles perfilRoles,
+            IPerfiles perfiles,
             IContabilidadConfiguracionService contabilidadConfig)
         {
             _db = db;
@@ -47,6 +50,7 @@ namespace AlahiaPos.DataAccess.Servicios
             _modulos = modulos;
             _empresaModulos = empresaModulos;
             _perfilRoles = perfilRoles;
+            _perfiles = perfiles;
             _contabilidadConfig = contabilidadConfig;
         }
 
@@ -98,7 +102,8 @@ namespace AlahiaPos.DataAccess.Servicios
                 NivelSoporte = item.NivelSoporte,
                 Direccion = e.Direccion,
                 CodigosModulo = codigos,
-                ModulosDisponibles = await CatalogoModulosAsync(idEmpresa)
+                ModulosDisponibles = await CatalogoModulosAsync(idEmpresa),
+                Perfiles = await ListarPerfilesAsync(idEmpresa)
             };
         }
 
@@ -403,6 +408,125 @@ namespace AlahiaPos.DataAccess.Servicios
             if (idPerfil > 0)
                 await _perfilRoles.AsignarModulos(idPerfil, idEmpresa, idsDeseados);
         }
+
+        public async Task<List<EmpresaAdminPerfilDto>> ListarPerfilesAsync(int idEmpresa)
+        {
+            await AsegurarEmpresaClienteAsync(idEmpresa);
+            var perfiles = await _perfiles.ObtenerPorEmpresa(idEmpresa);
+            return perfiles
+                .OrderByDescending(p => p.Activo)
+                .ThenBy(p => p.Nombre)
+                .Select(MapPerfil)
+                .ToList();
+        }
+
+        public async Task<EmpresaAdminPerfilDto> CrearPerfilAsync(int idEmpresa, EmpresaAdminPerfilRequest req)
+        {
+            await AsegurarEmpresaClienteAsync(idEmpresa);
+            var ids = await NormalizarIdsModuloPerfilAsync(idEmpresa, req?.IdsModulo);
+            var nombre = (req?.Nombre ?? "").Trim();
+            if (string.IsNullOrWhiteSpace(nombre))
+                throw new InvalidOperationException("El nombre del perfil es obligatorio.");
+
+            var id = await _perfiles.CrearPerfilCompleto(new PerfilCreateDto
+            {
+                IdEmpresa = idEmpresa,
+                Nombre = nombre,
+                Descripcion = string.IsNullOrWhiteSpace(req?.Descripcion) ? null : req!.Descripcion.Trim(),
+                Activo = req?.Activo ?? true,
+                Modulos = ids
+            });
+
+            var creado = (await _perfiles.ObtenerPorEmpresa(idEmpresa))
+                .FirstOrDefault(p => p.IdPerfil == id)
+                ?? throw new InvalidOperationException("No se pudo leer el perfil creado.");
+            return MapPerfil(creado);
+        }
+
+        public async Task<EmpresaAdminPerfilDto> ActualizarPerfilAsync(int idEmpresa, int idPerfil, EmpresaAdminPerfilRequest req)
+        {
+            await AsegurarEmpresaClienteAsync(idEmpresa);
+            var perfil = await _perfiles.ObtenerPorId(idPerfil)
+                ?? throw new InvalidOperationException("Perfil no encontrado.");
+            if (perfil.IdEmpresa != idEmpresa)
+                throw new InvalidOperationException("El perfil no pertenece a esta empresa.");
+
+            var ids = await NormalizarIdsModuloPerfilAsync(idEmpresa, req?.IdsModulo);
+            var nombre = (req?.Nombre ?? "").Trim();
+            if (string.IsNullOrWhiteSpace(nombre))
+                throw new InvalidOperationException("El nombre del perfil es obligatorio.");
+
+            var ok = await _perfiles.ActualizarPerfilCompleto(new PerfilUpdateDto
+            {
+                IdPerfil = idPerfil,
+                IdEmpresa = idEmpresa,
+                Nombre = nombre,
+                Descripcion = string.IsNullOrWhiteSpace(req?.Descripcion) ? null : req!.Descripcion.Trim(),
+                Activo = req?.Activo ?? true,
+                Modulos = ids
+            });
+            if (!ok) throw new InvalidOperationException("No se pudo actualizar el perfil.");
+
+            var actualizado = (await _perfiles.ObtenerPorEmpresa(idEmpresa))
+                .FirstOrDefault(p => p.IdPerfil == idPerfil)
+                ?? throw new InvalidOperationException("No se pudo leer el perfil actualizado.");
+            return MapPerfil(actualizado);
+        }
+
+        public async Task EliminarPerfilAsync(int idEmpresa, int idPerfil)
+        {
+            await AsegurarEmpresaClienteAsync(idEmpresa);
+            var perfil = await _perfiles.ObtenerPorId(idPerfil)
+                ?? throw new InvalidOperationException("Perfil no encontrado.");
+            if (perfil.IdEmpresa != idEmpresa)
+                throw new InvalidOperationException("El perfil no pertenece a esta empresa.");
+
+            var esAdmin = !string.IsNullOrWhiteSpace(perfil.Nombre)
+                && perfil.Nombre.Contains("Administrador", StringComparison.OrdinalIgnoreCase);
+            if (esAdmin)
+                throw new InvalidOperationException("No se puede eliminar el perfil Administrador.");
+
+            var enUso = await _db.Usuarios.AsNoTracking()
+                .AnyAsync(u => u.IdPerfil == idPerfil && u.IdEmpresa == idEmpresa && u.Estado);
+            if (enUso)
+                throw new InvalidOperationException("Hay usuarios activos con este perfil. Reasígnelos antes de eliminarlo.");
+
+            await _perfiles.Eliminar(idPerfil);
+        }
+
+        private async Task AsegurarEmpresaClienteAsync(int idEmpresa)
+        {
+            var ok = await _db.Empresas.AsNoTracking()
+                .AnyAsync(x => x.IdEmpresa == idEmpresa && !x.EsEmpresaSistema);
+            if (!ok) throw new InvalidOperationException("Empresa no encontrada.");
+        }
+
+        private async Task<List<int>> NormalizarIdsModuloPerfilAsync(int idEmpresa, List<int>? ids)
+        {
+            var pedidos = (ids ?? new List<int>()).Where(id => id > 0).Distinct().ToList();
+            if (pedidos.Count == 0)
+                throw new InvalidOperationException("Selecciona al menos un módulo para el perfil.");
+
+            var licenciados = await _db.Empresa_Modulos.AsNoTracking()
+                .Where(em => em.EmpresaId == idEmpresa && em.Activo)
+                .Select(em => em.ModuloId)
+                .ToListAsync();
+            var set = licenciados.ToHashSet();
+            var validos = pedidos.Where(set.Contains).ToList();
+            if (validos.Count == 0)
+                throw new InvalidOperationException("Los módulos del perfil deben estar licenciados en la empresa. Guarda la licencia primero.");
+            return validos;
+        }
+
+        private static EmpresaAdminPerfilDto MapPerfil(PerfilWithModulosDto p) => new()
+        {
+            IdPerfil = p.IdPerfil,
+            IdEmpresa = p.IdEmpresa,
+            Nombre = p.Nombre,
+            Descripcion = p.Descripcion,
+            Activo = p.Activo,
+            IdsModulo = p.Modulos ?? new List<int>()
+        };
 
         private async Task<int> ObtenerIdPerfilAdminAsync(int idEmpresa)
         {

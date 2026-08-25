@@ -539,9 +539,7 @@ public async Task GenerateTicketBizcocho(int idFacturaHeader, int idEmpresa)
 
 
 
-            decimal totalFinal = factura.Total - factura.TotalDescuento;
-
-            LeftLine($"TOTAL     : RD$ {totalFinal:N2}");
+            LeftLine($"TOTAL     : RD$ {factura.Total:N2}");
 
             if (esFacturaFinal && factura.Pendiente > 0.02m)
             {

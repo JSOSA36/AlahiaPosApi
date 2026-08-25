@@ -142,6 +142,77 @@ namespace AlahiaPosApi.Controllers
             }
         }
 
+        [HttpGet("{idEmpresa:int}/perfiles")]
+        public async Task<IActionResult> Perfiles(int idEmpresa, [FromHeader(Name = "X-IdUsuario")] int idUsuario = 0)
+        {
+            if (!await EsMacroBitsAsync(idUsuario))
+                return StatusCode(403, new { message = "Solo MacroBits puede gestionar empresas." });
+            try
+            {
+                return Ok(await _service.ListarPerfilesAsync(idEmpresa));
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpPost("{idEmpresa:int}/perfiles")]
+        public async Task<IActionResult> CrearPerfil(
+            int idEmpresa,
+            [FromBody] EmpresaAdminPerfilRequest req,
+            [FromHeader(Name = "X-IdUsuario")] int idUsuario = 0)
+        {
+            if (!await EsMacroBitsAsync(idUsuario))
+                return StatusCode(403, new { message = "Solo MacroBits puede gestionar empresas." });
+            try
+            {
+                return Ok(await _service.CrearPerfilAsync(idEmpresa, req));
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpPut("{idEmpresa:int}/perfiles/{idPerfil:int}")]
+        public async Task<IActionResult> ActualizarPerfil(
+            int idEmpresa,
+            int idPerfil,
+            [FromBody] EmpresaAdminPerfilRequest req,
+            [FromHeader(Name = "X-IdUsuario")] int idUsuario = 0)
+        {
+            if (!await EsMacroBitsAsync(idUsuario))
+                return StatusCode(403, new { message = "Solo MacroBits puede gestionar empresas." });
+            try
+            {
+                return Ok(await _service.ActualizarPerfilAsync(idEmpresa, idPerfil, req));
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpDelete("{idEmpresa:int}/perfiles/{idPerfil:int}")]
+        public async Task<IActionResult> EliminarPerfil(
+            int idEmpresa,
+            int idPerfil,
+            [FromHeader(Name = "X-IdUsuario")] int idUsuario = 0)
+        {
+            if (!await EsMacroBitsAsync(idUsuario))
+                return StatusCode(403, new { message = "Solo MacroBits puede gestionar empresas." });
+            try
+            {
+                await _service.EliminarPerfilAsync(idEmpresa, idPerfil);
+                return Ok(new { ok = true });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
         private async Task<bool> EsMacroBitsAsync(int idUsuario)
         {
             if (idUsuario <= 0) return false;

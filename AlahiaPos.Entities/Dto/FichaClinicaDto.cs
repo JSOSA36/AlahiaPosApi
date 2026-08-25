@@ -90,9 +90,11 @@ namespace AlahiaPos.Entities.Dto
         public FichaClinicaDto Ficha { get; set; } = new();
         public FichaClinicaClienteDto Cliente { get; set; } = new();
         public List<FichaClinicaCuentaLineaDto> Cuenta { get; set; } = new();
+        public List<FichaClinicaCuentaLineaDto> Ordenes { get; set; } = new();
         public decimal TotalCosto { get; set; }
         public decimal TotalPagos { get; set; }
         public decimal TotalBalance { get; set; }
+        public decimal TotalOrdenes { get; set; }
         public string? NombreEmpresa { get; set; }
         public bool Existe { get; set; }
     }

@@ -56,6 +56,7 @@ builder.Services.AddScoped<IClientes, ClienteServices>();
 builder.Services.AddScoped<IProveedores, ProveedoresServices>();
 builder.Services.AddScoped<IOrdenCompraHeader, OrdenCompraHeaderServices>();
 builder.Services.AddScoped<IComprasService, ComprasService>();
+builder.Services.AddScoped<IFacturaCompraImagenService, FacturaCompraImagenService>();
 builder.Services.AddScoped<IActivosFijosService, ActivosFijosService>();
 builder.Services.AddScoped<IPoliticasServicioService, PoliticasServicioService>();
 builder.Services.AddScoped<IDashboardGerencialService, DashboardGerencialService>();
@@ -180,6 +181,7 @@ builder.Services.AddScoped<IRrhhDispositivoService, AlahiaPos.DataAccess.Servici
 builder.Services.AddScoped<IRrhhAusenciaService, AlahiaPos.DataAccess.Servicios.Rrhh.RrhhAusenciaService>();
 builder.Services.AddScoped<IRrhhAsistenciaService, AlahiaPos.DataAccess.Servicios.Rrhh.RrhhAsistenciaService>();
 builder.Services.AddScoped<INominaProcesoService, AlahiaPos.DataAccess.Servicios.Rrhh.NominaProcesoService>();
+builder.Services.AddScoped<IManufacturaService, AlahiaPos.DataAccess.Servicios.Manufactura.ManufacturaService>();
 builder.Services.AddScoped<INominaReciboEnvioService, AlahiaPosApi.Servicios.NominaReciboEnvioService>();
 builder.Services.AddSingleton<AlahiaPos.Payroll.Abstractions.IPayrollRulePack>(_ => AlahiaPos.Payroll.Rules.DO.DominicanRulePack.Create());
 builder.Services.AddPayrollInfrastructure(options =>

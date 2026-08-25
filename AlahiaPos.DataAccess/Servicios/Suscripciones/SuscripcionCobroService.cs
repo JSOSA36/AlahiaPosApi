@@ -9,6 +9,7 @@ using AlahiaPos.Entities.Dto;
 using AlahiaPos.Entities.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 namespace AlahiaPos.DataAccess.Servicios.Suscripciones
@@ -22,19 +23,33 @@ namespace AlahiaPos.DataAccess.Servicios.Suscripciones
         private readonly INotificacionCentro _notificaciones;
         private readonly ILogger<SuscripcionCobroService> _logger;
         private readonly IConfiguration _config;
+        private readonly IHostEnvironment _env;
 
         public SuscripcionCobroService(
             AlahiaPosContext ctx,
             IEnumerable<INotificacionSuscripcionCanal> canales,
             INotificacionCentro notificaciones,
             ILogger<SuscripcionCobroService> logger,
-            IConfiguration config)
+            IConfiguration config,
+            IHostEnvironment env)
         {
             _ctx = ctx;
             _canales = canales;
             _notificaciones = notificaciones;
             _logger = logger;
             _config = config;
+            _env = env;
+        }
+
+        /// <summary>
+        /// En Development no se bloquea el ERP por cobro. Producción no honra este atajo.
+        /// Para probar la pantalla de suspendido: Suscripcion:OmitirBloqueoEnDevelopment = false.
+        /// </summary>
+        private bool OmitirBloqueoEnDevelopment()
+        {
+            if (_env == null || !_env.IsDevelopment())
+                return false;
+            return _config.GetValue("Suscripcion:OmitirBloqueoEnDevelopment", true);
         }
 
         /// <summary>
@@ -63,6 +78,7 @@ namespace AlahiaPos.DataAccess.Servicios.Suscripciones
         public bool PuedeOperar(Empresas empresa)
         {
             if (empresa == null) return false;
+            if (OmitirBloqueoEnDevelopment()) return true;
             if (empresa.EsEmpresaSistema) return true;
             if (EsDemoVigente(empresa)) return true;
 
@@ -82,6 +98,7 @@ namespace AlahiaPos.DataAccess.Servicios.Suscripciones
         public bool EstaBloqueada(Empresas empresa)
         {
             if (empresa == null) return true;
+            if (OmitirBloqueoEnDevelopment()) return false;
             if (empresa.EsEmpresaSistema) return false;
             if (EsDemoVigente(empresa)) return false;
 
@@ -105,6 +122,7 @@ namespace AlahiaPos.DataAccess.Servicios.Suscripciones
         public AlertaPagoDto? ObtenerAlertaPago(Empresas empresa)
         {
             if (empresa == null || empresa.EsEmpresaSistema) return null;
+            if (OmitirBloqueoEnDevelopment()) return null;
             if (EsDemoVigente(empresa)) return null;
 
             var dia = ObtenerDiaCobro(empresa.IdEmpresa);
@@ -478,15 +496,27 @@ namespace AlahiaPos.DataAccess.Servicios.Suscripciones
 
         public async Task<SuscripcionCalculoFacturaDto> CalcularFacturaAsync(int idEmpresa, DateTime? fechaReferencia = null)
         {
-            _ = fechaReferencia;
             var empresa = await _ctx.Empresas.AsNoTracking()
                 .FirstOrDefaultAsync(e => e.IdEmpresa == idEmpresa)
                 ?? throw new Exception("Empresa no encontrada.");
 
-            return CalcularFacturaDesdeEmpresa(empresa);
+            var ahora = fechaReferencia ?? DateTime.Now;
+            var hoy = ahora.Date;
+            var descuentos = await _ctx.EmpresaCargoRecurrente.AsNoTracking()
+                .Where(c => c.IdEmpresa == idEmpresa
+                    && c.Activo
+                    && c.TipoCargo == TipoCargoRecurrente.Descuento
+                    && c.FechaInicio <= ahora
+                    && (c.FechaFin == null || c.FechaFin >= hoy))
+                .OrderBy(c => c.Id)
+                .ToListAsync();
+
+            return CalcularFacturaDesdeEmpresa(empresa, descuentos);
         }
 
-        private SuscripcionCalculoFacturaDto CalcularFacturaDesdeEmpresa(Empresas empresa)
+        private SuscripcionCalculoFacturaDto CalcularFacturaDesdeEmpresa(
+            Empresas empresa,
+            IReadOnlyList<EmpresaCargoRecurrente>? descuentos = null)
         {
             var idEmpresa = empresa.IdEmpresa;
             var nombreEmpresa = string.IsNullOrWhiteSpace(empresa.NombreComercial)
@@ -534,6 +564,24 @@ namespace AlahiaPos.DataAccess.Servicios.Suscripciones
                 });
             }
 
+            decimal descuentoUsd = 0m;
+            foreach (var cargo in descuentos ?? Array.Empty<EmpresaCargoRecurrente>())
+            {
+                var monto = RedondearUsd(Math.Abs(cargo.MontoMensual));
+                if (monto == 0m) continue;
+
+                descuentoUsd += monto;
+                calc.Total -= monto;
+                calc.Lineas.Add(new SuscripcionLineaFacturaDto
+                {
+                    TipoLinea = TipoCargoRecurrente.Descuento,
+                    IdCargo = cargo.Id,
+                    Codigo = cargo.Codigo,
+                    Nombre = cargo.Nombre,
+                    Monto = -monto
+                });
+            }
+
             if (empresa.ReconexionPendiente && cargoReconexDop > 0)
             {
                 var reconexUsd = RedondearUsd(cargoReconexDop / tasa);
@@ -552,12 +600,19 @@ namespace AlahiaPos.DataAccess.Servicios.Suscripciones
                 });
             }
 
+            if (calc.Total < 0m)
+                calc.Total = 0m;
+
             calc.MontoPlanDop = RedondearDop(calc.MontoPlan * tasa);
             calc.MontoCargosDop = RedondearDop(calc.CargoAdicional * tasa) + calc.MontoReconexionDop;
-            calc.TotalDop = calc.MontoPlanDop + calc.MontoCargosDop;
+            var descuentoDop = RedondearDop(descuentoUsd * tasa);
+            calc.TotalDop = calc.MontoPlanDop + calc.MontoCargosDop - descuentoDop;
+            if (calc.TotalDop < 0m)
+                calc.TotalDop = 0m;
+
             foreach (var linea in calc.Lineas)
             {
-                if (linea.MontoDop <= 0)
+                if (linea.MontoDop == 0m)
                     linea.MontoDop = RedondearDop(linea.Monto * tasa);
             }
 

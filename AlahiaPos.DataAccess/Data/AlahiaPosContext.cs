@@ -145,6 +145,10 @@ namespace AlahiaPos.DataAccess.Data
         public DbSet<AreaNegocio> AreaNegocio { get; set; }
         public DbSet<Almacen> Almacenes { get; set; }
         public DbSet<AlmacenExistencia> AlmacenExistencia { get; set; }
+        public DbSet<RecetaProduccion> RecetaProduccion { get; set; }
+        public DbSet<RecetaProduccionItem> RecetaProduccionItem { get; set; }
+        public DbSet<OrdenProduccion> OrdenProduccion { get; set; }
+        public DbSet<OrdenProduccionMaterial> OrdenProduccionMaterial { get; set; }
         public DbSet<ConduceHeader> ConduceHeader { get; set; }
         public DbSet<ConduceDetalle> ConduceDetalle { get; set; }
         public DbSet<DgiiCatalogo> DgiiCatalogo { get; set; }

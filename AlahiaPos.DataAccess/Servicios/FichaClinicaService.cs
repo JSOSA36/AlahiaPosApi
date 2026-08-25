@@ -113,7 +113,8 @@ namespace AlahiaPos.DataAccess.Servicios
             FichasClinicas? entidad)
         {
             var empresa = await _empresas.GetByIdAsync(idEmpresa);
-            var cuenta = await ObtenerCuenta(idEmpresa, cliente.IDCliente);
+            var cuenta = await ObtenerDocumentos(idEmpresa, cliente.IDCliente, 1);
+            var ordenes = await ObtenerDocumentos(idEmpresa, cliente.IDCliente, 10);
             var ficha = MapearFicha(entidad, cliente);
 
             return new FichaClinicaVistaDto
@@ -121,9 +122,11 @@ namespace AlahiaPos.DataAccess.Servicios
                 Ficha = ficha,
                 Cliente = MapearCliente(cliente),
                 Cuenta = cuenta,
+                Ordenes = ordenes,
                 TotalCosto = cuenta.Sum(c => c.Costo),
                 TotalPagos = cuenta.Sum(c => c.Pagos),
                 TotalBalance = cuenta.Sum(c => c.Balance),
+                TotalOrdenes = ordenes.Sum(c => c.Costo),
                 NombreEmpresa = empresa?.NombreComercial,
                 Existe = entidad != null && entidad.IdFichaClinica > 0
             };
@@ -228,12 +231,13 @@ namespace AlahiaPos.DataAccess.Servicios
                 cliente.FechaNacimiento = dto.FechaNacimiento;
         }
 
-        private async Task<List<FichaClinicaCuentaLineaDto>> ObtenerCuenta(int idEmpresa, int idCliente)
+        private async Task<List<FichaClinicaCuentaLineaDto>> ObtenerDocumentos(
+            int idEmpresa, int idCliente, int idTipoDocumento)
         {
             var facturas = (await _facturas.GetAllByExpresionAsync(f =>
                     f.IdEmpresa == idEmpresa &&
                     f.IDCliente == idCliente &&
-                    f.IdTipoDocumentos == 1 &&
+                    f.IdTipoDocumentos == idTipoDocumento &&
                     f.EstaCancelada != true))
                 .OrderByDescending(f => f.FechaInseccion)
                 .ThenByDescending(f => f.IdFacturaHeader)
@@ -281,7 +285,10 @@ namespace AlahiaPos.DataAccess.Servicios
                 });
             }
 
-            return lineas;
+            return lineas
+                .OrderByDescending(l => l.Fecha)
+                .ThenByDescending(l => l.IdFacturaHeader)
+                .ToList();
         }
 
         private static string? ExtraerDiente(string? comentario)

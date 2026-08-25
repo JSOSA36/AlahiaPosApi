@@ -66,6 +66,25 @@ namespace AlahiaPos.Entities.Dto
         public string? Direccion { get; set; }
         public List<string> CodigosModulo { get; set; } = new();
         public List<ModuloCatalogoItemDto> ModulosDisponibles { get; set; } = new();
+        public List<EmpresaAdminPerfilDto> Perfiles { get; set; } = new();
+    }
+
+    public class EmpresaAdminPerfilDto
+    {
+        public int IdPerfil { get; set; }
+        public int IdEmpresa { get; set; }
+        public string Nombre { get; set; } = "";
+        public string? Descripcion { get; set; }
+        public bool Activo { get; set; }
+        public List<int> IdsModulo { get; set; } = new();
+    }
+
+    public class EmpresaAdminPerfilRequest
+    {
+        public string Nombre { get; set; } = "";
+        public string? Descripcion { get; set; }
+        public bool Activo { get; set; } = true;
+        public List<int> IdsModulo { get; set; } = new();
     }
 
     public class ModuloCatalogoItemDto

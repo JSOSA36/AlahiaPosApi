@@ -12,6 +12,7 @@ namespace AlahiaPos.Entities.Dto
         public const string Integracion = "INTEGRACION";
         public const string Servicio = "SERVICIO";
         public const string Reconexion = "RECONEXION";
+        public const string Descuento = "DESCUENTO";
         public const string Otro = "OTRO";
     }
 

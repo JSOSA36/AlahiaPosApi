@@ -41,6 +41,15 @@ namespace AlahiaPos.Entities.Dto.AlahiaAi
         /// <summary>Imagen opcional (visión): base64 sin prefijo data:.</summary>
         public string? ImageBase64 { get; set; }
         public string? ImageMimeType { get; set; }
+
+        /// <summary>Páginas extra de un PDF escaneado (máx. 3 en total con ImageBase64).</summary>
+        public List<AiImageContent> ExtraImages { get; set; } = new();
+    }
+
+    public class AiImageContent
+    {
+        public string Base64 { get; set; } = string.Empty;
+        public string MimeType { get; set; } = "image/jpeg";
     }
 
     public class AiCompletionResult
