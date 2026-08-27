@@ -111,6 +111,7 @@ builder.Services.AddScoped<IProduccionConfiguracionService, AlahiaPos.DataAccess
 builder.Services.AddScoped<IProduccionFlujoService, AlahiaPos.DataAccess.Servicios.Produccion.ProduccionFlujoService>();
 builder.Services.AddScoped<IProduccionTrabajoService, AlahiaPos.DataAccess.Servicios.Produccion.ProduccionTrabajoService>();
 builder.Services.AddScoped<IProduccionPosAdapter, AlahiaPos.DataAccess.Servicios.Produccion.ProduccionPosAdapter>();
+builder.Services.AddScoped<IPedidosOnlineService, AlahiaPos.DataAccess.Servicios.PedidosOnlineService>();
 builder.Services.AddSingleton<IProduccionRealtime, AlahiaPosApi.Hubs.SignalRProduccionRealtime>();
 // DgiiFiscalEventHandler YA NO se registra en el pipeline s?ncrono (Sprint B.1 ? worker async)
 

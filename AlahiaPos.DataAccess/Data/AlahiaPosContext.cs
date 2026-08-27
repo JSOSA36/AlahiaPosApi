@@ -30,6 +30,8 @@ namespace AlahiaPos.DataAccess.Data
         public DbSet<ImpresorasZonas> ImpresorasZonas { get; set; }
         public DbSet<Empleados> EmpleadosP { get; set; }
         public DbSet<EmpleadoLaboral> EmpleadoLaboral { get; set; }
+        public DbSet<EmpleadoFichaPersonal> EmpleadoFichaPersonal { get; set; }
+        public DbSet<EmpleadoFamiliar> EmpleadoFamiliar { get; set; }
         public DbSet<EmpleadoSalarioHistorial> EmpleadoSalarioHistorial { get; set; }
         public DbSet<NominaConcepto> NominaConcepto { get; set; }
         public DbSet<NominaConceptoAsignacion> NominaConceptoAsignacion { get; set; }
@@ -129,6 +131,10 @@ namespace AlahiaPos.DataAccess.Data
         public DbSet<ProduccionTrabajo> ProduccionTrabajo { get; set; }
         public DbSet<ProduccionTrabajoItem> ProduccionTrabajoItem { get; set; }
         public DbSet<ProduccionHistorial> ProduccionHistorial { get; set; }
+        public DbSet<PedidoOnlineCanal> PedidoOnlineCanal { get; set; }
+        public DbSet<PedidoOnline> PedidoOnline { get; set; }
+        public DbSet<DeliveryAsignacion> DeliveryAsignacion { get; set; }
+        public DbSet<DeliveryRepartidor> DeliveryRepartidor { get; set; }
 
         // ==============================
         // 🔥 FACTURACIÓN ELECTRÓNICA
