@@ -4,9 +4,11 @@
     <TargetFramework>net6.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <Utf8Output>true</Utf8Output>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="QRCoder" Version="1.6.0" />
     <PackageReference Include="ClosedXML" Version="0.105.0" />
     <PackageReference Include="EPPlus" Version="8.5.1" />
     <PackageReference Include="ESCPOS_NET" Version="3.0.0" />

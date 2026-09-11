@@ -42,9 +42,34 @@ namespace Alahia.eCF.Api.Controllers
 
             try
             {
-                using var _ = PushAmbienteFromHeader();
+                using var _ = PushContextFromHeaders();
+                using var emp = DgiiEmpresaContext.Push(documento.IdEmpresa);
                 // Auto-ruta: E32 < 250k → RFCE; E32 ≥ 250k u otros tipos → e-CF.
                 var resp = await _orch.EnviarAsync(documento, ct);
+                return ToActionResult(resp);
+            }
+            catch (FiscalValidationException ex)
+            {
+                return UnprocessableEntity(new { codigo = ex.Codigo, error = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Envío nativo Alahia: el ERP manda FiscalDocumento (sin el DTO PG, que se come ISC/subcantidad).
+        /// </summary>
+        [HttpPost("fiscal")]
+        public async Task<IActionResult> EnviarFiscal([FromBody] FiscalDocumentoElectronico documento, CancellationToken ct)
+        {
+            if (documento?.Encabezado == null || string.IsNullOrWhiteSpace(documento.Encabezado.Encf))
+                return BadRequest(new { error = "Encabezado.eNCF es requerido" });
+
+            try
+            {
+                using var _ = PushContextFromHeaders();
+                using var emp = DgiiEmpresaContext.Push(documento.IdEmpresa);
+                if (string.IsNullOrWhiteSpace(documento.AmbienteDgii) && !string.IsNullOrWhiteSpace(DgiiAmbienteContext.Current))
+                    documento.AmbienteDgii = DgiiAmbienteContext.Current;
+                var resp = await _orch.EnviarFiscalAsync(documento, ct);
                 return ToActionResult(resp);
             }
             catch (FiscalValidationException ex)
@@ -66,7 +91,8 @@ namespace Alahia.eCF.Api.Controllers
 
             try
             {
-                using var _ = PushAmbienteFromHeader();
+                using var _ = PushContextFromHeaders();
+                using var emp = DgiiEmpresaContext.Push(documento.IdEmpresa);
                 var resp = await _orch.EnviarRfceAsync(documento, ct);
                 return ToActionResult(resp);
             }
@@ -89,7 +115,10 @@ namespace Alahia.eCF.Api.Controllers
             if (documento?.Encabezado?.IdDoc == null || string.IsNullOrWhiteSpace(documento.Encabezado.IdDoc.ENCF))
                 return BadRequest(new { error = "Encabezado.IdDoc.eNCF es requerido" });
 
+            using var _ = PushContextFromHeaders();
             var fiscal = PgReceiptMapper.ToFiscal(documento);
+            if (string.IsNullOrWhiteSpace(fiscal.AmbienteDgii) && !string.IsNullOrWhiteSpace(DgiiAmbienteContext.Current))
+                fiscal.AmbienteDgii = DgiiAmbienteContext.Current;
             var canal = ReceiptOrchestrator.ResolverCanal(fiscal.Encabezado.TipoEcf, fiscal.Encabezado.MontoTotal);
             var xml = _xmlBuilder.Build(fiscal, DateTime.Now);
             var nombre = DgiiXmlBuilder.NombreArchivo(
@@ -106,6 +135,57 @@ namespace Alahia.eCF.Api.Controllers
                 rncEmisorNormalizado = DgiiXmlBuilder.NormalizarRnc(fiscal.Encabezado.RncEmisor),
                 xml
             });
+        }
+
+        /// <summary>
+        /// Misma trama XML que CerteCF/POS (FiscalDocumento), sin firmar ni enviar.
+        /// </summary>
+        [HttpPost("preview-xml-fiscal")]
+        public IActionResult PreviewXmlFiscal([FromBody] FiscalDocumentoElectronico documento)
+        {
+            if (documento?.Encabezado == null || string.IsNullOrWhiteSpace(documento.Encabezado.Encf))
+                return BadRequest(new { error = "Encabezado.eNCF es requerido" });
+
+            using var _ = PushContextFromHeaders();
+            var xml = _xmlBuilder.Build(documento, DateTime.Now);
+            return Ok(new
+            {
+                tipoeCF = documento.Encabezado.TipoEcf,
+                encf = documento.Encabezado.Encf,
+                xml
+            });
+        }
+
+        /// <summary>
+        /// Firma el e-CF íntegro sin enviarlo a DGII. Para la caja Browse + ENVIAR de CerteCF.
+        /// </summary>
+        [HttpPost("preview-xml-fiscal-firmado")]
+        public async Task<IActionResult> PreviewXmlFiscalFirmado(
+            [FromBody] FiscalDocumentoElectronico documento, CancellationToken ct)
+        {
+            if (documento?.Encabezado == null || string.IsNullOrWhiteSpace(documento.Encabezado.Encf))
+                return BadRequest(new { error = "Encabezado.eNCF es requerido" });
+
+            try
+            {
+                using var _ = PushContextFromHeaders();
+                using var emp = DgiiEmpresaContext.Push(documento.IdEmpresa);
+                if (string.IsNullOrWhiteSpace(documento.AmbienteDgii) && !string.IsNullOrWhiteSpace(DgiiAmbienteContext.Current))
+                    documento.AmbienteDgii = DgiiAmbienteContext.Current;
+                var (xml, nombre, codigo) = await _orch.FirmarEcfSinEnviarAsync(documento, ct);
+                return Ok(new
+                {
+                    tipoeCF = documento.Encabezado.TipoEcf,
+                    encf = documento.Encabezado.Encf,
+                    nombreArchivo = nombre,
+                    codigoSeguridad = codigo,
+                    xml
+                });
+            }
+            catch (FiscalValidationException ex)
+            {
+                return UnprocessableEntity(new { codigo = ex.Codigo, error = ex.Message });
+            }
         }
 
         [HttpGet("jobs/{jobId:guid}")]
@@ -136,15 +216,28 @@ namespace Alahia.eCF.Api.Controllers
             if (string.IsNullOrWhiteSpace(trackId))
                 return BadRequest(new { error = "trackId requerido" });
 
+            using var _ = PushContextFromHeaders();
             var resp = await _orch.ConsultarAsync(trackId, ct);
             return Ok(resp);
         }
 
-        private IDisposable PushAmbienteFromHeader()
+        private IDisposable PushContextFromHeaders()
         {
-            Request.Headers.TryGetValue("X-Dgii-Ambiente", out var values);
-            var ambiente = values.FirstOrDefault();
-            return DgiiAmbienteContext.Push(ambiente);
+            Request.Headers.TryGetValue("X-Dgii-Ambiente", out var amb);
+            Request.Headers.TryGetValue("X-Dgii-IdEmpresa", out var emp);
+            var ambiente = amb.FirstOrDefault();
+            int.TryParse(emp.FirstOrDefault(), out var idEmpresa);
+            var a = DgiiAmbienteContext.Push(ambiente);
+            var e = DgiiEmpresaContext.Push(idEmpresa);
+            return new CompositeDisposable(a, e);
+        }
+
+        private sealed class CompositeDisposable : IDisposable
+        {
+            private readonly IDisposable _a;
+            private readonly IDisposable _b;
+            public CompositeDisposable(IDisposable a, IDisposable b) { _a = a; _b = b; }
+            public void Dispose() { _b.Dispose(); _a.Dispose(); }
         }
 
         private static IActionResult ToActionResult(PgTrackIdResponse resp)

@@ -1,4 +1,5 @@
 using AlahiaPos.DataAccess.Seguridad;
+using AlahiaPos.DataAccess.Servicios.FacturacionElectronica;
 using AlahiaPos.DataAccess.Servicios.FiscalGateway.DgiiDirecto;
 using AlahiaPos.DataAccess.Servicios.FiscalGateway.DgiiDirecto.Definitions;
 using AlahiaPos.DataAccess.Servicios.FiscalGateway.PgEInvoicing;
@@ -49,20 +50,31 @@ namespace Alahia.eCF.Api.Services
             _logger = logger;
         }
 
-        public async Task<PgTrackIdResponse> EnviarAsync(PgDgiiDocumentDto documento, CancellationToken ct)
+        public Task<PgTrackIdResponse> EnviarAsync(PgDgiiDocumentDto documento, CancellationToken ct)
         {
             var fiscal = PgReceiptMapper.ToFiscal(documento);
+            return EnviarFiscalAsync(fiscal, ct);
+        }
+
+        public async Task<PgTrackIdResponse> EnviarFiscalAsync(FiscalDocumentoElectronico fiscal, CancellationToken ct)
+        {
+            AplicarAmbienteDelPortador(fiscal);
             AsegurarValidacion(fiscal);
             var canal = ResolverCanal(fiscal.Encabezado.TipoEcf, fiscal.Encabezado.MontoTotal);
             var eff = _settings.Effective();
+            var linea = fiscal.Lineas.FirstOrDefault();
+            var isc = fiscal.Encabezado.ImpuestosAdicionales?
+                .Select(i => $"{i.TipoImpuesto}:esp={i.MontoImpuestoSelectivoConsumoEspecifico}:adv={i.MontoImpuestoSelectivoConsumoAdvalorem}");
 
             _logger.LogInformation(
-                "Emitir e-CF: {Encf} tipo={Tipo} monto={Monto} canal={Canal} ambiente={Ambiente}",
+                "Emitir e-CF: {Encf} tipo={Tipo} monto={Monto} canal={Canal} ambiente={Ambiente} subcant={Sub} isc={Isc}",
                 fiscal.Encabezado.Encf,
                 fiscal.Encabezado.TipoEcf,
                 fiscal.Encabezado.MontoTotal,
                 canal,
-                eff.AmbientePath);
+                fiscal.AmbienteDgii ?? eff.AmbientePath,
+                linea?.Subcantidad,
+                isc == null ? "" : string.Join(",", isc));
 
             var package = await BuildPackageAsync(fiscal, canal, ct);
             var accept = await _transmission.SubmitAsync(package, ct);
@@ -72,6 +84,7 @@ namespace Alahia.eCF.Api.Services
         public async Task<PgTrackIdResponse> EnviarRfceAsync(PgDgiiDocumentDto documento, CancellationToken ct)
         {
             var fiscal = PgReceiptMapper.ToFiscal(documento);
+            AplicarAmbienteDelPortador(fiscal);
             AsegurarValidacion(fiscal);
             if (fiscal.Encabezado.TipoEcf != 32)
                 throw new InvalidOperationException("RFCE solo aplica a TipoeCF=32.");
@@ -84,6 +97,14 @@ namespace Alahia.eCF.Api.Services
             return ToPgResponse(accept, fiscal, "RFCE");
         }
 
+        private static void AplicarAmbienteDelPortador(FiscalDocumentoElectronico fiscal)
+        {
+            if (!string.IsNullOrWhiteSpace(fiscal.AmbienteDgii)) return;
+            var amb = DgiiAmbienteContext.Current;
+            if (!string.IsNullOrWhiteSpace(amb))
+                fiscal.AmbienteDgii = amb;
+        }
+
         private void AsegurarValidacion(FiscalDocumentoElectronico fiscal)
         {
             var validacion = _validator.Validar(fiscal);
@@ -92,9 +113,26 @@ namespace Alahia.eCF.Api.Services
             throw new FiscalValidationException(validacion.Mensaje ?? "Documento fiscal inválido", validacion.Codigo);
         }
 
+        /// <summary>
+        /// Firma el e-CF íntegro sin enviarlo a DGII (caja CerteCF Browse + ENVIAR).
+        /// </summary>
+        public async Task<(string XmlFirmado, string NombreArchivo, string? CodigoSeguridad)> FirmarEcfSinEnviarAsync(
+            FiscalDocumentoElectronico fiscal, CancellationToken ct)
+        {
+            AplicarAmbienteDelPortador(fiscal);
+            AsegurarValidacion(fiscal);
+            var fechaFirma = DateTime.Now;
+            var material = await _certs.ResolveAsync(fiscal.IdEmpresa, ct);
+            var xmlEcf = _xmlBuilder.Build(fiscal, fechaFirma);
+            var xmlFirmado = _certs.Firmar(xmlEcf, material);
+            var nombre = DgiiXmlBuilder.NombreArchivo(fiscal.Encabezado.RncEmisor, fiscal.Encabezado.Encf);
+            var codigo = XmlSigner.ExtractCodigoSeguridad(xmlFirmado);
+            return (xmlFirmado, nombre, codigo);
+        }
+
         public async Task<PgTrackIdResponse> ConsultarAsync(string trackId, CancellationToken ct)
         {
-            var result = await _gateway.ConsultarEstadoAsync(trackId, ct);
+            var result = await _gateway.ConsultarEstadoAsync(trackId, DgiiEmpresaContext.Current, ct);
             return PgReceiptMapper.ToPgResponse(result);
         }
 
@@ -158,18 +196,22 @@ namespace Alahia.eCF.Api.Services
             if (canal == "RFCE")
             {
                 var xmlEcf = _xmlBuilder.Build(fiscal, fechaFirma);
+                GoldXmlDump.Save(fiscal, xmlEcf, canal);
                 var xmlEcfFirmado = _certs.Firmar(xmlEcf, material);
                 var rfce = _rfceBuilder.BuildFromSignedEcf(xmlEcfFirmado, out var codigo);
                 payload = _certs.Firmar(rfce, material);
                 securityCode = codigo;
                 fileName = DgiiRfceBuilder.NombreArchivo(fiscal.Encabezado.RncEmisor, fiscal.Encabezado.Encf);
+                GoldXmlDump.SaveFirmadoConsumo(fiscal, xmlEcfFirmado, payload, fileName);
             }
             else
             {
                 var xml = _xmlBuilder.Build(fiscal, fechaFirma);
+                GoldXmlDump.Save(fiscal, xml, canal);
                 payload = _certs.Firmar(xml, material);
                 securityCode = XmlSigner.ExtractCodigoSeguridad(payload);
                 fileName = DgiiXmlBuilder.NombreArchivo(fiscal.Encabezado.RncEmisor, fiscal.Encabezado.Encf);
+                GoldXmlDump.SaveFirmadoEcf(fiscal, payload, fileName);
             }
 
             var taxpayer = DgiiXmlBuilder.NormalizarRnc(fiscal.Encabezado.RncEmisor);
@@ -263,6 +305,89 @@ namespace Alahia.eCF.Api.Services
                 TransmissionJobStates.RequiresIntervention => "RequiereIntervencion",
                 _ => engineState
             };
+        }
+    }
+
+    /// <summary>
+    /// Guarda el XML sin firmar de envíos testecf/certecf para comparar POS vs CerteCF.
+    /// No bloquea el envío si el disco falla.
+    /// </summary>
+    internal static class GoldXmlDump
+    {
+        public static void Save(FiscalDocumentoElectronico fiscal, string unsignedXml, string canal)
+        {
+            try
+            {
+                var dir = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+                    "Documents", "GitHub", "AlahiaPosApi", "artifacts", "gold-testecf");
+                Directory.CreateDirectory(dir);
+                var amb = string.IsNullOrWhiteSpace(fiscal.AmbienteDgii) ? "na" : fiscal.AmbienteDgii.Trim();
+                var encf = (fiscal.Encabezado.Encf ?? "sin-encf").Trim();
+                var file = Path.Combine(dir, $"{amb}_{canal}_{encf}.xml");
+                File.WriteAllText(file, unsignedXml);
+            }
+            catch
+            {
+                // no bloquear envío
+            }
+        }
+
+        /// <summary>
+        /// e-CF 32 &lt; 250k firmado (mismo XML del RFCE) y el RFCE firmado, con nombre RNC+eNCF.xml.
+        /// </summary>
+        public static void SaveFirmadoConsumo(
+            FiscalDocumentoElectronico fiscal,
+            string xmlEcfFirmado,
+            string xmlRfceFirmado,
+            string nombreOficial)
+        {
+            try
+            {
+                var consumo = CertecfReceptorUrls.CarpetaXmlConsumoArtifacts();
+                var portal = CertecfReceptorUrls.CarpetaXmlConsumoPortal();
+                Directory.CreateDirectory(consumo);
+                Directory.CreateDirectory(portal);
+                var gold = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+                    "Documents", "GitHub", "AlahiaPosApi", "artifacts", "gold-testecf");
+                Directory.CreateDirectory(gold);
+                var name = string.IsNullOrWhiteSpace(nombreOficial)
+                    ? DgiiXmlBuilder.NombreArchivo(fiscal.Encabezado.RncEmisor, fiscal.Encabezado.Encf)
+                    : nombreOficial;
+                File.WriteAllText(Path.Combine(consumo, name), xmlEcfFirmado);
+                File.WriteAllText(Path.Combine(portal, name), xmlEcfFirmado);
+                File.WriteAllText(Path.Combine(portal, "_LEEME.txt"),
+                    "Suba SOLO estos XML en CerteCF → Facturas de consumo < 250Mil (Browse + ENVIAR)."
+                    + Environment.NewLine
+                    + "No suba archivos -RFCE ni XML de un paso anterior."
+                    + Environment.NewLine
+                    + "Nombre oficial: RNC + e-NCF + .xml");
+                var encf = (fiscal.Encabezado.Encf ?? "sin-encf").Trim();
+                File.WriteAllText(Path.Combine(gold, $"certecf_RFCE_{encf}_firmado.xml"), xmlRfceFirmado);
+                File.WriteAllText(Path.Combine(gold, $"certecf_ECF_{encf}_firmado.xml"), xmlEcfFirmado);
+            }
+            catch
+            {
+                // no bloquear envío
+            }
+        }
+
+        public static void SaveFirmadoEcf(FiscalDocumentoElectronico fiscal, string xmlFirmado, string nombreOficial)
+        {
+            try
+            {
+                var gold = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+                    "Documents", "GitHub", "AlahiaPosApi", "artifacts", "gold-testecf");
+                Directory.CreateDirectory(gold);
+                var encf = (fiscal.Encabezado.Encf ?? "sin-encf").Trim();
+                File.WriteAllText(Path.Combine(gold, $"certecf_ECF_{encf}_firmado.xml"), xmlFirmado);
+            }
+            catch
+            {
+                // no bloquear envío
+            }
         }
     }
 }
