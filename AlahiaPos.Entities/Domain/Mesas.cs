@@ -18,8 +18,21 @@ namespace AlahiaPos.Entities.Domain
         public string? Detalle { get; set; } = "";
         public bool IsActiva { get; set; }  
         public string? Estado { get; set; } = "";
-        //public int PositionX { get; set; }
-        //public int PositionY { get; set; }
+        public DateTime FechaInseccion { get; set; }
+        /// <summary>Sillas / cubiertos. Fuente de la escena visual del salón.</summary>
+        [NotMapped]
+        public int? Capacidad { get; set; }
+        /// <summary>round | square | rect. Para el plano visual.</summary>
+        [NotMapped]
+        public string? Forma { get; set; }
+        [NotMapped]
+        public decimal? PosX { get; set; }
+        [NotMapped]
+        public decimal? PosY { get; set; }
+        [NotMapped]
+        public decimal? Rotacion { get; set; }
+        [NotMapped]
+        public decimal? Escala { get; set; }
        
         public int ZonaId { get; set; }
         [ForeignKey("ZonaId")]

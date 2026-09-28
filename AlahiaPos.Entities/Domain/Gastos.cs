@@ -11,6 +11,8 @@ namespace AlahiaPos.Entities.Domain
         [Key]
         public int IdGasto { get; set; }
 
+        public int? IdSucursal { get; set; }
+
         public string? TipoGasto { get; set; }
 
         /// <summary>FK a catálogo CategoriasGasto (clasificación ERP).</summary>
@@ -66,6 +68,9 @@ namespace AlahiaPos.Entities.Domain
         public string? OrigenModulo { get; set; }
 
         public int? IdOrdenCompraDetalle { get; set; }
+
+        /// <summary>Tipo de Bienes y Servicios DGII 606 (1–11). Obligatorio si es gastos menores.</summary>
+        public int? IdTipoBienesServicios { get; set; }
 
         [ForeignKey(nameof(IdUsuario))]
         public virtual Usuarios? Usuario { get; set; }

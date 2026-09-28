@@ -11,6 +11,8 @@ namespace AlahiaPos.Entities.Domain
         [Key]
         public int IdNotaCredito { get; set; }
 
+        public int? IdSucursal { get; set; }
+
         public int IdFacturaHeader { get; set; }
 
         public string? NumeroDocumento { get; set; }

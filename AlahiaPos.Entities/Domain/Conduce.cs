@@ -18,6 +18,7 @@ namespace AlahiaPos.Entities.Domain
         public int? IdAlmacen { get; set; }
         public int? IdUsuario { get; set; }
         public int IdEmpresa { get; set; }
+        public int? IdSucursal { get; set; }
         public bool Activo { get; set; } = true;
         public DateTime FechaInseccion { get; set; }
     }

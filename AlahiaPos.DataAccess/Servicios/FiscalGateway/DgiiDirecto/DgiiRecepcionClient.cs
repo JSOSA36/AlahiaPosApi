@@ -96,6 +96,32 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.DgiiDirecto
             return Parse(res.IsSuccessStatusCode, (int)res.StatusCode, body);
         }
 
+        public async Task<DgiiHttpResultado> EnviarAcecfAsync(
+            string xmlFirmado,
+            string nombreArchivo,
+            int idEmpresa,
+            CancellationToken ct = default)
+        {
+            var eff = Eff;
+            var token = await _auth.ObtenerTokenAsync(idEmpresa, ct);
+            var url = Combine(eff.AprobacionComercialBaseUrl, eff.AprobacionComercialEndpoint);
+
+            using var form = new MultipartFormDataContent();
+            var bytes = Encoding.UTF8.GetBytes(xmlFirmado);
+            var file = new ByteArrayContent(bytes);
+            file.Headers.ContentType = new MediaTypeHeaderValue("text/xml");
+            form.Add(file, "xml", string.IsNullOrWhiteSpace(nombreArchivo) ? "acecf.xml" : nombreArchivo);
+
+            using var req = new HttpRequestMessage(HttpMethod.Post, url) { Content = form };
+            req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            req.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+            _logger.LogInformation("DGII ACECF POST {Url} ambiente={Ambiente} archivo={Archivo}", url, eff.AmbientePath, nombreArchivo);
+            using var res = await _http.SendAsync(req, ct);
+            var body = await res.Content.ReadAsStringAsync(ct);
+            return Parse(res.IsSuccessStatusCode, (int)res.StatusCode, body);
+        }
+
         public async Task<DgiiHttpResultado> ConsultarEstadoAsync(
             string trackId,
             int idEmpresa,

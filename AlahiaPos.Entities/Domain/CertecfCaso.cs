@@ -44,6 +44,18 @@ namespace AlahiaPos.Entities.Domain
 
         public DateTime? FechaRespuesta { get; set; }
 
+        /// <summary>QR ConsultaTimbre del envío. No se pisa al consultar TrackId.</summary>
+        [MaxLength(1000)]
+        public string? UrlQR { get; set; }
+
+        [MaxLength(32)]
+        public string? CodigoSeguridad { get; set; }
+
+        public DateTime? FechaFirma { get; set; }
+
+        /// <summary>XML firmado de ese envío, para la RI.</summary>
+        public string? XmlFirmado { get; set; }
+
         public CertecfSesion Sesion { get; set; } = null!;
     }
 }

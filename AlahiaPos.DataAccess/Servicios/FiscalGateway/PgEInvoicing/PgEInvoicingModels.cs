@@ -10,6 +10,11 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.PgEInvoicing
     /// </summary>
     public class PgDgiiDocumentDto
     {
+        public int IdEmpresa { get; set; }
+        /// <summary>Ambiente DGII en el cuerpo (ley CerteCF): testecf | certecf | ecf. El header X-Dgii-Ambiente es respaldo.</summary>
+        public string? AmbienteDgii { get; set; }
+        /// <summary>Texto exacto de celdas del Excel CerteCF. Vacío = omitir nodo.</summary>
+        public Dictionary<string, string>? CeldasExcel { get; set; }
         public PgEncabezadoWrapper Encabezado { get; set; } = new();
         public List<PgItemDto> Detalle { get; set; } = new();
         public List<PgDescuentoRecargoDto>? DescuentosORecargos { get; set; }
@@ -49,7 +54,14 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.PgEInvoicing
         public string? Provincia { get; set; }
         public List<PgTelefonoEmisorDto>? TablaTelefonoEmisor { get; set; }
         public string? CorreoEmisor { get; set; }
+        public string? WebSite { get; set; }
+        public string? Sucursal { get; set; }
+        public string? ActividadEconomica { get; set; }
+        public string? CodigoVendedor { get; set; }
         public string? NumeroFacturaInterna { get; set; }
+        public string? NumeroPedidoInterno { get; set; }
+        public string? ZonaVenta { get; set; }
+        public string? InformacionAdicionalEmisor { get; set; }
         public string FechaEmision { get; set; } = "";
     }
 
@@ -63,8 +75,15 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.PgEInvoicing
         [JsonPropertyName("rncComprador")]
         public string RNCComprador { get; set; } = "";
         public string RazonSocialComprador { get; set; } = "CONSUMIDOR";
+        public string? ContactoComprador { get; set; }
         public string? DireccionComprador { get; set; }
         public string? CorreoComprador { get; set; }
+        public string? MunicipioComprador { get; set; }
+        public string? ProvinciaComprador { get; set; }
+        public string? FechaEntrega { get; set; }
+        public string? FechaOrdenCompra { get; set; }
+        public string? NumeroOrdenCompra { get; set; }
+        public string? CodigoInternoComprador { get; set; }
     }
 
     public class PgItemDto
@@ -72,13 +91,23 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.PgEInvoicing
         public int NumeroLinea { get; set; }
         public int IndicadorFacturacion { get; set; }
         public string NombreItem { get; set; } = "";
+        public string? DescripcionItem { get; set; }
         public int IndicadorBienoServicio { get; set; } = 1;
         public decimal CantidadItem { get; set; }
+        public decimal? CantidadReferencia { get; set; }
+        public int? UnidadReferencia { get; set; }
+        public decimal? GradosAlcohol { get; set; }
+        public decimal? PrecioUnitarioReferencia { get; set; }
+        public string? FechaElaboracion { get; set; }
+        public string? FechaVencimientoItem { get; set; }
+        public decimal? Subcantidad { get; set; }
+        public int? CodigoSubcantidad { get; set; }
         public decimal PrecioUnitarioItem { get; set; }
         public decimal MontoItem { get; set; }
         public decimal? DescuentoMonto { get; set; }
         public decimal? RecargoMonto { get; set; }
         public int? UnidadMedida { get; set; }
+        public string? TipoImpuestoAdicional { get; set; }
         /// <summary>Obligatorio en e-CF 41 (nodo Retencion por ítem).</summary>
         public PgRetencionDto? Retencion { get; set; }
     }
@@ -105,6 +134,11 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.PgEInvoicing
     public class PgTotalesDto
     {
         public decimal MontoTotal { get; set; }
+        public decimal? MontoNoFacturable { get; set; }
+        public decimal? MontoPeriodo { get; set; }
+        public decimal? SaldoAnterior { get; set; }
+        public decimal? MontoAvancePago { get; set; }
+        public decimal? ValorPagar { get; set; }
         public decimal? MontoGravadoTotal { get; set; }
         public decimal? MontoGravado1 { get; set; }
         public decimal? MontoGravado2 { get; set; }
@@ -118,11 +152,22 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.PgEInvoicing
         public decimal? TotalITBIS2 { get; set; }
         [JsonPropertyName("totalITBIS3")]
         public decimal? TotalITBIS3 { get; set; }
+        public decimal? MontoImpuestoAdicional { get; set; }
+        public List<PgImpuestoAdicionalDto>? ImpuestosAdicionales { get; set; }
         [JsonPropertyName("totalITBISRetenido")]
         public decimal? TotalITBISRetenido { get; set; }
         [JsonPropertyName("totalISRRetencion")]
         public decimal? TotalISRRetencion { get; set; }
         public decimal? MontoPropinaLegal { get; set; }
+    }
+
+    public class PgImpuestoAdicionalDto
+    {
+        public string TipoImpuesto { get; set; } = "";
+        public decimal TasaImpuestoAdicional { get; set; }
+        public decimal? MontoImpuestoSelectivoConsumoEspecifico { get; set; }
+        public decimal? MontoImpuestoSelectivoConsumoAdvalorem { get; set; }
+        public decimal? OtrosImpuestosAdicionales { get; set; }
     }
 
     public class PgFormaPagoDto

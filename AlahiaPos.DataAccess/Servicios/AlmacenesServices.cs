@@ -1,6 +1,5 @@
 using AlahiaPos.Entities.Domain;
 using AlahiaPos.Entities.Interfaces;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -16,11 +15,29 @@ namespace AlahiaPos.DataAccess.Servicios
             _repository = repository;
         }
 
-        public async Task<IEnumerable<Almacen>> GetAllAlmacenes(int idEmpresa)
+        public async Task<IEnumerable<Almacen>> GetAllAlmacenes(
+            int idEmpresa,
+            int? idSucursal = null,
+            IReadOnlyCollection<int>? idsSucursalesPermitidas = null)
         {
-            return await _repository.GetAllByExpresionAsync(
+            var almacenes = await _repository.GetAllByExpresionAsync(
                 x => x.IdEmpresa == idEmpresa
             );
+
+            IEnumerable<Almacen> q = almacenes ?? Enumerable.Empty<Almacen>();
+
+            if (idsSucursalesPermitidas != null)
+            {
+                q = q.Where(x =>
+                    x.IdSucursal.HasValue
+                    && idsSucursalesPermitidas.Contains(x.IdSucursal.Value));
+            }
+            else if (idSucursal is > 0)
+            {
+                q = q.Where(x => x.IdSucursal == idSucursal);
+            }
+
+            return q.ToList();
         }
 
         public async Task<Almacen?> GetAlmacenById(int idAlmacen)
@@ -28,13 +45,19 @@ namespace AlahiaPos.DataAccess.Servicios
             return await _repository.GetByIdAsync(idAlmacen);
         }
 
-        public async Task<Almacen?> GetAlmacenPrincipal(int idEmpresa)
+        public async Task<Almacen?> GetAlmacenPrincipal(int idEmpresa, int? idSucursal = null)
         {
             var almacenes = await _repository.GetAllByExpresionAsync(
                 x => x.IdEmpresa == idEmpresa && x.Activo
             );
 
-            return almacenes?
+            IEnumerable<Almacen> q = almacenes ?? Enumerable.Empty<Almacen>();
+            if (idSucursal is > 0)
+            {
+                q = q.Where(x => x.IdSucursal == idSucursal);
+            }
+
+            return q
                 .OrderByDescending(x => x.EsPrincipal)
                 .ThenBy(x => x.IdAlmacen)
                 .FirstOrDefault();
@@ -44,7 +67,10 @@ namespace AlahiaPos.DataAccess.Servicios
         {
             if (almacen.EsPrincipal)
             {
-                await QuitarPrincipalDeOtros(almacen.IdEmpresa, 0);
+                await QuitarPrincipalDeOtros(
+                    almacen.IdEmpresa,
+                    almacen.IdSucursal,
+                    0);
             }
 
             await _repository.Save(almacen);
@@ -54,7 +80,10 @@ namespace AlahiaPos.DataAccess.Servicios
         {
             if (almacen.EsPrincipal)
             {
-                await QuitarPrincipalDeOtros(almacen.IdEmpresa, id);
+                await QuitarPrincipalDeOtros(
+                    almacen.IdEmpresa,
+                    almacen.IdSucursal,
+                    id);
             }
 
             _repository.Update(id, almacen);
@@ -73,7 +102,7 @@ namespace AlahiaPos.DataAccess.Servicios
             _repository.Update(idAlmacen, almacen);
         }
 
-        private async Task QuitarPrincipalDeOtros(int idEmpresa, int idActual)
+        private async Task QuitarPrincipalDeOtros(int idEmpresa, int? idSucursal, int idActual)
         {
             var almacenes = await _repository.GetAllByExpresionAsync(
                 x =>
@@ -86,6 +115,16 @@ namespace AlahiaPos.DataAccess.Servicios
 
             foreach (var item in almacenes ?? Enumerable.Empty<Almacen>())
             {
+                if (idSucursal is > 0)
+                {
+                    if (item.IdSucursal != idSucursal)
+                        continue;
+                }
+                else if (item.IdSucursal is > 0)
+                {
+                    continue;
+                }
+
                 item.EsPrincipal = false;
                 _repository.Update(item.IdAlmacen, item);
             }

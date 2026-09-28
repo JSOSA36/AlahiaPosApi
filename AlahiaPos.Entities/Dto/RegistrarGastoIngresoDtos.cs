@@ -25,6 +25,9 @@ namespace AlahiaPos.Entities.Dto
         public DateTime? FechaComprobante { get; set; }
         public int IdProveedor { get; set; } = 1;
 
+        /// <summary>Tipo de Bienes y Servicios DGII (1–11). Requerido para gastos menores / 606.</summary>
+        public int? IdTipoBienesServicios { get; set; }
+
         /// <summary>
         /// Si true, no valida fondos (origen extracto / banco fuente de verdad).
         /// El movimiento usa ReferenciaTipo EXTRACTO para el bypass en tesorería.
@@ -35,6 +38,7 @@ namespace AlahiaPos.Entities.Dto
         public int? IdTesoreriaConciliacion { get; set; }
         public string? ClaveIdempotencia { get; set; }
         public DateTime? FechaMovimiento { get; set; }
+        public int? IdSucursal { get; set; }
     }
 
     public class RegistrarGastoResult

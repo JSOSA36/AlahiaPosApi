@@ -82,6 +82,60 @@ namespace AlahiaPos.DataAccess.Servicios
             }
         }
 
+        /// <summary>
+        /// Activa un módulo SOLO en perfiles Administrador de empresas ya licenciadas.
+        /// Nunca toca Cajero / Recepción / otros roles.
+        /// </summary>
+        public async Task ActivarModuloSoloAdministradoresAsync(
+            int idModulo,
+            IEnumerable<int>? soloEmpresas = null)
+        {
+            if (idModulo <= 0) return;
+
+            var empresasFiltro = soloEmpresas?
+                .Where(id => id > 0)
+                .Distinct()
+                .ToHashSet();
+
+            var admins = (await _perfiles.GetAllByExpresionAsync(
+                p => p.Activo && p.Nombre != null
+            )).Where(p =>
+                (p.Nombre!.Equals("Administrador", StringComparison.OrdinalIgnoreCase)
+                 || p.Nombre.Contains("Administrador", StringComparison.OrdinalIgnoreCase))
+                && (empresasFiltro == null || empresasFiltro.Contains(p.IdEmpresa))
+            ).ToList();
+
+            foreach (var admin in admins)
+            {
+                var tieneLicencia = await _empresaModulos.EmpresaTieneModulo(admin.IdEmpresa, idModulo);
+                if (!tieneLicencia) continue;
+
+                var existente = (await _repository.GetAllByExpresionAsync(
+                    r => r.IdPerfil == admin.IdPerfil
+                      && r.IdModulo == idModulo
+                      && r.IdEmpresa == admin.IdEmpresa
+                )).FirstOrDefault();
+
+                if (existente != null)
+                {
+                    if (!existente.Activo)
+                    {
+                        existente.Activo = true;
+                        _repository.Update(existente.IdPerfilRol, existente);
+                    }
+                    continue;
+                }
+
+                await _repository.Save(new PerfilRoles
+                {
+                    IdPerfil = admin.IdPerfil,
+                    IdEmpresa = admin.IdEmpresa,
+                    IdModulo = idModulo,
+                    Activo = true
+                });
+            }
+        }
+
         public async Task<bool> AsignarModulos(int idPerfil, int idEmpresa, IEnumerable<int> idsModulos)
         {
             await Limpiar(idPerfil, idEmpresa);

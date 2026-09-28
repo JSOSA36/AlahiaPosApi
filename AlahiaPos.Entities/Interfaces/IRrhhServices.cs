@@ -87,4 +87,10 @@ namespace AlahiaPos.Entities.Interfaces
     {
         Task<NominaRecibosEnvioResultadoDto> EnviarAsync(int idEmpresa, int idNominaProceso);
     }
+
+    public interface IEmpleadoFichaPersonalService
+    {
+        Task<EmpleadoFichaPersonalDto> GetAsync(int idEmpresa, int idEmpleados);
+        Task<EmpleadoFichaPersonalDto> UpsertAsync(EmpleadoFichaPersonalDto dto, int? idUsuario = null);
+    }
 }

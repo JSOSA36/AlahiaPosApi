@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using PrinterApi.Dto;
 using PrinterApi.Interfaz;
 
 namespace PrinterApi.Controllers
@@ -71,6 +72,36 @@ namespace PrinterApi.Controllers
 
                     message =
                         ex.Message
+                });
+            }
+        }
+
+        /// <summary>
+        /// Ticket térmico desde el cuerpo JSON. No consulta el ERP.
+        /// Usado por el POS en modo local / sin internet.
+        /// </summary>
+        [HttpPost("factura-local")]
+        public async Task<IActionResult> PrintFacturaLocal(
+            [FromBody] TicketFacturaClienteDto factura)
+        {
+            if (factura == null)
+                return BadRequest("Ticket vacío.");
+
+            try
+            {
+                await _printer.GenerateTicketFacturaClienteLocal(factura);
+                return PrintOk(new
+                {
+                    success = true,
+                    message = "Ticket local enviado a imprimir"
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    success = false,
+                    message = ex.Message
                 });
             }
         }

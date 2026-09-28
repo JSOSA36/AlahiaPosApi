@@ -53,14 +53,17 @@ namespace AlahiaPos.DataAccess.Servicios.AlahiaAi
 
         public async Task<object> GetStockBajoAsync(int idEmpresa, CancellationToken ct = default)
         {
-            var productos = (await _productos.GetAllProductos(idEmpresa))
-                .Where(p => !p.EsServicio && p.ControlarStock && p.Cantidad <= Math.Max(p.Stock, 5))
+            var bajos = (await _productos.GetAllProductos(idEmpresa))
+                .Where(p => !p.EsServicio && p.ControlarStock && p.Stock > 0 && p.Cantidad <= p.Stock)
                 .OrderBy(p => p.Cantidad)
+                .ToList();
+
+            var muestra = bajos
                 .Take(15)
                 .Select(p => new { nombre = p.Nombre, existencia = p.Cantidad, minimo = p.Stock })
                 .ToList();
 
-            return new { cantidad = productos.Count, productos };
+            return new { cantidad = bajos.Count, productos = muestra };
         }
 
         public async Task<object> GetUtilidadMesAsync(int idEmpresa, CancellationToken ct = default)
@@ -70,6 +73,8 @@ namespace AlahiaPos.DataAccess.Servicios.AlahiaAi
             {
                 periodo = dash.PeriodoLabel,
                 ventasBrutas = dash.Pl.VentasBrutas,
+                descuentos = dash.Pl.Descuentos,
+                ventasNetas = dash.Pl.VentasNetas,
                 costoVenta = dash.Pl.CostoVenta,
                 utilidadBruta = dash.Pl.UtilidadBruta,
                 gastosOperativos = dash.Pl.GastosOperativos,

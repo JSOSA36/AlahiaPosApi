@@ -41,10 +41,29 @@ namespace AlahiaPosApi.Controllers
         }
 
         // PUT api/<MesasController>/5
-        [HttpPut("{id}")]
-        public void Put(int id, [FromBody] string value)
+        [HttpPut]
+        public IActionResult Put([FromBody] Mesas mesa)
         {
+            if (mesa == null || mesa.IdMesa <= 0)
+            {
+                return BadRequest(new { message = "Mesa inválida." });
+            }
 
+            _Mesa.UpdateMesas(mesa.IdMesa, mesa);
+            return Ok(mesa);
+        }
+
+        [HttpPut("{id}")]
+        public IActionResult Put(int id, [FromBody] Mesas mesa)
+        {
+            if (mesa == null)
+            {
+                return BadRequest(new { message = "Mesa inválida." });
+            }
+
+            mesa.IdMesa = id;
+            _Mesa.UpdateMesas(id, mesa);
+            return Ok(mesa);
         }
 
         // DELETE api/<MesasController>/5

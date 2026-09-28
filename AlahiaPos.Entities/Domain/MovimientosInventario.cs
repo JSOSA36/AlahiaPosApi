@@ -62,6 +62,10 @@ namespace AlahiaPos.Entities.Domain
 
         public int IdEmpresa { get; set; }
 
+        public int? IdSucursal { get; set; }
+
+        public int? IdSucursalDestino { get; set; }
+
         public int? IdAlmacen { get; set; }
 
         public int? IdAlmacenDestino { get; set; }

@@ -14,10 +14,19 @@ namespace AlahiaPosApi.Controllers
     {
         private readonly IUsuarios _usuarios;
         private readonly IEmpresas _Empresa;
-        public UsuariosController(IUsuarios usuarios, IEmpresas empresa)
+        private readonly IPerfiles _perfiles;
+        private readonly ISucursalService _sucursales;
+
+        public UsuariosController(
+            IUsuarios usuarios,
+            IEmpresas empresa,
+            IPerfiles perfiles,
+            ISucursalService sucursales)
         {
             _usuarios = usuarios;
             _Empresa = empresa;
+            _perfiles = perfiles;
+            _sucursales = sucursales;
         }
 
         /// <summary>Valida si el correo ya está registrado (debe ser único en el sistema).</summary>
@@ -40,12 +49,22 @@ namespace AlahiaPosApi.Controllers
             });
         }
 
-        // 🔹 Listar usuarios por empresa
+        // 🔹 Listar usuarios por empresa (+ cupo de asientos)
         [HttpGet("empresa/{empresaId}")]
         public async Task<IActionResult> GetByEmpresa(int empresaId)
         {
             var data = await _usuarios.ObtenerPorEmpresa(empresaId);
-            return Ok(data);
+            var empresa = await _Empresa.GetEmpresaById(empresaId);
+            var registrados = await _usuarios.CountByEmpresa(empresaId);
+            var limite = ResolverLimiteUsuarios(empresa?.LimiteUsuario);
+
+            return Ok(new
+            {
+                usuarios = data,
+                limiteUsuario = limite,
+                usuariosRegistrados = registrados,
+                puedeAgregar = registrados < limite
+            });
         }
 
         // 🔹 Obtener usuario por ID
@@ -71,16 +90,21 @@ namespace AlahiaPosApi.Controllers
 
             // 🔢 2. Contar usuarios actuales
             var totalUsuarios = await _usuarios.CountByEmpresa(dto.IdEmpresa);
+            var limite = ResolverLimiteUsuarios(empresa.LimiteUsuario);
 
-            // 🚫 3. Validar límite
-            if (totalUsuarios >= empresa.LimiteUsuario)
+            if (totalUsuarios >= limite)
             {
                 return BadRequest(new
                 {
                     success = false,
-                    message = $"Ha alcanzado el límite de usuarios permitidos ({empresa.LimiteUsuario}) en su plan."
+                    message = $"Ha alcanzado el límite de usuarios permitidos ({limite}) en su plan."
                 });
             }
+
+            var esAdmin = await EsPerfilAdministradorAsync(dto.IdPerfil);
+            var errorSucursal = ValidarSucursalDto(dto, esAdmin);
+            if (errorSucursal != null)
+                return BadRequest(new { success = false, message = errorSucursal });
 
             // 👤 4. Crear usuario
             var usuario = new Usuarios
@@ -88,6 +112,7 @@ namespace AlahiaPosApi.Controllers
                 IdEmpresa = dto.IdEmpresa,
                 IdEmpleado = dto.IdEmpleado,
                 IdPerfil = dto.IdPerfil,
+                IdSucursalActiva = esAdmin ? null : dto.IdSucursal,
                 Correo = dto.Correo,
                 UserName = dto.Correo,
                 PasswordHash = Utility.EncriptarPassword(dto.Password),
@@ -96,10 +121,24 @@ namespace AlahiaPosApi.Controllers
                 PuedeEliminarOrden = dto.PuedeEliminarOrden,
                 PuedeEliminarItemCarrito = dto.PuedeEliminarItemCarrito,
                 PuedeDisminuirCantidadCarrito = dto.PuedeDisminuirCantidadCarrito,
-                PuedeEditarPrecioCarrito = dto.PuedeEditarPrecioCarrito
+                PuedeEditarPrecioCarrito = dto.PuedeEditarPrecioCarrito,
+                PuedeAnularFactura = dto.PuedeAnularFactura
             };
 
             await _usuarios.Crear(usuario);
+
+            try
+            {
+                await _sucursales.AsignarOperativaAsync(
+                    usuario.IdUsuario,
+                    usuario.IdEmpresa,
+                    dto.IdSucursal,
+                    esAdmin);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { success = false, message = ex.Message });
+            }
 
             return Ok(new
             {
@@ -125,6 +164,11 @@ namespace AlahiaPosApi.Controllers
             if (dto.IdEmpleado <= 0)
                 return BadRequest("Debe seleccionar un empleado.");
 
+            var esAdmin = await EsPerfilAdministradorAsync(dto.IdPerfil);
+            var errorSucursal = ValidarSucursalDto(dto, esAdmin);
+            if (errorSucursal != null)
+                return BadRequest(new { success = false, message = errorSucursal });
+
             var usuario = await _usuarios.ObtenerPorId(idusuario);
 
             if (usuario == null)
@@ -138,6 +182,7 @@ namespace AlahiaPosApi.Controllers
             usuario.IdEmpresa = dto.IdEmpresa;
             usuario.IdEmpleado = dto.IdEmpleado;
             usuario.IdPerfil = dto.IdPerfil;
+            usuario.IdSucursalActiva = esAdmin ? null : dto.IdSucursal;
             usuario.Correo = dto.Correo;
             usuario.UserName = dto.Correo;
             usuario.Estado = dto.Activo;
@@ -145,6 +190,7 @@ namespace AlahiaPosApi.Controllers
             usuario.PuedeEliminarItemCarrito = dto.PuedeEliminarItemCarrito;
             usuario.PuedeDisminuirCantidadCarrito = dto.PuedeDisminuirCantidadCarrito;
             usuario.PuedeEditarPrecioCarrito = dto.PuedeEditarPrecioCarrito;
+            usuario.PuedeAnularFactura = dto.PuedeAnularFactura;
 
             if (!string.IsNullOrWhiteSpace(dto.Password))
             {
@@ -155,6 +201,19 @@ namespace AlahiaPosApi.Controllers
 
             if (!ok)
                 return StatusCode(500, "Error actualizando usuario");
+
+            try
+            {
+                await _sucursales.AsignarOperativaAsync(
+                    usuario.IdUsuario,
+                    usuario.IdEmpresa,
+                    dto.IdSucursal,
+                    esAdmin);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { success = false, message = ex.Message });
+            }
 
             return Ok(new
             {
@@ -172,6 +231,31 @@ namespace AlahiaPosApi.Controllers
             var ok = await _usuarios.Eliminar(id);
             if (!ok) return NotFound();
             return Ok("Usuario desactivado");
+        }
+
+        private static int ResolverLimiteUsuarios(int? limite)
+        {
+            return limite is > 0 ? limite.Value : 1;
+        }
+
+        private static string? ValidarSucursalDto(UsuarioCreateDto dto, bool esAdministrador)
+        {
+            if (esAdministrador)
+                return null;
+            if (dto.IdSucursal is not > 0)
+                return "Debe indicar la sucursal del usuario.";
+            return null;
+        }
+
+        private async Task<bool> EsPerfilAdministradorAsync(int idPerfil)
+        {
+            if (idPerfil <= 0)
+                return false;
+
+            var perfil = await _perfiles.ObtenerPorId(idPerfil);
+            var nombre = perfil?.Nombre?.Trim() ?? "";
+            return string.Equals(nombre, "Administrador", StringComparison.OrdinalIgnoreCase)
+                || nombre.Contains("ADMIN", StringComparison.OrdinalIgnoreCase);
         }
     }
 }

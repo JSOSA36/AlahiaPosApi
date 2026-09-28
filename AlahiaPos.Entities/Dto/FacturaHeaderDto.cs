@@ -12,6 +12,8 @@ namespace AlahiaPos.Entities.Dto
     {
         public int IdFacturaHeader { get; set; }
         public int IdEmpresa { get; set; }
+        public int? IdSucursal { get; set; }
+        public string? NombreSucursal { get; set; }
         public string? Plazo { get; set; } = "";
         public string? RNC { get; set; }
         public string? Politicas { get; set; }
@@ -43,6 +45,8 @@ namespace AlahiaPos.Entities.Dto
         public decimal Total { get; set; }
         public decimal TotalItbis { get; set; }
         public decimal TotalDescuento { get; set; }
+        public decimal MontoCargo { get; set; }
+        public string? NombreCargo { get; set; }
        
         public bool EstaCancelada { get; set; }
         public string? MotivoAnulacion { get; set; }
@@ -68,9 +72,12 @@ namespace AlahiaPos.Entities.Dto
         public bool AjustadoInventario { get; set; }
         public virtual List<FacturaDetallesDto>? FacturaDetalles { get; set; }
         public string? Estado_Orden { get; set; }
+        public int? Comensales { get; set; }
         public virtual Mesas? Mesas { get; set; }
         public string? Empresa { get; set; }
         public int? IdUsuario { get; set; }
+        /// <summary>Usuario que registró/cobró la factura (histórico / auditoría).</summary>
+        public string? NombreUsuario { get; set; }
         public string? TelefonoEmpresa { get; set; }
         public string? RNCEmpresa { get; set; }
         public string? DireccionEmpresa { get; set; }
@@ -85,6 +92,7 @@ namespace AlahiaPos.Entities.Dto
         public DateTime? FechaFirma { get; set; }
         public DateTime? FechaEmisionEcf { get; set; }
         public string? EstadoDgii { get; set; }
+        public string? AmbienteFE { get; set; }
 
         public int? IdEmpleadoConsumo { get; set; }
         public decimal? PorcentajeDescuentoEmpleado { get; set; }

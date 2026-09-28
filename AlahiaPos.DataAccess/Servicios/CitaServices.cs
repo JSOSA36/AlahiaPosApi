@@ -1,4 +1,5 @@
-﻿using AlahiaPos.Entities.Domain;
+﻿using AlahiaPos.DataAccess.Servicios.WhatsApp;
+using AlahiaPos.Entities.Domain;
 using AlahiaPos.Entities.Dto;
 using AlahiaPos.Entities.Enum; // donde esté EstadoCita
 using AlahiaPos.Entities.Interfaces;
@@ -7,6 +8,7 @@ using Newtonsoft.Json.Linq;
 using PrinterLibrary;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -20,19 +22,27 @@ namespace AlahiaPos.DataAccess.Servicios
         private readonly IRepository<Productos> _productoRepository;
         private readonly IIngresos _Ingresos;
         private readonly IEmpresas _empresas;
+        private readonly INotasCredito _notasCredito;
+        private readonly IWhatsAppCitas _whatsApp;
+
+        private static readonly CultureInfo CulturaDo = new("es-DO");
        
         public CitaServices(
             IRepository<Cita> repository,
             IRepository<Empleados> empleadoRepository,
             IRepository<Productos> productoRepository,
             IIngresos ingresos,
-            IEmpresas empresas  )
+            IEmpresas empresas,
+            INotasCredito notasCredito,
+            IWhatsAppCitas whatsApp)
         {
             _repository = repository;
             _empleadoRepository = empleadoRepository;
             _productoRepository = productoRepository;
             _Ingresos = ingresos;
             _empresas = empresas;
+            _notasCredito = notasCredito;
+            _whatsApp = whatsApp;
         }
 
         public void DeleteCita(int id)
@@ -46,7 +56,7 @@ namespace AlahiaPos.DataAccess.Servicios
         // ===========================================================
         // 🔥 Cambiar estado de una cita
         // ===========================================================
-        public async Task CambiarEstadoCita(int idCita, EstadoCita nuevoEstado)
+        public async Task CambiarEstadoCita(int idCita, EstadoCita nuevoEstado, int idUsuario = 0)
         {
             var cita = await _repository.GetByIdAsync(idCita);
             if (cita == null)
@@ -72,8 +82,8 @@ namespace AlahiaPos.DataAccess.Servicios
             cita.Estado = nuevoEstado.ToString();
             _repository.Update(cita.IdCita, cita);
 
-            if (string.IsNullOrWhiteSpace(cita.Correo))
-                return;
+            if (nuevoEstado == EstadoCita.Confirmada)
+                await RegistrarAnticipoConfirmacionAsync(cita, idUsuario);
 
             var servicio = await _productoRepository.GetByIdAsync(cita.IdProducto);
             var empleado = await _empleadoRepository.GetByIdAsync(cita.IdEmpleado);
@@ -85,22 +95,26 @@ namespace AlahiaPos.DataAccess.Servicios
             var nombreServicio = servicio?.Nombre ?? "Servicio";
             var nombreEstilista = empleado?.Nombre ?? "Estilista";
 
-            var fechaTexto = cita.Fecha != default
-                ? cita.Fecha.ToString("dd/MM/yyyy")
-                : "—";
+            var fechaTexto = FormatearFecha(cita.Fecha);
+            var horaTexto = FormatearHora(cita);
 
-            var horaTexto = "—";
-
-            if (cita.Hora != TimeSpan.Zero)
+            if (nuevoEstado == EstadoCita.Confirmada || nuevoEstado == EstadoCita.Cancelada)
             {
-                var fechaHoraLocal = cita.Fecha.Date.Add(cita.Hora);
-
-                horaTexto = fechaHoraLocal.ToString("h:mm tt",
-                    new System.Globalization.CultureInfo("es-DO"))
-                    .Replace("AM", "a. m.")
-                    .Replace("PM", "p. m.");
+                await EnviarWhatsAppCitaAsync(
+                    cita,
+                    empresa,
+                    nuevoEstado == EstadoCita.Confirmada
+                        ? WhatsAppCitaTipo.Confirmada
+                        : WhatsAppCitaTipo.Cancelada,
+                    nombreCliente,
+                    nombreServicio,
+                    nombreEstilista,
+                    fechaTexto,
+                    horaTexto);
             }
 
+            if (string.IsNullOrWhiteSpace(cita.Correo))
+                return;
 
             // ===============================
             // 📅 GOOGLE CALENDAR LINK CORRECTO
@@ -211,33 +225,55 @@ Agregar a Google Calendar
                     mensaje
                 );
             }
+        }
 
-            // ===============================
-            // 💰 REGISTRAR INGRESO (SOLO UNA VEZ)
-            // ===============================
-            if (nuevoEstado == EstadoCita.Confirmada && cita.Abono > 0)
+        private async Task RegistrarAnticipoConfirmacionAsync(Cita cita, int idUsuario)
+        {
+            var abono = Math.Round(cita.Abono ?? 0m, 2);
+            if (abono <= 0)
+                return;
+
+            var servicio = await _productoRepository.GetByIdAsync(cita.IdProducto);
+            var nombreServicio = servicio?.Nombre ?? "Servicio";
+            var nombreCliente = string.IsNullOrWhiteSpace(cita.NombreCliente)
+                ? "cliente"
+                : cita.NombreCliente.Trim();
+
+            if (!await _Ingresos.ExisteIngresoPorCita(cita.IdCita))
             {
-                var existeIngreso = await _Ingresos.ExisteIngresoPorCita(cita.IdCita);
-
-                if (!existeIngreso)
+                var banco = string.IsNullOrWhiteSpace(cita.Banco) ? "" : cita.Banco.Trim();
+                await _Ingresos.InsertIngreso(new Ingresos
                 {
-                    var ingreso = new Ingresos
-                    {
-                        IdEmpresa = cita.IdEmpresa,
-                        FechaRegistro = DateTime.Now,
-                        Descripcion = "Abono por cita confirmada",
-                        Categoria = "Abono por Cita",
-                        Origen = nombreCliente,
-                        Monto = (decimal)cita.Abono,
-                        FormaPago = $"Transferencia {cita.Banco}",
-                        Referencia = $"Cita #{cita.IdCita}",
-                        IdCliente = cita.IdCliente,
-                        Nota = $"Abono recibido al confirmar la cita #{cita.IdCita} para {nombreServicio}"
-                    };
-
-                    await _Ingresos.InsertIngreso(ingreso);
-                }
+                    IdEmpresa = cita.IdEmpresa,
+                    FechaRegistro = DateTime.Now,
+                    Descripcion = $"Reserva cita #{cita.IdCita} — {nombreServicio}",
+                    Categoria = "Abono por Cita",
+                    Origen = nombreCliente,
+                    Monto = abono,
+                    FormaPago = string.IsNullOrWhiteSpace(banco)
+                        ? "Transferencia"
+                        : $"Transferencia {banco}",
+                    Referencia = $"Cita #{cita.IdCita}",
+                    IdCliente = cita.IdCliente,
+                    Nota = $"Depósito de reserva confirmado. Cliente {nombreCliente}. Tel {cita.Telefono}. Banco {banco}."
+                });
             }
+
+            if (!cita.IdCliente.HasValue || cita.IdCliente.Value <= 0)
+                return;
+
+            if (await _notasCredito.ExisteAnticipoPorCitaAsync(cita.IdEmpresa, cita.IdCita))
+                return;
+
+            await _notasCredito.CrearNotaCreditoComercialAsync(new CrearNotaCreditoComercialDto
+            {
+                IdEmpresa = cita.IdEmpresa,
+                IdUsuario = idUsuario,
+                IdCliente = cita.IdCliente,
+                Concepto = $"Anticipo reserva cita #{cita.IdCita} — {nombreServicio}",
+                Monto = abono,
+                MontoItbis = 0
+            });
         }
 
 
@@ -246,106 +282,148 @@ Agregar a Google Calendar
 
         public async Task EnviarRecordatorioPorFecha(DateTime fecha, int idEmpresa)
         {
+            await EnviarRecordatoriosDelDiaAsync(fecha, idEmpresa);
+        }
+
+        public async Task<int> EnviarRecordatoriosDelDiaAsync(DateTime fecha, int? idEmpresa = null)
+        {
             var fechaInicio = fecha.Date;
             var fechaFin = fechaInicio.AddDays(1);
+            var enviados = 0;
 
-            // 🔥 Obtener empresa (SMTP + Nombre)
-            var empresa = await _empresas.GetEmpresaById(idEmpresa);
+            var citas = await _repository.GetAllByExpresionAsync(c =>
+                c.Estado == "Confirmada"
+                && c.Fecha >= fechaInicio
+                && c.Fecha < fechaFin
+                && (idEmpresa == null || c.IdEmpresa == idEmpresa.Value));
 
-            if (empresa == null)
-                throw new Exception("Empresa no encontrada.");
-
-            bool smtpValido =
-                !string.IsNullOrWhiteSpace(empresa.CorreoSMTP) &&
-                !string.IsNullOrWhiteSpace(empresa.PasswordSMTP) &&
-                !string.IsNullOrWhiteSpace(empresa.ServidorSMTP);
-
-            if (!smtpValido)
-                return;
-
-            // 🔥 Buscar citas confirmadas de ese día
-            var citasConfirmadas = await _repository.GetAllByExpresionAsync(c =>
-                c.IdEmpresa == idEmpresa &&
-                c.Estado == "Confirmada" &&
-                c.Fecha >= fechaInicio &&
-                c.Fecha < fechaFin
-            );
-
-            foreach (var cita in citasConfirmadas)
+            foreach (var cita in citas)
             {
-                if (string.IsNullOrWhiteSpace(cita.Correo))
+                var empresa = await _empresas.GetEmpresaById(cita.IdEmpresa);
+                if (empresa == null)
                     continue;
+
+                var smtpValido =
+                    !string.IsNullOrWhiteSpace(empresa.CorreoSMTP) &&
+                    !string.IsNullOrWhiteSpace(empresa.PasswordSMTP) &&
+                    !string.IsNullOrWhiteSpace(empresa.ServidorSMTP);
 
                 var servicio = await _productoRepository.GetByIdAsync(cita.IdProducto);
                 var empleado = await _empleadoRepository.GetByIdAsync(cita.IdEmpleado);
-
                 var nombreCliente = string.IsNullOrWhiteSpace(cita.NombreCliente)
                     ? "cliente"
                     : cita.NombreCliente;
-
                 var nombreServicio = servicio?.Nombre ?? "Servicio";
                 var nombreEstilista = empleado?.Nombre ?? "Estilista";
+                var fechaTexto = FormatearFecha(cita.Fecha);
+                var horaTexto = FormatearHora(cita);
 
-                var fechaTexto = cita.Fecha.ToString("dd/MM/yyyy");
+                var yaRecordatorioHoy = cita.FechaRecordatorioWhatsApp.HasValue
+                    && cita.FechaRecordatorioWhatsApp.Value.Date == DateTime.Now.Date;
 
-                var horaTexto = "—";
-
-                if (cita.Hora != TimeSpan.Zero)
+                if (!yaRecordatorioHoy)
                 {
-                    var fechaHoraLocal = cita.Fecha.Date.Add(cita.Hora);
+                    await EnviarWhatsAppCitaAsync(
+                        cita,
+                        empresa,
+                        WhatsAppCitaTipo.Recordatorio,
+                        nombreCliente,
+                        nombreServicio,
+                        nombreEstilista,
+                        fechaTexto,
+                        horaTexto);
 
-                    horaTexto = fechaHoraLocal.ToString("h:mm tt",
-                        new System.Globalization.CultureInfo("es-DO"))
-                        .Replace("AM", "a. m.")
-                        .Replace("PM", "p. m.");
-                }
-
-                // ===============================
-                // 📧 ASUNTO
-                // ===============================
-                var asunto = $"📅 Recordatorio de tu cita en {empresa.NombreComercial}";
-
-                // ===============================
-                // 📧 MENSAJE
-                // ===============================
-                var mensaje = $@"
+                    if (smtpValido && !string.IsNullOrWhiteSpace(cita.Correo))
+                    {
+                        var asunto = $"📅 Recordatorio de tu cita en {empresa.NombreComercial}";
+                        var mensaje = $@"
                 <h3>Hola {nombreCliente},</h3>
-
                 <p>Te recordamos tu cita programada en <strong>{empresa.NombreComercial}</strong>.</p>
-
                 <p>
                 <strong>Servicio:</strong> {nombreServicio}<br/>
                 <strong>Fecha:</strong> {fechaTexto}<br/>
                 <strong>Hora:</strong> {horaTexto}<br/>
                 <strong>Estilista:</strong> {nombreEstilista}
                 </p>
-
                <p>Te esperamos 🙌</p>
-
                <hr/>
-
                <small>
                Este es un recordatorio automático de tu cita en 
                <strong>{empresa.NombreComercial}</strong>.
                </small>
                ";
+                        Utility.Send(
+                            empresa.ServidorSMTP,
+                            (int)empresa.PuertoSMTP,
+                            (bool)empresa.UsaSSL,
+                            empresa.CorreoSMTP,
+                            empresa.PasswordSMTP,
+                            empresa.NombreRemitente ?? empresa.NombreComercial,
+                            cita.Correo,
+                            asunto,
+                            mensaje
+                        );
+                    }
 
-                // ===============================
-                // 📤 ENVIAR CORREO
-                // ===============================
-                Utility.Send(
-                    empresa.ServidorSMTP,
-                    (int)empresa.PuertoSMTP,
-                    (bool)empresa.UsaSSL,
-                    empresa.CorreoSMTP,
-                    empresa.PasswordSMTP,
-                    empresa.NombreRemitente ?? empresa.NombreComercial,
-                    cita.Correo,
-                    asunto,
-                    mensaje
-                );
+                    cita.FechaRecordatorioWhatsApp = DateTime.Now;
+                    _repository.Update(cita.IdCita, cita);
+                    enviados++;
+                }
+            }
+
+            return enviados;
+        }
+
+        private async Task EnviarWhatsAppCitaAsync(
+            Cita cita,
+            Empresas? empresa,
+            WhatsAppCitaTipo tipo,
+            string nombreCliente,
+            string nombreServicio,
+            string nombreEstilista,
+            string fechaTexto,
+            string horaTexto)
+        {
+            if (empresa != null && !empresa.NotificarCitasWhatsApp)
+                return;
+            if (!_whatsApp.EstaListo)
+                return;
+
+            try
+            {
+                await _whatsApp.EnviarCitaAsync(new WhatsAppCitaMensaje
+                {
+                    Tipo = tipo,
+                    Telefono = cita.Telefono ?? "",
+                    NombreCliente = nombreCliente,
+                    NombreSalon = empresa?.NombreComercial ?? "tu salón",
+                    Servicio = nombreServicio,
+                    Estilista = nombreEstilista,
+                    Fecha = fechaTexto,
+                    Hora = horaTexto,
+                    IdEmpresa = cita.IdEmpresa,
+                    IdCita = cita.IdCita
+                });
+            }
+            catch
+            {
+                // La cita no debe fallar si WhatsApp no sale.
             }
         }
+
+        private static string FormatearFecha(DateTime fecha)
+            => fecha == default ? "—" : fecha.ToString("dd/MM/yyyy");
+
+        private static string FormatearHora(Cita cita)
+        {
+            if (cita.Hora == TimeSpan.Zero)
+                return "—";
+            var fechaHoraLocal = cita.Fecha.Date.Add(cita.Hora);
+            return fechaHoraLocal.ToString("h:mm tt", CulturaDo)
+                .Replace("AM", "a. m.")
+                .Replace("PM", "p. m.");
+        }
+
         private bool EsTransicionValida(EstadoCita actual, EstadoCita nuevo)
         {
             return actual switch

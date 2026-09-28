@@ -47,6 +47,9 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.DgiiDirecto
         public string ConsultaTimbreBaseUrl => $"{HostEcf.TrimEnd('/')}/{AmbientePath}/ConsultaTimbre";
         public string RecepcionFcBaseUrl => $"{HostFc.TrimEnd('/')}/{AmbientePath}/recepcionfc";
         public string RecepcionRfceEndpoint { get; set; } = "/api/recepcion/ecf";
+        public string AprobacionComercialEndpoint { get; set; } = "/api/aprobacioncomercial";
+
+        public string AprobacionComercialBaseUrl => $"{HostEcf.TrimEnd('/')}/{AmbientePath}/aprobacioncomercial";
 
         /// <summary>Copia con ambiente normalizado (no muta la instancia de DI).</summary>
         public DgiiDirectoSettings WithAmbiente(string? ambiente)
@@ -65,7 +68,8 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.DgiiDirecto
                 PreferSettingsCertificate = PreferSettingsCertificate,
                 TokenFijo = TokenFijo,
                 TimeoutSeconds = TimeoutSeconds,
-                RecepcionRfceEndpoint = RecepcionRfceEndpoint
+                RecepcionRfceEndpoint = RecepcionRfceEndpoint,
+                AprobacionComercialEndpoint = AprobacionComercialEndpoint
             };
         }
 

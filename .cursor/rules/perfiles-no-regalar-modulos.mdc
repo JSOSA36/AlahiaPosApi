@@ -1,0 +1,29 @@
+---
+description: No asignar módulos a todos los perfiles en pases/SQL
+alwaysApply: true
+---
+
+# Perfiles: no regalar módulos en cada pase
+
+Parte de la política general: `pases-no-tocar-config-empresas.mdc`
+(no alterar perfiles, módulos, parámetros u otra config viva de empresas en un pase).
+
+## Qué está prohibido
+
+En scripts SQL o seeds de módulos:
+
+- `INSERT INTO PerfilRoles … FROM Perfiles` **sin** filtrar por nombre de perfil
+- `UPDATE PerfilRoles SET Activo = 1 WHERE IdModulo = @Id` **sin** filtrar Administrador / empresa
+- Activar `Empresa_Modulos` para **todas** las empresas salvo pedido explícito del usuario
+
+Eso hace que un cajero vea reportes, contabilidad, etc. tras un pase.
+
+## Qué sí hacer
+
+1. Registrar el módulo en `Modulos`.
+2. Licenciar solo empresas pedidas (`Empresa_Modulos`) o dejarlo a MacroBits → Empresas Admin.
+3. `PerfilRoles`: **solo** perfiles `Administrador` (o lista explícita), y solo si la empresa ya tiene licencia.
+4. Plantilla: `AlahiaPosApi/Scripts/_Plantilla_ActivarModulo_SoloAdmin.sql`
+5. En C#: `IPerfilRoles.ActivarModuloSoloAdministradoresAsync`
+
+Cajero / Recepción / otros roles se editan a mano en Empresas Admin o en Perfiles de la empresa.

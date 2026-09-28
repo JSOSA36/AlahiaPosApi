@@ -8,6 +8,8 @@ namespace AlahiaPos.Entities.Dto.Fiscal
         public int IdEmpresa { get; set; }
         public string? Rnc { get; set; }
         public string? NombreEmpresa { get; set; }
+        /// <summary>Razón social DGII (no el nombre comercial). La RI del paso 5 debe llevar esta.</summary>
+        public string? RazonSocial { get; set; }
         public bool CertificadoOk { get; set; }
         public string? CertificadoNombre { get; set; }
         public DateTime? CertificadoExpira { get; set; }
@@ -25,7 +27,7 @@ namespace AlahiaPos.Entities.Dto.Fiscal
         public List<CertecfInboundLogDto> Inbound { get; set; } = new();
         /// <summary>Escritorio: XML íntegros E32 &lt; 250 mil para Browse + ENVIAR en el portal.</summary>
         public string? RutaXmlConsumo250 { get; set; }
-        /// <summary>Escritorio: HTML/PDF de representación impresa para el paso 5 del portal.</summary>
+        /// <summary>Escritorio: PDF de representación impresa para el paso 5 del portal.</summary>
         public string? RutaRi { get; set; }
         public string? Aviso { get; set; }
         public string FuenteNorma { get; set; } =
@@ -94,6 +96,7 @@ namespace AlahiaPos.Entities.Dto.Fiscal
     {
         public string NombreArchivo { get; set; } = "";
         public string Contenido { get; set; } = "";
+        public byte[]? ContenidoBinario { get; set; }
         public string ContentType { get; set; } = "application/xml";
     }
 
@@ -134,6 +137,8 @@ namespace AlahiaPos.Entities.Dto.Fiscal
         public DateTime? FechaEnvio { get; set; }
         public DateTime? FechaRespuesta { get; set; }
         public string? UrlQR { get; set; }
+        public string? CodigoSeguridad { get; set; }
+        public DateTime? FechaFirma { get; set; }
         public bool QrListo { get; set; }
     }
 
@@ -141,7 +146,7 @@ namespace AlahiaPos.Entities.Dto.Fiscal
     {
         public string Ruta { get; set; } = "";
         public string Aviso { get; set; } =
-            "Abra cada HTML → Imprimir → Guardar como PDF. Suba un PDF por recuadro del portal (11 archivos, suma ≤ 10 MB). No es una foto.";
+            "Suba estos PDF al portal (un recuadro por tipo, 11 archivos, suma ≤ 10 MB). La Razón Social debe ser la registrada en DGII para ese RNC, no el nombre comercial.";
         public List<CertecfRiSlotDto> Slots { get; set; } = new();
     }
 
@@ -154,5 +159,7 @@ namespace AlahiaPos.Entities.Dto.Fiscal
         public int IdCaso { get; set; }
         public bool QrListo { get; set; }
         public string NombreArchivo { get; set; } = "";
+        public string? Mensaje { get; set; }
+        public string? Estado { get; set; }
     }
 }

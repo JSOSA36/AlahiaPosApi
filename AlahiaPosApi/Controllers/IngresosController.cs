@@ -2,8 +2,10 @@
 using AlahiaPos.Entities.Domain;
 using AlahiaPos.Entities.Dto;
 using AlahiaPos.Entities.Interfaces;
+using AlahiaPosApi.Auth;
 using Microsoft.AspNetCore.Mvc;
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace AlahiaPos.API.Controllers
@@ -22,6 +24,8 @@ namespace AlahiaPos.API.Controllers
         _MovimientoFinancieroService;
         private readonly IContabilidadEventPublisher _contabilidadEvents;
         private readonly ICuentaFinancieraService _cuentaFinancieraService;
+        private readonly ISucursalService _sucursales;
+        private readonly ISesionTokenResolver _tokens;
 
         public IngresosController(IIngresos ingresosService, IMetodoPagoCuentaService
             metodoPagoCuentaService,
@@ -29,7 +33,9 @@ namespace AlahiaPos.API.Controllers
             IMovimientoFinancieroService
             movimientoFinancieroService,
             IContabilidadEventPublisher contabilidadEvents,
-            ICuentaFinancieraService cuentaFinancieraService)
+            ICuentaFinancieraService cuentaFinancieraService,
+            ISucursalService sucursales,
+            ISesionTokenResolver tokens)
         {
             _ingresosService = ingresosService;
             _MetodoPagoCuentaService =
@@ -39,6 +45,8 @@ namespace AlahiaPos.API.Controllers
                 movimientoFinancieroService;
             _contabilidadEvents = contabilidadEvents;
             _cuentaFinancieraService = cuentaFinancieraService;
+            _sucursales = sucursales;
+            _tokens = tokens;
         }
 
         // ================================================
@@ -282,9 +290,21 @@ GetIngresosPorLinea(
         }
         // ✅ GET: api/Ingresos/GetIngresosByFecha/{IdEmpresa}/{fechaInicio}/{fechaFin}
         [HttpGet("GetIngresosByFecha/{IdEmpresa}/{fechaInicio}/{fechaFin}")]
-        public async Task<IActionResult> GetIngresosByFecha(int IdEmpresa, DateTime fechaInicio, DateTime fechaFin)
+        public async Task<IActionResult> GetIngresosByFecha(
+            int IdEmpresa,
+            DateTime fechaInicio,
+            DateTime fechaFin,
+            int? idSucursalFiltro = null)
         {
+            var (scope, error) = await SucursalConsultaHttp.ResolverAsync(
+                HttpContext, _tokens, _sucursales, IdEmpresa, idSucursalFiltro);
+            if (error != null)
+                return error;
+
             var result = await _ingresosService.GetIngresosByFecha(IdEmpresa, fechaInicio, fechaFin);
+            result = (result ?? Enumerable.Empty<Ingresos>())
+                .Where(i => scope.Incluye(i.IdSucursal))
+                .ToList();
             return Ok(result);
         }
         [HttpGet("GetIngresosByFechaCaja/{IdEmpresa}/{fechaInicio}/{fechaFin}")]

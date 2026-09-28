@@ -16,6 +16,7 @@ namespace AlahiaPos.Entities.Interfaces
         Task<Cita> GetCitaById(int id);
         Task<Cita> GetCitaByIdFactHeader(int IdFacturaHeader);
         Task EnviarRecordatorioPorFecha(DateTime fecha, int idEmpresa);
+        Task<int> EnviarRecordatoriosDelDiaAsync(DateTime fecha, int? idEmpresa = null);
         Task InsertCita(Cita cita);
         void UpdateCita(Cita cita);
         void DeleteCita(int id);
@@ -29,7 +30,7 @@ namespace AlahiaPos.Entities.Interfaces
         /// <param name="idEmpresa">ID de la empresa</param>
         /// <returns>Listado de citas con nombre del estilista</returns>
         Task<IEnumerable<CitaDto>> GetCitasConEmpleado(int idEmpresa);
-        Task CambiarEstadoCita(int idCita, EstadoCita estado);
+        Task CambiarEstadoCita(int idCita, EstadoCita estado, int idUsuario = 0);
 
     }
 }

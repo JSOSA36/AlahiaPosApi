@@ -1,11 +1,14 @@
 using AlahiaPos.Entities.Dto;
 using AlahiaPos.Entities.Interfaces;
+using AlahiaPosApi.Auth;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AlahiaPosApi.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [RequiereEmpresaSistema]
+    [PermitirEmpresaObjetivo]
     public class SuscripcionCobrosController : ControllerBase
     {
         private readonly ISuscripcionCobroService _service;

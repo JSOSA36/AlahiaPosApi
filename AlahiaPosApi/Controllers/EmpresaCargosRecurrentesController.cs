@@ -1,11 +1,13 @@
 using AlahiaPos.Entities.Dto;
 using AlahiaPos.Entities.Interfaces;
+using AlahiaPosApi.Auth;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AlahiaPosApi.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [PermitirEmpresaObjetivo]
     public class EmpresaCargosRecurrentesController : ControllerBase
     {
         private readonly IEmpresaCargoRecurrenteService _service;
@@ -37,6 +39,7 @@ namespace AlahiaPosApi.Controllers
         }
 
         [HttpPost]
+        [RequiereEmpresaSistema]
         public async Task<IActionResult> Crear([FromBody] CrearEmpresaCargoRecurrenteDto dto)
         {
             try
@@ -51,6 +54,7 @@ namespace AlahiaPosApi.Controllers
         }
 
         [HttpPut]
+        [RequiereEmpresaSistema]
         public async Task<IActionResult> Actualizar([FromBody] ActualizarEmpresaCargoRecurrenteDto dto)
         {
             try
@@ -65,6 +69,7 @@ namespace AlahiaPosApi.Controllers
         }
 
         [HttpPost("{id}/desactivar")]
+        [RequiereEmpresaSistema]
         public async Task<IActionResult> Desactivar(int id, [FromQuery] int? idUsuario = null)
         {
             try

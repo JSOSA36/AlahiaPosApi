@@ -6,12 +6,20 @@ namespace AlahiaPos.Entities.Dto
     public class PedidoOnlineMenuDto
     {
         public string Slug { get; set; } = "";
+        public Guid GuidPublico { get; set; }
         public string NombrePublico { get; set; } = "";
         public string? WhatsApp { get; set; }
         public string? LogoUrl { get; set; }
         public string? NombreEmpresa { get; set; }
         public List<PedidoOnlineCategoriaDto> Categorias { get; set; } = new();
         public List<PedidoOnlineProductoDto> Productos { get; set; } = new();
+        public List<PedidoOnlineGuarnicionDto> Guarniciones { get; set; } = new();
+    }
+
+    public class PedidoOnlineGuarnicionDto
+    {
+        public int IdGuarnicion { get; set; }
+        public string Nombre { get; set; } = "";
     }
 
     public class PedidoOnlineCategoriaDto
@@ -32,6 +40,7 @@ namespace AlahiaPos.Entities.Dto
         public decimal Itbis { get; set; }
         public decimal PrecioConItbis { get; set; }
         public bool EsServicio { get; set; }
+        public bool ManejaGuarniciones { get; set; }
     }
 
     public class PedidoOnlineCheckoutRequest
@@ -42,6 +51,7 @@ namespace AlahiaPos.Entities.Dto
         public string? Direccion { get; set; }
         public string? Referencia { get; set; }
         public string MetodoPago { get; set; } = "Efectivo";
+        public string? VoucherBase64 { get; set; }
         public string? Observacion { get; set; }
         public string? IdempotencyKey { get; set; }
         public decimal? Latitud { get; set; }
@@ -130,6 +140,10 @@ namespace AlahiaPos.Entities.Dto
         public decimal? Latitud { get; set; }
         public decimal? Longitud { get; set; }
         public string MetodoPago { get; set; } = "";
+        public bool TieneVoucher { get; set; }
+        public bool PagoValidado { get; set; }
+        public DateTime? FechaValidacionPago { get; set; }
+        public bool EnviadoCocina { get; set; }
         public string? Observacion { get; set; }
         public decimal Total { get; set; }
         public string EstadoCocina { get; set; } = "";
@@ -167,6 +181,11 @@ namespace AlahiaPos.Entities.Dto
         public int IdUsuarioAsigna { get; set; }
     }
 
+    public class ValidarPagoPedidoRequest
+    {
+        public int IdUsuario { get; set; }
+    }
+
     public class DeliveryTransicionRequest
     {
         public int IdUsuario { get; set; }
@@ -184,6 +203,7 @@ namespace AlahiaPos.Entities.Dto
     {
         public int IdCanal { get; set; }
         public string Slug { get; set; } = "";
+        public Guid GuidPublico { get; set; }
         public string NombrePublico { get; set; } = "";
         public string? WhatsApp { get; set; }
         public bool Activo { get; set; }

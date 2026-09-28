@@ -35,7 +35,9 @@ namespace AlahiaPos.DataAccess.Servicios
             return await Repository.GetAllByExpresionAsync(c =>
                 c.IdArea == idArea &&
                 c.IdEmpresa == idEmpresa &&
-                c.EsServicio == true // 👈 criterio: que sean servicios
+                c.EsServicio == true &&
+                c.IsActivo &&
+                c.SeVende
             );
         }
 
@@ -44,29 +46,112 @@ namespace AlahiaPos.DataAccess.Servicios
             return Repository.GetById(Id);
         }
 
-        public void DeleteProductos(int IdProductos)
+        /// <returns>true si se borró la fila; false si quedó inactivo por tener movimiento.</returns>
+        public bool DeleteProductos(int IdProductos)
         {
-            Repository.Delete(IdProductos);
+            var producto = Repository.GetById(IdProductos)
+                ?? throw new InvalidOperationException("Producto no encontrado");
+
+            if (TieneMovimiento(IdProductos))
+            {
+                if (producto.IsActivo)
+                {
+                    producto.IsActivo = false;
+                    Repository.Update(IdProductos, producto);
+                }
+                return false;
+            }
+
+            try
+            {
+                BorrarDependenciasSinMovimiento(IdProductos);
+                _context.ChangeTracker.Clear();
+                var fresco = _context.Productos.Find(IdProductos);
+                if (fresco == null)
+                    return true;
+                _context.Productos.Remove(fresco);
+                _context.SaveChanges();
+                return true;
+            }
+            catch (DbUpdateException)
+            {
+                _context.ChangeTracker.Clear();
+                var fresco = _context.Productos.Find(IdProductos);
+                if (fresco != null && fresco.IsActivo)
+                {
+                    fresco.IsActivo = false;
+                    _context.SaveChanges();
+                }
+                return false;
+            }
+        }
+
+        private bool TieneMovimiento(int idProducto)
+        {
+            const string sql = @"
+SELECT CASE WHEN EXISTS (
+    SELECT 1 FROM FacturaDetalles WHERE IdProducto = {0}
+    UNION ALL SELECT 1 FROM MovimientosInventarioDetalle WHERE IdProducto = {0}
+    UNION ALL SELECT 1 FROM MovimientoDetalles WHERE IdProducto = {0}
+    UNION ALL SELECT 1 FROM ConduceDetalles WHERE IdProducto = {0}
+    UNION ALL SELECT 1 FROM OrdenCompraDetalles WHERE IdProducto = {0}
+    UNION ALL SELECT 1 FROM DevolucionesClienteDetalles WHERE IdProducto = {0}
+    UNION ALL SELECT 1 FROM DevolucionesDetalles WHERE IdProducto = {0}
+    UNION ALL SELECT 1 FROM AjusteInventarioDetalles WHERE IdProducto = {0}
+    UNION ALL SELECT 1 FROM OrdenProduccion WHERE IdProductoTerminado = {0}
+    UNION ALL SELECT 1 FROM OrdenProduccionMaterial WHERE IdProducto = {0}
+    UNION ALL SELECT 1 FROM RecetaProduccion WHERE IdProductoTerminado = {0}
+    UNION ALL SELECT 1 FROM RecetaProduccionItem WHERE IdProducto = {0}
+    UNION ALL SELECT 1 FROM NotasCreditoDetalle WHERE IdProducto = {0}
+    UNION ALL SELECT 1 FROM Citas WHERE IdProducto = {0}
+    UNION ALL SELECT 1 FROM ActivosFijos WHERE IdProducto = {0}
+) THEN 1 ELSE 0 END AS [Value]";
+
+            return _context.Database.SqlQueryRaw<int>(sql, idProducto).AsEnumerable().First() == 1;
+        }
+
+        private void BorrarDependenciasSinMovimiento(int idProducto)
+        {
+            _context.Database.ExecuteSqlRaw("DELETE FROM AlmacenExistencias WHERE IdProducto = {0}", idProducto);
+            _context.Database.ExecuteSqlRaw("DELETE FROM Variaciones WHERE IdProducto = {0}", idProducto);
+            _context.Database.ExecuteSqlRaw("DELETE FROM EmpleadoServicioComisions WHERE IdProducto = {0}", idProducto);
+            _context.Database.ExecuteSqlRaw("DELETE FROM DescuentoDetalle WHERE IdProducto = {0}", idProducto);
+        }
+
+        public void ActivarProductos(int IdProductos)
+        {
+            var producto = Repository.GetById(IdProductos)
+                ?? throw new InvalidOperationException("Producto no encontrado");
+            if (producto.IsActivo)
+                return;
+            producto.IsActivo = true;
+            Repository.Update(IdProductos, producto);
         }
 
         public async Task<IEnumerable<Productos>> GetAllProductos(int IdEmpresa)
         {
             return await Repository.GetAllByExpresionAsync(c => c.IdEmpresa == IdEmpresa);
         }
-        public async Task<IEnumerable<Productos>> GetAllProductosVenta(int IdEmpresa)
+        public async Task<IEnumerable<Productos>> GetAllProductosVenta(int IdEmpresa, int? idSucursal = null)
         {
             var productos = (await Repository
                 .GetAllByExpresionAsync(
                     c =>
                         c.IdEmpresa == IdEmpresa
+                        && c.IsActivo
                         && (
                             c.EsServicio
-                            || c.TipoOperacion == "VENTA"
-                            || c.TipoOperacion == "AMBAS"
+                            || (
+                                c.SeVende
+                                && (
+                                    c.TipoOperacion == "VENTA"
+                                    || c.TipoOperacion == "AMBAS"
+                                )
+                            )
                         )))
                 .ToList();
 
-            await AplicarExistenciaRealAsync(IdEmpresa, productos);
+            await AplicarExistenciaRealAsync(IdEmpresa, productos, idSucursal);
             return productos;
         }
 
@@ -80,20 +165,28 @@ namespace AlahiaPos.DataAccess.Servicios
             return await Repository.GetAllByExpresionAsync(c => c.IdCategoria == IdCategoria && c.IdEmpresa == IdEmpresa);
         }
 
-        public async Task<Productos> GetProductByBarcCode(string BarCode, int IdEmpresa)
+        public async Task<Productos> GetProductByBarcCode(string BarCode, int IdEmpresa, int? idSucursal = null)
         {
-            var producto = await Repository.GetByExpresionAsync(c => c.CodigoBarra == BarCode && c.IdEmpresa == IdEmpresa);
+            var producto = await Repository.GetByExpresionAsync(c =>
+                c.CodigoBarra == BarCode
+                && c.IdEmpresa == IdEmpresa
+                && c.IsActivo
+                && c.SeVende);
             if (producto != null)
-                await AplicarExistenciaRealAsync(IdEmpresa, new List<Productos> { producto });
+                await AplicarExistenciaRealAsync(IdEmpresa, new List<Productos> { producto }, idSucursal);
             return producto;
         }
 
         /// <summary>
         /// Fuente de verdad de stock para POS/venta: AlmacenExistencias (suma).
-        /// Productos.Cantidad es legado y no debe mostrarse como disponible.
+        /// Si idSucursal tiene valor, solo almacenes de esa sucursal.
+        /// Productos.Cantidad en BD es legado y no se reescribe aquí.
         /// Servicios no controlan existencia: Cantidad=0 y ControlarStock=false en la respuesta.
         /// </summary>
-        private async Task AplicarExistenciaRealAsync(int idEmpresa, List<Productos> productos)
+        private async Task AplicarExistenciaRealAsync(
+            int idEmpresa,
+            List<Productos> productos,
+            int? idSucursal = null)
         {
             if (productos == null || productos.Count == 0)
                 return;
@@ -107,11 +200,24 @@ namespace AlahiaPos.DataAccess.Servicios
             Dictionary<int, decimal> mapa = new();
             if (idsControlados.Count > 0)
             {
-                var filas = await _context.AlmacenExistencia
+                var query = _context.AlmacenExistencia
                     .AsNoTracking()
                     .Where(e =>
                         e.IdEmpresa == idEmpresa
-                        && idsControlados.Contains(e.IdProducto))
+                        && idsControlados.Contains(e.IdProducto));
+
+                if (idSucursal is > 0)
+                {
+                    var idsAlmacen = await _context.Almacenes
+                        .AsNoTracking()
+                        .Where(a => a.IdEmpresa == idEmpresa && a.IdSucursal == idSucursal)
+                        .Select(a => a.IdAlmacen)
+                        .ToListAsync();
+
+                    query = query.Where(e => idsAlmacen.Contains(e.IdAlmacen));
+                }
+
+                var filas = await query
                     .GroupBy(e => e.IdProducto)
                     .Select(g => new { IdProducto = g.Key, Total = g.Sum(x => x.Cantidad) })
                     .ToListAsync();

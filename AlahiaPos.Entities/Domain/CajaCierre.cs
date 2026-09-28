@@ -13,6 +13,8 @@ namespace AlahiaPos.Entities.Domain
 
         public int IdEmpresa { get; set; }
 
+        public int? IdSucursal { get; set; }
+
         public int IdUsuario { get; set; }
 
         public DateTime FechaCierre { get; set; }

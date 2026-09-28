@@ -16,11 +16,35 @@ namespace AlahiaPos.Entities.Dto
         public DashboardGerencialPlDto Pl { get; set; } = new();
         public DashboardGerencialIndicadoresDto Indicadores { get; set; } = new();
         public DashboardGerencialChartsDto Charts { get; set; } = new();
+
+        /// <summary>True cuando el filtro es Todas (más de una sucursal permitida).</summary>
+        public bool EsConsolidado { get; set; }
+
+        public List<DashboardGerencialSucursalMontoDto> PorSucursal { get; set; } = new();
+    }
+
+    public class DashboardGerencialSucursalMontoDto
+    {
+        public int IdSucursal { get; set; }
+        public string Nombre { get; set; } = string.Empty;
+        public decimal VentasNetas { get; set; }
+        public decimal VentasHoy { get; set; }
+        public decimal ValorInventario { get; set; }
+        public decimal CuentasPorCobrar { get; set; }
+        public decimal CuentasPorPagar { get; set; }
     }
 
     public class DashboardGerencialPlDto
     {
+        /// <summary>Ventas antes de descuentos de cabecera (sin ITBIS).</summary>
         public decimal VentasBrutas { get; set; }
+
+        /// <summary>Descuentos de factura (header). No están prorrateados en las líneas.</summary>
+        public decimal Descuentos { get; set; }
+
+        /// <summary>Ventas cobradas / facturadas netas: Total − ITBIS (ya descontado).</summary>
+        public decimal VentasNetas { get; set; }
+
         public decimal CostoVenta { get; set; }
         public decimal UtilidadBruta { get; set; }
         public decimal GastosOperativos { get; set; }
@@ -30,10 +54,10 @@ namespace AlahiaPos.Entities.Dto
         public decimal OtrosEgresos { get; set; }
         public decimal UtilidadOperativa { get; set; }
 
-        /// <summary>Utilidad bruta / ventas brutas × 100</summary>
+        /// <summary>Utilidad bruta / ventas netas × 100</summary>
         public decimal MargenBrutoPct { get; set; }
 
-        /// <summary>Utilidad operativa / ventas brutas × 100</summary>
+        /// <summary>Utilidad operativa / ventas netas × 100</summary>
         public decimal MargenOperativoPct { get; set; }
     }
 

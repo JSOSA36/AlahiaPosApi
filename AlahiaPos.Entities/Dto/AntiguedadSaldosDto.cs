@@ -13,6 +13,12 @@ namespace AlahiaPos.Entities.Dto
         public bool SoloVencidas { get; set; }
         public bool SoloPendientes { get; set; } = true;
         public DateTime? FechaCorte { get; set; }
+
+        /// <summary>
+        /// Sucursales permitidas para la consulta. Null = sin recorte (compatibilidad interna).
+        /// </summary>
+        public IReadOnlyList<int>? IdsSucursalConsulta { get; set; }
+        public int IdSucursalPrincipal { get; set; }
     }
 
     public class AntiguedadSaldosLineaDto

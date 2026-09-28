@@ -32,6 +32,12 @@ namespace AlahiaPos.Entities.Dto
         public bool Activo { get; set; }
             = true;
 
+        /// <summary>
+        /// Si es true, este método se ofrece al cotejar cobros de ARS
+        /// y el dinero entra a IdCuentaFinanciera.
+        /// </summary>
+        public bool EsCobroArs { get; set; }
+
         /* =========================================
         🔥 RELACION
         ========================================= */

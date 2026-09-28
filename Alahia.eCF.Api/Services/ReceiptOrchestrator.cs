@@ -382,7 +382,14 @@ namespace Alahia.eCF.Api.Services
                     "Documents", "GitHub", "AlahiaPosApi", "artifacts", "gold-testecf");
                 Directory.CreateDirectory(gold);
                 var encf = (fiscal.Encabezado.Encf ?? "sin-encf").Trim();
-                File.WriteAllText(Path.Combine(gold, $"certecf_ECF_{encf}_firmado.xml"), xmlFirmado);
+                var dest = Path.Combine(gold, $"certecf_ECF_{encf}_firmado.xml");
+                if (File.Exists(dest))
+                {
+                    var bak = Path.Combine(gold,
+                        $"certecf_ECF_{encf}_firmado_{DateTime.Now:yyyyMMdd-HHmmss}.bak.xml");
+                    File.Copy(dest, bak, overwrite: true);
+                }
+                File.WriteAllText(dest, xmlFirmado);
             }
             catch
             {

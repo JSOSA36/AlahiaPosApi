@@ -577,6 +577,7 @@ namespace AlahiaPos.DataAccess.Servicios
                 FechaFirma = ecf?.FechaFirma,
                 FechaEmisionEcf = ecf?.FechaEmision,
                 EstadoDgii = ecf?.EstadoDGII,
+                AmbienteFE = _Empresa?.AmbienteFE,
                 
                 // FECHAS
                 FechaInseccion = x.FechaInseccion,
@@ -643,14 +644,9 @@ namespace AlahiaPos.DataAccess.Servicios
                     dto.FechaEmisionEcf ?? dto.FechaInseccion,
                     dto.Total,
                     dto.FechaFirma,
-                    dto.SecurityCode);
+                    dto.SecurityCode,
+                    dto.TipoECF);
             }
-
-            dto.FechaFirma = TicketFechaHora.ParaImpresion(
-                dto.FechaFirma,
-                dto.FechaEmisionEcf,
-                dto.FechaInseccion,
-                x.Hora);
 
             return dto;
         }

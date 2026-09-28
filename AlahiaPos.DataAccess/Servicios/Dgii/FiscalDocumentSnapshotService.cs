@@ -73,6 +73,9 @@ namespace AlahiaPos.DataAccess.Servicios.Dgii
                 }
             }
 
+            if (header.MontoCargo > 0)
+                montoExento += header.MontoCargo;
+
             header.MontoGravado = montoGravado;
             header.MontoExento = montoExento;
             header.MontoGravadoI1 = montoGravado;

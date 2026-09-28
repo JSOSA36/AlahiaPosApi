@@ -10,6 +10,7 @@ namespace AlahiaPos.Entities.Dto.Fiscal
         public OrigenDocumento OrigenDocumento { get; set; }
         public int IdOrigen { get; set; }
         public int IdUsuario { get; set; }
+        public int? IdSucursal { get; set; }
         public string? NcfModificado { get; set; }
         public DateTime? FechaNcfModificado { get; set; }
         public int? CodigoModificacion { get; set; }

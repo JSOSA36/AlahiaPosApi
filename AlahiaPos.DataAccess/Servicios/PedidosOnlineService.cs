@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using AlahiaPos.DataAccess.Data;
 using AlahiaPos.Entities.Domain;
@@ -51,19 +53,22 @@ namespace AlahiaPos.DataAccess.Servicios
                 .FirstOrDefaultAsync(e => e.IdEmpresa == canal.IdEmpresa);
 
             var categorias = (await _categorias.GetAllCategoriasVentas(canal.IdEmpresa) ?? Enumerable.Empty<Categorias>())
-                .Where(c => c.IsActiva)
+                .Where(c => c.IsActiva && !EsCategoriaInterna(c.Nombre))
                 .OrderBy(c => c.Prioridad)
                 .ThenBy(c => c.Nombre)
                 .Select(c => new PedidoOnlineCategoriaDto
                 {
                     IdCategoria = c.IdCategoria,
-                    Nombre = c.Nombre ?? "",
+                    Nombre = TextoCliente(c.Nombre),
                     ImagenPath = c.ImagenPath
                 })
                 .ToList();
 
+            var guarniciones = await GuarnicionesPublicasAsync(canal.IdEmpresa);
+            var pideGuarnicion = guarniciones.Count > 0;
+            var idsPublicas = categorias.Select(c => c.IdCategoria).ToHashSet();
             var productos = (await _productos.GetAllProductosVenta(canal.IdEmpresa) ?? Enumerable.Empty<Productos>())
-                .Where(p => p.PrecioVenta > 0)
+                .Where(p => p.PrecioVenta > 0 && p.IdCategoria is int idCat && idsPublicas.Contains(idCat))
                 .OrderBy(p => p.Nombre)
                 .Select(p =>
                 {
@@ -72,13 +77,14 @@ namespace AlahiaPos.DataAccess.Servicios
                     {
                         IdProducto = p.IdProducto,
                         IdCategoria = p.IdCategoria,
-                        Nombre = p.Nombre ?? "",
-                        Descripcion = p.Descripcion,
+                        Nombre = TextoCliente(p.Nombre),
+                        Descripcion = TextoCliente(p.Descripcion),
                         Imagen = FirstNonEmpty(p.Imagen1, p.Imagen2, p.Imagen3),
                         Precio = precio,
                         Itbis = itbis,
                         PrecioConItbis = precio + itbis,
-                        EsServicio = p.EsServicio
+                        EsServicio = p.EsServicio,
+                        ManejaGuarniciones = pideGuarnicion && p.ManejaGuarniciones
                     };
                 })
                 .ToList();
@@ -86,13 +92,28 @@ namespace AlahiaPos.DataAccess.Servicios
             return new PedidoOnlineMenuDto
             {
                 Slug = canal.Slug,
-                NombrePublico = canal.NombrePublico,
+                GuidPublico = empresa?.GuidPublico ?? Guid.Empty,
+                NombrePublico = TextoCliente(canal.NombrePublico),
                 WhatsApp = canal.WhatsApp,
                 LogoUrl = canal.LogoUrl,
-                NombreEmpresa = empresa?.NombreComercial,
+                NombreEmpresa = TextoCliente(empresa?.NombreComercial),
                 Categorias = categorias,
-                Productos = productos
+                Productos = productos,
+                Guarniciones = guarniciones
             };
+        }
+
+        private async Task<List<PedidoOnlineGuarnicionDto>> GuarnicionesPublicasAsync(int idEmpresa)
+        {
+            return await _ctx.Guarniciones.AsNoTracking()
+                .Where(g => g.IdEmpresa == idEmpresa && g.Activo && g.Nombre != "")
+                .OrderBy(g => g.Nombre)
+                .Select(g => new PedidoOnlineGuarnicionDto
+                {
+                    IdGuarnicion = g.IdGuarnicion,
+                    Nombre = g.Nombre
+                })
+                .ToListAsync();
         }
 
         public async Task<PedidoOnlineConfirmacionDto> CrearPedidoAsync(string slug, PedidoOnlineCheckoutRequest request)
@@ -127,6 +148,12 @@ namespace AlahiaPos.DataAccess.Servicios
                     .FirstOrDefaultAsync(p => p.IdEmpresa == canal.IdEmpresa && p.IdempotencyKey == key);
                 if (existente != null)
                 {
+                    if (EsTransferencia(existente.MetodoPago) && string.IsNullOrWhiteSpace(existente.VoucherRuta))
+                    {
+                        var tracked = await _ctx.PedidoOnline.FirstAsync(p => p.IdPedidoOnline == existente.IdPedidoOnline);
+                        await AdjuntarVoucherAsync(tracked, request.VoucherBase64);
+                        existente = tracked;
+                    }
                     var fh = await _facturas.GetFacturaHeaderById(existente.IdFacturaHeader, canal.IdEmpresa);
                     var seg = await ObtenerPedidoAsync(canal.IdEmpresa, existente.IdPedidoOnline);
                     return MapConfirmacion(existente, fh, seg?.EstadoUnificado, seg?.EstadoUnificado);
@@ -167,6 +194,9 @@ namespace AlahiaPos.DataAccess.Servicios
             var total = detalles.Sum(d => d.SubTotal);
             var totalItbis = detalles.Sum(d => d.Itbis);
             var metodo = string.IsNullOrWhiteSpace(request.MetodoPago) ? "Efectivo" : request.MetodoPago.Trim();
+            (byte[] Bytes, string ContentType)? voucher = null;
+            if (EsTransferencia(metodo))
+                voucher = DecodificarVoucher(request.VoucherBase64);
             var lat = NormalizarCoord(request.Latitud, -90m, 90m);
             var lng = NormalizarCoord(request.Longitud, -180m, 180m);
             if (tipo != PedidoOnlineTiposEntrega.Delivery)
@@ -174,12 +204,14 @@ namespace AlahiaPos.DataAccess.Servicios
                 lat = null;
                 lng = null;
             }
-            var nota = ConstruirNota(tipo, request.Direccion, request.Referencia, request.Observacion, lat, lng);
+            var nota = ConstruirNota(tipo, request.Observacion);
             var (idEmpleado, idUsuario) = await ResolverResponsablePedidoAsync(canal.IdEmpresa);
+            var idSucursal = await ResolverSucursalPrincipalAsync(canal.IdEmpresa);
 
             var header = new FacturaHeaders
             {
                 IdEmpresa = canal.IdEmpresa,
+                IdSucursal = idSucursal,
                 IdTipoDocumentos = ProduccionPosAdapterTipo.Orden,
                 TipoOrden = tipo,
                 Estado_Orden = "Pendiente",
@@ -199,7 +231,7 @@ namespace AlahiaPos.DataAccess.Servicios
                 Hora = DateTime.Now.ToString("hh:mm tt"),
                 PrintAcount = true,
                 PrintPending = false,
-                IdMesa = 1,
+                IdMesa = null,
                 IdEmpleados = idEmpleado,
                 IdEmpleadoComision = idEmpleado,
                 IdUsuario = idUsuario,
@@ -232,14 +264,8 @@ namespace AlahiaPos.DataAccess.Servicios
             };
             _ctx.PedidoOnline.Add(pedido);
             await _ctx.SaveChangesAsync();
-
-            try
-            {
-                await _produccion.PublicarOrdenSiAplicaAsync(header, null, ProduccionConstantes.OrigenModuloOnline);
-            }
-            catch
-            {
-            }
+            if (voucher.HasValue)
+                await GuardarArchivoVoucherAsync(pedido, voucher.Value.Bytes, voucher.Value.ContentType);
 
             return MapConfirmacion(pedido, header, "Nuevo", MensajeSeguimiento("Nuevo"));
         }
@@ -369,10 +395,15 @@ namespace AlahiaPos.DataAccess.Servicios
                 .FirstOrDefaultAsync();
             if (canal == null)
                 return null;
+            var guid = await _ctx.Empresas.AsNoTracking()
+                .Where(e => e.IdEmpresa == idEmpresa)
+                .Select(e => e.GuidPublico)
+                .FirstOrDefaultAsync();
             return new PedidoOnlineCanalEmpresaDto
             {
                 IdCanal = canal.IdCanal,
                 Slug = canal.Slug,
+                GuidPublico = guid,
                 NombrePublico = canal.NombrePublico,
                 WhatsApp = canal.WhatsApp,
                 Activo = canal.Activo
@@ -703,6 +734,12 @@ namespace AlahiaPos.DataAccess.Servicios
 
                 var estadoCocina = coc?.CodigoEstado ?? "";
                 var estadoLog = SincronizarEstadoLogistico(p, estadoCocina, asig);
+                var enviadoCocina = p.FechaEnvioCocina != null || !string.IsNullOrEmpty(estadoCocina);
+                var unificado = UnificarEstado(p.TipoEntrega, estadoCocina, estadoLog);
+                if (enviadoCocina && unificado == "Nuevo")
+                    unificado = "En cocina";
+                else if (!enviadoCocina && unificado == "Nuevo")
+                    unificado = "Por confirmar";
 
                 result.Add(new PedidoDeliveryListadoDto
                 {
@@ -717,11 +754,15 @@ namespace AlahiaPos.DataAccess.Servicios
                     Latitud = p.Latitud,
                     Longitud = p.Longitud,
                     MetodoPago = p.MetodoPago,
+                    TieneVoucher = !string.IsNullOrWhiteSpace(p.VoucherRuta),
+                    PagoValidado = p.PagoValidado,
+                    FechaValidacionPago = p.FechaValidacionPago,
+                    EnviadoCocina = enviadoCocina,
                     Observacion = p.Observacion,
                     Total = fh?.Total ?? 0,
                     EstadoCocina = estadoCocina,
                     EstadoLogistico = estadoLog,
-                    EstadoUnificado = UnificarEstado(p.TipoEntrega, estadoCocina, estadoLog),
+                    EstadoUnificado = unificado,
                     IdUsuarioRepartidor = asig?.IdUsuarioRepartidor,
                     NombreRepartidor = asig != null && nombresReparto.TryGetValue(asig.IdUsuarioRepartidor, out var nr) ? nr : null,
                     Fecha = p.FechaCreacion,
@@ -746,18 +787,20 @@ namespace AlahiaPos.DataAccess.Servicios
         private static string UnificarEstado(string tipo, string cocina, string logistico)
         {
             var log = (logistico ?? "").Trim();
-            if (Es(log, PedidoOnlineEstados.Cancelado)) return "Cancelado";
-            if (Es(log, PedidoOnlineEstados.Entregado)) return "Entregado";
+            var coc = (cocina ?? "").Trim();
+            if (Es(log, PedidoOnlineEstados.Cancelado) || Es(coc, "CANCELADA")) return "Cancelado";
+            if (Es(log, PedidoOnlineEstados.Entregado) || Es(coc, "ENTREGADA") || Es(coc, "ENTREGADO"))
+                return "Entregado";
             if (Es(log, PedidoOnlineEstados.EnCamino) || string.Equals(log, "En camino", StringComparison.OrdinalIgnoreCase))
                 return "En camino";
             if (Es(log, PedidoOnlineEstados.Recogido)) return "Recogido";
             if (Es(log, PedidoOnlineEstados.Asignado)) return "Asignado a delivery";
-            if (cocina == "LISTA" && tipo == PedidoOnlineTiposEntrega.Delivery)
+            if (Es(coc, "LISTA") && tipo == PedidoOnlineTiposEntrega.Delivery)
                 return "Pendiente de asignación";
-            if (cocina == "LISTA") return "Listo";
-            if (cocina == "EN_PREPARACION") return "En preparación";
-            if (cocina == "PENDIENTE" || string.IsNullOrEmpty(cocina)) return "Nuevo";
-            return cocina;
+            if (Es(coc, "LISTA")) return "Listo";
+            if (Es(coc, "EN_PREPARACION")) return "En preparación";
+            if (Es(coc, "PENDIENTE") || string.IsNullOrEmpty(coc)) return "Nuevo";
+            return "Nuevo";
         }
 
         private static bool Es(string valor, string esperado)
@@ -772,17 +815,39 @@ namespace AlahiaPos.DataAccess.Servicios
             };
         }
 
-        private async Task<PedidoOnlineCanal> ObtenerCanalActivoAsync(string slug)
+        private async Task<PedidoOnlineCanal> ObtenerCanalActivoAsync(string token)
         {
-            var s = (slug ?? "").Trim().ToLowerInvariant();
-            if (string.IsNullOrEmpty(s))
-                throw new ArgumentException("Negocio no encontrado.");
+            var raw = (token ?? "").Trim();
+            if (!Guid.TryParse(raw, out var guid) || guid == Guid.Empty)
+                throw new ArgumentException("Este negocio no tiene pedidos en línea activos.");
+
+            var idEmpresa = await _ctx.Empresas.AsNoTracking()
+                .Where(e => e.GuidPublico == guid)
+                .Select(e => (int?)e.IdEmpresa)
+                .FirstOrDefaultAsync();
+            if (idEmpresa == null)
+                throw new ArgumentException("Este negocio no tiene pedidos en línea activos.");
 
             var canal = await _ctx.PedidoOnlineCanal.AsNoTracking()
-                .FirstOrDefaultAsync(c => c.Slug == s && c.Activo);
+                .FirstOrDefaultAsync(c => c.IdEmpresa == idEmpresa.Value && c.Activo);
             if (canal == null)
                 throw new ArgumentException("Este negocio no tiene pedidos en línea activos.");
             return canal;
+        }
+
+        private async Task<int?> ResolverSucursalPrincipalAsync(int idEmpresa)
+        {
+            var principal = await _ctx.Sucursales.AsNoTracking()
+                .Where(s => s.IdEmpresa == idEmpresa && s.EsPrincipal)
+                .Select(s => (int?)s.IdSucursal)
+                .FirstOrDefaultAsync();
+            if (principal is > 0)
+                return principal;
+            return await _ctx.Sucursales.AsNoTracking()
+                .Where(s => s.IdEmpresa == idEmpresa)
+                .OrderBy(s => s.IdSucursal)
+                .Select(s => (int?)s.IdSucursal)
+                .FirstOrDefaultAsync();
         }
 
         private async Task<(int idEmpleados, int? idUsuario)> ResolverResponsablePedidoAsync(int idEmpresa)
@@ -871,28 +936,12 @@ namespace AlahiaPos.DataAccess.Servicios
             return PedidoOnlineTiposEntrega.Delivery;
         }
 
-        private static string ConstruirNota(
-            string tipo,
-            string? direccion,
-            string? referencia,
-            string? observacion,
-            decimal? latitud,
-            decimal? longitud)
+        private static string ConstruirNota(string tipo, string? observacion)
         {
-            var partes = new List<string>();
-            partes.Add(tipo == PedidoOnlineTiposEntrega.Delivery ? "Pedido online · Delivery" : "Pedido online · Recoger");
-            if (!string.IsNullOrWhiteSpace(direccion))
-                partes.Add(direccion.Trim());
-            if (!string.IsNullOrWhiteSpace(referencia))
-                partes.Add("Ref: " + referencia.Trim());
-            if (latitud.HasValue && longitud.HasValue)
+            var partes = new List<string>
             {
-                partes.Add(
-                    "GPS: "
-                    + latitud.Value.ToString(System.Globalization.CultureInfo.InvariantCulture)
-                    + ", "
-                    + longitud.Value.ToString(System.Globalization.CultureInfo.InvariantCulture));
-            }
+                tipo == PedidoOnlineTiposEntrega.Delivery ? "Pedido online · Delivery" : "Pedido online · Recoger"
+            };
             if (!string.IsNullOrWhiteSpace(observacion))
                 partes.Add(observacion.Trim());
             return string.Join(" · ", partes);
@@ -931,7 +980,8 @@ namespace AlahiaPos.DataAccess.Servicios
         {
             return estadoUnificado switch
             {
-                "Nuevo" => "Recibimos tu pedido. La cocina ya lo tiene.",
+                "Nuevo" or "Por confirmar" => "Recibimos tu pedido. El local lo confirma antes de pasarlo a cocina.",
+                "En cocina" => "El local ya pasó tu pedido a cocina.",
                 "En preparación" => "La cocina está preparando tu pedido.",
                 "Pendiente de asignación" => "Ya está listo. Estamos asignando un repartidor.",
                 "Listo" => "Tu pedido está listo para recoger.",
@@ -944,8 +994,183 @@ namespace AlahiaPos.DataAccess.Servicios
             };
         }
 
+        public async Task<PedidoDeliveryListadoDto> ValidarPagoAsync(int idEmpresa, int idPedidoOnline, int idUsuario)
+        {
+            var pedido = await _ctx.PedidoOnline.AsTracking()
+                .FirstOrDefaultAsync(p => p.IdPedidoOnline == idPedidoOnline && p.IdEmpresa == idEmpresa);
+            if (pedido == null)
+                throw new ArgumentException("Pedido no encontrado.");
+            if (!EsTransferencia(pedido.MetodoPago))
+                throw new ArgumentException("Este pedido no es por transferencia.");
+            if (string.IsNullOrWhiteSpace(pedido.VoucherRuta))
+                throw new ArgumentException("Este pedido no tiene volante de pago.");
+            if (!pedido.PagoValidado)
+            {
+                pedido.PagoValidado = true;
+                pedido.FechaValidacionPago = DateTime.Now;
+                pedido.IdUsuarioValidaPago = idUsuario > 0 ? idUsuario : null;
+                await _ctx.SaveChangesAsync();
+            }
+            return await PedidoOError(idEmpresa, idPedidoOnline);
+        }
+
+        public async Task<PedidoDeliveryListadoDto> EnviarACocinaAsync(int idEmpresa, int idPedidoOnline, int idUsuario)
+        {
+            var pedido = await _ctx.PedidoOnline.AsTracking()
+                .FirstOrDefaultAsync(p => p.IdPedidoOnline == idPedidoOnline && p.IdEmpresa == idEmpresa);
+            if (pedido == null)
+                throw new ArgumentException("Pedido no encontrado.");
+            if (pedido.EstadoLogistico == PedidoOnlineEstados.Cancelado)
+                throw new ArgumentException("El pedido está cancelado.");
+
+            if (pedido.FechaEnvioCocina == null)
+            {
+                var header = await _ctx.FacturaHeaders
+                    .FirstOrDefaultAsync(h => h.IdFacturaHeader == pedido.IdFacturaHeader && h.IdEmpresa == idEmpresa);
+                if (header == null)
+                    throw new ArgumentException("No se encontró la orden.");
+                header.FacturaDetalles = await _ctx.FacturaDetalles
+                    .Where(d => d.IdFacturaHeader == header.IdFacturaHeader)
+                    .ToListAsync();
+                if (idUsuario > 0)
+                    header.IdUsuario = idUsuario;
+                await _produccion.PublicarOrdenSiAplicaAsync(header, null, ProduccionConstantes.OrigenModuloOnline);
+                pedido.FechaEnvioCocina = DateTime.Now;
+                await _ctx.SaveChangesAsync();
+            }
+
+            return await PedidoOError(idEmpresa, idPedidoOnline);
+        }
+
+        public async Task<(byte[] Contenido, string ContentType)> ObtenerVoucherAsync(int idEmpresa, int idPedidoOnline)
+        {
+            var pedido = await _ctx.PedidoOnline.AsNoTracking()
+                .FirstOrDefaultAsync(p => p.IdPedidoOnline == idPedidoOnline && p.IdEmpresa == idEmpresa);
+            if (pedido == null || string.IsNullOrWhiteSpace(pedido.VoucherRuta))
+                throw new ArgumentException("Este pedido no tiene volante de pago.");
+
+            var full = RutaVoucherSegura(pedido.VoucherRuta);
+            if (!File.Exists(full))
+                throw new ArgumentException("No se encontró la foto del volante.");
+
+            var ext = Path.GetExtension(full).ToLowerInvariant();
+            var contentType = ext switch
+            {
+                ".png" => "image/png",
+                ".webp" => "image/webp",
+                _ => "image/jpeg"
+            };
+            return (await File.ReadAllBytesAsync(full), contentType);
+        }
+
+        private async Task<PedidoDeliveryListadoDto> PedidoOError(int idEmpresa, int idPedidoOnline)
+        {
+            var dto = await ObtenerPedidoAsync(idEmpresa, idPedidoOnline);
+            if (dto == null)
+                throw new ArgumentException("Pedido no encontrado.");
+            return dto;
+        }
+
+        private async Task AdjuntarVoucherAsync(PedidoOnline pedido, string? voucherBase64)
+        {
+            var voucher = DecodificarVoucher(voucherBase64);
+            await GuardarArchivoVoucherAsync(pedido, voucher.Bytes, voucher.ContentType);
+        }
+
+        private async Task GuardarArchivoVoucherAsync(PedidoOnline pedido, byte[] bytes, string contentType)
+        {
+            var ext = contentType == "image/png" ? ".png" : contentType == "image/webp" ? ".webp" : ".jpg";
+            var rel = $"{pedido.IdEmpresa}/{pedido.IdPedidoOnline}{ext}";
+            var full = RutaVoucherSegura(rel);
+            Directory.CreateDirectory(Path.GetDirectoryName(full)!);
+            await File.WriteAllBytesAsync(full, bytes);
+            pedido.VoucherRuta = rel;
+            await _ctx.SaveChangesAsync();
+        }
+
+        private static bool EsTransferencia(string? metodo)
+            => (metodo ?? "").Trim().StartsWith("Transfer", StringComparison.OrdinalIgnoreCase);
+
+        private static (byte[] Bytes, string ContentType) DecodificarVoucher(string? base64)
+        {
+            if (string.IsNullOrWhiteSpace(base64))
+                throw new ArgumentException("Para pagar por transferencia debe subir la foto del volante.");
+
+            var raw = base64.Trim();
+            var comma = raw.IndexOf(',');
+            if (raw.StartsWith("data:", StringComparison.OrdinalIgnoreCase) && comma > 0)
+                raw = raw[(comma + 1)..];
+
+            byte[] bytes;
+            try { bytes = Convert.FromBase64String(raw); }
+            catch (FormatException) { throw new ArgumentException("El volante no se pudo leer. Suba la foto de nuevo."); }
+
+            if (bytes.Length < 32 || bytes.Length > 2_500_000)
+                throw new ArgumentException("La foto del volante debe pesar menos de 2 MB.");
+
+            string contentType;
+            if (bytes[0] == 0xFF && bytes[1] == 0xD8)
+                contentType = "image/jpeg";
+            else if (bytes.Length >= 8 && bytes[0] == 0x89 && bytes[1] == 0x50 && bytes[2] == 0x4E && bytes[3] == 0x47)
+                contentType = "image/png";
+            else if (bytes.Length >= 12 && bytes[0] == 0x52 && bytes[1] == 0x49 && bytes[2] == 0x46 && bytes[3] == 0x46)
+                contentType = "image/webp";
+            else
+                throw new ArgumentException("Suba una foto JPG o PNG del volante.");
+
+            return (bytes, contentType);
+        }
+
+        private static string CarpetaVouchers()
+            => Path.Combine(AppContext.BaseDirectory, "vouchers-pedidos");
+
+        private static string RutaVoucherSegura(string relativo)
+        {
+            var limpio = (relativo ?? "").Replace('\\', '/').Trim().TrimStart('/');
+            if (limpio.Contains("..", StringComparison.Ordinal) || Path.IsPathRooted(limpio))
+                throw new ArgumentException("El volante no es válido.");
+            var root = Path.GetFullPath(CarpetaVouchers());
+            if (!root.EndsWith(Path.DirectorySeparatorChar))
+                root += Path.DirectorySeparatorChar;
+            var full = Path.GetFullPath(Path.Combine(root, limpio.Replace('/', Path.DirectorySeparatorChar)));
+            if (!full.StartsWith(root, StringComparison.OrdinalIgnoreCase))
+                throw new ArgumentException("El volante no es válido.");
+            return full;
+        }
+
         private static string SoloDigitos(string? s)
             => string.IsNullOrWhiteSpace(s) ? "" : new string(s.Where(char.IsDigit).ToArray());
+
+        private static bool EsCategoriaInterna(string? nombre)
+        {
+            var n = TextoCliente(nombre).ToLowerInvariant();
+            return n.Contains("materia prima") || n.Contains("materias primas") || n.Contains("insumo");
+        }
+
+        /// <summary>
+        /// Repara tildes rotas (UTF-8 leído como Latin-1) antes de mostrarlas al cliente.
+        /// </summary>
+        private static string TextoCliente(string? valor)
+        {
+            var t = (valor ?? "").Trim();
+            if (t.Length == 0)
+                return "";
+            if (t.IndexOf('Ã') >= 0 || t.Contains("â€") || t.Contains("Â"))
+            {
+                try
+                {
+                    var latin1 = Encoding.GetEncoding(1252);
+                    var reparado = Encoding.UTF8.GetString(latin1.GetBytes(t)).Trim();
+                    if (reparado.Length > 0 && reparado.IndexOf('\uFFFD') < 0)
+                        t = reparado;
+                }
+                catch
+                {
+                    // se deja el texto original
+                }
+            }
+            return t;
+        }
 
         private static string? FirstNonEmpty(params string?[] values)
         {

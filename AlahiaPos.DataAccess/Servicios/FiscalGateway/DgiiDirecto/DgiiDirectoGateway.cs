@@ -125,6 +125,8 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.DgiiDirecto
                     resp, documento, rfce, rfceFirmado, fechaFirma, eff);
                 resultado.SecurityCode = codigo;
                 resultado.UrlQR = DgiiDirectoMapper.BuildQrUrl(documento, fechaFirma, codigo, eff);
+                resultado.XmlFirmado = xmlEcfFirmado;
+                resultado.FechaFirma = fechaFirma;
                 // Conservar e-CF local firmado en debug (el que no se envía a DGII).
                 if (!resultado.Exitoso)
                     resultado.XmlSinFirmar = xmlEcfFirmado;
@@ -144,12 +146,13 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.DgiiDirecto
 
         public async Task<FiscalConsultaResultado> ConsultarEstadoAsync(
             string trackId,
+            int idEmpresa = 0,
             CancellationToken ct = default)
         {
             try
             {
-                // Consulta sin IdEmpresa específico: usa certificado fallback de config (idEmpresa=0)
-                var resp = await _recepcion.ConsultarEstadoAsync(trackId, 0, ct);
+                var empresa = idEmpresa > 0 ? idEmpresa : DgiiEmpresaContext.Current;
+                var resp = await _recepcion.ConsultarEstadoAsync(trackId, empresa, ct);
                 return DgiiDirectoMapper.ToConsultaResultado(resp, trackId);
             }
             catch (Exception ex)

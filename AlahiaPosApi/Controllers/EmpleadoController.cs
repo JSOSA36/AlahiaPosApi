@@ -1,6 +1,7 @@
 ﻿using AlahiaPos.Entities.Domain;
 using AlahiaPos.Entities.Dto;
 using AlahiaPos.Entities.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,16 +14,19 @@ namespace AlahiaPosApi.Controllers
     public class EmpleadoController : ControllerBase
     {
         private readonly IEmpleados _empleados;
+        private readonly IRepository<Sucursal> _sucursales;
 
-        public EmpleadoController(IEmpleados empleados)
+        public EmpleadoController(IEmpleados empleados, IRepository<Sucursal> sucursales)
         {
             _empleados = empleados;
+            _sucursales = sucursales;
         }
 
         // =====================================================
         // 📋 LISTAR EMPLEADOS POR EMPRESA
         // =====================================================
         [HttpGet("empresa/{idEmpresa}")]
+        [AllowAnonymous]
         public async Task<IActionResult> GetEmpleados(int idEmpresa)
         {
             var empleados = await _empleados.GetAllEmpleados(idEmpresa);
@@ -35,7 +39,8 @@ namespace AlahiaPosApi.Controllers
                 Ocupacion = e.Ocupacion,
                 Direccion = e.Direccion,
                 Celular = e.Celular,
-                Estado = e.Estado
+                Estado = e.Estado,
+                IdSucursal = e.IdSucursal
             });
 
             return Ok(result);
@@ -50,6 +55,11 @@ namespace AlahiaPosApi.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
+            var esAdmin = EsOcupacionAdministrador(dto.Ocupacion);
+            var errorSucursal = await ValidarSucursalAsync(dto, esAdmin);
+            if (errorSucursal != null)
+                return BadRequest(new { success = false, message = errorSucursal });
+
             var empleado = new Empleados
             {
                 Nombre = dto.Nombre,
@@ -57,7 +67,8 @@ namespace AlahiaPosApi.Controllers
                 Direccion = dto.Direccion ?? string.Empty,
                 Celular = dto.Celular ?? string.Empty,
                 Estado = dto.Estado,
-                IdEmpresa = dto.IdEmpresa
+                IdEmpresa = dto.IdEmpresa,
+                IdSucursal = esAdmin ? null : dto.IdSucursal
             };
 
             await _empleados.InsertEmpleados(empleado);
@@ -83,11 +94,17 @@ namespace AlahiaPosApi.Controllers
             if (empleado == null)
                 return NotFound("Empleado no encontrado");
 
+            var esAdmin = EsOcupacionAdministrador(dto.Ocupacion);
+            var errorSucursal = await ValidarSucursalAsync(dto, esAdmin);
+            if (errorSucursal != null)
+                return BadRequest(new { success = false, message = errorSucursal });
+
             empleado.Nombre = dto.Nombre;
             empleado.Ocupacion = dto.Ocupacion;
             empleado.Direccion = dto.Direccion ?? string.Empty;
             empleado.Celular = dto.Celular ?? string.Empty;
             empleado.Estado = dto.Estado;
+            empleado.IdSucursal = esAdmin ? null : dto.IdSucursal;
 
             _empleados.UpdateEmpleados(idEmpleados, empleado);
 
@@ -115,6 +132,29 @@ namespace AlahiaPosApi.Controllers
             _empleados.UpdateEmpleados(idEmpleado, empleado);
 
             return Ok("Empleado eliminado correctamente");
+        }
+
+        private static bool EsOcupacionAdministrador(string? ocupacion)
+        {
+            var nombre = ocupacion?.Trim() ?? "";
+            return string.Equals(nombre, "Administrador", StringComparison.OrdinalIgnoreCase)
+                || nombre.Contains("ADMIN", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private async Task<string?> ValidarSucursalAsync(EmpleadosDto dto, bool esAdministrador)
+        {
+            if (esAdministrador)
+                return null;
+            if (dto.IdSucursal is not > 0)
+                return "Debe indicar la sucursal del empleado.";
+
+            var sucursalOk = await _sucursales.GetAny(s =>
+                s.IdSucursal == dto.IdSucursal
+                && s.IdEmpresa == dto.IdEmpresa
+                && s.Activa);
+            if (!sucursalOk)
+                return "La sucursal no pertenece a esta empresa.";
+            return null;
         }
 
         // =====================================================

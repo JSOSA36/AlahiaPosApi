@@ -1,6 +1,7 @@
 ﻿using AlahiaPos.Entities.Domain;
 using AlahiaPos.Entities.Dto;
 using AlahiaPos.Entities.Interfaces;
+using AlahiaPosApi.Auth;
 using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
 using PrinterLibrary;
@@ -35,13 +36,13 @@ namespace AlahiaPosApi.Controllers
         [Route("GetListadoProductos/{IdEmpresa}")]
         public async Task<IEnumerable<Productos>> GetListadoProductos(int IdEmpresa)
         {
-            return await services.GetAllProductos(IdEmpresa);
+            return (await services.GetAllProductos(IdEmpresa)).Where(p => p.IsActivo);
         }
         [HttpGet()]
         [Route("GetListadoProductosVenta/{IdEmpresa}")]
         public async Task<IEnumerable<Productos>> GetListadoProductosVenta(int IdEmpresa)
         {
-            return await services.GetAllProductosVenta(IdEmpresa);
+            return await services.GetAllProductosVenta(IdEmpresa, SucursalSesion());
         }
 
         // GET api/<ProductosController>/5
@@ -55,7 +56,7 @@ namespace AlahiaPosApi.Controllers
         [Route("GetProductByBarCode")]
         public async Task<Productos> Get( string BarCode, int IdEmpresa)
         {
-            return await services.GetProductByBarcCode(BarCode, IdEmpresa);
+            return await services.GetProductByBarcCode(BarCode, IdEmpresa, SucursalSesion());
         }
 
         [HttpGet]
@@ -85,6 +86,8 @@ namespace AlahiaPosApi.Controllers
 
                     if (p == null)
                         return NotFound("Producto no encontrado");
+                    if (!TenantRecurso.EsDeLaSesion(HttpContext, p.IdEmpresa))
+                        return NotFound("Producto no encontrado");
                 }
                 else
                 {
@@ -111,6 +114,7 @@ namespace AlahiaPosApi.Controllers
                 p.TipoOperacion = value.TipoOperacion;
                 p.DuracionServicio = value.DuracionServicio ?? 0;
                 p.DisponibleEnCitas = value.DisponibleEnCitas ?? true;
+                p.ManejaGuarniciones = value.ManejaGuarniciones;
 
                 p.CodigoBarra = string.IsNullOrEmpty(value.CodigoBarra) ? "N/A" : value.CodigoBarra;
 
@@ -209,6 +213,8 @@ namespace AlahiaPosApi.Controllers
             var Producto =  services.GetProductoById(value.idProducto);
             if (Producto == null)
                 return NotFound("Producto no encontrado");
+            if (!TenantRecurso.EsDeLaSesion(HttpContext, Producto.IdEmpresa))
+                return NotFound("Producto no encontrado");
            
             if (value.Imagen != null)
             {
@@ -239,6 +245,7 @@ namespace AlahiaPosApi.Controllers
             Producto.EsProductoBelleza = value.isproductobelleza;
             Producto.DuracionServicio = (int)value.DuracionServicio;
             Producto.DisponibleEnCitas = (bool)value.DisponibleEnCitas;
+            Producto.ManejaGuarniciones = value.ManejaGuarniciones;
             Producto.CodigoBarra = value.CodigoBarra;
             Producto.Itbis = (bool)value.Itbis;
             Producto.EsServicio = (bool)value.EsServicio;
@@ -276,20 +283,46 @@ namespace AlahiaPosApi.Controllers
         }
 
         // DELETE api/<ProductosController>/5
+        // Sin movimiento: borra la fila. Con movimiento: la inactiva.
         [HttpDelete("{id}")]
         public IActionResult Delete(int id)
         {
-            try
+            var producto = services.GetProductoById(id);
+            if (producto == null)
+                return NotFound("Producto no encontrado");
+            if (!TenantRecurso.EsDeLaSesion(HttpContext, producto.IdEmpresa))
+                return NotFound("Producto no encontrado");
+            var eliminado = services.DeleteProductos(id);
+            return Ok(new
             {
-                services.DeleteProductos(id);
-                return Ok();
-            }
-            catch (Microsoft.EntityFrameworkCore.DbUpdateException ex)
-                when (ex.InnerException is Microsoft.Data.SqlClient.SqlException sqlEx
-                      && (sqlEx.Number == 547))
-            {
-                return Conflict(new { message = "No se puede eliminar este producto porque tiene registros asociados (facturas, órdenes, inventario, etc.)." });
-            }
+                message = eliminado
+                    ? "Producto eliminado."
+                    : "El producto ya tiene movimiento. Quedó inactivo.",
+                id,
+                eliminado,
+                isActivo = false
+            });
+        }
+
+        // POST api/<ProductosController>/5/activar
+        [HttpPost("{id}/activar")]
+        public IActionResult Activar(int id)
+        {
+            var producto = services.GetProductoById(id);
+            if (producto == null)
+                return NotFound("Producto no encontrado");
+            if (!TenantRecurso.EsDeLaSesion(HttpContext, producto.IdEmpresa))
+                return NotFound("Producto no encontrado");
+            services.ActivarProductos(id);
+            return Ok(new { message = "Producto activado.", id, isActivo = true });
+        }
+
+        private int? SucursalSesion()
+        {
+            var sesion = SesionHttp.TryGet(HttpContext);
+            return sesion != null && sesion.IdSucursal > 0
+                ? sesion.IdSucursal
+                : null;
         }
     }
 }

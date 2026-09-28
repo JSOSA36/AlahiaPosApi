@@ -36,7 +36,8 @@ namespace AlahiaPos.Entities.Interfaces
 
 
         Task<CajaCierre?> GetUltimoCierreAsync(
-            int idEmpresa
+            int idEmpresa,
+            int idUsuario = 0
         );
 
         /* =====================================

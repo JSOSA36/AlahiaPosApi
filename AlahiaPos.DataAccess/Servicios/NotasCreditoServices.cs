@@ -11,7 +11,7 @@ namespace AlahiaPos.DataAccess.Servicios
 {
     public class NotasCreditoServices : INotasCredito
     {
-        private const int IdTipoDocumentoNotaCredito = 8;
+        private const int IdTipoDocumentoNotaCredito = 7;
 
         private readonly IRepository<NotasCredito> _notasCredito;
 
@@ -637,6 +637,16 @@ namespace AlahiaPos.DataAccess.Servicios
                 "Nota de crédito comercial generada correctamente.");
         }
 
+        public async Task<bool> ExisteAnticipoPorCitaAsync(int idEmpresa, int idCita)
+        {
+            var marca = $"cita #{idCita}";
+            return await _ctx.NotasCredito.AsNoTracking().AnyAsync(n =>
+                n.IdEmpresa == idEmpresa
+                && n.Estado == NotaCreditoEstado.Activa
+                && n.Observacion != null
+                && n.Observacion.Contains(marca));
+        }
+
         public async Task<NotasCreditoResultadoDto> AnularNotaCredito(
             int idNotaCredito,
             int idEmpresa,
@@ -1030,38 +1040,24 @@ namespace AlahiaPos.DataAccess.Servicios
             int idEmpresa,
             int? idCliente = null)
         {
-            var query = _ctx.ClienteSaldoAFavor
-                .AsNoTracking()
-                .Where(s => s.IdEmpresa == idEmpresa);
+            await AsegurarSaldosFaltantesAsync(idEmpresa);
+
+            var query =
+                from s in _ctx.ClienteSaldoAFavor.AsNoTracking()
+                join n in _ctx.NotasCredito.AsNoTracking() on s.IdNotaCredito equals n.IdNotaCredito
+                join f in _ctx.FacturaHeaders.AsNoTracking() on n.IdFacturaHeader equals f.IdFacturaHeader into fj
+                from f in fj.DefaultIfEmpty()
+                where s.IdEmpresa == idEmpresa
+                select new { s, n, f };
 
             if (idCliente.HasValue && idCliente.Value > 0)
-                query = query.Where(s => s.IdCliente == idCliente.Value);
+                query = query.Where(x => x.s.IdCliente == idCliente.Value);
 
-            var saldos = await query
-                .OrderByDescending(s => s.IdSaldoAFavor)
+            var rows = await query
+                .OrderByDescending(x => x.s.IdSaldoAFavor)
                 .ToListAsync();
 
-            var resultado = new List<ClienteSaldoAFavorListadoDto>();
-            foreach (var s in saldos)
-            {
-                var nc = await _notasCredito.GetByIdAsync(s.IdNotaCredito);
-                resultado.Add(new ClienteSaldoAFavorListadoDto
-                {
-                    IdSaldoAFavor = s.IdSaldoAFavor,
-                    IdCliente = s.IdCliente,
-                    NombreCliente = nc?.NombreCliente ?? "",
-                    IdNotaCredito = s.IdNotaCredito,
-                    NcfNotaCredito = nc?.NCF,
-                    NumeroDocumentoNotaCredito = nc?.NumeroDocumento,
-                    MontoOriginal = s.MontoOriginal,
-                    SaldoDisponible = s.SaldoDisponible,
-                    Estado = s.Estado,
-                    Fecha = s.Fecha,
-                    Observacion = s.Observacion
-                });
-            }
-
-            return resultado;
+            return rows.Select(x => MapSaldoListado(x.s, x.n, x.f)).ToList();
         }
 
         public async Task<ClienteSaldoAFavorListadoDto?> ObtenerSaldoAFavorPorNumeroAsync(
@@ -1073,32 +1069,37 @@ namespace AlahiaPos.DataAccess.Servicios
             if (string.IsNullOrWhiteSpace(key))
                 throw new Exception("Indique el e-NCF o el número de la nota de crédito.");
 
-            if (idCliente <= 0)
-                throw new Exception("Debe seleccionar el cliente titular de la nota de crédito.");
+            await AsegurarSaldosFaltantesAsync(idEmpresa);
 
-            var notas = await _ctx.NotasCredito
+            var notasQuery = _ctx.NotasCredito
                 .AsNoTracking()
                 .Where(n =>
                     n.IdEmpresa == idEmpresa
-                    && n.IdCliente == idCliente
-                    && n.Estado == NotaCreditoEstado.Activa)
-                .ToListAsync();
+                    && n.Estado == NotaCreditoEstado.Activa);
+            if (idCliente > 0)
+                notasQuery = notasQuery.Where(n => n.IdCliente == idCliente);
+
+            var notas = await notasQuery.ToListAsync();
 
             var nota = notas.FirstOrDefault(n =>
                 NormalizarNumeroNc(n.NCF) == key
-                || NormalizarNumeroNc(n.NumeroDocumento) == key);
+                || NormalizarNumeroNc(n.NumeroDocumento) == key
+                || NormalizarNumeroNc(n.NCFModificado) == key);
 
             if (nota == null)
-                throw new Exception("No se encontró una nota de crédito activa con ese número para este cliente.");
+                throw new Exception("No se encontró una nota de crédito activa con ese número.");
 
-            var saldo = await _ctx.ClienteSaldoAFavor
+            var saldoQuery = _ctx.ClienteSaldoAFavor
                 .AsNoTracking()
                 .Where(s =>
                     s.IdEmpresa == idEmpresa
-                    && s.IdCliente == idCliente
                     && s.IdNotaCredito == nota.IdNotaCredito
                     && s.Estado == ClienteSaldoAFavorEstado.Disponible
-                    && s.SaldoDisponible > 0)
+                    && s.SaldoDisponible > 0);
+            if (idCliente > 0)
+                saldoQuery = saldoQuery.Where(s => s.IdCliente == idCliente);
+
+            var saldo = await saldoQuery
                 .OrderByDescending(s => s.IdSaldoAFavor)
                 .FirstOrDefaultAsync();
 
@@ -1109,20 +1110,12 @@ namespace AlahiaPos.DataAccess.Servicios
                     "(pudo haberse aplicado a CxC o ya consumirse).");
             }
 
-            return new ClienteSaldoAFavorListadoDto
-            {
-                IdSaldoAFavor = saldo.IdSaldoAFavor,
-                IdCliente = saldo.IdCliente,
-                NombreCliente = nota.NombreCliente ?? "",
-                IdNotaCredito = nota.IdNotaCredito,
-                NcfNotaCredito = nota.NCF,
-                NumeroDocumentoNotaCredito = nota.NumeroDocumento,
-                MontoOriginal = saldo.MontoOriginal,
-                SaldoDisponible = saldo.SaldoDisponible,
-                Estado = saldo.Estado,
-                Fecha = saldo.Fecha,
-                Observacion = saldo.Observacion
-            };
+            FacturaHeaders? factura = null;
+            if (nota.IdFacturaHeader > 0)
+                factura = await _ctx.FacturaHeaders.AsNoTracking()
+                    .FirstOrDefaultAsync(f => f.IdFacturaHeader == nota.IdFacturaHeader);
+
+            return MapSaldoListado(saldo, nota, factura);
         }
 
         public async Task ConsumirSaldoAFavorEnVentaAsync(
@@ -1139,8 +1132,7 @@ namespace AlahiaPos.DataAccess.Servicios
             if (monto <= 0)
                 throw new Exception("El monto de la nota de crédito debe ser mayor que cero.");
 
-            if (idCliente <= 0)
-                throw new Exception("Para pagar con nota de crédito debe seleccionar el cliente.");
+            await AsegurarSaldosFaltantesAsync(idEmpresa);
 
             // Idempotencia: misma factura + mismo saldo ya aplicado
             if (idSaldoAFavor.HasValue && idSaldoAFavor.Value > 0)
@@ -1170,8 +1162,7 @@ namespace AlahiaPos.DataAccess.Servicios
                 saldo = await _ctx.ClienteSaldoAFavor
                     .Where(s =>
                         s.IdEmpresa == idEmpresa
-                        && s.IdNotaCredito == idNotaCredito.Value
-                        && s.IdCliente == idCliente)
+                        && s.IdNotaCredito == idNotaCredito.Value)
                     .OrderByDescending(s => s.IdSaldoAFavor)
                     .FirstOrDefaultAsync();
             }
@@ -1184,9 +1175,6 @@ namespace AlahiaPos.DataAccess.Servicios
 
             if (saldo == null)
                 throw new Exception("No se encontró el saldo a favor de la nota de crédito.");
-
-            if (saldo.IdCliente != idCliente)
-                throw new Exception("La nota de crédito no pertenece al cliente de la factura.");
 
             if (!string.Equals(saldo.Estado, ClienteSaldoAFavorEstado.Disponible, StringComparison.OrdinalIgnoreCase)
                 || saldo.SaldoDisponible <= 0)
@@ -1215,7 +1203,6 @@ namespace AlahiaPos.DataAccess.Servicios
             }
 
             nota.SaldoDisponible = Math.Round(Math.Max(0, nota.SaldoDisponible - monto), 2);
-            _notasCredito.Update(nota.IdNotaCredito, nota);
 
             _ctx.NotasCreditoAplicaciones.Add(new NotasCreditoAplicacion
             {
@@ -1269,7 +1256,6 @@ namespace AlahiaPos.DataAccess.Servicios
                 if (nota != null && nota.IdEmpresa == idEmpresa)
                 {
                     nota.SaldoDisponible = Math.Round(nota.SaldoDisponible + app.MontoAplicado, 2);
-                    _notasCredito.Update(nota.IdNotaCredito, nota);
                 }
             }
 
@@ -1282,6 +1268,69 @@ namespace AlahiaPos.DataAccess.Servicios
             if (string.IsNullOrWhiteSpace(valor))
                 return "";
             return new string(valor.Where(c => !char.IsWhiteSpace(c)).ToArray()).ToUpperInvariant();
+        }
+
+        private async Task AsegurarSaldosFaltantesAsync(int idEmpresa)
+        {
+            var ncSinSaldo = await (
+                from n in _ctx.NotasCredito
+                where n.IdEmpresa == idEmpresa
+                    && n.Estado == NotaCreditoEstado.Activa
+                    && n.SaldoDisponible > 0
+                    && !_ctx.ClienteSaldoAFavor.Any(s => s.IdNotaCredito == n.IdNotaCredito)
+                select n
+            ).ToListAsync();
+
+            foreach (var n in ncSinSaldo)
+            {
+                _ctx.ClienteSaldoAFavor.Add(new ClienteSaldoAFavor
+                {
+                    IdEmpresa = idEmpresa,
+                    IdCliente = n.IdCliente ?? 0,
+                    IdNotaCredito = n.IdNotaCredito,
+                    MontoOriginal = n.SaldoDisponible,
+                    SaldoDisponible = n.SaldoDisponible,
+                    Estado = ClienteSaldoAFavorEstado.Disponible,
+                    Fecha = DateTime.Now,
+                    Observacion = $"Saldo a favor por NC {n.NumeroDocumento}"
+                });
+            }
+
+            if (ncSinSaldo.Count > 0)
+                await _ctx.SaveChangesAsync();
+        }
+
+        private static ClienteSaldoAFavorListadoDto MapSaldoListado(
+            ClienteSaldoAFavor saldo,
+            NotasCredito nota,
+            FacturaHeaders? factura)
+        {
+            var ncfFactura = !string.IsNullOrWhiteSpace(nota.NCFModificado)
+                ? nota.NCFModificado
+                : factura?.NCF;
+            var numeroFactura = !string.IsNullOrWhiteSpace(factura?.NumeroDocumento)
+                ? factura!.NumeroDocumento
+                : (nota.IdFacturaHeader > 0 ? $"#{nota.IdFacturaHeader}" : null);
+
+            return new ClienteSaldoAFavorListadoDto
+            {
+                IdSaldoAFavor = saldo.IdSaldoAFavor,
+                IdCliente = saldo.IdCliente,
+                NombreCliente = string.IsNullOrWhiteSpace(nota.NombreCliente)
+                    ? "Consumo / portador"
+                    : nota.NombreCliente,
+                IdNotaCredito = saldo.IdNotaCredito,
+                IdFacturaHeader = nota.IdFacturaHeader,
+                NcfFacturaOrigen = ncfFactura,
+                NumeroFactura = numeroFactura,
+                NcfNotaCredito = nota.NCF,
+                NumeroDocumentoNotaCredito = nota.NumeroDocumento,
+                MontoOriginal = saldo.MontoOriginal,
+                SaldoDisponible = saldo.SaldoDisponible,
+                Estado = saldo.Estado,
+                Fecha = saldo.Fecha,
+                Observacion = saldo.Observacion
+            };
         }
 
         private async Task<(decimal MontoAplicadoCxc, int? IdSaldoAFavor)> AplicarImpactoFinancieroAsync(
@@ -1325,24 +1374,21 @@ namespace AlahiaPos.DataAccess.Servicios
             var remanente = Math.Round(nota.Total - montoCxc, 2);
             if (remanente > 0)
             {
-                if (nota.IdCliente.HasValue && nota.IdCliente.Value > 0)
+                var saldo = new ClienteSaldoAFavor
                 {
-                    var saldo = new ClienteSaldoAFavor
-                    {
-                        IdEmpresa = nota.IdEmpresa,
-                        IdCliente = nota.IdCliente.Value,
-                        IdNotaCredito = nota.IdNotaCredito,
-                        MontoOriginal = remanente,
-                        SaldoDisponible = remanente,
-                        Estado = ClienteSaldoAFavorEstado.Disponible,
-                        Fecha = DateTime.Now,
-                        IdUsuario = idUsuario,
-                        Observacion = $"Saldo a favor por NC {nota.NumeroDocumento}"
-                    };
-                    _ctx.ClienteSaldoAFavor.Add(saldo);
-                    await _ctx.SaveChangesAsync();
-                    idSaldo = saldo.IdSaldoAFavor;
-                }
+                    IdEmpresa = nota.IdEmpresa,
+                    IdCliente = nota.IdCliente ?? factura.IDCliente ?? 0,
+                    IdNotaCredito = nota.IdNotaCredito,
+                    MontoOriginal = remanente,
+                    SaldoDisponible = remanente,
+                    Estado = ClienteSaldoAFavorEstado.Disponible,
+                    Fecha = DateTime.Now,
+                    IdUsuario = idUsuario,
+                    Observacion = $"Saldo a favor por NC {nota.NumeroDocumento}"
+                };
+                _ctx.ClienteSaldoAFavor.Add(saldo);
+                await _ctx.SaveChangesAsync();
+                idSaldo = saldo.IdSaldoAFavor;
 
                 _ctx.NotasCreditoAplicaciones.Add(new NotasCreditoAplicacion
                 {
@@ -1386,6 +1432,7 @@ namespace AlahiaPos.DataAccess.Servicios
                         OrigenDocumento = OrigenDocumento.NotaCredito,
                         IdOrigen = nota.IdNotaCredito,
                         IdUsuario = idUsuario,
+                        IdSucursal = nota.IdSucursal,
                         NcfModificado = nota.NCFModificado,
                         FechaNcfModificado = nota.FechaFacturaOrigen,
                         CodigoModificacion = codigoModificacion,
@@ -1423,10 +1470,9 @@ namespace AlahiaPos.DataAccess.Servicios
                 ?? (resultado.Exitoso ? "Enviado" : "Error");
             tracked.FechaEmisionEcf = DateTime.Now;
             tracked.CodigoTipoComprobanteDgii = "34";
-            tracked.MensajeEmision = resultado.Exitoso
-                ? null
-                : (resultado.MensajeError
-                    ?? string.Join("; ", resultado.MensajesDgii ?? new List<string>()));
+            tracked.MensajeEmision = (resultado.MensajesDgii != null && resultado.MensajesDgii.Count > 0)
+                ? string.Join("; ", resultado.MensajesDgii)
+                : (resultado.Exitoso ? null : resultado.MensajeError);
 
             if (!resultado.Exitoso && string.IsNullOrWhiteSpace(tracked.EstadoDgii))
                 tracked.EstadoDgii = "Pendiente";
@@ -1570,7 +1616,8 @@ namespace AlahiaPos.DataAccess.Servicios
         {
             var almacen =
                 await _almacenes.GetAlmacenPrincipal(
-                    nota.IdEmpresa);
+                    nota.IdEmpresa,
+                    nota.IdSucursal);
 
             if (almacen == null)
             {
@@ -1587,6 +1634,7 @@ namespace AlahiaPos.DataAccess.Servicios
                     $"Devolución factura #{nota.IdFacturaHeader}",
                 Fecha = DateTime.Now,
                 IdEmpresa = nota.IdEmpresa,
+                IdSucursal = nota.IdSucursal,
                 IdUsuario = idUsuario,
                 IdAlmacen = almacen.IdAlmacen,
                 Activo = true,
@@ -1634,7 +1682,8 @@ namespace AlahiaPos.DataAccess.Servicios
         {
             var almacen =
                 await _almacenes.GetAlmacenPrincipal(
-                    nota.IdEmpresa);
+                    nota.IdEmpresa,
+                    nota.IdSucursal);
 
             if (almacen == null)
             {
@@ -1651,6 +1700,7 @@ namespace AlahiaPos.DataAccess.Servicios
                     $"Anulación devolución factura #{nota.IdFacturaHeader}",
                 Fecha = DateTime.Now,
                 IdEmpresa = nota.IdEmpresa,
+                IdSucursal = nota.IdSucursal,
                 IdUsuario = idUsuario,
                 IdAlmacen = almacen.IdAlmacen,
                 Activo = true,

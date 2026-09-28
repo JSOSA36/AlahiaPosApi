@@ -78,12 +78,16 @@ namespace AlahiaPosApi.Controllers
             catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
         }
 
-        [HttpGet("ri/{idEmpresa:int}/lote")]
+        [HttpPost("ri/{idEmpresa:int}/lote")]
         public async Task<IActionResult> RiLote(int idEmpresa, CancellationToken ct)
         {
             try { return Ok(await _service.GenerarLoteRiAsync(idEmpresa, ct)); }
             catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
         }
+
+        [HttpGet("ri/{idEmpresa:int}/lote")]
+        public Task<IActionResult> RiLoteGet(int idEmpresa, CancellationToken ct)
+            => RiLote(idEmpresa, ct);
 
         [HttpGet("ri/{idEmpresa:int}/{idCaso:int}")]
         public async Task<IActionResult> Ri(int idEmpresa, int idCaso, CancellationToken ct)
@@ -157,7 +161,7 @@ namespace AlahiaPosApi.Controllers
 
         private static FileContentResult FileResult(CertecfArchivoDto a)
         {
-            var bytes = Encoding.UTF8.GetBytes(a.Contenido ?? "");
+            var bytes = a.ContenidoBinario ?? Encoding.UTF8.GetBytes(a.Contenido ?? "");
             return new FileContentResult(bytes, a.ContentType ?? "application/xml")
             {
                 FileDownloadName = a.NombreArchivo

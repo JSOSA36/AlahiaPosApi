@@ -1,9 +1,11 @@
+using System;
 using System.Linq;
 using PrinterApi.Dto;
 using QRCoder;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
+using AlahiaPos.Entities.Fiscal;
 using TicketFechaHora = AlahiaPos.Entities.Dto.TicketFechaHora;
 
 namespace PrinterApi.Servicios;
@@ -42,7 +44,12 @@ public static class TicketFacturaPreviewPdf
                 {
                     col.Spacing(2);
 
-                    CenterBold(col, factura.NombreEmpresa ?? "", 11);
+                    CenterBold(col, factura.NombreEmpresa ?? "", 9);
+                    if (!string.IsNullOrWhiteSpace(factura.NombreSucursal)
+                        && !string.Equals(factura.NombreSucursal.Trim(), factura.NombreEmpresa?.Trim(), StringComparison.OrdinalIgnoreCase))
+                    {
+                        Line(col, factura.NombreSucursal);
+                    }
                     Line(col, factura.DireccionEmpresa);
                     if (!string.IsNullOrWhiteSpace(factura.RncEmpresa))
                         Line(col, $"RNC: {factura.RncEmpresa}");
@@ -91,6 +98,8 @@ public static class TicketFacturaPreviewPdf
                         Line(col, $"Desc.    RD$ {factura.TotalDescuento:N2}");
                     if (factura.TotalItbis > 0)
                         Line(col, $"ITBIS    RD$ {factura.TotalItbis:N2}");
+                    if (factura.MontoCargo > 0.009m)
+                        Line(col, $"{EtiquetaCargo(factura.NombreCargo)} RD$ {factura.MontoCargo:N2}");
 
                     CenterBold(col, $"TOTAL RD$ {factura.Total:N2}", 12);
 
@@ -148,6 +157,12 @@ public static class TicketFacturaPreviewPdf
         }).GeneratePdf();
     }
 
+    private static string EtiquetaCargo(string? nombre)
+    {
+        var n = (nombre ?? "").Trim();
+        return n.Length > 0 ? n : "Cargo por tarjeta";
+    }
+
     private static string TituloEcf(TicketFacturaClienteDto factura)
     {
         if (!factura.EsComprobanteElectronico)
@@ -185,22 +200,22 @@ public static class TicketFacturaPreviewPdf
             || string.IsNullOrWhiteSpace(factura.RncEmpresa))
             return null;
 
-        static string Digitos(string? s) =>
-            string.IsNullOrWhiteSpace(s) ? "" : new string(s.Where(char.IsDigit).ToArray());
+        var tipo = EcfConsultaTimbreUrl.ParseTipoEcf(factura.TipoECF, factura.NCF);
+        var firma = factura.FechaFirma ?? EcfConsultaTimbreUrl.TryGetFechaFirma(factura.UrlQR);
+        if (!firma.HasValue && !EcfConsultaTimbreUrl.EsCanalRfce(tipo, factura.Total))
+            return null;
 
-        var firma = factura.FechaFirma ?? factura.FechaEmisionEcf ?? factura.Fecha;
         var emision = factura.FechaEmisionEcf ?? factura.Fecha;
-        var qs = string.Join("&", new[]
-        {
-            "RncEmisor=" + Uri.EscapeDataString(Digitos(factura.RncEmpresa)),
-            "RncComprador=" + Uri.EscapeDataString(Digitos(factura.RncCliente)),
-            "ENCF=" + Uri.EscapeDataString(factura.NCF.Trim()),
-            "FechaEmision=" + Uri.EscapeDataString(emision.ToString("dd-MM-yyyy", System.Globalization.CultureInfo.InvariantCulture)),
-            "MontoTotal=" + Uri.EscapeDataString(factura.Total.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)),
-            "FechaFirma=" + Uri.EscapeDataString(firma.ToString("dd-MM-yyyy HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture)),
-            "CodigoSeguridad=" + Uri.EscapeDataString(factura.SecurityCode.Trim())
-        });
-        return "https://ecf.dgii.gov.do/ecf/ConsultaTimbre?" + qs;
+        return EcfConsultaTimbreUrl.Build(
+            factura.AmbienteFE,
+            tipo,
+            factura.RncEmpresa,
+            factura.RncCliente,
+            factura.NCF.Trim(),
+            emision,
+            factura.Total,
+            firma ?? DateTime.MinValue,
+            factura.SecurityCode.Trim());
     }
 
     private static byte[] BuildQrPng(string content)

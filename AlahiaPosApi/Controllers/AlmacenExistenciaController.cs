@@ -1,4 +1,5 @@
 using AlahiaPos.Entities.Interfaces;
+using AlahiaPosApi.Auth;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AlahiaPosApi.Controllers
@@ -8,11 +9,17 @@ namespace AlahiaPosApi.Controllers
     public class AlmacenExistenciaController : ControllerBase
     {
         private readonly IAlmacenExistencia _existenciaService;
+        private readonly IAlmacenes _almacenes;
+        private readonly ISucursalService _sucursales;
 
         public AlmacenExistenciaController(
-            IAlmacenExistencia existenciaService)
+            IAlmacenExistencia existenciaService,
+            IAlmacenes almacenes,
+            ISucursalService sucursales)
         {
             _existenciaService = existenciaService;
+            _almacenes = almacenes;
+            _sucursales = sucursales;
         }
 
         [HttpGet("producto/{idProducto}")]
@@ -25,16 +32,20 @@ namespace AlahiaPosApi.Controllers
                 return BadRequest("idEmpresa es obligatorio.");
             }
 
+            var idSucursal = await SucursalConsultaAsync();
+
             var detalle =
                 await _existenciaService.GetDetallePorProducto(
                     idProducto,
-                    idEmpresa
+                    idEmpresa,
+                    idSucursal
                 );
 
             var total =
                 await _existenciaService.GetTotalPorProducto(
                     idProducto,
-                    idEmpresa
+                    idEmpresa,
+                    idSucursal
                 );
 
             return Ok(new
@@ -56,6 +67,23 @@ namespace AlahiaPosApi.Controllers
                 return BadRequest("idEmpresa es obligatorio.");
             }
 
+            var almacen = await _almacenes.GetAlmacenById(idAlmacen);
+            if (almacen == null || almacen.IdEmpresa != idEmpresa)
+            {
+                return Ok(new { cantidad = 0m });
+            }
+
+            var sesion = SesionHttp.TryGet(HttpContext);
+            if (sesion != null
+                && almacen.IdSucursal is > 0
+                && !await _sucursales.TieneAccesoAsync(
+                    sesion.IdUsuario,
+                    sesion.IdEmpresa,
+                    almacen.IdSucursal.Value))
+            {
+                return NotFound();
+            }
+
             try
             {
                 var existencia =
@@ -74,6 +102,23 @@ namespace AlahiaPosApi.Controllers
             {
                 return Ok(new { cantidad = 0m });
             }
+        }
+
+        private async Task<int?> SucursalConsultaAsync()
+        {
+            var sesion = SesionHttp.TryGet(HttpContext);
+            if (sesion == null || sesion.IdSucursal <= 0)
+                return null;
+
+            if (!await _sucursales.TieneAccesoAsync(
+                sesion.IdUsuario,
+                sesion.IdEmpresa,
+                sesion.IdSucursal))
+            {
+                return null;
+            }
+
+            return sesion.IdSucursal;
         }
     }
 }

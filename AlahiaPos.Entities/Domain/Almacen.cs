@@ -20,6 +20,8 @@ namespace AlahiaPos.Entities.Domain
 
         public int IdEmpresa { get; set; }
 
+        public int? IdSucursal { get; set; }
+
         public bool EsPrincipal { get; set; }
 
         public bool Activo { get; set; } = true;

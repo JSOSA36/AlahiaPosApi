@@ -31,11 +31,8 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.DgiiDirecto
 
         public async Task<DgiiCertificadoMaterial> ResolveAsync(int idEmpresa, CancellationToken ct = default)
         {
-            if (_settings.PreferSettingsCertificate)
-            {
-                var fromSettings = TryFromSettings();
-                if (fromSettings != null) return fromSettings;
-            }
+            if (idEmpresa <= 0)
+                idEmpresa = DgiiEmpresaContext.Current;
 
             if (_ctx != null && idEmpresa > 0)
             {
@@ -74,6 +71,8 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.DgiiDirecto
                     _logger.LogWarning(
                         "CertificadoDigital {Id} de empresa {Empresa} sin bytes/ruta usable.",
                         cert.IdCertificado, idEmpresa);
+                    throw new InvalidOperationException(
+                        "El certificado digital de la empresa no tiene el archivo .p12. Cárguelo otra vez en Facturación electrónica.");
                 }
             }
 
@@ -81,7 +80,7 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.DgiiDirecto
             if (fallback != null) return fallback;
 
             throw new InvalidOperationException(
-                "No hay certificado digital configurado (CertificadoDigital ni DgiiDirecto:P12Path).");
+                "No hay certificado digital configurado. Cárguelo en Facturación electrónica (.p12 / .pfx).");
         }
 
         public string Firmar(string xml, DgiiCertificadoMaterial material)
@@ -92,7 +91,12 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.DgiiDirecto
             if (string.IsNullOrWhiteSpace(_settings.P12Path) || string.IsNullOrWhiteSpace(_settings.P12Password))
                 return null;
             if (!File.Exists(_settings.P12Path))
-                throw new FileNotFoundException("No se encontró el P12 configurado.", _settings.P12Path);
+            {
+                _logger.LogWarning(
+                    "P12 de appsettings no existe ({Path}). Se usa CertificadoDigital de la empresa.",
+                    _settings.P12Path);
+                return null;
+            }
 
             return new DgiiCertificadoMaterial
             {

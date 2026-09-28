@@ -66,13 +66,17 @@ namespace AlahiaPos.DataAccess.Data
         public DbSet<CategoriaGasto> CategoriasGasto { get; set; }
         public DbSet<FacturaDetalles> FacturaDetalles { get; set; }
         public DbSet<FacturaHeaders> FacturaHeaders { get; set; }
+        public DbSet<CargoPagoRegla> CargoPagoReglas { get; set; }
+        public DbSet<FacturaCargo> FacturaCargos { get; set; }
         public DbSet<Productos> Productos { get; set; }
+        public DbSet<Guarnicion> Guarniciones { get; set; }
         public DbSet<Categorias> Categorias { get; set; }
         public DbSet<Clientes> Clientes { get; set; }
         public DbSet<Area> Areas { get; set; }
         public DbSet<EmpleadoAreaComision> EmpleadoServicioComisions { get; set; }
         public DbSet<AreaServicio> Servicios { get; set; }
         public DbSet<Cita> Citas { get; set; }
+        public DbSet<WhatsAppCitasConsumo> WhatsAppCitasConsumo { get; set; }
        
         public DbSet<HorariosEstilista> HorariosEstilistas { get; set; }
         public DbSet<DescuentoHeader> DescuentoHeader { get; set; }
@@ -100,6 +104,7 @@ namespace AlahiaPos.DataAccess.Data
         public DbSet<CajaCierre> CajaCierre { get; set; }
         public DbSet<CajaApertura> CajaApertura { get; set; }
         public DbSet<CajaMovimiento> CajaMovimiento { get; set; }
+        public DbSet<PosTerminal> PosTerminal { get; set; }
         public DbSet<SecuenciaDocumentos> SecuenciaDocumentos { get; set; }
         public DbSet<OrdenCompraHeader> OrdenCompraHeaders { get; set; }
         public DbSet<OrdenCompraDetalle> OrdenCompraDetalles { get; set; }
@@ -141,16 +146,23 @@ namespace AlahiaPos.DataAccess.Data
         // ==============================
 
         public DbSet<CertificadoDigital> CertificadosDigitales { get; set; }
+        public DbSet<CertecfSesion> CertecfSesiones { get; set; }
+        public DbSet<CertecfCaso> CertecfCasos { get; set; }
+        public DbSet<CertecfInboundLog> CertecfInboundLogs { get; set; }
         public DbSet<ECFEncabezado> ECFEncabezados { get; set; }
         public DbSet<ECFDetalle> ECFDetalles { get; set; }
         public DbSet<ECFXml> ECFXmls { get; set; }
         public DbSet<ECFHistorialEstado> ECFHistorialEstados { get; set; }
         public DbSet<SecuenciaECF> SecuenciasECF { get; set; }
+        public DbSet<SecuenciaECFAsignacion> SecuenciaECFAsignaciones { get; set; }
         public DbSet<Parametros> Parametros { get; set; }
         public DbSet<LavadorConsumo> LavadorConsumo { get; set; }
         public DbSet<AreaNegocio> AreaNegocio { get; set; }
         public DbSet<Almacen> Almacenes { get; set; }
         public DbSet<AlmacenExistencia> AlmacenExistencia { get; set; }
+        public DbSet<Sucursal> Sucursales { get; set; }
+        public DbSet<UsuarioSucursal> UsuarioSucursales { get; set; }
+        public DbSet<SucursalCambioLog> SucursalCambioLogs { get; set; }
         public DbSet<RecetaProduccion> RecetaProduccion { get; set; }
         public DbSet<RecetaProduccionItem> RecetaProduccionItem { get; set; }
         public DbSet<OrdenProduccion> OrdenProduccion { get; set; }
@@ -187,6 +199,7 @@ namespace AlahiaPos.DataAccess.Data
         public DbSet<TesoreriaExtractoImport> TesoreriaExtractoImport { get; set; }
         public DbSet<TesoreriaExtractoLinea> TesoreriaExtractoLinea { get; set; }
         public DbSet<PagoReclasificacion> PagoReclasificacion { get; set; }
+        public DbSet<ArsAseguradora> ArsAseguradoras { get; set; }
 
         // ==============================
         // COTIZADOR COMERCIAL
@@ -230,11 +243,26 @@ namespace AlahiaPos.DataAccess.Data
                 .HasForeignKey(h => h.IdECF)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // 🔥 Empresa → Certificados
+            // 🔥 Empresa → Certificados (tabla real: CertificadoDigital, no el nombre del DbSet)
             modelBuilder.Entity<CertificadoDigital>()
+                .ToTable("CertificadoDigital")
                 .HasOne(c => c.Empresa)
                 .WithMany(e => e.CertificadosDigitales)
                 .HasForeignKey(c => c.IdEmpresa);
+
+            modelBuilder.Entity<CertecfSesion>(e =>
+            {
+                e.HasMany(s => s.Casos)
+                    .WithOne(c => c.Sesion)
+                    .HasForeignKey(c => c.IdSesion)
+                    .OnDelete(DeleteBehavior.Cascade);
+                e.HasIndex(s => new { s.IdEmpresa, s.FechaCreacion });
+            });
+
+            modelBuilder.Entity<CertecfInboundLog>(e =>
+            {
+                e.HasIndex(x => new { x.Rnc, x.Fecha });
+            });
 
             // 🔥 Empresa → Secuencias
             modelBuilder.Entity<SecuenciaECF>()
@@ -242,10 +270,24 @@ namespace AlahiaPos.DataAccess.Data
                 .WithMany(e => e.SecuenciasECF)
                 .HasForeignKey(s => s.IdEmpresa);
 
-            // 🔥 Índice único recomendado (empresa + tipoECF)
             modelBuilder.Entity<SecuenciaECF>()
-                .HasIndex(s => new { s.IdEmpresa, s.TipoNCF })
-                .IsUnique();
+                .HasOne(s => s.Sucursal)
+                .WithMany()
+                .HasForeignKey(s => s.IdSucursal)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<SecuenciaECFAsignacion>(e =>
+            {
+                e.ToTable("SecuenciaECFAsignacion");
+                e.HasOne(a => a.Secuencia)
+                    .WithMany(s => s.Asignaciones)
+                    .HasForeignKey(a => a.IdSecuencia)
+                    .OnDelete(DeleteBehavior.Restrict);
+                e.HasOne(a => a.Sucursal)
+                    .WithMany()
+                    .HasForeignKey(a => a.IdSucursal)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
 
             // 🔥 Documentos clínicos → Cliente (PK: IDCliente)
             modelBuilder.Entity<DocumentosClinicos>()
@@ -329,6 +371,56 @@ namespace AlahiaPos.DataAccess.Data
                 .WithOne()
                 .HasForeignKey(e => e.IdNominaProceso)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<CargoPagoRegla>(e =>
+            {
+                e.ToTable("CargoPagoRegla");
+                e.Property(x => x.MetodosVinculados)
+                    .HasMaxLength(2000)
+                    .HasConversion(
+                        v => string.Join("|", (v ?? new List<string>())
+                            .Select(s => (s ?? "").Trim())
+                            .Where(s => s.Length > 0)
+                            .GroupBy(s => s, StringComparer.OrdinalIgnoreCase)
+                            .Select(g => g.First())),
+                        v => string.IsNullOrWhiteSpace(v)
+                            ? new List<string>()
+                            : v.Split(new[] { '|', ';', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+                                .Select(s => s.Trim())
+                                .Where(s => s.Length > 0)
+                                .GroupBy(s => s, StringComparer.OrdinalIgnoreCase)
+                                .Select(g => g.First())
+                                .ToList());
+            });
+
+            modelBuilder.Entity<PosTerminal>(e =>
+            {
+                e.ToTable("PosTerminal");
+                e.HasIndex(t => new { t.IdEmpresa, t.Estado });
+            });
+
+            modelBuilder.Entity<AlmacenExistencia>(e =>
+            {
+                e.ToTable("AlmacenExistencias");
+                e.HasIndex(x => new { x.IdAlmacen, x.IdProducto }).IsUnique();
+            });
+
+            modelBuilder.Entity<Sucursal>(e =>
+            {
+                e.ToTable("Sucursal");
+                e.HasIndex(s => new { s.IdEmpresa, s.Codigo }).IsUnique();
+            });
+
+            modelBuilder.Entity<UsuarioSucursal>(e =>
+            {
+                e.ToTable("UsuarioSucursal");
+                e.HasIndex(x => new { x.IdUsuario, x.IdSucursal }).IsUnique();
+            });
+
+            modelBuilder.Entity<SucursalCambioLog>(e =>
+            {
+                e.ToTable("SucursalCambioLog");
+            });
         }
     }
 }

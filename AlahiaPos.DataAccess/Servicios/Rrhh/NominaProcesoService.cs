@@ -1,3 +1,5 @@
+using System.Globalization;
+using System.Text;
 using System.Text.Json;
 using AlahiaPos.DataAccess.Data;
 using AlahiaPos.Entities.Domain;
@@ -469,7 +471,6 @@ namespace AlahiaPos.DataAccess.Servicios.Rrhh
                 IdEmpresa = p.IdEmpresa,
                 FechaInseccion = DateTime.Now,
                 TipoGasto = "Nómina",
-                CategoriaGasto = categoria,
                 IdCategoriaGasto = categoria.IdCategoriaGasto > 0 ? categoria.IdCategoriaGasto : null,
                 TipoComprobante = GastoComprobanteTipos.SinComprobante,
                 IdProveedor = idProveedor,
@@ -489,8 +490,11 @@ namespace AlahiaPos.DataAccess.Servicios.Rrhh
         private async Task<CategoriaGasto> AsegurarCategoriaNominaAsync(int idEmpresa)
         {
             const string nombre = "Nómina";
-            var actual = await _db.CategoriasGasto
-                .FirstOrDefaultAsync(c => c.IdEmpresa == idEmpresa && c.Nombre == nombre);
+            var existentes = await _db.CategoriasGasto
+                .Where(c => c.IdEmpresa == idEmpresa)
+                .ToListAsync();
+            var actual = existentes.FirstOrDefault(c => NombresCategoriaEquivalentes(c.Nombre, nombre))
+                ?? existentes.FirstOrDefault(c => c.Orden == 13);
             if (actual != null)
             {
                 if (!actual.Activo)
@@ -518,7 +522,20 @@ namespace AlahiaPos.DataAccess.Servicios.Rrhh
                 FechaCreacion = DateTime.UtcNow
             };
             _db.CategoriasGasto.Add(cat);
+            await _db.SaveChangesAsync();
             return cat;
+        }
+
+        private static bool NombresCategoriaEquivalentes(string? a, string? b) =>
+            string.Equals(NormalizarNombreCategoria(a), NormalizarNombreCategoria(b), StringComparison.Ordinal);
+
+        private static string NormalizarNombreCategoria(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return string.Empty;
+            var formD = value.Trim().ToLowerInvariant().Normalize(NormalizationForm.FormD);
+            var chars = formD.Where(c => CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark);
+            return new string(chars.ToArray());
         }
 
         private async Task<string?> PublicarContabilidadNominaAsync(

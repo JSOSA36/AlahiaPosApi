@@ -178,9 +178,8 @@ namespace AlahiaPos.DataAccess.Repository
 
         public void Update(int Id,T entity)
         {
-            var Entidad = _Dbset.Find(Id);
-            Entidad=entity;
-            _Dbset.Update(Entidad);
+            _Context.ChangeTracker.Clear();
+            _Dbset.Update(entity);
             _Context.SaveChanges();
         }
         public void Dispose()

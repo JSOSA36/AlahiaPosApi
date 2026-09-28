@@ -22,6 +22,9 @@ namespace AlahiaPos.Entities.Interfaces
         Task<DeliveryRepartidorDto> UpsertRepartidorAsync(int idEmpresa, DeliveryRepartidorUpsertRequest request);
         Task<PedidoDeliveryListadoDto> AsignarAsync(int idEmpresa, DeliveryAsignarRequest request);
         Task<PedidoDeliveryListadoDto> TransicionarDeliveryAsync(int idEmpresa, int idPedidoOnline, DeliveryTransicionRequest request);
+        Task<PedidoDeliveryListadoDto> ValidarPagoAsync(int idEmpresa, int idPedidoOnline, int idUsuario);
+        Task<(byte[] Contenido, string ContentType)> ObtenerVoucherAsync(int idEmpresa, int idPedidoOnline);
+        Task<PedidoDeliveryListadoDto> EnviarACocinaAsync(int idEmpresa, int idPedidoOnline, int idUsuario);
         Task<PedidoOnlineCanalEmpresaDto?> ObtenerCanalEmpresaAsync(int idEmpresa);
     }
 }

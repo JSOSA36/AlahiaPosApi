@@ -29,6 +29,20 @@ namespace AlahiaPos.Entities.Interfaces
         /// Retorna las secuencias e-CF disponibles para una empresa.
         /// Para poblar selectores en POS, Facturación, NC, etc.
         /// </summary>
-        Task<IReadOnlyList<SecuenciaEcfDisponibleDto>> ObtenerSecuenciasDisponiblesAsync(int idEmpresa);
+        Task<IReadOnlyList<SecuenciaEcfDisponibleDto>> ObtenerSecuenciasDisponiblesAsync(
+            int idEmpresa, int? idSucursal = null);
+
+        /// <summary>
+        /// Mismo envío que POS/NCF: alinea definiciones, valida y entrega al Gateway.
+        /// No reserva secuencia: el e-NCF ya viene en el documento (CerteCF / reintento).
+        /// </summary>
+        Task<FiscalEnvioResultado> EnviarDocumentoFiscalAsync(
+            FiscalDocumentoElectronico documento,
+            CancellationToken ct = default);
+
+        Task<FiscalConsultaResultado> ConsultarEstadoDgiiAsync(
+            string trackId,
+            int idEmpresa = 0,
+            CancellationToken ct = default);
     }
 }

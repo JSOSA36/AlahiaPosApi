@@ -1,7 +1,9 @@
 ﻿using AlahiaPos.Entities.Domain;
 using AlahiaPos.Entities.Dto;
 using AlahiaPos.Entities.Interfaces;
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace AlahiaPos.DataAccess.Servicios
@@ -58,12 +60,18 @@ namespace AlahiaPos.DataAccess.Servicios
         // =====================================================
         public async Task<IEnumerable<PerfilWithModulosDto>> ObtenerPorEmpresa(int idEmpresa)
         {
-            var perfiles = await _perfilesRepo.GetAllByExpresionAsync(
-                p => p.IdEmpresa == idEmpresa 
-            );
+            var perfiles = (await _perfilesRepo.GetAllByExpresionAsync(
+                p => p.IdEmpresa == idEmpresa
+            )).ToList();
 
+            var idsPerfil = perfiles.Select(p => p.IdPerfil).ToHashSet();
+            if (idsPerfil.Count == 0)
+                return Array.Empty<PerfilWithModulosDto>();
+
+            // Por IdPerfil de la empresa (no solo IdEmpresa del rol): filas viejas
+            // con IdEmpresa desfasado igual deben verse al editar el perfil.
             var perfilRoles = await _perfilRolesRepo.GetAllByExpresionAsync(
-                pr => pr.IdEmpresa == idEmpresa && pr.Activo
+                pr => pr.Activo && idsPerfil.Contains(pr.IdPerfil)
             );
 
             var result = perfiles.Select(p => new PerfilWithModulosDto

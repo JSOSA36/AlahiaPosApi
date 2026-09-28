@@ -2,6 +2,7 @@
 using AlahiaPos.DataAccess.Servicios.FiscalGateway.DgiiDirecto;
 using AlahiaPos.DataAccess.Servicios.FiscalGateway.Transmission;
 using AlahiaPos.Entities.Interfaces;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -14,8 +15,18 @@ builder.Services.Configure<DgiiDirectoSettings>(opts =>
         opts.P12Path = dgii["P12Path"];
     if (string.IsNullOrWhiteSpace(opts.P12Password))
         opts.P12Password = dgii["P12Password"];
-    opts.PreferSettingsCertificate = true;
+    opts.PreferSettingsCertificate = false;
 });
+
+var connectionString = builder.Configuration.GetConnectionString("Default");
+if (!string.IsNullOrWhiteSpace(connectionString))
+{
+    builder.Services.AddDbContext<AlahiaPos.DataAccess.Data.AlahiaPosContext>(options =>
+    {
+        options.UseSqlServer(connectionString);
+        options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
+    });
+}
 
 builder.Services.Configure<Alahia.eCF.Api.Security.AlahiaEcfApiSettings>(
     builder.Configuration.GetSection("AlahiaEcfApi"));
@@ -25,7 +36,7 @@ builder.Services.AddScoped<DgiiCertificadoResolver>(sp =>
     new DgiiCertificadoResolver(
         sp.GetRequiredService<IOptions<DgiiDirectoSettings>>(),
         sp.GetRequiredService<ILogger<DgiiCertificadoResolver>>(),
-        ctx: null));
+        sp.GetService<AlahiaPos.DataAccess.Data.AlahiaPosContext>()));
 builder.Services.AddScoped<DgiiXmlBuilder>();
 builder.Services.AddScoped<DgiiRfceBuilder>();
 builder.Services.AddHttpClient<DgiiAuthService>();
@@ -36,8 +47,16 @@ builder.Services.AddSingleton<IFiscalDocumentoValidator, AlahiaPos.DataAccess.Se
 builder.Services.AddAlahiaTransmissionEngine(builder.Configuration);
 builder.Services.AddHostedService<Alahia.eCF.Api.Services.TransmissionWorkerHostedService>();
 builder.Services.AddScoped<Alahia.eCF.Api.Services.ReceiptOrchestrator>();
+builder.Services.AddScoped<AlahiaPos.DataAccess.Servicios.FacturacionElectronica.ICertecfAcecfSender,
+    AlahiaPos.DataAccess.Servicios.FacturacionElectronica.CertecfAcecfDirectSender>();
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(o =>
+    {
+        o.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+        o.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
+        o.JsonSerializerOptions.NumberHandling = System.Text.Json.Serialization.JsonNumberHandling.AllowReadingFromString;
+    });
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {

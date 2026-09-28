@@ -1,5 +1,8 @@
+using AlahiaPos.DataAccess.Servicios.FacturacionElectronica;
 using AlahiaPos.Entities.Dto.Fiscal;
+using AlahiaPos.Entities.Fiscal;
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 
@@ -46,7 +49,14 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.PgEInvoicing
                 Municipio = enc.MunicipioEmisor,
                 Provincia = enc.ProvinciaEmisor,
                 CorreoEmisor = enc.CorreoEmisor,
+                WebSite = enc.WebSite,
+                Sucursal = enc.Sucursal,
+                ActividadEconomica = enc.ActividadEconomica,
+                CodigoVendedor = enc.CodigoVendedor,
                 NumeroFacturaInterna = enc.NumeroFacturaInterna,
+                NumeroPedidoInterno = enc.NumeroPedidoInterno,
+                ZonaVenta = enc.ZonaVenta,
+                InformacionAdicionalEmisor = enc.InformacionAdicionalEmisor,
                 FechaEmision = enc.FechaEmision.ToString("yyyy-MM-ddTHH:mm:ss")
             };
 
@@ -64,6 +74,9 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.PgEInvoicing
 
             var pg = new PgDgiiDocumentDto
             {
+                IdEmpresa = doc.IdEmpresa,
+                AmbienteDgii = doc.AmbienteDgii,
+                CeldasExcel = doc.CeldasExcel is { Count: > 0 } ? doc.CeldasExcel : null,
                 Encabezado = new PgEncabezadoWrapper
                 {
                     IdDoc = idDoc,
@@ -72,12 +85,24 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.PgEInvoicing
                     {
                         RNCComprador = enc.RncComprador ?? "",
                         RazonSocialComprador = razonComprador,
+                        ContactoComprador = string.IsNullOrWhiteSpace(enc.ContactoComprador) ? null : enc.ContactoComprador,
                         DireccionComprador = string.IsNullOrWhiteSpace(enc.DireccionComprador) ? null : enc.DireccionComprador,
-                        CorreoComprador = string.IsNullOrWhiteSpace(enc.CorreoComprador) ? null : enc.CorreoComprador
+                        CorreoComprador = string.IsNullOrWhiteSpace(enc.CorreoComprador) ? null : enc.CorreoComprador,
+                        MunicipioComprador = string.IsNullOrWhiteSpace(enc.MunicipioComprador) ? null : enc.MunicipioComprador,
+                        ProvinciaComprador = string.IsNullOrWhiteSpace(enc.ProvinciaComprador) ? null : enc.ProvinciaComprador,
+                        FechaEntrega = enc.FechaEntrega?.ToString("dd-MM-yyyy"),
+                        FechaOrdenCompra = enc.FechaOrdenCompra?.ToString("dd-MM-yyyy"),
+                        NumeroOrdenCompra = string.IsNullOrWhiteSpace(enc.NumeroOrdenCompra) ? null : enc.NumeroOrdenCompra,
+                        CodigoInternoComprador = string.IsNullOrWhiteSpace(enc.CodigoInternoComprador) ? null : enc.CodigoInternoComprador
                     },
                     Totales = new PgTotalesDto
                     {
                         MontoTotal = enc.MontoTotal,
+                        MontoNoFacturable = enc.MontoNoFacturable,
+                        MontoPeriodo = enc.MontoPeriodo,
+                        SaldoAnterior = enc.SaldoAnterior,
+                        MontoAvancePago = enc.MontoAvancePago,
+                        ValorPagar = enc.ValorPagar,
                         MontoGravadoTotal = NullIfZero(enc.MontoGravadoTotal),
                         MontoGravado1 = NullIfZero(enc.MontoGravadoI1),
                         MontoGravado2 = NullIfZero(enc.MontoGravadoI2),
@@ -87,6 +112,17 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.PgEInvoicing
                         TotalITBIS1 = NullIfZero(enc.TotalItbis1),
                         TotalITBIS2 = NullIfZero(enc.TotalItbis2),
                         TotalITBIS3 = NullIfZero(enc.TotalItbis3),
+                        MontoImpuestoAdicional = enc.MontoImpuestoAdicional is > 0 ? enc.MontoImpuestoAdicional : null,
+                        ImpuestosAdicionales = enc.ImpuestosAdicionales is { Count: > 0 }
+                            ? enc.ImpuestosAdicionales.Select(i => new PgImpuestoAdicionalDto
+                            {
+                                TipoImpuesto = i.TipoImpuesto,
+                                TasaImpuestoAdicional = i.TasaImpuestoAdicional,
+                                MontoImpuestoSelectivoConsumoEspecifico = i.MontoImpuestoSelectivoConsumoEspecifico,
+                                MontoImpuestoSelectivoConsumoAdvalorem = i.MontoImpuestoSelectivoConsumoAdvalorem,
+                                OtrosImpuestosAdicionales = i.OtrosImpuestosAdicionales
+                            }).ToList()
+                            : null,
                         TotalITBISRetenido = NullIfZero(enc.TotalItbisRetenido),
                         TotalISRRetencion = NullIfZero(enc.TotalIsrRetencion),
                         MontoPropinaLegal = NullIfZero(enc.MontoPropinaLegal)
@@ -99,13 +135,33 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.PgEInvoicing
                 NumeroLinea = l.NumeroLinea,
                 IndicadorFacturacion = l.IndicadorFacturacion,
                 NombreItem = l.NombreItem,
+                DescripcionItem = string.IsNullOrWhiteSpace(l.DescripcionItem) ? null : l.DescripcionItem,
                 IndicadorBienoServicio = l.EsBien ? 1 : 2,
                 CantidadItem = l.Cantidad,
+                CantidadReferencia = l.CantidadReferencia,
+                UnidadReferencia = l.UnidadReferencia,
+                GradosAlcohol = l.GradosAlcohol is > 0 ? l.GradosAlcohol : null,
+                PrecioUnitarioReferencia = l.PrecioUnitarioReferencia is > 0 ? l.PrecioUnitarioReferencia : null,
+                FechaElaboracion = l.FechaElaboracion?.ToString("dd-MM-yyyy"),
+                FechaVencimientoItem = l.FechaVencimientoItem?.ToString("dd-MM-yyyy"),
+                Subcantidad = l.Subcantidad,
+                CodigoSubcantidad = l.CodigoSubcantidad,
                 PrecioUnitarioItem = l.PrecioUnitario,
                 MontoItem = l.MontoItem,
                 DescuentoMonto = NullIfZero(l.DescuentoMonto),
                 RecargoMonto = NullIfZero(l.RecargoMonto),
-                UnidadMedida = l.UnidadMedida
+                UnidadMedida = l.UnidadMedida,
+                TipoImpuestoAdicional = string.IsNullOrWhiteSpace(l.TipoImpuestoAdicional) ? null : l.TipoImpuestoAdicional.Trim(),
+                Retencion = l.IndicadorAgenteRetencionoPercepcion == null
+                    && l.MontoItbisRetenido == null
+                    && l.MontoIsrRetenido == null
+                    ? null
+                    : new PgRetencionDto
+                    {
+                        IndicadorAgenteRetencionoPercepcion = l.IndicadorAgenteRetencionoPercepcion ?? 1,
+                        MontoITBISRetenido = l.MontoItbisRetenido,
+                        MontoISRRetenido = l.MontoIsrRetenido
+                    }
             }).ToList();
 
             if (doc.Descuentos.Any())
@@ -127,7 +183,7 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.PgEInvoicing
                 {
                     NCFModificado = doc.Referencia.NcfModificado,
                     RNCOtroContribuyente = doc.Referencia.RncOtroContribuyente,
-                    FechaNCFModificado = doc.Referencia.FechaNcfModificado?.ToString("yyyy-MM-ddTHH:mm:ss"),
+                    FechaNCFModificado = doc.Referencia.FechaNcfModificado?.ToString("yyyy-MM-dd"),
                     CodigoModificacion = doc.Referencia.CodigoModificacion,
                     RazonModificacion = doc.Referencia.RazonModificacion
                 };
@@ -146,13 +202,44 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.PgEInvoicing
             var tieneTrackIdValido = !string.IsNullOrEmpty(resp.trackId) && resp.trackId != ZeroGuid;
             var esAceptado = resp.estado == "Aceptado" || resp.estado == "AceptadoCondicional" || resp.codigo == "1";
             var esResumen = tipoEcf == 32;
+            var mensajes = resp.mensajes?
+                .Where(m => !string.IsNullOrEmpty(m.valor))
+                .Select(m => m.valor!)
+                .ToList() ?? new List<string>();
+            var secuenciaUsada = resp.secuenciaUtilizada == true
+                || EcfSecuenciaYaUtilizada.EnMensajes(null, mensajes);
+
+            if (secuenciaUsada && !esAceptado)
+            {
+                var error = FiscalEnvioResultado.Error(
+                    resp.codigo ?? "SECUENCIA_UTILIZADA",
+                    mensajes.FirstOrDefault()
+                    ?? $"Este número de secuencia ya ha sido utilizado (codigo={resp.codigo}, estado={resp.estado})");
+                error.SecuenciaUtilizada = true;
+                error.Encf = resp.encf;
+                error.TrackId = resp.trackId;
+                error.TransmissionJobId = resp.transmissionJobId;
+                error.SecurityCode = resp.securityCode;
+                error.UrlQR = resp.qr;
+                error.Estado = string.IsNullOrWhiteSpace(resp.estado) ? "Rechazado" : resp.estado;
+                error.XmlRespuesta = resp.xmlRespuestaDgii;
+                if (mensajes.Count > 0)
+                    error.Mensajes = mensajes;
+                return error;
+            }
 
             if (!esAceptado && !tieneTrackIdValido && !esResumen)
             {
-                var msg = resp.mensajes?.FirstOrDefault()?.valor;
-                return FiscalEnvioResultado.Error(
+                var msg = mensajes.FirstOrDefault();
+                var error = FiscalEnvioResultado.Error(
                     resp.codigo ?? "NO_PROCESADO",
                     msg ?? $"Proveedor no procesó el documento (codigo={resp.codigo}, estado={resp.estado}, secuenciaUtilizada={resp.secuenciaUtilizada})");
+                error.SecuenciaUtilizada = secuenciaUsada;
+                error.Encf = resp.encf;
+                error.XmlRespuesta = resp.xmlRespuestaDgii;
+                if (mensajes.Count > 0)
+                    error.Mensajes = mensajes;
+                return error;
             }
 
             return new FiscalEnvioResultado
@@ -169,8 +256,10 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.PgEInvoicing
                     .ToList() ?? new(),
                 SecurityCode = resp.securityCode,
                 UrlQR = resp.qr,
-                FechaFirma = ParseFecha(resp.fechaFirma),
-                FechaRecepcion = ParseFecha(resp.fechaRecepcion)
+                FechaFirma = ParseFecha(resp.fechaFirma)
+                            ?? EcfDgiiFecha.ExtraerFechaHoraFirmaXml(resp.xmlFirmado),
+                FechaRecepcion = ParseFecha(resp.fechaRecepcion),
+                XmlRespuesta = resp.xmlRespuestaDgii
             };
         }
 
@@ -193,16 +282,11 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.PgEInvoicing
                 SecurityCode = resp.securityCode,
                 UrlQR = resp.qr,
                 FechaFirma = ParseFecha(resp.fechaFirma)
+                            ?? EcfDgiiFecha.ExtraerFechaHoraFirmaXml(resp.xmlFirmado)
             };
         }
 
-        private static DateTime? ParseFecha(string? fecha)
-        {
-            if (string.IsNullOrEmpty(fecha)) return null;
-            if (DateTime.TryParse(fecha, CultureInfo.InvariantCulture, DateTimeStyles.None, out var dt))
-                return dt;
-            return null;
-        }
+        private static DateTime? ParseFecha(string? fecha) => EcfDgiiFecha.Parse(fecha);
 
         private static decimal? NullIfZero(decimal? v) => v is null or 0 ? null : v;
         private static decimal? NullIfZero(decimal v) => v == 0 ? null : v;

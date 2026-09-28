@@ -22,6 +22,7 @@ namespace AlahiaPos.Entities.Domain
         }
        
         public int? IdUsuario { get; set; }
+        public int? IdSucursal { get; set; }
         public string? NombreEmpresa { get; set; }
         public bool? PrintLavador { get; set; }
         public string? NumeroDocumento { get; set; } = "";
@@ -55,6 +56,8 @@ namespace AlahiaPos.Entities.Domain
         public decimal Total { get; set; }
         public decimal TotalItbis { get; set; }
         public decimal TotalDescuento { get; set; }
+        /// <summary>Cargo de cobro (ej. % tarjeta). Exento de ITBIS; ya incluido en Total.</summary>
+        public decimal MontoCargo { get; set; }
        
         public bool EstaCancelada { get; set; }
         public bool EstaCerrada { get; set; }
@@ -79,6 +82,9 @@ namespace AlahiaPos.Entities.Domain
         public Mesas? Mesas { get; set; }=new Mesas();
         public string? NombreCuenta { get; set; } = "";
         public string? Estado_Orden { get; set; }
+        /// <summary>Personas sentadas en la mesa (órdenes de salón).</summary>
+        [NotMapped]
+        public int? Comensales { get; set; }
         //public string? EstadoOrden { get; set; }
         public string? TipoOrden { get; set; } = "";
         // 🔥 ENTREGA
@@ -116,6 +122,24 @@ namespace AlahiaPos.Entities.Domain
         public decimal? PorcentajeDescuentoEmpleado { get; set; }
         public bool CargarConsumoNomina { get; set; }
         public int? IdNominaDescuento { get; set; }
+
+        /// <summary>
+        /// Idempotencia de cobro POS (opcional). Única por empresa cuando tiene valor.
+        /// </summary>
+        [MaxLength(80)]
+        public string? ClaveIdempotenciaVenta { get; set; }
+
+        /// <summary>
+        /// ARS que cubre total o parcialmente esta venta.
+        /// El paciente es el Cliente existente (IDCliente). No hay módulo ni tabla de paciente.
+        /// </summary>
+        public int? IdArs { get; set; }
+        public decimal MontoCubiertoArs { get; set; }
+        public decimal PagadoArs { get; set; }
+        public decimal PendienteArs { get; set; }
+        [MaxLength(20)]
+        public string? EstadoArs { get; set; }
+        public DateTime? FechaVencimientoArs { get; set; }
 
     }
 }

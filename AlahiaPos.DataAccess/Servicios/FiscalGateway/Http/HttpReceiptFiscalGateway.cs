@@ -27,7 +27,9 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.Http
         private static readonly JsonSerializerOptions JsonWrite = new()
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-            DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
+            PropertyNameCaseInsensitive = true,
+            DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.Never,
+            NumberHandling = System.Text.Json.Serialization.JsonNumberHandling.AllowReadingFromString
         };
 
         private static readonly JsonSerializerOptions JsonRead = new()
@@ -60,33 +62,66 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.Http
             try
             {
                 var ep = await ResolveEndpointAsync(documento.IdEmpresa, ct);
-                var wire = PgEInvoicingMapper.ToProviderModel(documento);
-                var json = JsonSerializer.Serialize(wire, JsonWrite);
-                var content = new StringContent(json, Encoding.UTF8, "application/json");
-
                 var ambiente = (documento.AmbienteDgii ?? "").Trim();
-                var url = $"{ep.BaseUrl}/api/Receipt";
-                using var request = new HttpRequestMessage(HttpMethod.Post, url) { Content = content };
-                ApplyAuth(request, ep);
-                if (ep.Modo == ProveedorFiscalHelper.DgiiDirecto && !string.IsNullOrWhiteSpace(ambiente))
-                    request.Headers.TryAddWithoutValidation("X-Dgii-Ambiente", ambiente);
+                var usarFiscalNativo = ep.Modo == ProveedorFiscalHelper.DgiiDirecto;
+                string json;
+                string url;
+                if (usarFiscalNativo)
+                {
+                    json = JsonSerializer.Serialize(documento, JsonWrite);
+                    url = $"{ep.BaseUrl}/api/Receipt/fiscal";
+                    GuardarWireCertecf(documento.Encabezado.Encf, json);
+                }
+                else
+                {
+                    var wire = PgEInvoicingMapper.ToProviderModel(documento);
+                    json = JsonSerializer.Serialize(wire, JsonWrite);
+                    url = $"{ep.BaseUrl}/api/Receipt";
+                }
 
                 _logger.LogInformation(
                     "Gateway: enviando e-CF {Encf} tipo {Tipo} modo={Modo} ambiente={Ambiente} → {Url}",
-                    documento.Encabezado.Encf, documento.Encabezado.TipoEcf, ep.Modo, ambiente, ep.BaseUrl);
+                    documento.Encabezado.Encf, documento.Encabezado.TipoEcf, ep.Modo, ambiente, url);
 
-                using var response = await SendAsync(request, ep.TimeoutSeconds, ct);
-                var responseBody = await response.Content.ReadAsStringAsync(ct);
+                var response = await PostJsonAsync(url, json, ep, usarFiscalNativo ? ambiente : null, usarFiscalNativo ? documento.IdEmpresa : 0, ct);
+                string responseBody;
+                int status;
+                bool ok;
+                try
+                {
+                    responseBody = await response.Content.ReadAsStringAsync(ct);
+                    status = (int)response.StatusCode;
+                    ok = response.IsSuccessStatusCode;
+                    // API e-CF anterior (julio) no tiene POST /fiscal: "fiscal" cae en GET {trackId} → 405.
+                    if (usarFiscalNativo && status == 405)
+                    {
+                        _logger.LogWarning(
+                            "Gateway: {Url} devolvió 405; reintento POST /api/Receipt (contrato PG) para {Encf}",
+                            url, documento.Encabezado.Encf);
+                        response.Dispose();
+                        var wire = PgEInvoicingMapper.ToProviderModel(documento);
+                        json = JsonSerializer.Serialize(wire, JsonWrite);
+                        url = $"{ep.BaseUrl}/api/Receipt";
+                        response = await PostJsonAsync(url, json, ep, ambiente, documento.IdEmpresa, ct);
+                        responseBody = await response.Content.ReadAsStringAsync(ct);
+                        status = (int)response.StatusCode;
+                        ok = response.IsSuccessStatusCode;
+                    }
+                }
+                finally
+                {
+                    response.Dispose();
+                }
 
-                if (!response.IsSuccessStatusCode)
+                if (!ok)
                 {
                     _logger.LogWarning(
                         "Gateway: HTTP {Status} para {Encf}: {Body}",
-                        (int)response.StatusCode, documento.Encabezado.Encf, Truncar(responseBody, 500));
+                        status, documento.Encabezado.Encf, Truncar(responseBody, 500));
 
                     return FiscalEnvioResultado.Error(
-                        $"HTTP_{(int)response.StatusCode}",
-                        $"Proveedor retornó {response.StatusCode}: {Truncar(responseBody, 500)}");
+                        $"HTTP_{status}",
+                        $"Proveedor retornó {(System.Net.HttpStatusCode)status}: {Truncar(responseBody, 500)}");
                 }
 
                 var wireResp = JsonSerializer.Deserialize<PgTrackIdResponse>(responseBody, JsonRead);
@@ -122,22 +157,37 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.Http
 
         public async Task<FiscalConsultaResultado> ConsultarEstadoAsync(
             string trackId,
+            int idEmpresa = 0,
             CancellationToken ct = default)
         {
             try
             {
-                var idEmpresa = await _ctx.ECFEncabezados.AsNoTracking()
-                    .Where(e => e.TrackId == trackId)
-                    .Select(e => (int?)e.IdEmpresa)
-                    .FirstOrDefaultAsync(ct);
+                var id = idEmpresa;
+                if (id <= 0)
+                {
+                    id = await _ctx.ECFEncabezados.AsNoTracking()
+                        .Where(e => e.TrackId == trackId)
+                        .Select(e => e.IdEmpresa)
+                        .FirstOrDefaultAsync(ct);
+                }
 
-                var ep = idEmpresa is > 0
-                    ? await _resolver.ResolveAsync(idEmpresa.Value, ct)
+                var ep = id > 0
+                    ? await _resolver.ResolveAsync(id, ct)
                     : DefaultEndpoint();
 
                 var url = $"{ep.BaseUrl}/api/Receipt/{Uri.EscapeDataString(trackId)}";
                 using var request = new HttpRequestMessage(HttpMethod.Get, url);
                 ApplyAuth(request, ep);
+                if (ep.Modo == ProveedorFiscalHelper.DgiiDirecto && id > 0)
+                {
+                    request.Headers.TryAddWithoutValidation("X-Dgii-IdEmpresa", id.ToString());
+                    var ambiente = await _ctx.Empresas.AsNoTracking()
+                        .Where(e => e.IdEmpresa == id)
+                        .Select(e => e.AmbienteFE)
+                        .FirstOrDefaultAsync(ct);
+                    if (!string.IsNullOrWhiteSpace(ambiente))
+                        request.Headers.TryAddWithoutValidation("X-Dgii-Ambiente", ambiente);
+                }
 
                 using var response = await SendAsync(request, ep.TimeoutSeconds, ct);
                 var responseBody = await response.Content.ReadAsStringAsync(ct);
@@ -233,6 +283,24 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.Http
             TimeoutSeconds = _settings.TimeoutSeconds > 0 ? _settings.TimeoutSeconds : 30
         };
 
+        private async Task<HttpResponseMessage> PostJsonAsync(
+            string url,
+            string json,
+            FiscalGatewayEndpoint ep,
+            string? ambiente,
+            int idEmpresa,
+            CancellationToken ct)
+        {
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+            var request = new HttpRequestMessage(HttpMethod.Post, url) { Content = content };
+            ApplyAuth(request, ep);
+            if (!string.IsNullOrWhiteSpace(ambiente))
+                request.Headers.TryAddWithoutValidation("X-Dgii-Ambiente", ambiente);
+            if (idEmpresa > 0)
+                request.Headers.TryAddWithoutValidation("X-Dgii-IdEmpresa", idEmpresa.ToString());
+            return await SendAsync(request, ep.TimeoutSeconds, ct);
+        }
+
         private async Task<HttpResponseMessage> SendAsync(
             HttpRequestMessage request, int timeoutSeconds, CancellationToken ct)
         {
@@ -250,6 +318,23 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.Http
             {
                 var token = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{ep.Usuario}:{ep.Password}"));
                 request.Headers.Authorization = new AuthenticationHeaderValue("Basic", token);
+            }
+        }
+
+        private static void GuardarWireCertecf(string? encf, string json)
+        {
+            try
+            {
+                var dir = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+                    "Documents", "GitHub", "AlahiaPosApi", "artifacts", "gold-testecf");
+                Directory.CreateDirectory(dir);
+                var name = string.IsNullOrWhiteSpace(encf) ? "sin-encf" : encf.Trim();
+                File.WriteAllText(Path.Combine(dir, $"wire_{name}.json"), json);
+            }
+            catch
+            {
+                // no bloquear envío
             }
         }
 

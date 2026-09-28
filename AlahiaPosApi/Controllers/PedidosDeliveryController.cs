@@ -95,6 +95,52 @@ namespace AlahiaPosApi.Controllers
             }
         }
 
+        [HttpPost("{idPedidoOnline:int}/validar-pago")]
+        public async Task<IActionResult> ValidarPago(int idPedidoOnline, [FromQuery] int idEmpresa, [FromBody] ValidarPagoPedidoRequest request)
+        {
+            if (idEmpresa <= 0)
+                return BadRequest(new { message = "idEmpresa es obligatorio." });
+            try
+            {
+                return Ok(await _svc.ValidarPagoAsync(idEmpresa, idPedidoOnline, request?.IdUsuario ?? 0));
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpGet("{idPedidoOnline:int}/voucher")]
+        public async Task<IActionResult> Voucher(int idPedidoOnline, [FromQuery] int idEmpresa)
+        {
+            if (idEmpresa <= 0)
+                return BadRequest(new { message = "idEmpresa es obligatorio." });
+            try
+            {
+                var (contenido, contentType) = await _svc.ObtenerVoucherAsync(idEmpresa, idPedidoOnline);
+                return File(contenido, contentType);
+            }
+            catch (ArgumentException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+        }
+
+        [HttpPost("{idPedidoOnline:int}/enviar-cocina")]
+        public async Task<IActionResult> EnviarCocina(int idPedidoOnline, [FromQuery] int idEmpresa, [FromBody] ValidarPagoPedidoRequest request)
+        {
+            if (idEmpresa <= 0)
+                return BadRequest(new { message = "idEmpresa es obligatorio." });
+            try
+            {
+                return Ok(await _svc.EnviarACocinaAsync(idEmpresa, idPedidoOnline, request?.IdUsuario ?? 0));
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
         [HttpPost("{idPedidoOnline:int}/estado")]
         public async Task<IActionResult> Estado(int idPedidoOnline, [FromQuery] int idEmpresa, [FromBody] DeliveryTransicionRequest request)
         {

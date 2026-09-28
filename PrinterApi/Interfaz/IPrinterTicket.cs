@@ -1,4 +1,6 @@
-﻿namespace PrinterApi.Interfaz
+﻿using PrinterApi.Dto;
+
+namespace PrinterApi.Interfaz
 {
     public interface IPrinterTicket
     {
@@ -7,6 +9,12 @@
         int idEmpresa
         );
         public Task GenerateTicketFacturaCliente(int idFactura);
+
+        /// <summary>
+        /// Imprime ESC/POS desde el DTO. No llama al ERP (POS offline / sin internet).
+        /// </summary>
+        Task GenerateTicketFacturaClienteLocal(TicketFacturaClienteDto factura);
+
         public Task GenerateFactDirect(int idFactura);
 
         /// <summary>

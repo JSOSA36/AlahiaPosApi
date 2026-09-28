@@ -14,9 +14,10 @@ namespace AlahiaPos.Entities.Interfaces
         /// <summary>
         /// Si es orden (IdTipoDocumentos=10) y el módulo está activo, publica evento de creación o actualización.
         /// origenIdAnterior: cuando el POS recrea la factura al editar (delete+insert).
+        /// origenModulo: POS (default) u ONLINE.
         /// No-op y sin excepción hacia el caller si falla o no aplica.
         /// </summary>
-        Task PublicarOrdenSiAplicaAsync(FacturaHeaders header, int? origenIdAnterior = null);
+        Task PublicarOrdenSiAplicaAsync(FacturaHeaders header, int? origenIdAnterior = null, string? origenModulo = null);
     }
 
     public interface IProduccionTrabajoService

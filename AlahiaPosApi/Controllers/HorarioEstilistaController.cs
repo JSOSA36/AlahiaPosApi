@@ -3,6 +3,7 @@
 using AlahiaPos.Entities.Dto;
 using AlahiaPos.Entities.Interfaces;
 using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AlahiaPosApi.Controllers
@@ -24,6 +25,7 @@ namespace AlahiaPosApi.Controllers
 
         // 🔹 GET: api/HorarioEstilista/empleado/5
         [HttpGet("GetByEmpleadoEmpresa/{idEmpleado}/{idEmpresa}")]
+        [AllowAnonymous]
         public async Task<IEnumerable<HorariosEstilista>> GetByEmpleadoEmpresa(int idEmpleado, int idEmpresa)
         {
 
@@ -78,6 +80,7 @@ namespace AlahiaPosApi.Controllers
         // 🔹 GET: api/HorarioEstilista/disponibilidad/5/2025-10-07
 
         [HttpGet("GetDisponibilidad/{idEmpleado}/{idEmpresa}/{fecha}")]
+        [AllowAnonymous]
         public async Task<IActionResult> GetDisponibilidad(int idEmpleado, int idEmpresa, DateTime fecha)
         {
             try

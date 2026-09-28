@@ -1,10 +1,10 @@
 ﻿{
-    "version":  "1.0.10",
-    "url":  "https://alahiaposapidemo.alahiapos.com/updates/printer/AlahiaPrinterApi-1.0.10.zip",
-    "sha256":  "621F4FB035AA82F3FAB6BC10D3EC93D01BF936A922FE5C56799F7531B38A78C6",
+    "version":  "1.0.19",
+    "url":  "https://alahiaposapidemo.alahiapos.com/updates/printer/AlahiaPrinterApi-1.0.19.zip",
+    "sha256":  "2CA2DA16C02872AA8119A396BF54AD663DB0E065957E7475EE7FDF5ECCB3461A",
     "mandatory":  false,
-    "notes":  "Hora en F.Firma; tipo y forma de pago debajo de e-NCF; sin monto duplicado bajo el total.",
-    "released":  "2026-08-18T20:16:42.8488918Z",
+    "notes":  "Ticket lavador: cabecera un poco mas baja, sin doble ancho. Acentos y nombre de la empresa.",
+    "released":  "2026-09-25T18:03:27.5634472Z",
     "runtime":  "win-x64",
     "selfContained":  true
 }

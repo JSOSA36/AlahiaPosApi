@@ -12,6 +12,7 @@ namespace AlahiaPos.Entities.Domain
 
         [Key]
         public int IdCocina { get; set; }
+        public int? IdSucursal { get; set; }
         public string Nombre { get; set; } = "";
     }
 }

@@ -29,7 +29,19 @@ namespace AlahiaPos.Entities.Domain
         [MaxLength(50)]
         public string? NumeroResolucion { get; set; }
 
+        /// <summary>
+        /// Obsoleto: la sucursal se asigna en <see cref="SecuenciaECFAsignacion"/>.
+        /// La autorización DGII es de la empresa.
+        /// </summary>
+        public int? IdSucursal { get; set; }
+
         [ForeignKey(nameof(IdEmpresa))]
         public virtual Empresas? Empresa { get; set; } = null!;
+
+        [ForeignKey(nameof(IdSucursal))]
+        public virtual Sucursal? Sucursal { get; set; }
+
+        public virtual ICollection<SecuenciaECFAsignacion> Asignaciones { get; set; }
+            = new List<SecuenciaECFAsignacion>();
     }
 }

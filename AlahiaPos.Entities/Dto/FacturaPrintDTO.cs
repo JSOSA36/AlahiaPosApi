@@ -12,6 +12,7 @@ namespace AlahiaPos.Entities.Dto
         public string Cliente { get; set; }
 
         public string Empresa { get; set; }
+        public string? NombreSucursal { get; set; }
         public string Rnc { get; set; }
         public string Direccion { get; set; }
         public string Telefono { get; set; }

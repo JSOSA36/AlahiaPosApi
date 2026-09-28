@@ -45,6 +45,7 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.Transmission.Providers.Dg
 
             var sw = Stopwatch.StartNew();
             using var _ = DgiiAmbienteContext.Push(ambienteMeta);
+            using var emp = DgiiEmpresaContext.Push(idEmpresa);
             try
             {
                 DgiiHttpResultado resp;
@@ -99,6 +100,7 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.Transmission.Providers.Dg
             package.ProviderMetadata.TryGetValue(MetaAmbiente, out var ambienteMeta);
 
             using var _ = DgiiAmbienteContext.Push(ambienteMeta);
+            using var emp = DgiiEmpresaContext.Push(idEmpresa);
             try
             {
                 var resp = await _recepcion.ConsultarEstadoAsync(providerReceiptId, idEmpresa, ct);
@@ -142,6 +144,20 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.Transmission.Providers.Dg
                         ProviderStatusCode = resp.Codigo,
                         ProviderStatusLabel = string.IsNullOrEmpty(label) ? "Aceptado" : label,
                         Messages = messages,
+                        RawResponse = Trunc(resp.Body),
+                        HttpStatusCode = resp.StatusCode
+                    };
+                }
+
+                if (YaConsumidoPorDgii(messages, resp.Mensaje, resp.Body))
+                {
+                    return new ProviderSendResult
+                    {
+                        Outcome = ProviderOutcome.AcceptedImmediate,
+                        ProviderReceiptId = trackOk ? resp.TrackId : null,
+                        ProviderStatusCode = "1",
+                        ProviderStatusLabel = "Aceptado",
+                        Messages = messages.Count > 0 ? messages : new List<string> { "RFCE ya recibido por DGII (e-NCF y código de seguridad)." },
                         RawResponse = Trunc(resp.Body),
                         HttpStatusCode = resp.StatusCode
                     };
@@ -248,6 +264,26 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.Transmission.Providers.Dg
             Outcome = o,
             Messages = { msg }
         };
+
+        private static bool YaConsumidoPorDgii(IReadOnlyList<string> messages, string? mensaje, string? body)
+        {
+            static bool Hit(string? t)
+            {
+                if (string.IsNullOrWhiteSpace(t)) return false;
+                t = t.ToLowerInvariant();
+                return t.Contains("ya han sido utilizados")
+                    || t.Contains("utilizados previamente")
+                    || t.Contains("ya ha sido utilizado")
+                    || t.Contains("secuencia ya");
+            }
+
+            if (Hit(mensaje) || Hit(body)) return true;
+            foreach (var m in messages)
+            {
+                if (Hit(m)) return true;
+            }
+            return false;
+        }
 
         private static string Trunc(string? s, int max = 800)
             => string.IsNullOrEmpty(s) ? "" : (s.Length <= max ? s : s[..max]);

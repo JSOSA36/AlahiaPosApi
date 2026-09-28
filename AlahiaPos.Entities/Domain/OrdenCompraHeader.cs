@@ -10,6 +10,7 @@ namespace AlahiaPos.Entities.Domain
     {
         [Key]
         public int IdOrdenCompraHeader { get; set; }
+        public int? IdSucursal { get; set; }
         public string? NumeroDocumento { get; set; }
         public int? IdTipoDocumentos { get; set; }
         public int? IdTipoBienesServicios { get; set; }

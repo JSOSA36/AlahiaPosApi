@@ -54,9 +54,9 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.DgiiDirecto.Definitions
         {
             var list = new List<EcfCampoDef>(BuildTotalesComun());
             list.RemoveAll(c => c.Nombre is "TotalITBISRetenido" or "TotalISRRetencion");
-            list.Add(EcfXmlFormat.Campo("TotalITBISRetenido", EcfCampoPresence.Prohibido, 14,
+            list.Add(EcfXmlFormat.Campo("TotalITBISRetenido", EcfCampoPresence.Prohibido, 21,
                 nota: "No existe en XSD Totales E45"));
-            list.Add(EcfXmlFormat.Campo("TotalISRRetencion", EcfCampoPresence.Prohibido, 15,
+            list.Add(EcfXmlFormat.Campo("TotalISRRetencion", EcfCampoPresence.Prohibido, 22,
                 nota: "No existe en XSD Totales E45"));
             return list;
         }

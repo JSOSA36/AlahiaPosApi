@@ -2,9 +2,12 @@
 using AlahiaPos.Entities.Domain;
 using AlahiaPos.Entities.Dto;
 using AlahiaPos.Entities.Interfaces;
+using AlahiaPosApi.Auth;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -23,6 +26,7 @@ namespace AlahiaPosApi.Controllers
         private readonly ISuscripcionCobroService _suscripcionCobro;
         private readonly INotificacionCentro _notificaciones;
         private readonly AlahiaPosContext _ctx;
+        private readonly ISucursalService _sucursales;
 
         public LoginController(
             ILoginService loginService,
@@ -33,7 +37,8 @@ namespace AlahiaPosApi.Controllers
              IPoliticasServicioService politicasServicio,
              ISuscripcionCobroService suscripcionCobro,
              INotificacionCentro notificaciones,
-             AlahiaPosContext ctx
+             AlahiaPosContext ctx,
+             ISucursalService sucursales
         )
         {
             _loginService = loginService;
@@ -45,11 +50,13 @@ namespace AlahiaPosApi.Controllers
             _suscripcionCobro = suscripcionCobro;
             _notificaciones = notificaciones;
             _ctx = ctx;
+            _sucursales = sucursales;
         }
 
         // =====================================================
         // 🔐 LOGIN OFICIAL
         // =====================================================
+        [AllowAnonymous]
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginDto dto)
         {
@@ -57,11 +64,12 @@ namespace AlahiaPosApi.Controllers
                 return BadRequest("Datos inválidos");
 
             if (string.IsNullOrWhiteSpace(dto.UserName) ||
-                string.IsNullOrWhiteSpace(dto.Password) ||
-                string.IsNullOrWhiteSpace(dto.DeviceId))
+                string.IsNullOrWhiteSpace(dto.Password))
             {
-                return BadRequest("Usuario, contraseña y dispositivo son obligatorios");
+                return BadRequest("Usuario y contraseña son obligatorios");
             }
+
+            dto.DeviceId = string.IsNullOrWhiteSpace(dto.DeviceId) ? "" : dto.DeviceId.Trim();
 
             try
             {
@@ -69,16 +77,6 @@ namespace AlahiaPosApi.Controllers
                 var usuarioDb =
                     await _usuariosService
                     .ObtenerPorUserName(dto.UserName);
-                // 🔒 VALIDAR SESIÓN ACTIVA
-                //if (!string.IsNullOrEmpty(usuarioDb.Token) &&
-                // !string.IsNullOrEmpty(usuarioDb.Dispositivo))
-                //{
-                //    return Ok(new
-                //    {
-                //        errorSesion = true,
-                //        mensaje = "Este usuario ya tiene una sesión activa en otro dispositivo."
-                //    });
-                //}
                 if (usuarioDb == null)
                     return Unauthorized("Usuario no encontrado");
 
@@ -286,6 +284,38 @@ namespace AlahiaPosApi.Controllers
                     Console.WriteLine($"Login: notificaciones omitidas ({ex.Message})");
                 }
 
+                IReadOnlyList<SucursalSesionDto> sucursales = Array.Empty<SucursalSesionDto>();
+                var idSucursalActiva = 0;
+                string? apiPrintSucursal = empresa.ApiPrint;
+                try
+                {
+                    sucursales = await _sucursales
+                        .ListarPorUsuarioAsync(usuarioDb.IdUsuario, empresa.IdEmpresa)
+                        .WaitAsync(TimeSpan.FromSeconds(4));
+                    var resuelta = await _sucursales.ResolverSucursalActivaAsync(
+                        usuarioDb.IdUsuario,
+                        empresa.IdEmpresa,
+                        usuarioDb.IdSucursalActiva)
+                        .WaitAsync(TimeSpan.FromSeconds(3));
+                    idSucursalActiva = resuelta
+                        ?? sucursales.FirstOrDefault(s => s.EsDefault)?.IdSucursal
+                        ?? sucursales.FirstOrDefault()?.IdSucursal
+                        ?? 0;
+                    apiPrintSucursal = sucursales
+                        .FirstOrDefault(s => s.IdSucursal == idSucursalActiva)?.ApiPrint
+                        ?? empresa.ApiPrint;
+                    if (idSucursalActiva > 0 && usuarioDb.IdSucursalActiva != idSucursalActiva)
+                    {
+                        usuarioDb.IdSucursalActiva = idSucursalActiva;
+                        await _usuariosService.Actualizar(usuarioDb);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Login: sucursales omitidas ({ex.Message})");
+                    idSucursalActiva = usuarioDb.IdSucursalActiva ?? 0;
+                }
+
                 // ✅ RESPUESTA FINAL
                 return Ok(new
                 {
@@ -304,11 +334,13 @@ namespace AlahiaPosApi.Controllers
                             :
                             usuarioDb.UserName,
                         idEmpresa = usuarioDb.IdEmpresa,
+                        idSucursal = idSucursalActiva,
                         dispositivo = dto.DeviceId,
-                        puedeEliminarOrden = loginResponse.PuedeEliminarOrden,
+                        puedeEliminarOrden = usuarioDb.PuedeEliminarOrden || esAdministrador,
                         puedeEliminarItemCarrito = usuarioDb.PuedeEliminarItemCarrito,
                         puedeDisminuirCantidadCarrito = usuarioDb.PuedeDisminuirCantidadCarrito,
                         puedeEditarPrecioCarrito = usuarioDb.PuedeEditarPrecioCarrito,
+                        puedeAnularFactura = usuarioDb.PuedeAnularFactura || esAdministrador,
                         esAdministrador,
                         idPerfil = usuarioDb.IdPerfil,
                         nombrePerfil = usuarioDb.Perfil?.Nombre
@@ -322,7 +354,7 @@ namespace AlahiaPosApi.Controllers
                         telefono = empresa.Telefono,
                         correElectronico = empresa.CorreElectronico,
                         logo = empresa.Logo,
-                        apiPrint = empresa.ApiPrint,
+                        apiPrint = apiPrintSucursal ?? empresa.ApiPrint,
                         idPlan = empresa.IdPlan,
                         nombrePlan = nombrePlanEmpresa,
                         nivelSoporte = NivelesSoporte.Normalizar(empresa.NivelSoporte),
@@ -336,6 +368,8 @@ namespace AlahiaPosApi.Controllers
                     },
                     politicas = politicasEstado,
                     modulos = loginResponse.Modulos,
+                    idSucursalActiva,
+                    sucursales,
                     token = usuarioDb.Token,
                     alertaPlan = alertaPago == null || string.IsNullOrWhiteSpace(alertaPago.Mensaje)
                         ? null
@@ -357,7 +391,12 @@ namespace AlahiaPosApi.Controllers
         [HttpPost("logout")]
         public async Task<IActionResult> Logout([FromBody] int idUsuario)
         {
-            var usuario = await _usuariosService.ObtenerPorId(idUsuario);
+            var sesion = AlahiaPosApi.Auth.SesionHttp.TryGet(HttpContext);
+            var id = sesion?.IdUsuario ?? idUsuario;
+            if (id <= 0)
+                return Unauthorized();
+
+            var usuario = await _usuariosService.ObtenerPorId(id);
 
             if (usuario == null)
                 return NotFound();
@@ -372,6 +411,7 @@ namespace AlahiaPosApi.Controllers
         // =====================================================
         // 🔑 SOLICITAR RECUPERACIÓN DE CONTRASEÑA
         // =====================================================
+        [AllowAnonymous]
         [HttpPost("forgot-password")]
         public async Task<IActionResult> ForgotPassword(
             [FromBody] ForgotPasswordDto dto)
@@ -381,25 +421,27 @@ namespace AlahiaPosApi.Controllers
 
             try
             {
-                var token = await _loginService
+                await _loginService
                     .GenerarTokenRecuperacion(dto.Correo);
 
-                // 📧 Aquí luego puedes enviar correo
                 return Ok(new
                 {
-                    mensaje = "Se ha enviado un enlace de recuperación",
-                    token // ⚠️ solo para pruebas, quitar en prod
+                    mensaje = "Si el correo existe, recibirá un enlace de recuperación"
                 });
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                return BadRequest(ex.Message);
+                return Ok(new
+                {
+                    mensaje = "Si el correo existe, recibirá un enlace de recuperación"
+                });
             }
         }
 
         // =====================================================
         // 🔎 VALIDAR TOKEN DE RECUPERACIÓN
         // =====================================================
+        [AllowAnonymous]
         [HttpGet("validate-reset-token/{token}")]
         public async Task<IActionResult> ValidateResetToken(string token)
         {
@@ -423,6 +465,7 @@ namespace AlahiaPosApi.Controllers
         // =====================================================
         // 🔁 RESET PASSWORD CON TOKEN
         // =====================================================
+        [AllowAnonymous]
         [HttpPost("reset-password")]
         public async Task<IActionResult> ResetPassword(
             [FromBody] ResetPasswordDto dto)

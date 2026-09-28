@@ -14,5 +14,11 @@ namespace AlahiaPos.Entities.Interfaces
         Task<IEnumerable<Modulo>> ObtenerModulos(int idPerfil, int idEmpresa);
         // 🔹 Quitar todos los módulos de un perfil
         Task Limpiar(int idPerfil, int idEmpresa);
+
+        /// <summary>
+        /// Activa un módulo solo en perfiles Administrador de empresas ya licenciadas.
+        /// No asigna a Cajero u otros roles.
+        /// </summary>
+        Task ActivarModuloSoloAdministradoresAsync(int idModulo, IEnumerable<int>? soloEmpresas = null);
     }
 }

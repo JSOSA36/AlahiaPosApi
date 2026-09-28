@@ -27,7 +27,8 @@ namespace AlahiaPos.Entities.Interfaces
 
         Task<List<MovimientosInventario>>
             Listar(
-                int idEmpresa);
+                int idEmpresa,
+                int? idSucursal = null);
 
         Task<List<MovimientoInventarioHistorialDto>>
     FiltrarHistorial(
@@ -44,7 +45,11 @@ namespace AlahiaPos.Entities.Interfaces
 
     int? idUsuario,
 
-    int? idProducto
+    int? idProducto,
+
+    IReadOnlyList<int>? idsConsulta = null,
+
+    int idPrincipal = 0
 );
 
         // =========================================
@@ -55,7 +60,8 @@ namespace AlahiaPos.Entities.Interfaces
             FiltrarPorFecha(
                 int idEmpresa,
                 DateTime desde,
-                DateTime hasta);
+                DateTime hasta,
+                int? idSucursal = null);
 
         // =========================================
         // 🔥 ELIMINAR
@@ -90,7 +96,8 @@ namespace AlahiaPos.Entities.Interfaces
             KardexProducto(
                 int idProducto,
                 DateTime? desde,
-                DateTime? hasta);
+                DateTime? hasta,
+                int? idSucursal = null);
 
         // =========================================
         // 🔥 PRODUCTOS STOCK BAJO

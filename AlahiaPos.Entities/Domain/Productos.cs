@@ -95,6 +95,8 @@ namespace AlahiaPos.Entities.Domain
         public bool? EsProductoBelleza { get; set; }
         public int DuracionServicio { get; set; } = 60; // minutos por defecto
         public bool DisponibleEnCitas { get; set; } = true;
+        /// <summary>Si es true, el POS pide guarnición al agregar el ítem.</summary>
+        public bool ManejaGuarniciones { get; set; }
 
     }
 }

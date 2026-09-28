@@ -28,6 +28,9 @@ namespace AlahiaPos.DataAccess.Servicios
         IAlmacenes
             _almacenes;
 
+        ISucursalService
+            _sucursales;
+
         IRepository<Usuarios>
             _usuarios;
 
@@ -50,6 +53,8 @@ namespace AlahiaPos.DataAccess.Servicios
 
             IAlmacenes almacenes,
 
+            ISucursalService sucursales,
+
             IRepository<Usuarios> usuarios,
 
             IContabilidadEventPublisher contabilidadEvents
@@ -64,6 +69,8 @@ namespace AlahiaPos.DataAccess.Servicios
             _almacenExistencia = almacenExistencia;
 
             _almacenes = almacenes;
+
+            _sucursales = sucursales;
 
             _usuarios = usuarios;
 
@@ -128,12 +135,13 @@ namespace AlahiaPos.DataAccess.Servicios
                 {
                     var principal =
                         await _almacenes.GetAlmacenPrincipal(
-                            movimiento.IdEmpresa
+                            movimiento.IdEmpresa,
+                            movimiento.IdSucursal
                         );
 
                     if (principal == null)
                     {
-                        throw new Exception(
+                        throw new InvalidOperationException(
                             "Debe seleccionar un almacén.");
                     }
 
@@ -153,7 +161,7 @@ namespace AlahiaPos.DataAccess.Servicios
                         movimiento.IdAlmacenDestino.Value <= 0
                     )
                     {
-                        throw new Exception(
+                        throw new InvalidOperationException(
                             "Debe seleccionar el almacén destino.");
                     }
 
@@ -163,7 +171,7 @@ namespace AlahiaPos.DataAccess.Servicios
                         movimiento.IdAlmacen.Value
                     )
                     {
-                        throw new Exception(
+                        throw new InvalidOperationException(
                             "El almacén origen y destino deben ser diferentes.");
                     }
 
@@ -174,6 +182,10 @@ namespace AlahiaPos.DataAccess.Servicios
                             "TRANSFERENCIA";
                     }
                 }
+
+                await ValidarContextoSucursalAsync(
+                    movimiento,
+                    esTransferencia);
 
                 // =============================================
                 // 🔥 LIMPIAR NAVEGACION
@@ -328,6 +340,10 @@ namespace AlahiaPos.DataAccess.Servicios
                 return movimiento;
             }
 
+            catch (InvalidOperationException)
+            {
+                throw;
+            }
             catch (Exception ex)
             {
 
@@ -354,6 +370,92 @@ namespace AlahiaPos.DataAccess.Servicios
             }
         }
 
+        private async Task ValidarContextoSucursalAsync(
+            MovimientosInventario movimiento,
+            bool esTransferencia)
+        {
+            var origen = await _almacenes.GetAlmacenById(movimiento.IdAlmacen!.Value)
+                ?? throw new InvalidOperationException("El almacén origen no existe.");
+
+            if (origen.IdEmpresa != movimiento.IdEmpresa)
+            {
+                throw new InvalidOperationException(
+                    "El almacén origen no pertenece a la empresa.");
+            }
+
+            if (!origen.Activo)
+            {
+                throw new InvalidOperationException(
+                    "El almacén origen no está activo.");
+            }
+
+            if (movimiento.IdSucursal is > 0
+                && origen.IdSucursal is > 0
+                && origen.IdSucursal.Value != movimiento.IdSucursal.Value)
+            {
+                throw new InvalidOperationException(
+                    "El almacén origen no pertenece a la sucursal de la sesión.");
+            }
+
+            if (origen.IdSucursal is > 0)
+            {
+                movimiento.IdSucursal = origen.IdSucursal;
+            }
+
+            if (movimiento.IdUsuario is > 0 && movimiento.IdSucursal is > 0)
+            {
+                var accesoOrigen = await _sucursales.TieneAccesoAsync(
+                    movimiento.IdUsuario.Value,
+                    movimiento.IdEmpresa,
+                    movimiento.IdSucursal.Value);
+
+                if (!accesoOrigen)
+                {
+                    throw new InvalidOperationException(
+                        "El usuario no tiene acceso a la sucursal del almacén origen.");
+                }
+            }
+
+            if (!esTransferencia)
+            {
+                movimiento.IdAlmacenDestino = null;
+                movimiento.IdSucursalDestino = null;
+                return;
+            }
+
+            var destino = await _almacenes.GetAlmacenById(movimiento.IdAlmacenDestino!.Value)
+                ?? throw new InvalidOperationException("El almacén destino no existe.");
+
+            if (destino.IdEmpresa != movimiento.IdEmpresa
+                || destino.IdEmpresa != origen.IdEmpresa)
+            {
+                throw new InvalidOperationException(
+                    "No se puede transferir entre empresas diferentes.");
+            }
+
+            if (!destino.Activo)
+            {
+                throw new InvalidOperationException(
+                    "El almacén destino no está activo.");
+            }
+
+            movimiento.IdSucursalDestino = destino.IdSucursal;
+
+            if (movimiento.IdUsuario is > 0 && destino.IdSucursal is > 0)
+            {
+                var accesoDestino = await _sucursales.TieneAccesoAsync(
+                    movimiento.IdUsuario.Value,
+                    movimiento.IdEmpresa,
+                    destino.IdSucursal.Value);
+
+                if (!accesoDestino)
+                {
+                    throw new InvalidOperationException(
+                        "El usuario no tiene acceso a la sucursal del almacén destino.");
+                }
+            }
+        }
+
         // ======================================================
         // 🔥 OBTENER POR ID
         // ======================================================
@@ -373,9 +475,16 @@ namespace AlahiaPos.DataAccess.Servicios
 
      int? idUsuario,
 
-     int? idProducto
+     int? idProducto,
+
+     IReadOnlyList<int>? idsConsulta = null,
+
+     int idPrincipal = 0
  )
         {
+            var idsLista = idsConsulta?.ToList();
+            if (idsLista != null && idsLista.Count == 0)
+                return new List<MovimientoInventarioHistorialDto>();
 
             var result =
                 await _repository
@@ -451,6 +560,18 @@ namespace AlahiaPos.DataAccess.Servicios
                                     d.IdProducto
                                     == idProducto.Value
                             )
+                        )
+
+                        &&
+
+                        (
+                            idsLista == null
+                            ||
+                            idsLista.Contains(x.IdSucursal ?? idPrincipal)
+                            ||
+                            (x.IdSucursalDestino.HasValue
+                             && x.IdSucursalDestino.Value > 0
+                             && idsLista.Contains(x.IdSucursalDestino.Value))
                         ),
 
                     // =====================================
@@ -587,9 +708,18 @@ namespace AlahiaPos.DataAccess.Servicios
                             :
                             "",
 
+                        IdSucursal = x.IdSucursal,
+
                         Detalles =
 
                             x.Detalles
+                            .Where(d =>
+                                !idProducto.HasValue
+                                ||
+                                idProducto.Value <= 0
+                                ||
+                                d.IdProducto == idProducto.Value
+                            )
                             .Select(d =>
 
                                 new MovimientoInventarioDetalleDto
@@ -623,6 +753,13 @@ namespace AlahiaPos.DataAccess.Servicios
                             ).ToList()
                     };
                 })
+                .Where(x =>
+                    !idProducto.HasValue
+                    ||
+                    idProducto.Value <= 0
+                    ||
+                    x.Detalles.Count > 0
+                )
                 .ToList();
         }
         public async Task<MovimientosInventario?>
@@ -643,7 +780,7 @@ namespace AlahiaPos.DataAccess.Servicios
         // ======================================================
 
         public async Task<List<MovimientosInventario>>
-            Listar(int idEmpresa)
+            Listar(int idEmpresa, int? idSucursal = null)
         {
 
             var result =
@@ -653,7 +790,19 @@ namespace AlahiaPos.DataAccess.Servicios
                     x =>
 
                         x.IdEmpresa
-                        == idEmpresa,
+                        == idEmpresa
+
+                        &&
+
+                        (
+                            idSucursal == null
+                            ||
+                            idSucursal.Value <= 0
+                            ||
+                            x.IdSucursal == idSucursal
+                            ||
+                            x.IdSucursalDestino == idSucursal
+                        ),
 
                     "Detalles"
                 );
@@ -671,7 +820,8 @@ namespace AlahiaPos.DataAccess.Servicios
             FiltrarPorFecha(
                 int idEmpresa,
                 DateTime desde,
-                DateTime hasta)
+                DateTime hasta,
+                int? idSucursal = null)
         {
 
             var result =
@@ -691,7 +841,19 @@ namespace AlahiaPos.DataAccess.Servicios
                         &&
 
                         x.Fecha.Date
-                        <= hasta.Date,
+                        <= hasta.Date
+
+                        &&
+
+                        (
+                            idSucursal == null
+                            ||
+                            idSucursal.Value <= 0
+                            ||
+                            x.IdSucursal == idSucursal
+                            ||
+                            x.IdSucursalDestino == idSucursal
+                        ),
 
                     "Detalles"
                 );
@@ -861,7 +1023,8 @@ namespace AlahiaPos.DataAccess.Servicios
             KardexProducto(
                 int idProducto,
                 DateTime? desde,
-                DateTime? hasta)
+                DateTime? hasta,
+                int? idSucursal = null)
         {
 
             var result =
@@ -889,6 +1052,24 @@ namespace AlahiaPos.DataAccess.Servicios
 
                             x.Fecha.Date <=
                             hasta.Value.Date
+                        )
+
+                        &&
+
+                        (
+                            idSucursal == null
+                            ||
+                            idSucursal.Value <= 0
+                            ||
+                            x.MovimientoInventario != null
+                            &&
+                            (
+                                x.MovimientoInventario.IdSucursal
+                                == idSucursal
+                                ||
+                                x.MovimientoInventario.IdSucursalDestino
+                                == idSucursal
+                            )
                         ),
 
                     "MovimientoInventario"

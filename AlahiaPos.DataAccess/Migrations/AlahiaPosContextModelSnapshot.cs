@@ -1284,6 +1284,9 @@ namespace AlahiaPos.DataAccess.Migrations
                     b.Property<bool>("PuedeEliminarOrden")
                         .HasColumnType("bit");
 
+                    b.Property<bool>("PuedeAnularFactura")
+                        .HasColumnType("bit");
+
                     b.Property<string>("Token")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");

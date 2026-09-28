@@ -15,8 +15,12 @@ namespace AlahiaPos.Entities.Dto
         public string Detalle { get; set; } = "";
         public bool IsActiva { get; set; }
         public string Estado { get; set; } = "";
-        public int PositionX { get; set; }
-        public int PositionY { get; set; }
+        public int? Capacidad { get; set; }
+        public string? Forma { get; set; }
+        public decimal? PosX { get; set; }
+        public decimal? PosY { get; set; }
+        public decimal? Rotacion { get; set; }
+        public decimal? Escala { get; set; }
 
         public int ZonaId { get; set; }
     }

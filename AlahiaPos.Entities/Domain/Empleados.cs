@@ -26,6 +26,14 @@ namespace AlahiaPos.Entities.Domain
 
         public bool Estado { get; set; } = true;
         public string? Ocupacion { get; set; }
+
+        /// <summary>
+        /// Sucursal operativa. Nulo si la ocupación es Administrador (ve todas).
+        /// </summary>
+        public int? IdSucursal { get; set; }
+
+        [ForeignKey(nameof(IdSucursal))]
+        public Sucursal? Sucursal { get; set; }
         // 🔗 Navegación opcional
        
 

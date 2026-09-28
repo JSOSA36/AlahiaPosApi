@@ -37,7 +37,12 @@ namespace AlahiaPos.Entities.Dto
 
         public int? IdAlmacenDestino { get; set; }
 
-        public string NombreAlmacenDestino { get; set; }
+                        public string NombreAlmacenDestino { get; set; }
+            = string.Empty;
+
+        public int? IdSucursal { get; set; }
+
+        public string NombreSucursal { get; set; }
             = string.Empty;
 
         public List<

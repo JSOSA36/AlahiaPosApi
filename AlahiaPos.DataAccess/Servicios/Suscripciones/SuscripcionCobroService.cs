@@ -9,7 +9,6 @@ using AlahiaPos.Entities.Dto;
 using AlahiaPos.Entities.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 namespace AlahiaPos.DataAccess.Servicios.Suscripciones
@@ -23,22 +22,19 @@ namespace AlahiaPos.DataAccess.Servicios.Suscripciones
         private readonly INotificacionCentro _notificaciones;
         private readonly ILogger<SuscripcionCobroService> _logger;
         private readonly IConfiguration _config;
-        private readonly IHostEnvironment _env;
 
         public SuscripcionCobroService(
             AlahiaPosContext ctx,
             IEnumerable<INotificacionSuscripcionCanal> canales,
             INotificacionCentro notificaciones,
             ILogger<SuscripcionCobroService> logger,
-            IConfiguration config,
-            IHostEnvironment env)
+            IConfiguration config)
         {
             _ctx = ctx;
             _canales = canales;
             _notificaciones = notificaciones;
             _logger = logger;
             _config = config;
-            _env = env;
         }
 
         /// <summary>
@@ -47,33 +43,43 @@ namespace AlahiaPos.DataAccess.Servicios.Suscripciones
         /// </summary>
         private bool OmitirBloqueoEnDevelopment()
         {
-            if (_env == null || !_env.IsDevelopment())
+            var env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+            if (!string.Equals(env, "Development", StringComparison.OrdinalIgnoreCase))
                 return false;
             return _config.GetValue("Suscripcion:OmitirBloqueoEnDevelopment", true);
         }
 
         /// <summary>
-        /// Día del ciclo de cobro. En Development puede forzarse con
+        /// Fecha efectiva del ciclo de cobro. En Development puede forzarse con
         /// Suscripcion:ForzarDia (+ opcional ForzarDiaEmpresaId) para pruebas.
+        /// Si ForzarDia supera los días del mes, avanza al mes siguiente (p.ej. 31 en abril → 1).
         /// </summary>
-        private int ObtenerDiaCobro(int? idEmpresa = null)
+        private DateTime FechaCobroEfectiva(int? idEmpresa = null)
         {
+            var hoy = DateTime.Now.Date;
             var forzarRaw = _config["Suscripcion:ForzarDia"];
             if (int.TryParse(forzarRaw, out var forzar) && forzar >= 1 && forzar <= 31)
             {
                 var soloRaw = _config["Suscripcion:ForzarDiaEmpresaId"];
-                int? soloEmpresa = int.TryParse(soloRaw, out var idFiltro) ? idFiltro : null;
+                int? soloEmpresa = int.TryParse(soloRaw, out var idFiltro) && idFiltro > 0
+                    ? idFiltro
+                    : null;
                 if (!soloEmpresa.HasValue || soloEmpresa == idEmpresa)
                 {
                     _logger.LogDebug(
                         "Suscripcion ForzarDia={Dia} activo (empresa filtro={Filtro}, empresa={Empresa})",
                         forzar, soloEmpresa, idEmpresa);
-                    return forzar;
+                    var days = DateTime.DaysInMonth(hoy.Year, hoy.Month);
+                    if (forzar <= days)
+                        return new DateTime(hoy.Year, hoy.Month, forzar);
+                    return new DateTime(hoy.Year, hoy.Month, days).AddDays(forzar - days);
                 }
             }
 
-            return DateTime.Now.Day;
+            return hoy;
         }
+
+        private int ObtenerDiaCobro(int? idEmpresa = null) => FechaCobroEfectiva(idEmpresa).Day;
 
         public bool PuedeOperar(Empresas empresa)
         {
@@ -87,10 +93,10 @@ namespace AlahiaPos.DataAccess.Servicios.Suscripciones
                 || estado == SuscripcionEstados.PendientePago)
                 return true;
 
-            // Voucher enviado en ventana de pago (día 30–3): puede operar mientras se valida.
-            // Si ya estaba suspendido (día ≥ 4), no opera hasta aprobación admin.
+            // Voucher enviado en ventana de pago (día 30 más 3 días: 31, 1 y 2): puede operar.
+            // Si ya estaba suspendido (día ≥ 3), no opera hasta aprobación admin.
             if (estado == SuscripcionEstados.PagoReportado)
-                return EstaEnVentanaPago(ObtenerDiaCobro(empresa.IdEmpresa));
+                return EstaEnVentanaPago(empresa);
 
             return false;
         }
@@ -109,15 +115,45 @@ namespace AlahiaPos.DataAccess.Servicios.Suscripciones
 
             // Reportó pago ya suspendido (fuera de ventana): bloqueado hasta validar.
             if (estado == SuscripcionEstados.PagoReportado
-                && !EstaEnVentanaPago(ObtenerDiaCobro(empresa.IdEmpresa)))
+                && !EstaEnVentanaPago(empresa))
                 return true;
 
             return false;
         }
 
-        /// <summary>Día 30 o días 1–3 del ciclo: periodo de gracia de pago.</summary>
+        /// <summary>
+        /// Ventana de cobro: día 30 más 3 días (31, 1 y 2). Suspender a partir del día 3.
+        /// </summary>
         private static bool EstaEnVentanaPago(int diaCobro) =>
-            diaCobro == 30 || (diaCobro >= 1 && diaCobro <= 3);
+            diaCobro == 30 || diaCobro == 31 || diaCobro == 1 || diaCobro == 2;
+
+        /// <summary>
+        /// Gracia 30→3, más el día siguiente al 30 si ese 30 fue domingo y la empresa no abre.
+        /// </summary>
+        private bool EstaEnVentanaPago(Empresas empresa)
+        {
+            if (empresa == null) return false;
+            var fecha = FechaCobroEfectiva(empresa.IdEmpresa);
+            return EstaEnVentanaPago(fecha.Day) || EsDiaModalDiferido(fecha, empresa.TrabajaDomingo);
+        }
+
+        /// <summary>
+        /// Modal de cobro: día 30, o el siguiente si el 30 cayó domingo y TrabajaDomingo = false.
+        /// </summary>
+        private bool EsDiaModalCobro(Empresas empresa)
+        {
+            var fecha = FechaCobroEfectiva(empresa.IdEmpresa);
+            if (fecha.Day == 30)
+                return empresa.TrabajaDomingo || fecha.DayOfWeek != DayOfWeek.Sunday;
+            return EsDiaModalDiferido(fecha, empresa.TrabajaDomingo);
+        }
+
+        private static bool EsDiaModalDiferido(DateTime fecha, bool trabajaDomingo)
+        {
+            if (trabajaDomingo) return false;
+            var ayer = fecha.Date.AddDays(-1);
+            return ayer.Day == 30 && ayer.DayOfWeek == DayOfWeek.Sunday;
+        }
 
         public AlertaPagoDto? ObtenerAlertaPago(Empresas empresa)
         {
@@ -125,7 +161,6 @@ namespace AlahiaPos.DataAccess.Servicios.Suscripciones
             if (OmitirBloqueoEnDevelopment()) return null;
             if (EsDemoVigente(empresa)) return null;
 
-            var dia = ObtenerDiaCobro(empresa.IdEmpresa);
             var estado = NormalizarEstado(empresa.EstadoServicio);
 
             // Pantalla de bloqueo (no banner): suspendida / cancelada
@@ -155,28 +190,28 @@ namespace AlahiaPos.DataAccess.Servicios.Suscripciones
 
             var pendienteCobro = estado == SuscripcionEstados.PendientePago;
 
-            // Solo dos avisos UI/correo del ciclo: día 30 (inicio) y día 3 (último)
-            if (!pendienteCobro || (dia != 30 && dia != 3))
+            // Modal de cobro: día 30, o el siguiente si el 30 fue domingo y no trabaja domingo.
+            if (!pendienteCobro || !EsDiaModalCobro(empresa))
                 return null;
 
-            var (titulo, mensaje) = MensajeAviso(TipoAvisoPorDia(dia));
+            var (titulo, mensaje) = MensajeAviso(SuscripcionEstados.AvisoDia30);
             return new AlertaPagoDto
             {
-                Tipo = dia == 3 ? "critico" : "advertencia",
+                Tipo = "advertencia",
                 Mensaje = $"{titulo}. {mensaje}",
-                DiaCobro = dia,
-                DiasRestantes = DiasHastaLimitePago(dia)
+                DiaCobro = 30,
+                DiasRestantes = DiasHastaLimitePago(30)
             };
         }
 
-        /// <summary>Días restantes hasta el día 3 (límite de pago).</summary>
+        /// <summary>Días restantes hasta el día 2 (último de la gracia: 30 + 3).</summary>
         private static int DiasHastaLimitePago(int diaCobro) => diaCobro switch
         {
             30 => 3,
-            1 => 2,
-            2 => 1,
-            3 => 0,
-            _ => Math.Max(0, 3 - diaCobro)
+            31 => 2,
+            1 => 1,
+            2 => 0,
+            _ => 0
         };
 
         public async Task ActualizarEstadoEmpresaAsync(int idEmpresa)
@@ -296,8 +331,8 @@ namespace AlahiaPos.DataAccess.Servicios.Suscripciones
                 return;
             }
 
-            // Ventana de pago: día 30 y días 1–3
-            if (dia == 30 || dia <= 3)
+            // Ventana: 30 + 3 días (31, 1 y 2). El lunes diferido si el 30 fue domingo y no abre.
+            if (EstaEnVentanaPago(emp))
             {
                 var prev = emp.EstadoServicio;
                 emp.EstadoServicio = SuscripcionEstados.PendientePago;
@@ -309,15 +344,16 @@ namespace AlahiaPos.DataAccess.Servicios.Suscripciones
                         "Periodo de pago del ciclo", idCiclo: ciclo?.IdCiclo);
                 }
 
-                // Correo + notificación solo día 30 (inicio) y día 3 (último aviso)
-                if (enviarAvisos && (dia == 30 || dia == 3))
-                    await EnviarAvisoSiCorrespondeAsync(emp, ciclo, TipoAvisoPorDia(dia));
+                if (enviarAvisos && EsDiaModalCobro(emp))
+                    await EnviarAvisoSiCorrespondeAsync(emp, ciclo, SuscripcionEstados.AvisoDia30);
+                else if (enviarAvisos && dia == 2)
+                    await EnviarAvisoSiCorrespondeAsync(emp, ciclo, SuscripcionEstados.AvisoDia3);
 
                 return;
             }
 
-            // Día ≥ 4 → suspensión + cargo de reconexión pendiente
-            if (dia >= 4)
+            // Día 3–29: fuera de la ventana 30+3 → suspensión + cargo de reconexión.
+            if (dia >= 3 && dia < 30)
             {
                 if (ciclo != null && ciclo.Estado == SuscripcionEstados.CicloAbierto)
                     ciclo.Estado = SuscripcionEstados.CicloVencido;
@@ -356,17 +392,10 @@ namespace AlahiaPos.DataAccess.Servicios.Suscripciones
             }
         }
 
-        private static string TipoAvisoPorDia(int dia) => dia switch
-        {
-            30 => SuscripcionEstados.AvisoDia30,
-            3 => SuscripcionEstados.AvisoDia3,
-            _ => SuscripcionEstados.AvisoDia30
-        };
-
         private async Task EnviarAvisoSiCorrespondeAsync(Empresas emp, SuscripcionCiclo? ciclo, string tipoAviso)
         {
             if (ciclo == null) return;
-            // Solo día 30 y día 3 (último). Día 2 y otros no envían.
+            // Día 30 y 3 cobro. Día 1–2 no envían.
             if (tipoAviso != SuscripcionEstados.AvisoDia30
                 && tipoAviso != SuscripcionEstados.AvisoDia3
                 && tipoAviso != SuscripcionEstados.AvisoSuspension)
@@ -419,19 +448,22 @@ namespace AlahiaPos.DataAccess.Servicios.Suscripciones
                 "2) Vaya a Pago de Suscripción (o use Reportar pago si el servicio está suspendido).\n" +
                 "3) Adjunte la foto o PDF del voucher de transferencia.\n" +
                 "4) Envíe el comprobante.\n" +
-                "Si aún está en el periodo de pago (día 30 al 3), podrá seguir operando mientras se valida. " +
+                "Podrá seguir operando mientras se valida el voucher. " +
                 "Si el servicio ya fue suspendido, el acceso se restaura solo cuando MacroBits apruebe el pago.\n" +
                 "No es necesario subir el voucher más de una vez.";
+
+            const string facturaPendiente =
+                "Tiene una factura pendiente por pagar. Reporte su pago para mantener el servicio activo.\n\n";
 
             return tipo switch
             {
                 SuscripcionEstados.AvisoDia30 => (
-                    "Renovación de suscripción Alahia ERP",
-                    "Su ciclo de suscripción inicia hoy (día 30). Tiene hasta el día 3 para reportar el pago; de lo contrario el acceso se suspenderá el día 4.\n\n" + pasosVoucher
+                    "Factura pendiente — Alahia ERP",
+                    facturaPendiente + pasosVoucher
                 ),
                 SuscripcionEstados.AvisoDia3 => (
-                    "Último aviso de pago — Alahia ERP",
-                    "Hoy es el último día del periodo de gracia. Si no reporta su voucher hoy, el servicio se suspenderá a partir de mañana (día 4).\n\n" + pasosVoucher
+                    "Factura pendiente — Alahia ERP",
+                    facturaPendiente + pasosVoucher
                 ),
                 SuscripcionEstados.AvisoSuspension => (
                     "Servicio suspendido — Alahia ERP",
@@ -445,24 +477,16 @@ namespace AlahiaPos.DataAccess.Servicios.Suscripciones
         public async Task<SuscripcionCiclo?> ObtenerOCrearCicloActualAsync(Empresas empresa)
         {
             var hoy = DateTime.Now;
-            // Del 1 al 29 el ciclo vigente es el del mes anterior iniciado el 30;
+            var diaCiclo = ObtenerDiaCobro(empresa.IdEmpresa);
+            // Del 1 al 29 el ciclo vigente es el del mes anterior;
             // el día 30 abre el ciclo del mes actual.
             int anio = hoy.Year;
             int mes = hoy.Month;
-            if (hoy.Day < 30)
+            if (diaCiclo < 30)
             {
                 var prev = hoy.AddMonths(-1);
-                // Ciclo de cobro: mes de facturación = mes del día 30 que lo abrió
-                // Si hoy es abril 2, el ciclo abierto el 30 de marzo es Anio=marzo, Mes=marzo
                 anio = prev.Year;
                 mes = prev.Month;
-            }
-
-            // Día 30: ciclo del mes actual
-            if (hoy.Day == 30)
-            {
-                anio = hoy.Year;
-                mes = hoy.Month;
             }
 
             var ciclo = await _ctx.SuscripcionCiclo.AsTracking()
@@ -621,7 +645,7 @@ namespace AlahiaPos.DataAccess.Servicios.Suscripciones
 
         private decimal ObtenerCargoReconexionDop(Empresas empresa)
         {
-            // 0 = desactivado para ese cliente. Si por algún motivo viniera negativo, usa config/500.
+            // 0 = desactivado para ese cliente. Si por algún motivo viniera negativo, usa config/1000.
             if (empresa.CargoReconexionDop >= 0)
                 return empresa.CargoReconexionDop;
 
@@ -631,7 +655,7 @@ namespace AlahiaPos.DataAccess.Servicios.Suscripciones
                 && cfg >= 0)
                 return cfg;
 
-            return 500m;
+            return 1000m;
         }
 
         private decimal ObtenerTasaUsdDop()
@@ -644,8 +668,9 @@ namespace AlahiaPos.DataAccess.Servicios.Suscripciones
             return 60m;
         }
 
+        /// <summary>Pesos enteros: 91.67 × 60 no debe quedar en 5500.20.</summary>
         private static decimal RedondearDop(decimal valor) =>
-            Math.Round(valor, 2, MidpointRounding.AwayFromZero);
+            Math.Round(valor, 0, MidpointRounding.AwayFromZero);
 
         private static decimal RedondearUsd(decimal valor) =>
             Math.Round(valor, 2, MidpointRounding.AwayFromZero);
@@ -910,8 +935,7 @@ namespace AlahiaPos.DataAccess.Servicios.Suscripciones
             var emp = await _ctx.Empresas.AsTracking().FirstOrDefaultAsync(e => e.IdEmpresa == idEmpresa);
             if (emp == null || emp.EsEmpresaSistema) return;
 
-            var dia = ObtenerDiaCobro(idEmpresa);
-            emp.EstadoServicio = (dia == 30 || dia <= 3)
+            emp.EstadoServicio = EstaEnVentanaPago(emp)
                 ? SuscripcionEstados.PendientePago
                 : SuscripcionEstados.Suspendida;
             _ctx.Empresas.Update(emp);

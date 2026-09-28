@@ -25,6 +25,11 @@ namespace AlahiaPos.Entities.Dto.Fiscal
         /// <summary>Cuerpo crudo de respuesta DGII (solo DgiiDirecto).</summary>
         public string? XmlRespuesta { get; set; }
 
+        /// <summary>
+        /// El proveedor indicó que ese e-NCF ya se consumió. Hay que emitir el siguiente, no reenviar.
+        /// </summary>
+        public bool? SecuenciaUtilizada { get; set; }
+
         public static FiscalEnvioResultado Error(string codigo, string mensaje) => new()
         {
             Exitoso = false,

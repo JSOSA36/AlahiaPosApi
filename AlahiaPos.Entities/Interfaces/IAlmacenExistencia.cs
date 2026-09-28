@@ -14,11 +14,13 @@ namespace AlahiaPos.Entities.Interfaces
 
         Task<decimal> GetTotalPorProducto(
             int idProducto,
-            int idEmpresa);
+            int idEmpresa,
+            int? idSucursal = null);
 
         Task<List<AlmacenExistenciaDto>> GetDetallePorProducto(
             int idProducto,
-            int idEmpresa);
+            int idEmpresa,
+            int? idSucursal = null);
 
         Task AjustarExistencia(
             int idAlmacen,

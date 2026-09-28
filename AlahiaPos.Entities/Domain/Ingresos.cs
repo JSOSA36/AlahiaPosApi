@@ -14,6 +14,8 @@ namespace AlahiaPos.Entities.Domain
         [Required]
         public int IdEmpresa { get; set; }
 
+        public int? IdSucursal { get; set; }
+
         // 📅 Datos principales
         [Required]
         public DateTime FechaRegistro { get; set; } = DateTime.Now;

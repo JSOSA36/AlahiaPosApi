@@ -27,6 +27,8 @@ BEGIN
         Tipo NVARCHAR(20) NOT NULL,
         Valor DECIMAL(18, 4) NOT NULL,
         GrupoMetodo NVARCHAR(30) NOT NULL,
+        MetodosVinculados NVARCHAR(2000) NOT NULL
+            CONSTRAINT DF_CargoPagoRegla_MetodosVinculados DEFAULT (N''),
         Activo BIT NOT NULL
             CONSTRAINT DF_CargoPagoRegla_Activo DEFAULT (1),
         Orden INT NOT NULL
@@ -97,6 +99,7 @@ BEGIN
 END
 GO
 
+
 DECLARE @IdMod INT = (SELECT TOP 1 Id FROM dbo.Modulos WHERE Codigo = N'CARGOS_PAGO');
 
 IF @IdMod IS NULL
@@ -105,27 +108,27 @@ BEGIN
     RETURN;
 END
 
-INSERT INTO dbo.Empresa_Modulos (EmpresaId, ModuloId, Activo, FechaActivacion)
-SELECT e.IdEmpresa, @IdMod, 1, GETDATE()
-FROM dbo.Empresas e
-WHERE NOT EXISTS (
-    SELECT 1 FROM dbo.Empresa_Modulos em
-    WHERE em.EmpresaId = e.IdEmpresa AND em.ModuloId = @IdMod
-);
-
-UPDATE dbo.Empresa_Modulos
-SET Activo = 1, FechaDesactivacion = NULL
-WHERE ModuloId = @IdMod;
-
+-- Licencia: NO activar en todas las empresas. MacroBits licencia por empresa.
+-- PerfilRoles: SOLO Administrador de empresas YA licenciadas.
 INSERT INTO dbo.PerfilRoles (IdPerfil, IdModulo, Activo, FechaInsercion, IdEmpresa)
 SELECT p.IdPerfil, @IdMod, 1, GETDATE(), p.IdEmpresa
 FROM dbo.Perfiles p
-WHERE NOT EXISTS (
+INNER JOIN dbo.Empresa_Modulos em
+    ON em.EmpresaId = p.IdEmpresa AND em.ModuloId = @IdMod AND em.Activo = 1
+WHERE p.Activo = 1
+  AND (p.Nombre = N'Administrador' OR p.Nombre LIKE N'%Administrador%')
+  AND NOT EXISTS (
     SELECT 1 FROM dbo.PerfilRoles pr
     WHERE pr.IdPerfil = p.IdPerfil AND pr.IdModulo = @IdMod AND pr.IdEmpresa = p.IdEmpresa
-);
+  );
 
-UPDATE dbo.PerfilRoles SET Activo = 1 WHERE IdModulo = @IdMod;
+UPDATE pr SET pr.Activo = 1
+FROM dbo.PerfilRoles pr
+INNER JOIN dbo.Perfiles p ON p.IdPerfil = pr.IdPerfil
+INNER JOIN dbo.Empresa_Modulos em
+    ON em.EmpresaId = p.IdEmpresa AND em.ModuloId = @IdMod AND em.Activo = 1
+WHERE pr.IdModulo = @IdMod
+  AND (p.Nombre = N'Administrador' OR p.Nombre LIKE N'%Administrador%');
 
 SELECT m.Codigo, m.Nombre,
     (SELECT COUNT(*) FROM dbo.Empresa_Modulos WHERE ModuloId = m.Id AND Activo = 1) AS Empresas,
@@ -133,5 +136,5 @@ SELECT m.Codigo, m.Nombre,
 FROM dbo.Modulos m
 WHERE m.Codigo = N'CARGOS_PAGO';
 
-PRINT 'CARGOS_PAGO listo en AlahiaPos_Dev.';
+PRINT 'CARGOS_PAGO listo en AlahiaPos_Dev (solo Admin de empresas licenciadas).';
 GO

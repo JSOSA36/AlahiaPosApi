@@ -1,0 +1,16 @@
+---
+description: Antes de un pase a prod, correr AlahiaPosApi.Pase.Tests (pre-pase.ps1). Si fallan, no publicar.
+alwaysApply: true
+---
+
+# Pases: correr pruebas antes de publicar
+
+Si el usuario pide **pase a prod**, **súbelo** o equivalente:
+
+1. Correr `powershell -ExecutionPolicy Bypass -File .\Scripts\pre-pase.ps1` desde `AlahiaPosApi`.
+2. Si el script **falla: no publicar**. Corregir y volver a correr.
+3. Si pasa: seguir `pases-impacto-y-pruebas.mdc` y `pases-no-tocar-config-empresas.mdc`, y recién entonces copiar a IIS.
+
+Esas pruebas cubren contratos de **todo el ERP vivo** (login, POS/cobro/órdenes, sucursal, caja, inventario, tesorería/extracto, e-CF, perfiles, frontend) más un smoke de lectura contra `AlahiaPos_Dev`. No sustituyen probar el feature a mano; sí evitan el colateral obvio.
+
+Proyecto: `AlahiaPosApi.Pase.Tests`. Si un pase toca un módulo, añadir o ampliar el test de ese módulo ahí (`PaseCobertura.ClasesObligatorias`).

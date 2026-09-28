@@ -12,6 +12,8 @@ namespace AlahiaPos.Entities.Domain
 
         public int IdEmpresa { get; set; }
 
+        public int? IdSucursal { get; set; }
+
         public int IdCanal { get; set; }
 
         public int IdFacturaHeader { get; set; }
@@ -41,6 +43,17 @@ namespace AlahiaPos.Entities.Domain
 
         [MaxLength(40)]
         public string MetodoPago { get; set; } = "Efectivo";
+
+        [MaxLength(260)]
+        public string? VoucherRuta { get; set; }
+
+        public bool PagoValidado { get; set; }
+
+        public DateTime? FechaValidacionPago { get; set; }
+
+        public int? IdUsuarioValidaPago { get; set; }
+
+        public DateTime? FechaEnvioCocina { get; set; }
 
         [MaxLength(500)]
         public string? Observacion { get; set; }

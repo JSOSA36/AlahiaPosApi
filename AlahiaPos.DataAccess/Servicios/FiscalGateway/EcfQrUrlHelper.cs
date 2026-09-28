@@ -1,5 +1,5 @@
-using AlahiaPos.DataAccess.Servicios.FiscalGateway.DgiiDirecto;
 using AlahiaPos.Entities.Dto.Fiscal;
+using AlahiaPos.Entities.Fiscal;
 using System;
 
 namespace AlahiaPos.DataAccess.Servicios.FiscalGateway
@@ -8,14 +8,16 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway
     /// Normaliza UrlQR para almacenamiento e impresión térmica.
     /// Invoice (PG.eInvoicing) suele devolver <c>data:image/png;base64,...</c>,
     /// que no cabe en ECFEncabezado.UrlQR (NVARCHAR 500) ni sirve para ESC/POS PrintQRCode.
+    /// El suplidor indicó usar la URL de consulta DGII (él no la manda).
     /// </summary>
     public static class EcfQrUrlHelper
     {
         public const int MaxStoredLength = 500;
 
         /// <summary>
-        /// Si el proveedor ya envió una URL http(s) usable, la conserva;
-        /// si envió imagen base64 u otro valor inválido, construye ConsultaTimbre DGII.
+        /// Conserva una URL http(s) usable, salvo E32 RFCE apuntando a ConsultaTimbre
+        /// (esa página no tiene resúmenes FC; DGII responde “no existe”).
+        /// Si el proveedor mandó imagen u otro valor inválido, construye la URL oficial.
         /// </summary>
         public static string? ResolveForStorage(
             string? providerQr,
@@ -23,21 +25,18 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway
             DateTime? fechaFirma,
             string? securityCode)
         {
-            if (IsUsableHttpUrl(providerQr))
-                return Truncate(providerQr!.Trim(), MaxStoredLength);
-
-            if (string.IsNullOrWhiteSpace(securityCode))
-                return null;
-
-            var settings = new DgiiDirectoSettings
-            {
-                Ambiente = DgiiAmbienteHelper.Normalize(documento.AmbienteDgii)
-            };
-
-            var firma = fechaFirma ?? DateTime.Now;
-            return Truncate(
-                DgiiDirectoMapper.BuildQrUrl(documento, firma, securityCode.Trim(), settings),
-                MaxStoredLength);
+            var enc = documento.Encabezado;
+            return ResolveFromEncabezadoFields(
+                providerQr,
+                documento.AmbienteDgii,
+                enc.RncEmisor,
+                enc.RncComprador,
+                enc.Encf,
+                enc.FechaEmision,
+                enc.MontoTotal,
+                fechaFirma,
+                securityCode,
+                enc.TipoEcf.ToString());
         }
 
         /// <summary>
@@ -52,28 +51,42 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway
             DateTime fechaEmision,
             decimal montoTotal,
             DateTime? fechaFirma,
-            string? securityCode)
+            string? securityCode,
+            string? tipoEcf = null)
         {
-            if (IsUsableHttpUrl(providerQr))
+            var tipo = EcfConsultaTimbreUrl.ParseTipoEcf(tipoEcf, encf);
+            var rfce = EcfConsultaTimbreUrl.EsCanalRfce(tipo, montoTotal);
+            var ambiente = ambienteDgii
+                           ?? EcfConsultaTimbreUrl.ExtraerAmbienteDeUrl(providerQr);
+
+            if (IsUsableHttpUrl(providerQr)
+                && !(rfce && EcfConsultaTimbreUrl.EsUrlConsultaTimbreEcf(providerQr)))
+            {
                 return Truncate(providerQr!.Trim(), MaxStoredLength);
+            }
 
             if (string.IsNullOrWhiteSpace(securityCode) || string.IsNullOrWhiteSpace(encf) || string.IsNullOrWhiteSpace(rncEmisor))
                 return null;
 
-            var doc = new FiscalDocumentoElectronico
-            {
-                AmbienteDgii = ambienteDgii,
-                Encabezado = new FiscalDocumentoEncabezado
-                {
-                    RncEmisor = rncEmisor,
-                    RncComprador = rncComprador,
-                    Encf = encf,
-                    FechaEmision = fechaEmision,
-                    MontoTotal = montoTotal
-                }
-            };
+            // E31 ConsultaTimbre exige FechaFirma idéntica a la del XML firmado.
+            // DateTime.Now (o la hora del ticket) no coincide → DGII responde “no existe”.
+            var firma = fechaFirma
+                        ?? EcfConsultaTimbreUrl.TryGetFechaFirma(providerQr);
+            if (!firma.HasValue && !rfce)
+                return null;
 
-            return ResolveForStorage(null, doc, fechaFirma, securityCode);
+            return Truncate(
+                EcfConsultaTimbreUrl.Build(
+                    ambiente,
+                    tipo,
+                    rncEmisor,
+                    rncComprador,
+                    encf,
+                    fechaEmision,
+                    montoTotal,
+                    firma ?? DateTime.MinValue,
+                    securityCode.Trim()),
+                MaxStoredLength);
         }
 
         public static bool IsUsableHttpUrl(string? value)

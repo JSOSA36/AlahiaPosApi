@@ -23,6 +23,11 @@ namespace AlahiaPos.Entities.Dto
 
         public decimal TotalDescuento { get; set; }
 
+        public decimal MontoCargo { get; set; }
+
+        /// <summary>Nombre de la regla aplicada (ej. Cargo por tarjeta).</summary>
+        public string? NombreCargo { get; set; }
+
         public decimal Total { get; set; }
 
         public decimal Pagado { get; set; }
@@ -36,6 +41,8 @@ namespace AlahiaPos.Entities.Dto
         public List<TicketFacturaClientePagoDto> Pagos { get; set; } = new();
 
         public string NombreEmpresa { get; set; } = "";
+
+        public string? NombreSucursal { get; set; }
 
         public string TelefonoEmpresa { get; set; } = "";
 
@@ -62,6 +69,9 @@ namespace AlahiaPos.Entities.Dto
         public DateTime? FechaEmisionEcf { get; set; }
 
         public string? EstadoDgii { get; set; }
+
+        /// <summary>Ambiente DGII (testecf / certecf / ecf) para reconstruir ConsultaTimbre.</summary>
+        public string? AmbienteFE { get; set; }
 
         public List<TicketFacturaClienteDetalleDto> Detalles { get; set; } = new();
     }

@@ -4,6 +4,8 @@ namespace AlahiaPos.Entities.Interfaces
 {
     public interface IDashboardGerencialService
     {
-        Task<DashboardGerencialDto> ObtenerMesActualAsync(int idEmpresa);
+        Task<DashboardGerencialDto> ObtenerMesActualAsync(
+            int idEmpresa,
+            SucursalConsultaScope? consulta = null);
     }
 }

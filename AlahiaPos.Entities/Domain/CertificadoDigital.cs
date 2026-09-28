@@ -4,6 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace AlahiaPos.Entities.Domain
 {
+    [Table("CertificadoDigital")]
     public class CertificadoDigital
     {
         [Key]

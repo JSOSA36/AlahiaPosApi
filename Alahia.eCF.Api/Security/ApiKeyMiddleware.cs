@@ -25,7 +25,10 @@ namespace Alahia.eCF.Api.Security
             var path = context.Request.Path.Value ?? "";
             if (path.StartsWith("/swagger", StringComparison.OrdinalIgnoreCase) ||
                 path.Equals("/api/Receipt/health", StringComparison.OrdinalIgnoreCase) ||
-                path.Equals("/api/ecf/health", StringComparison.OrdinalIgnoreCase))
+                path.Equals("/api/ecf/health", StringComparison.OrdinalIgnoreCase) ||
+                path.Contains("/fe/recepcion/", StringComparison.OrdinalIgnoreCase) ||
+                path.Contains("/fe/aprobacioncomercial/", StringComparison.OrdinalIgnoreCase) ||
+                path.Contains("/fe/autenticacion/", StringComparison.OrdinalIgnoreCase))
             {
                 await _next(context);
                 return;

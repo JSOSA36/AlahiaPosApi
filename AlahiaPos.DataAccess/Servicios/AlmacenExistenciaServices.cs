@@ -42,7 +42,8 @@ namespace AlahiaPos.DataAccess.Servicios
 
         public async Task<decimal> GetTotalPorProducto(
             int idProducto,
-            int idEmpresa)
+            int idEmpresa,
+            int? idSucursal = null)
         {
             var existencias =
                 await _existenciaRepository.GetAllByExpresionAsync(
@@ -52,12 +53,21 @@ namespace AlahiaPos.DataAccess.Servicios
                         x.IdEmpresa == idEmpresa
                 );
 
-            return existencias?.Sum(x => x.Cantidad) ?? 0;
+            var filas = existencias ?? Enumerable.Empty<AlmacenExistencia>();
+
+            if (idSucursal is > 0)
+            {
+                var idsAlmacen = await IdsAlmacenDeSucursal(idEmpresa, idSucursal.Value);
+                filas = filas.Where(x => idsAlmacen.Contains(x.IdAlmacen));
+            }
+
+            return filas.Sum(x => x.Cantidad);
         }
 
         public async Task<List<AlmacenExistenciaDto>> GetDetallePorProducto(
             int idProducto,
-            int idEmpresa)
+            int idEmpresa,
+            int? idSucursal = null)
         {
             var existencias =
                 await _existenciaRepository.GetAllByExpresionAsync(
@@ -72,6 +82,15 @@ namespace AlahiaPos.DataAccess.Servicios
                     x => x.IdEmpresa == idEmpresa && x.Activo
                 );
 
+            IEnumerable<Almacen> almacenesFiltrados =
+                almacenes ?? Enumerable.Empty<Almacen>();
+
+            if (idSucursal is > 0)
+            {
+                almacenesFiltrados = almacenesFiltrados
+                    .Where(x => x.IdSucursal == idSucursal);
+            }
+
             var mapaExistencia = (existencias ?? Enumerable.Empty<AlmacenExistencia>())
                 .GroupBy(x => x.IdAlmacen)
                 .ToDictionary(
@@ -79,12 +98,13 @@ namespace AlahiaPos.DataAccess.Servicios
                     g => g.Sum(x => x.Cantidad)
                 );
 
-            return (almacenes ?? Enumerable.Empty<Almacen>())
+            return almacenesFiltrados
                 .OrderByDescending(x => x.EsPrincipal)
                 .ThenBy(x => x.Nombre)
                 .Select(x => new AlmacenExistenciaDto
                 {
                     IdAlmacen = x.IdAlmacen,
+                    IdSucursal = x.IdSucursal,
                     NombreAlmacen = x.Nombre,
                     Cantidad = mapaExistencia.TryGetValue(x.IdAlmacen, out var cantidad)
                         ? cantidad
@@ -92,6 +112,17 @@ namespace AlahiaPos.DataAccess.Servicios
                     EsPrincipal = x.EsPrincipal
                 })
                 .ToList();
+        }
+
+        private async Task<HashSet<int>> IdsAlmacenDeSucursal(int idEmpresa, int idSucursal)
+        {
+            var almacenes = await _almacenRepository.GetAllByExpresionAsync(
+                x => x.IdEmpresa == idEmpresa && x.IdSucursal == idSucursal
+            );
+
+            return (almacenes ?? Enumerable.Empty<Almacen>())
+                .Select(x => x.IdAlmacen)
+                .ToHashSet();
         }
 
         public async Task AjustarExistencia(

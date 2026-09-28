@@ -244,7 +244,7 @@ namespace PrinterLibrary
         // 👌 Helper: genera la URL de cita para la empresa
         public static string GenerarUrlCita(Guid guid)
         {
-            return $"https://alahiabeautysalonapp.alahiapos.com/citainicio/{guid}";
+            return $"https://alahiapos.com/citas/{guid}";
         }
         public static string GenerarUrlCatalogo(Guid guid)
         {

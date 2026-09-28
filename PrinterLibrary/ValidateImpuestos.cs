@@ -25,7 +25,7 @@ namespace PrinterLibrary
             double ValorItbis = 0;
 
             var GetConfg = _repository.GetVyExpression();
-            if (GetConfg.Valor=="Checked") 
+            if (GetConfg != null && GetConfg.Valor=="Checked") 
             {
             
 

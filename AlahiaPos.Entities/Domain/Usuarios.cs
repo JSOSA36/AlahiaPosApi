@@ -14,6 +14,9 @@ namespace AlahiaPos.Entities.Domain
         // ============================
         public int IdEmpresa { get; set; }
 
+        /// <summary>Sucursal activa de la sesión (un token = un usuario).</summary>
+        public int? IdSucursalActiva { get; set; }
+
         [ForeignKey(nameof(IdEmpresa))]
         public Empresas Empresa { get; set; }
 
@@ -51,6 +54,8 @@ namespace AlahiaPos.Entities.Domain
         public bool PuedeDisminuirCantidadCarrito { get; set; }
 
         public bool PuedeEditarPrecioCarrito { get; set; }
+
+        public bool PuedeAnularFactura { get; set; }
 
         // ============================
         // 🔒 SEGURIDAD / LICENCIA

@@ -9,7 +9,9 @@ using AlahiaPos.Entities.Dto.AlahiaAi;
 using AlahiaPos.Entities.Interfaces;
 using AlahiaPos.Entities.Interfaces.AlahiaAi;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Tesseract;
 
 namespace AlahiaPos.DataAccess.Servicios
 {
@@ -42,17 +44,23 @@ namespace AlahiaPos.DataAccess.Servicios
         private readonly IAiProviderFactory _providers;
         private readonly IAiUsageMonitor _usage;
         private readonly ILogger<FacturaCompraImagenService> _logger;
+        private readonly string _tessdataPath;
 
         public FacturaCompraImagenService(
             AlahiaPosContext context,
             IAiProviderFactory providers,
             IAiUsageMonitor usage,
-            ILogger<FacturaCompraImagenService> logger)
+            ILogger<FacturaCompraImagenService> logger,
+            IConfiguration config)
         {
             _context = context;
             _providers = providers;
             _usage = usage;
             _logger = logger;
+            var configured = config["Suscripcion:TessdataPath"];
+            _tessdataPath = !string.IsNullOrWhiteSpace(configured)
+                ? configured.Trim()
+                : Path.Combine(AppContext.BaseDirectory, "tessdata");
         }
 
         public async Task<FacturaCompraImagenResultadoDto> InterpretarAsync(
@@ -79,12 +87,44 @@ namespace AlahiaPos.DataAccess.Servicios
             if (peso > MaxArchivoBytes)
                 throw new InvalidOperationException("El archivo no puede superar 12 MB.");
 
+            var origen = tieneTexto && !tieneVision ? "PDF" : "archivo";
+            if (!tieneTexto && tieneVision)
+            {
+                texto = OcrLocal(paginas);
+                tieneTexto = texto.Length >= 40;
+                origen = "OCR";
+            }
+
+            var local = FacturaCompraTextoParser.Parse(texto);
+            if (FacturaCompraTextoParser.EsUtil(local))
+                return await ConstruirResultadoAsync(request, DesdeLocal(local), origen + "-local", ct);
+
+            var provider = await _providers.ResolveForEmpresaAsync(request.IdEmpresa, ct);
+            if (provider.IsConfigured)
+            {
+                var ai = await InterpretarConIaAsync(request, paginas, texto, tieneVision, tieneTexto, ct);
+                if (ai != null)
+                    return ai;
+            }
+
+            if (local.Confianza > 0 && (!string.IsNullOrEmpty(local.Ncf) || !string.IsNullOrEmpty(local.RncEmisor) || local.Lineas.Count > 0))
+                return await ConstruirResultadoAsync(request, DesdeLocal(local), origen + "-parcial", ct);
+
+            throw new InvalidOperationException(
+                "No se pudo leer NCF, RNC o líneas. Adjunte el PDF digital del e-CF o una foto nítida y de frente.");
+        }
+
+        private async Task<FacturaCompraImagenResultadoDto?> InterpretarConIaAsync(
+            FacturaCompraInterpretarRequest request,
+            List<FacturaCompraInterpretarPagina> paginas,
+            string texto,
+            bool tieneVision,
+            bool tieneTexto,
+            CancellationToken ct)
+        {
             var provider = await _providers.ResolveForEmpresaAsync(request.IdEmpresa, ct);
             if (!provider.IsConfigured)
-            {
-                throw new InvalidOperationException(
-                    "Alahia AI no está configurada para leer facturas. Configure el proveedor de visión en la empresa.");
-            }
+                return null;
 
             var completionReq = new AiCompletionRequest
             {
@@ -133,21 +173,24 @@ namespace AlahiaPos.DataAccess.Servicios
             }, ct);
 
             if (!completion.Success || string.IsNullOrWhiteSpace(completion.Text))
-            {
-                throw new InvalidOperationException(
-                    string.IsNullOrWhiteSpace(completion.Error)
-                        ? "No se pudo leer la factura. Adjunte una foto nítida o un PDF del comprobante."
-                        : completion.Error);
-            }
+                return null;
 
             var extracted = ParsearExtraccion(completion.Text);
             if (extracted == null)
             {
                 _logger.LogWarning("JSON de factura ilegible. Preview: {Preview}", Truncate(completion.Text, 300));
-                throw new InvalidOperationException(
-                    "Se leyó el archivo pero no se pudo interpretar como factura. Verifique que sea un comprobante de compra.");
+                return null;
             }
 
+            return await ConstruirResultadoAsync(request, extracted, completion.Provider, ct);
+        }
+
+        private async Task<FacturaCompraImagenResultadoDto> ConstruirResultadoAsync(
+            FacturaCompraInterpretarRequest request,
+            ExtraccionAi extracted,
+            string provider,
+            CancellationToken ct)
+        {
             var rnc = SoloDigitos(extracted.RncEmisor);
             var proveedor = await BuscarProveedorAsync(request.IdEmpresa, rnc, extracted.NombreEmisor, ct);
 
@@ -168,6 +211,8 @@ namespace AlahiaPos.DataAccess.Servicios
             {
                 var linea = MapearLinea(raw, extracted.PreciosIncluyenItbis);
                 EmparejarProducto(linea, catalogo);
+                if (!linea.Emparejado)
+                    await AsegurarProductoDesdeLineaAsync(request.IdEmpresa, proveedor?.IdProveedor ?? 0, linea, catalogo, ct);
                 lineas.Add(linea);
             }
 
@@ -175,12 +220,21 @@ namespace AlahiaPos.DataAccess.Servicios
                 ? "Credito"
                 : "Contado";
 
+            var creados = lineas.Count(l => l.MotivoEmparejado == "Alta desde factura");
+            var mensaje = proveedor != null
+                ? "Factura leída. Revise proveedor, NCF y líneas antes de guardar."
+                : "Factura leída. El proveedor no está en el catálogo: selecciónelo o créelo, luego revise las líneas.";
+            if (creados > 0)
+            {
+                mensaje = creados == 1
+                    ? "Factura leída. Se creó 1 producto en el catálogo para integrar la línea. Revise y guarde."
+                    : $"Factura leída. Se crearon {creados} productos en el catálogo para integrar las líneas. Revise y guarde.";
+            }
+
             return new FacturaCompraImagenResultadoDto
             {
                 Success = true,
-                Message = proveedor != null
-                    ? "Factura leída. Revise proveedor, NCF y líneas antes de guardar."
-                    : "Factura leída. El proveedor no está en el catálogo: selecciónelo o créelo, luego revise las líneas.",
+                Message = mensaje,
                 RncEmisor = rnc,
                 NombreEmisor = extracted.NombreEmisor?.Trim(),
                 IdProveedor = proveedor?.IdProveedor,
@@ -197,8 +251,60 @@ namespace AlahiaPos.DataAccess.Servicios
                 Lineas = lineas,
                 LineasEmparejadas = lineas.Count(l => l.Emparejado),
                 LineasSinProducto = lineas.Count(l => !l.Emparejado),
-                Provider = completion.Provider
+                Provider = provider
             };
+        }
+
+        private static ExtraccionAi DesdeLocal(FacturaCompraCamposExtraidos local) => new()
+        {
+            RncEmisor = local.RncEmisor,
+            NombreEmisor = local.NombreEmisor,
+            Ncf = local.Ncf,
+            Fecha = local.Fecha,
+            CondicionPago = local.CondicionPago,
+            FechaVencimiento = local.FechaVencimiento,
+            Subtotal = local.Subtotal,
+            Itbis = local.Itbis,
+            Total = local.Total,
+            PreciosIncluyenItbis = local.PreciosIncluyenItbis,
+            Lineas = local.Lineas.Select(l => new LineaAi
+            {
+                Descripcion = l.Descripcion,
+                Codigo = l.Codigo,
+                Cantidad = l.Cantidad,
+                PrecioUnitario = l.PrecioUnitario,
+                Itbis = l.Itbis,
+                Importe = l.Importe
+            }).ToList()
+        };
+
+        private string OcrLocal(List<FacturaCompraInterpretarPagina> paginas)
+        {
+            var trained = Path.Combine(_tessdataPath, "eng.traineddata");
+            if (!Directory.Exists(_tessdataPath) || !File.Exists(trained))
+            {
+                _logger.LogWarning("tessdata no encontrado en {Path}. OCR local omitido.", _tessdataPath);
+                return "";
+            }
+
+            var sb = new StringBuilder();
+            try
+            {
+                using var engine = new TesseractEngine(_tessdataPath, "eng", EngineMode.Default);
+                foreach (var pagina in paginas)
+                {
+                    using var img = Pix.LoadFromMemory(pagina.Bytes);
+                    using var page = engine.Process(img);
+                    sb.AppendLine(page.GetText() ?? "");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "OCR local de factura de compra falló.");
+                return "";
+            }
+
+            return Truncate(sb.ToString().Trim(), 14000);
         }
 
         private async Task<Proveedores?> BuscarProveedorAsync(
@@ -295,6 +401,93 @@ namespace AlahiaPos.DataAccess.Servicios
                 Asignar(linea, best, $"Nombre ({bestScore}%)");
         }
 
+        private async Task AsegurarProductoDesdeLineaAsync(
+            int idEmpresa,
+            int idProveedor,
+            FacturaCompraImagenLineaDto linea,
+            List<CatalogoItem> catalogo,
+            CancellationToken ct)
+        {
+            var nombre = (linea.Descripcion ?? "").Trim();
+            if (nombre.Length < 3)
+                return;
+
+            var clave = Normalizar(nombre);
+            var ya = catalogo.FirstOrDefault(p => Normalizar(p.Nombre) == clave);
+            if (ya != null)
+            {
+                Asignar(linea, ya, "Catálogo");
+                return;
+            }
+
+            var idAlmacen = await _context.Almacenes.AsNoTracking()
+                .Where(a => a.IdEmpresa == idEmpresa && a.Activo)
+                .OrderByDescending(a => a.EsPrincipal)
+                .Select(a => (int?)a.IdAlmacen)
+                .FirstOrDefaultAsync(ct);
+
+            var idCategoria = await _context.Categorias.AsNoTracking()
+                .Where(c => c.IdEmpresa == idEmpresa)
+                .OrderBy(c => c.IdCategoria)
+                .Select(c => (int?)c.IdCategoria)
+                .FirstOrDefaultAsync(ct);
+
+            var costo = linea.PrecioUnitario > 0 ? linea.PrecioUnitario : 0;
+            var venta = Math.Round(costo <= 0 ? 0 : costo * 1.30m, 2, MidpointRounding.AwayFromZero);
+
+            var producto = new Productos
+            {
+                IdEmpresa = idEmpresa,
+                Nombre = nombre,
+                Descripcion = nombre,
+                CodigoBarra = string.IsNullOrWhiteSpace(linea.Codigo) ? "" : linea.Codigo.Trim(),
+                PrecioCompra = costo,
+                PrecioVenta = venta,
+                Precio1 = venta,
+                Precio2 = venta,
+                Precio3 = venta,
+                PrecioDolar = 0,
+                Descuento = 0,
+                PorcientoDescuento = 0,
+                PorcientoGanancia = 30,
+                Ganancia = Math.Round(venta - costo, 2, MidpointRounding.AwayFromZero),
+                Rentado = 0,
+                Cantidad = 0,
+                Stock = 0,
+                TipoComportamiento = TipoComportamientoConstantes.Inventario,
+                TipoOperacion = "AMBAS",
+                TipoProducto = "Producto",
+                SeCompra = true,
+                SeVende = true,
+                SeAlquila = false,
+                ControlarStock = true,
+                IsActivo = true,
+                Itbis = linea.Itbis > 0,
+                EsServicio = false,
+                IdProveedor = idProveedor > 0 ? idProveedor : 0,
+                IdAlmacen = idAlmacen,
+                IdCategoria = idCategoria,
+                IdUnidadMedida = 1,
+                FechaInseccion = DateTime.Now,
+                DisponibleEnCitas = false,
+                DuracionServicio = 0,
+                Nota = "Alta automática desde factura de compra"
+            };
+
+            _context.Productos.Add(producto);
+            await _context.SaveChangesAsync(ct);
+
+            var item = new CatalogoItem
+            {
+                IdProducto = producto.IdProducto,
+                Nombre = producto.Nombre ?? nombre,
+                CodigoBarra = producto.CodigoBarra ?? "",
+                TipoComportamiento = producto.TipoComportamiento
+            };
+            catalogo.Add(item);
+            Asignar(linea, item, "Alta desde factura");
+        }
+
         private static void Asignar(FacturaCompraImagenLineaDto linea, CatalogoItem p, string motivo)
         {
             linea.IdProducto = p.IdProducto;
@@ -311,8 +504,8 @@ namespace AlahiaPos.DataAccess.Servicios
             if (factura == catalogo)
                 return 100;
             if (catalogo.StartsWith(factura) || factura.StartsWith(catalogo))
-                return 88;
-            if (catalogo.Contains(factura) || factura.Contains(catalogo))
+                return factura.Length >= 8 && catalogo.Length >= 8 ? 88 : 40;
+            if (factura.Length >= 8 && catalogo.Length >= 8 && (catalogo.Contains(factura) || factura.Contains(catalogo)))
                 return 78;
 
             var tokensF = factura.Split(' ', StringSplitOptions.RemoveEmptyEntries);
@@ -320,10 +513,26 @@ namespace AlahiaPos.DataAccess.Servicios
             if (tokensF.Length == 0 || tokensC.Length == 0)
                 return 0;
 
-            var hits = tokensF.Count(t => t.Length >= 3 && tokensC.Any(c => c.Contains(t) || t.Contains(c)));
+            var hits = tokensF.Count(t => TokenCoincide(t, tokensC));
             if (hits == 0)
                 return 0;
             return (int)Math.Round(100.0 * hits / Math.Max(tokensF.Length, tokensC.Length));
+        }
+
+        private static bool TokenCoincide(string token, string[] catalogo)
+        {
+            if (token.Length < 4)
+                return false;
+            foreach (var c in catalogo)
+            {
+                if (c.Length < 4)
+                    continue;
+                if (c == token)
+                    return true;
+                if (c.StartsWith(token) || token.StartsWith(c))
+                    return true;
+            }
+            return false;
         }
 
         private static ExtraccionAi? ParsearExtraccion(string text)

@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace AlahiaPos.Entities.Fiscal
 {
@@ -105,18 +107,36 @@ namespace AlahiaPos.Entities.Fiscal
                 return $"https://fc.dgii.gov.do/{amb}/ConsultaTimbreFC?{qsFc}";
             }
 
-            var qs = string.Join("&", new[]
+            // E43 / E47 (y otros sin comprador) no llevan RNCComprador en el XML.
+            // ConsultaTimbre con RncComprador= vacío responde "no fue encontrada la factura".
+            var parts = new List<string>
             {
-                "RncEmisor=" + Uri.EscapeDataString(rncE),
-                "RncComprador=" + Uri.EscapeDataString(SoloDigitos(rncComprador)),
-                "ENCF=" + Uri.EscapeDataString(encfT),
-                "FechaEmision=" + Uri.EscapeDataString(fechaEmision.ToString("dd-MM-yyyy", CultureInfo.InvariantCulture)),
-                "MontoTotal=" + Uri.EscapeDataString(monto),
-                // DGII: espacio → %20; no escapar ':' de la hora (ejemplo oficial).
-                "FechaFirma=" + fechaFirma.ToString("dd-MM-yyyy HH:mm:ss", CultureInfo.InvariantCulture).Replace(" ", "%20"),
-                "CodigoSeguridad=" + Uri.EscapeDataString(codigo)
-            });
-            return $"https://ecf.dgii.gov.do/{amb}/ConsultaTimbre?{qs}";
+                "RncEmisor=" + Uri.EscapeDataString(rncE)
+            };
+            var rncC = SoloDigitos(rncComprador);
+            if (!string.IsNullOrEmpty(rncC))
+                parts.Add("RncComprador=" + Uri.EscapeDataString(rncC));
+            parts.Add("ENCF=" + Uri.EscapeDataString(encfT));
+            parts.Add("FechaEmision=" + Uri.EscapeDataString(fechaEmision.ToString("dd-MM-yyyy", CultureInfo.InvariantCulture)));
+            parts.Add("MontoTotal=" + Uri.EscapeDataString(monto));
+            // DGII: espacio → %20; no escapar ':' de la hora (ejemplo oficial).
+            parts.Add("FechaFirma=" + fechaFirma.ToString("dd-MM-yyyy HH:mm:ss", CultureInfo.InvariantCulture).Replace(" ", "%20"));
+            parts.Add("CodigoSeguridad=" + Uri.EscapeDataString(codigo));
+            return $"https://ecf.dgii.gov.do/{amb}/ConsultaTimbre?{string.Join("&", parts)}";
+        }
+
+        /// <summary>
+        /// Quita <c>RncComprador=</c> vacío de una URL ya guardada en lote.
+        /// No cambia fechas, monto ni código.
+        /// </summary>
+        public static string? OmitirRncCompradorVacio(string? url)
+        {
+            if (string.IsNullOrWhiteSpace(url)) return url;
+            var u = url.Trim();
+            u = Regex.Replace(u, @"&RncComprador=(?=&|$)", "", RegexOptions.IgnoreCase);
+            u = Regex.Replace(u, @"\?RncComprador=&", "?", RegexOptions.IgnoreCase);
+            u = Regex.Replace(u, @"\?RncComprador=$", "?", RegexOptions.IgnoreCase);
+            return u;
         }
 
         public static DateTime? TryGetFechaFirma(string? url)

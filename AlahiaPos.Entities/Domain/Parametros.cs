@@ -14,6 +14,8 @@ namespace AlahiaPos.Entities.Domain
 
         public int IdEmpresa { get; set; }
 
+        public int? IdSucursal { get; set; }
+
         [MaxLength(20)]
         public string Tipo { get; set; } = string.Empty;
         // EMPRESA / POS

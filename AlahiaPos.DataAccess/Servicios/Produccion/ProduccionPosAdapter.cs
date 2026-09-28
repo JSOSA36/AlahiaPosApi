@@ -45,7 +45,7 @@ namespace AlahiaPos.DataAccess.Servicios.Produccion
         public static string BuildIdempotencyKey(int idEmpresa, int idFacturaHeader)
             => $"{IdempotencyPrefix}:{idEmpresa}:{idFacturaHeader}";
 
-        public async Task PublicarOrdenSiAplicaAsync(FacturaHeaders header, int? origenIdAnterior = null)
+        public async Task PublicarOrdenSiAplicaAsync(FacturaHeaders header, int? origenIdAnterior = null, string? origenModulo = null)
         {
             if (header == null || header.IdEmpresa <= 0 || header.IdFacturaHeader <= 0)
                 return;
@@ -68,17 +68,16 @@ namespace AlahiaPos.DataAccess.Servicios.Produccion
                 }
 
                 var esActualizacion = origenIdAnterior.HasValue
-                    && origenIdAnterior.Value > 0
-                    && origenIdAnterior.Value != header.IdFacturaHeader;
+                    && origenIdAnterior.Value > 0;
 
                 if (esActualizacion)
                 {
-                    var upd = ConstruirEventoActualizacion(header, origenIdAnterior!.Value, items);
+                    var upd = ConstruirEventoActualizacion(header, origenIdAnterior!.Value, items, origenModulo);
                     await _publisher.PublishAsync(upd);
                 }
                 else
                 {
-                    var crear = ConstruirEventoCreacion(header, items);
+                    var crear = ConstruirEventoCreacion(header, items, origenModulo);
                     await _publisher.PublishAsync(crear);
                 }
             }
@@ -104,10 +103,14 @@ namespace AlahiaPos.DataAccess.Servicios.Produccion
 
         private ProduccionTrabajoSolicitadoEvent ConstruirEventoCreacion(
             FacturaHeaders header,
-            List<ProduccionTrabajoItemSolicitudDto> items)
+            List<ProduccionTrabajoItemSolicitudDto> items,
+            string? origenModulo)
         {
             var nombreVisible = ResolverNombreVisible(header);
             var tipoOrden = FormatearTipoOrden(header.TipoOrden);
+            var modulo = string.IsNullOrWhiteSpace(origenModulo)
+                ? ProduccionConstantes.OrigenModuloPos
+                : origenModulo.Trim().ToUpperInvariant();
 
             return new ProduccionTrabajoSolicitadoEvent
             {
@@ -117,7 +120,7 @@ namespace AlahiaPos.DataAccess.Servicios.Produccion
                 ReferenciaId = header.IdFacturaHeader,
                 ReferenciaTipo = ProduccionConstantes.OrigenTipoFacturaHeader,
                 TipoTrabajo = ProduccionConstantes.TipoPosOrden,
-                OrigenModulo = ProduccionConstantes.OrigenModuloPos,
+                OrigenModulo = modulo,
                 OrigenTipo = ProduccionConstantes.OrigenTipoFacturaHeader,
                 OrigenId = header.IdFacturaHeader,
                 IdempotencyKey = BuildIdempotencyKey(header.IdEmpresa, header.IdFacturaHeader),
@@ -138,10 +141,14 @@ namespace AlahiaPos.DataAccess.Servicios.Produccion
         private ProduccionTrabajoActualizadoEvent ConstruirEventoActualizacion(
             FacturaHeaders header,
             int origenIdAnterior,
-            List<ProduccionTrabajoItemSolicitudDto> items)
+            List<ProduccionTrabajoItemSolicitudDto> items,
+            string? origenModulo)
         {
             var nombreVisible = ResolverNombreVisible(header);
             var tipoOrden = FormatearTipoOrden(header.TipoOrden);
+            var modulo = string.IsNullOrWhiteSpace(origenModulo)
+                ? ProduccionConstantes.OrigenModuloPos
+                : origenModulo.Trim().ToUpperInvariant();
 
             return new ProduccionTrabajoActualizadoEvent
             {
@@ -151,7 +158,7 @@ namespace AlahiaPos.DataAccess.Servicios.Produccion
                 ReferenciaId = header.IdFacturaHeader,
                 ReferenciaTipo = ProduccionConstantes.OrigenTipoFacturaHeader,
                 TipoTrabajo = ProduccionConstantes.TipoPosOrden,
-                OrigenModulo = ProduccionConstantes.OrigenModuloPos,
+                OrigenModulo = modulo,
                 OrigenTipo = ProduccionConstantes.OrigenTipoFacturaHeader,
                 OrigenId = header.IdFacturaHeader,
                 OrigenIdAnterior = origenIdAnterior,

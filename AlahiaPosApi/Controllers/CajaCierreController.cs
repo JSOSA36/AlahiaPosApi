@@ -2,6 +2,7 @@
 using AlahiaPos.Entities.Domain;
 using AlahiaPos.Entities.Dto;
 using AlahiaPos.Entities.Interfaces;
+using AlahiaPosApi.Auth;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AlahiaPosApi.Controllers
@@ -13,12 +14,21 @@ namespace AlahiaPosApi.Controllers
     {
 
         ICajaCierreService _service;
+        private readonly ISucursalService _sucursales;
+        private readonly ISesionTokenResolver _tokens;
+        private readonly IReporteCruceStockService _cruceStock;
 
         public CajaCierreController(
-            ICajaCierreService service
+            ICajaCierreService service,
+            ISucursalService sucursales,
+            ISesionTokenResolver tokens,
+            IReporteCruceStockService cruceStock
         )
         {
             _service = service;
+            _sucursales = sucursales;
+            _tokens = tokens;
+            _cruceStock = cruceStock;
         }
 
         /* =====================================
@@ -38,19 +48,57 @@ namespace AlahiaPosApi.Controllers
 
         [HttpGet]
         [Route("GetByFecha")]
-        public async Task<IEnumerable<CajaListadoDto>>
-GetByFecha(
-    int idEmpresa,
-    DateTime desde,
-    DateTime hasta
-)
+        public async Task<IActionResult> GetByFecha(
+            int idEmpresa,
+            DateTime desde,
+            DateTime hasta,
+            int? idSucursalFiltro = null)
         {
-            return await _service.GetByFechaAsync(
+            var (scope, error) = await SucursalConsultaHttp.ResolverAsync(
+                HttpContext, _tokens, _sucursales, idEmpresa, idSucursalFiltro);
+            if (error != null)
+                return error;
+
+            var listado = await _service.GetByFechaAsync(idEmpresa, desde, hasta);
+            var filtrado = listado
+                .Where(x => scope.Incluye(x.IdSucursal))
+                .ToList();
+
+            foreach (var item in filtrado)
+            {
+                var id = item.IdSucursal is > 0 ? item.IdSucursal.Value : scope.IdPrincipal;
+                item.NombreSucursal = scope.Sucursales
+                    .FirstOrDefault(s => s.IdSucursal == id)?.Nombre;
+            }
+
+            return Ok(filtrado);
+        }
+
+        /* =====================================
+        🔥 CRUCE STOCK vs VENTAS POR TURNO
+        ===================================== */
+
+        [HttpGet]
+        [Route("CruceStockVsVentas")]
+        public async Task<IActionResult> CruceStockVsVentas(
+            int idEmpresa,
+            DateTime desde,
+            DateTime hasta,
+            int? idProducto = null,
+            int? idUsuario = null,
+            int? idCajaCierre = null)
+        {
+            var lineas = await _cruceStock.ObtenerCruceAsync(
                 idEmpresa,
                 desde,
-                hasta
-            );
+                hasta,
+                idProducto,
+                idUsuario,
+                idCajaCierre);
+
+            return Ok(lineas);
         }
+
         /* =====================================
         🔥 GET BY ID
         ===================================== */
@@ -71,12 +119,24 @@ GetByFecha(
         [Route("UltimoCierre")]
         public async Task<CajaCierre?>
             UltimoCierre(
-                int idEmpresa
+                int idEmpresa,
+                int idUsuario = 0
             )
         {
+            var uid = await IdUsuarioCobroResolver.ResolverAsync(
+                HttpContext,
+                _tokens,
+                idUsuario);
+
+            if (uid <= 0)
+            {
+                return null;
+            }
+
             return await _service
                 .GetUltimoCierreAsync(
-                    idEmpresa
+                    idEmpresa,
+                    uid
                 );
         }
 
@@ -86,6 +146,7 @@ GetByFecha(
 
         [HttpPost]
         [Route("Procesar")]
+        [RequiereTerminalPos]
         public async Task<IActionResult>
 Procesar(
 

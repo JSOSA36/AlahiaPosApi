@@ -11,7 +11,7 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.DgiiDirecto.Definitions
         public override IReadOnlyList<EcfCampoDef>? InformacionReferencia => null;
 
         public override IReadOnlyList<EcfCampoDef>? Comprador { get; } =
-            BuildCompradorComun(forzarRncVacio: false, rncObligatorio: true);
+            BuildCompradorComun(forzarRncVacio: false, rncObligatorio: false);
 
         public override IReadOnlyList<EcfCampoDef> Totales { get; } = BuildTotalesE46();
         public override IReadOnlyList<EcfCampoDef> Item { get; } = BuildItemE46();
@@ -45,9 +45,10 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.DgiiDirecto.Definitions
         {
             base.Validar(ctx);
 
-            if (string.IsNullOrWhiteSpace(ctx.Enc.RncComprador))
+            if (string.IsNullOrWhiteSpace(ctx.Enc.RncComprador)
+                && string.IsNullOrWhiteSpace(ctx.Enc.IdentificadorExtranjero))
                 throw new InvalidOperationException(
-                    "E46: RNCComprador es obligatorio (regla DGII testecf; XSD lo marca opcional).");
+                    "E46: RNCComprador o IdentificadorExtranjero es obligatorio.");
 
             foreach (var l in ctx.Documento.Lineas)
             {
@@ -88,6 +89,10 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.DgiiDirecto.Definitions
                     c => EcfXmlFormat.Money(c.Enc.TotalItbis3 > 0 ? c.Enc.TotalItbis3 : c.Enc.TotalItbis)),
                 EcfXmlFormat.Campo("MontoTotal", EcfCampoPresence.Obligatorio, 6,
                     c => EcfXmlFormat.Money(c.Enc.MontoTotal)),
+                EcfXmlFormat.Campo("MontoPeriodo", EcfCampoPresence.Opcional, 7,
+                    c => c.Enc.MontoPeriodo is decimal mp ? EcfXmlFormat.Money(mp) : null),
+                EcfXmlFormat.Campo("ValorPagar", EcfCampoPresence.Opcional, 8,
+                    c => c.Enc.ValorPagar is decimal vp ? EcfXmlFormat.Money(vp) : null),
                 EcfXmlFormat.Campo("MontoGravadoI1", EcfCampoPresence.Prohibido, 90, nota: "No en XSD E46"),
                 EcfXmlFormat.Campo("MontoGravadoI2", EcfCampoPresence.Prohibido, 91, nota: "No en XSD E46"),
                 EcfXmlFormat.Campo("MontoExento", EcfCampoPresence.Prohibido, 92, nota: "No en XSD E46"),
@@ -112,21 +117,29 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.DgiiDirecto.Definitions
                 c => EcfXmlFormat.Esc(c.LineaActual!.NombreItem, 80)),
             EcfXmlFormat.Campo("IndicadorBienoServicio", EcfCampoPresence.Obligatorio, 4,
                 c => c.LineaActual!.EsBien ? 1 : 2),
-            EcfXmlFormat.Campo("CantidadItem", EcfCampoPresence.Obligatorio, 5,
+            EcfXmlFormat.Campo("DescripcionItem", EcfCampoPresence.Opcional, 5,
+                c => string.IsNullOrWhiteSpace(c.LineaActual!.DescripcionItem)
+                    ? null
+                    : EcfXmlFormat.Esc(c.LineaActual.DescripcionItem, 1000)),
+            EcfXmlFormat.Campo("CantidadItem", EcfCampoPresence.Obligatorio, 6,
                 c => EcfXmlFormat.Money(c.LineaActual!.Cantidad)),
-            EcfXmlFormat.Campo("UnidadMedida", EcfCampoPresence.Opcional, 6,
+            EcfXmlFormat.Campo("UnidadMedida", EcfCampoPresence.Opcional, 7,
                 c => c.LineaActual!.UnidadMedida),
-            EcfXmlFormat.Campo("PrecioUnitarioItem", EcfCampoPresence.Obligatorio, 7,
+            EcfXmlFormat.Campo("PrecioUnitarioItem", EcfCampoPresence.Obligatorio, 8,
                 c => EcfXmlFormat.Money(c.LineaActual!.PrecioUnitario)),
-            EcfXmlFormat.Campo("DescuentoMonto", EcfCampoPresence.Opcional, 8,
+            EcfXmlFormat.Campo("DescuentoMonto", EcfCampoPresence.Opcional, 9,
                 c => c.LineaActual!.DescuentoMonto is > 0
                     ? EcfXmlFormat.Money(c.LineaActual.DescuentoMonto.Value)
                     : null),
-            EcfXmlFormat.Campo("RecargoMonto", EcfCampoPresence.Opcional, 9,
+            EcfXmlFormat.Campo("TablaSubDescuento", EcfCampoPresence.Opcional, 10,
+                c => EcfXmlFormat.TablaSubDescuentoItem(c), complejo: true),
+            EcfXmlFormat.Campo("RecargoMonto", EcfCampoPresence.Opcional, 11,
                 c => c.LineaActual!.RecargoMonto is > 0
                     ? EcfXmlFormat.Money(c.LineaActual.RecargoMonto.Value)
                     : null),
-            EcfXmlFormat.Campo("MontoItem", EcfCampoPresence.Obligatorio, 10,
+            EcfXmlFormat.Campo("TablaSubRecargo", EcfCampoPresence.Opcional, 12,
+                c => EcfXmlFormat.TablaSubRecargoItem(c), complejo: true),
+            EcfXmlFormat.Campo("MontoItem", EcfCampoPresence.Obligatorio, 13,
                 c => EcfXmlFormat.Money(c.LineaActual!.MontoItem)),
         };
     }

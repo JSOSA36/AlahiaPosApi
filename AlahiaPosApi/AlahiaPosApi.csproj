@@ -4,6 +4,8 @@
     <TargetFramework>net6.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <Utf8Output>true</Utf8Output>
+    <UserSecretsId>alahia-pos-api-dev</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>

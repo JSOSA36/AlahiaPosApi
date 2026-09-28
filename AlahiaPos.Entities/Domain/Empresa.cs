@@ -41,13 +41,19 @@ namespace AlahiaPos.Entities.Domain
         /// Cargo por reconexión en RD$ (pesos). Se aplica solo si <see cref="ReconexionPendiente"/>.
         /// 0 = este cliente no tiene cargo de reconexión.
         /// </summary>
-        public decimal CargoReconexionDop { get; set; } = 500m;
+        public decimal CargoReconexionDop { get; set; } = 1000m;
 
         /// <summary>
         /// True tras suspensión por falta de pago: el próximo cobro incluye cargo de reconexión.
         /// Se limpia al aprobar el pago / marcar pagado.
         /// </summary>
         public bool ReconexionPendiente { get; set; } = false;
+
+        /// <summary>
+        /// True si la sucursal opera el domingo. Si el día 30 cae domingo y esto es false,
+        /// el modal de cobro se muestra el día siguiente.
+        /// </summary>
+        public bool TrabajaDomingo { get; set; } = true;
 
         /// <summary>Empresa dueña de la plataforma (MacroBits). Exenta de cobros/suspensión.</summary>
         public bool EsEmpresaSistema { get; set; } = false;
@@ -87,9 +93,28 @@ namespace AlahiaPos.Entities.Domain
         public bool? UsaSSL { get; set; }
 
         public string? InfoAgendar { get; set; }
+
+        /// <summary>
+        /// Si true, el cliente debe subir voucher y cubrir <see cref="MontoReservaCitas"/> al agendar en línea.
+        /// El salón puede seguir creando citas en el ERP sin voucher.
+        /// </summary>
+        public bool PedirVoucherCitas { get; set; } = false;
+
+        /// <summary>Monto de reserva/abono (RD$) que el salón exige en la app de citas.</summary>
+        public decimal MontoReservaCitas { get; set; } = 0m;
+
+        /// <summary>Avisos automáticos al cliente por WhatsApp Business (Alahia Citas).</summary>
+        public bool NotificarCitasWhatsApp { get; set; } = true;
+
         public string? NombreRemitente { get; set; }
 
         public int? LimiteUsuario { get; set; }
+
+        /// <summary>
+        /// Cupo de PCs que pueden abrir el POS (cajas). 1 = una sola caja/PC.
+        /// No aplica a MacroBits (empresa sistema).
+        /// </summary>
+        public int LimiteTerminalesPos { get; set; } = 1;
 
         /// <summary>Nivel de soporte contratado: STANDARD | GOLD | PREMIUM.</summary>
         [MaxLength(20)]

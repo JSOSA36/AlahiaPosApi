@@ -68,7 +68,31 @@ namespace AlahiaPos.DataAccess.Servicios
                 .Select(g => new { g.Key, N = g.Count() })
                 .ToDictionaryAsync(x => x.Key, x => x.N);
 
-            return empresas.Select(e => MapListItem(e, counts.GetValueOrDefault(e.IdEmpresa), hoy)).ToList();
+            Dictionary<int, int> terminales = new();
+            try
+            {
+                terminales = await _db.PosTerminal.AsNoTracking()
+                    .Where(t => t.Estado == PosTerminalEstados.Activo)
+                    .GroupBy(t => t.IdEmpresa)
+                    .Select(g => new { g.Key, N = g.Count() })
+                    .ToDictionaryAsync(x => x.Key, x => x.N);
+            }
+            catch
+            {
+                terminales = new();
+            }
+
+            var usuarios = await _db.Usuarios.AsNoTracking()
+                .GroupBy(u => u.IdEmpresa)
+                .Select(g => new { g.Key, N = g.Count() })
+                .ToDictionaryAsync(x => x.Key, x => x.N);
+
+            return empresas.Select(e => MapListItem(
+                e,
+                counts.GetValueOrDefault(e.IdEmpresa),
+                terminales.GetValueOrDefault(e.IdEmpresa),
+                usuarios.GetValueOrDefault(e.IdEmpresa),
+                hoy)).ToList();
         }
 
         public async Task<EmpresaAdminDetalleDto?> ObtenerAsync(int idEmpresa)
@@ -84,7 +108,14 @@ namespace AlahiaPos.DataAccess.Servicios
                 select m.Codigo
             ).ToListAsync();
 
-            var item = MapListItem(e, codigos.Count, DateTime.Today);
+            var usuariosReg = await _db.Usuarios.AsNoTracking()
+                .CountAsync(u => u.IdEmpresa == idEmpresa);
+            var item = MapListItem(
+                e,
+                codigos.Count,
+                await ContarTerminalesActivosAsync(idEmpresa),
+                usuariosReg,
+                DateTime.Today);
             return new EmpresaAdminDetalleDto
             {
                 IdEmpresa = item.IdEmpresa,
@@ -99,11 +130,16 @@ namespace AlahiaPos.DataAccess.Servicios
                 EsDemoVigente = item.EsDemoVigente,
                 CantidadModulos = item.CantidadModulos,
                 LimiteUsuario = item.LimiteUsuario,
+                UsuariosRegistrados = item.UsuariosRegistrados,
+                LimiteTerminalesPos = item.LimiteTerminalesPos,
+                TerminalesPosActivos = item.TerminalesPosActivos,
                 NivelSoporte = item.NivelSoporte,
+                TrabajaDomingo = item.TrabajaDomingo,
                 Direccion = e.Direccion,
                 CodigosModulo = codigos,
                 ModulosDisponibles = await CatalogoModulosAsync(idEmpresa),
-                Perfiles = await ListarPerfilesAsync(idEmpresa)
+                Perfiles = await ListarPerfilesAsync(idEmpresa),
+                TerminalesPos = await ListarTerminalesDtoAsync(idEmpresa)
             };
         }
 
@@ -121,24 +157,69 @@ namespace AlahiaPos.DataAccess.Servicios
                 foreach (var c in codes) seleccion.Add(c);
             }
 
-            var all = (await _modulos.GetAllModulos())
-                .Where(m => m.Activo && !string.IsNullOrWhiteSpace(m.Codigo))
-                .OrderBy(m => m.Nombre)
-                .ToList();
+            var all = await _db.Modulos.AsNoTracking()
+                .Where(m => !string.IsNullOrWhiteSpace(m.Codigo))
+                .ToListAsync();
 
-            return all.Select(m =>
-            {
-                var codigo = m.Codigo.Trim();
-                var excluido = DemoVerticalPresets.CodigosInternosNunca.Contains(codigo);
-                return new ModuloCatalogoItemDto
+            return all
+                .Select(m =>
                 {
-                    Id = m.Id,
-                    Codigo = codigo,
-                    Nombre = m.Nombre ?? codigo,
-                    Asignable = !excluido,
-                    Seleccionado = seleccion.Contains(codigo)
-                };
-            }).ToList();
+                    var codigo = m.Codigo.Trim();
+                    var interno = DemoVerticalPresets.CodigosInternosNunca.Contains(codigo);
+                    return new ModuloCatalogoItemDto
+                    {
+                        Id = m.Id,
+                        Codigo = codigo,
+                        Nombre = TextoMojibake.Reparar(m.Nombre) ?? codigo,
+                        Asignable = m.Activo && !interno,
+                        Seleccionado = seleccion.Contains(codigo),
+                        Activo = m.Activo,
+                        Interno = interno
+                    };
+                })
+                .OrderBy(m => m.Interno)
+                .ThenBy(m => m.Nombre, StringComparer.CurrentCultureIgnoreCase)
+                .ToList();
+        }
+
+        public async Task ActualizarDatosAsync(int idEmpresa, EmpresaAdminDatosRequest req)
+        {
+            if (req == null || string.IsNullOrWhiteSpace(req.NombreComercial) || string.IsNullOrWhiteSpace(req.Direccion))
+                throw new InvalidOperationException("Nombre comercial y dirección son obligatorios.");
+
+            var e = await _db.Empresas.AsTracking()
+                .FirstOrDefaultAsync(x => x.IdEmpresa == idEmpresa && !x.EsEmpresaSistema)
+                ?? throw new InvalidOperationException("Empresa no encontrada.");
+
+            e.NombreComercial = req.NombreComercial.Trim();
+            e.RNC = req.RNC?.Trim() ?? "";
+            e.Direccion = req.Direccion.Trim();
+            e.Telefono = req.Telefono?.Trim() ?? "";
+            if (!string.IsNullOrWhiteSpace(req.CorreElectronico))
+                e.CorreElectronico = req.CorreElectronico.Trim();
+            if (req.LimiteUsuario > 0)
+            {
+                var registrados = await _db.Usuarios
+                    .CountAsync(u => u.IdEmpresa == idEmpresa);
+                if (req.LimiteUsuario < registrados)
+                {
+                    throw new InvalidOperationException(
+                        $"No puedes bajar los usuarios a {req.LimiteUsuario}: hay {registrados} registrados. Elimina o desactiva usuarios primero.");
+                }
+                e.LimiteUsuario = req.LimiteUsuario;
+            }
+
+            var limitePos = req.LimiteTerminalesPos < 1 ? 1 : req.LimiteTerminalesPos;
+            var activos = await _db.PosTerminal
+                .CountAsync(t => t.IdEmpresa == idEmpresa && t.Estado == PosTerminalEstados.Activo);
+            if (limitePos < activos)
+            {
+                throw new InvalidOperationException(
+                    $"No puedes bajar las licencias POS a {limitePos}: hay {activos} PC(s) activas. Revoca equipos primero.");
+            }
+            e.LimiteTerminalesPos = limitePos;
+
+            await _db.SaveChangesAsync();
         }
 
         public Task<List<EmpresaAdminVerticalPresetDto>> ListarVerticalesAsync()
@@ -194,7 +275,9 @@ namespace AlahiaPos.DataAccess.Servicios
                 PoliticasAceptadas = true,
                 IdPlan = 1,
                 LimiteUsuario = req.LimiteUsuario > 0 ? req.LimiteUsuario : 5,
+                LimiteTerminalesPos = req.LimiteTerminalesPos < 1 ? 1 : req.LimiteTerminalesPos,
                 NivelSoporte = NivelesSoporte.Normalizar(req.NivelSoporte),
+                TrabajaDomingo = req.TrabajaDomingo,
                 MontoServicio = req.EsDemo ? 0m : req.MontoServicio,
                 PrecioPlanEspecialUsd = req.EsDemo ? 0m : req.MontoServicio,
                 PrimaryColor = "#0a3d91",
@@ -301,6 +384,16 @@ namespace AlahiaPos.DataAccess.Servicios
                 ?? throw new InvalidOperationException("Empresa no encontrada.");
 
             e.NivelSoporte = NivelesSoporte.Normalizar(req?.NivelSoporte);
+            await _db.SaveChangesAsync();
+        }
+
+        public async Task ActualizarTrabajaDomingoAsync(int idEmpresa, EmpresaAdminTrabajaDomingoRequest req)
+        {
+            var e = await _db.Empresas.AsTracking()
+                .FirstOrDefaultAsync(x => x.IdEmpresa == idEmpresa && !x.EsEmpresaSistema)
+                ?? throw new InvalidOperationException("Empresa no encontrada.");
+
+            e.TrabajaDomingo = req?.TrabajaDomingo ?? true;
             await _db.SaveChangesAsync();
         }
 
@@ -545,13 +638,44 @@ namespace AlahiaPos.DataAccess.Servicios
                 .FirstOrDefaultAsync();
         }
 
-        private static EmpresaAdminListItemDto MapListItem(Empresas e, int modulos, DateTime hoy)
+        private async Task<int> ContarTerminalesActivosAsync(int idEmpresa)
+        {
+            return await _db.PosTerminal.AsNoTracking()
+                .CountAsync(t => t.IdEmpresa == idEmpresa && t.Estado == PosTerminalEstados.Activo);
+        }
+
+        private async Task<List<PosTerminalDto>> ListarTerminalesDtoAsync(int idEmpresa)
+        {
+            var rows = await _db.PosTerminal.AsNoTracking()
+                .Where(t => t.IdEmpresa == idEmpresa)
+                .OrderBy(t => t.Estado == PosTerminalEstados.Activo ? 0 : 1)
+                .ThenByDescending(t => t.FechaUltimoAcceso)
+                .ToListAsync();
+            return rows.Select(t => new PosTerminalDto
+            {
+                IdPosTerminal = t.IdPosTerminal,
+                IdEmpresa = t.IdEmpresa,
+                Nombre = t.Nombre ?? "POS",
+                Plataforma = t.Plataforma,
+                Modelo = t.Modelo,
+                Fabricante = t.Fabricante,
+                Estado = t.Estado,
+                FechaActivacion = t.FechaActivacion,
+                FechaUltimoAcceso = t.FechaUltimoAcceso,
+                FechaRevocacion = t.FechaRevocacion,
+                IdUsuarioActivacion = t.IdUsuarioActivacion,
+                IdUsuarioUltimoAcceso = t.IdUsuarioUltimoAcceso
+            }).ToList();
+        }
+
+        private static EmpresaAdminListItemDto MapListItem(
+            Empresas e, int modulos, int terminalesActivos, int usuariosRegistrados, DateTime hoy)
         {
             var demo = e.MontoServicio <= 0m && e.FechaTerminacion.Date >= hoy;
             return new EmpresaAdminListItemDto
             {
                 IdEmpresa = e.IdEmpresa,
-                NombreComercial = e.NombreComercial ?? "",
+                NombreComercial = TextoMojibake.Reparar(e.NombreComercial) ?? "",
                 RNC = e.RNC,
                 CorreElectronico = e.CorreElectronico,
                 Telefono = e.Telefono,
@@ -562,7 +686,11 @@ namespace AlahiaPos.DataAccess.Servicios
                 EsDemoVigente = demo,
                 CantidadModulos = modulos,
                 LimiteUsuario = e.LimiteUsuario,
-                NivelSoporte = NivelesSoporte.Normalizar(e.NivelSoporte)
+                UsuariosRegistrados = usuariosRegistrados,
+                LimiteTerminalesPos = e.LimiteTerminalesPos < 1 ? 1 : e.LimiteTerminalesPos,
+                TerminalesPosActivos = terminalesActivos,
+                NivelSoporte = NivelesSoporte.Normalizar(e.NivelSoporte),
+                TrabajaDomingo = e.TrabajaDomingo
             };
         }
     }

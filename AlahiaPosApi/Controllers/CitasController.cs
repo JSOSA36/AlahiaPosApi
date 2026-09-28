@@ -3,19 +3,15 @@ using AlahiaPos.Entities.Domain;
 using AlahiaPos.Entities.Dto;
 using AlahiaPos.Entities.Enum;
 using AlahiaPos.Entities.Interfaces;
+using AlahiaPosApi.Auth;
 using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PrinterLibrary;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Twilio;
-using Twilio;
-using Twilio.Rest.Api.V2010.Account;
-using Twilio.Types;
-using Twilio.Types;
-
 
 namespace AlahiaPosApi.Controllers
 {
@@ -30,7 +26,7 @@ namespace AlahiaPosApi.Controllers
         private readonly IClientes _Clientes;
         private readonly INotification notification;
         private readonly IProductos _products;
-        private readonly TwilioService _twilio;
+        private readonly IWhatsAppCitas _whatsApp;
         public CitasController(
             ICitas iCitas,
             IMapper mapper,
@@ -39,7 +35,7 @@ namespace AlahiaPosApi.Controllers
             INotification notificacionService,
             IProductos products,
             IClientes clientes,
-            TwilioService twilio)
+            IWhatsAppCitas whatsApp)
         {
             _ICitas = iCitas;
             _Mapper = mapper;
@@ -48,7 +44,7 @@ namespace AlahiaPosApi.Controllers
             notification = notificacionService;
             _products = products;
             _Clientes = clientes;
-            _twilio = twilio;
+            _whatsApp = whatsApp;
         }
 
         // ============================================================
@@ -83,37 +79,72 @@ namespace AlahiaPosApi.Controllers
         }
 
         // GET: api/citas/IdEmpresa
-        [HttpGet("{IdEmpresa}")]
+        [HttpGet("{IdEmpresa:int}")]
         public async Task<IActionResult> Get(int IdEmpresa)
         {
             var data = await _ICitas.GetAllCitas(IdEmpresa);
             return Ok(data);   // Ahora sí: IActionResult permite Ok()
         }
 
-        [HttpGet("probar-whatsapp")]
-        public IActionResult ProbarWhatsApp()
+        [HttpGet("whatsapp-plantillas")]
+        public IActionResult WhatsAppPlantillas()
         {
-            var accountSid = "AC4ba7e334fedf5097df85197274cdcb9f";
-            var authToken = "af1d6b392e24c5f585ef684d4e876916";
+            return Ok(_whatsApp.PlantillasMeta());
+        }
 
-            TwilioClient.Init(accountSid, authToken);
+        [HttpGet("whatsapp-estado")]
+        public IActionResult WhatsAppEstado()
+        {
+            return Ok(_whatsApp.ObtenerEstado());
+        }
 
-            var message = MessageResource.Create(
-            body: @"📅 *Nueva cita recibida*
+        [HttpPost("whatsapp-registrar-plantillas")]
+        public async Task<IActionResult> WhatsAppRegistrarPlantillas()
+        {
+            try
+            {
+                var data = await _whatsApp.AsegurarPlantillasAsync();
+                return Ok(new
+                {
+                    message = "Plantillas creadas o reutilizadas en Twilio y enviadas a aprobación UTILITY de WhatsApp.",
+                    plantillas = data
+                });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
 
-           👤 Cliente: María López
-           💇 Servicio: Uñas Acrílicas
-           🧑‍🎨 Estilista: Ana
-           📆 Fecha: 18/02/2026
-           ⏰ Hora: 2:30 PM
+        [HttpGet("whatsapp-consumo")]
+        public async Task<IActionResult> WhatsAppConsumo(
+            [FromQuery] int? idEmpresa, [FromQuery] DateTime? desde, [FromQuery] DateTime? hasta)
+        {
+            return Ok(await _whatsApp.ResumenConsumoAsync(idEmpresa, desde, hasta));
+        }
 
-            ⚠️ Esta cita está pendiente de confirmación.
-            Por favor ingrese al sistema para aprobar o reprogramar.",
-             from: new PhoneNumber("whatsapp:+14155238886"),
-                to: new PhoneNumber("whatsapp:+18495787517")
-            );
+        [HttpPost("probar-whatsapp")]
+        public async Task<IActionResult> ProbarWhatsApp([FromQuery] string? telefono)
+        {
+            if (!_whatsApp.EstaListo)
+                return BadRequest(new { message = "WhatsApp Citas no está configurado (AccountSid, AuthToken y From)." });
+            if (string.IsNullOrWhiteSpace(telefono))
+                return BadRequest(new { message = "Indique el teléfono de prueba." });
 
-            return Ok("Mensaje enviado por WhatsApp");
+            await _whatsApp.EnviarCitaAsync(new WhatsAppCitaMensaje
+            {
+                Tipo = WhatsAppCitaTipo.Confirmada,
+                Telefono = telefono,
+                NombreCliente = "Prueba",
+                NombreSalon = "Alahia Citas",
+                Servicio = "Servicio de prueba",
+                Estilista = "Estilista",
+                Fecha = DateTime.Now.ToString("dd/MM/yyyy"),
+                Hora = "10:00 a. m.",
+                EsPrueba = true
+            });
+
+            return Ok(new { message = "Intento de envío registrado. Revisa el WhatsApp destino." });
         }
 
         // GET api/citas/GetById/5
@@ -134,6 +165,7 @@ namespace AlahiaPosApi.Controllers
         // POST api/citas → Crear cita con duración y bloqueo
         // ============================================================
         [HttpPost]
+        [AllowAnonymous]
         public async Task<IActionResult> Post([FromForm] CitaDto value)
         {
             try
@@ -402,7 +434,10 @@ namespace AlahiaPosApi.Controllers
                     return BadRequest(new { message = "Estado no reconocido" });
                 }
 
-                await _ICitas.CambiarEstadoCita(idCita, estadoEnum);
+                await _ICitas.CambiarEstadoCita(
+                    idCita,
+                    estadoEnum,
+                    SesionHttp.TryGet(HttpContext)?.IdUsuario ?? 0);
 
                 return Ok(new { message = "Estado actualizado correctamente" });
             }

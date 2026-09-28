@@ -9,8 +9,14 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway
     {
         public const string SectionName = "FiscalGateway";
 
-        /// <summary>Base URL del proveedor e-CF (ej. https://sbx-ecf… o http://localhost:5203).</summary>
+        /// <summary>Base URL del proveedor e-CF (ej. https://ecf.alahiapos.com o http://localhost:5203).</summary>
         public string BaseUrl { get; set; } = "";
+
+        /// <summary>
+        /// Host HTTPS que DGII debe llamar (CerteCF recepción).
+        /// Si BaseUrl es localhost, las URLs de postulación usan este valor.
+        /// </summary>
+        public string PublicBaseUrl { get; set; } = "";
 
         /// <summary>API Key / token del proveedor.</summary>
         public string ApiKey { get; set; } = "";

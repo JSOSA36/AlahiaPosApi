@@ -1,5 +1,6 @@
 ﻿using AlahiaPos.Entities.Dto;
 using AlahiaPos.Entities.Interfaces;
+using AlahiaPosApi.Auth;
 using Microsoft.AspNetCore.Mvc;
 using PrinterLibrary;
 
@@ -72,6 +73,7 @@ namespace AlahiaPosApi.Controllers
         // 🔹 LISTAR PAGOS (ADMIN)
         // =====================================================
         [HttpGet("ObtenerPagos")]
+        [RequiereEmpresaSistema]
         public async Task<IActionResult> ObtenerPagos()
         {
             try
@@ -94,6 +96,7 @@ namespace AlahiaPosApi.Controllers
         // 🔹 HISTORIAL DE PAGOS (CLIENTE — su empresa)
         // =====================================================
         [HttpGet("ObtenerPagosPorEmpresa/{idEmpresa:int}")]
+        [PermitirEmpresaObjetivo]
         public async Task<IActionResult> ObtenerPagosPorEmpresa(int idEmpresa)
         {
             try
@@ -118,6 +121,8 @@ namespace AlahiaPosApi.Controllers
         // 🔹 APROBAR / RECHAZAR PAGO (ADMIN)
         // =====================================================
         [HttpPost("ValidarPago")]
+        [RequiereEmpresaSistema]
+        [PermitirEmpresaObjetivo]
         public async Task<IActionResult> ValidarPago([FromBody] ValidarPagoDto dto)
         {
             try

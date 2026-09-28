@@ -1,7 +1,9 @@
 ﻿using AlahiaPos.Entities.Domain;
 using AlahiaPos.Entities.Dto;
 using AlahiaPos.Entities.Interfaces;
+using AlahiaPosApi.Auth;
 using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PrinterLibrary;
 using System.Net.Http.Headers;
@@ -61,6 +63,8 @@ namespace AlahiaPosApi.Controllers
         {
             var empresa = await _Empresas.GetEmpresaById(id);
             if (empresa == null) return NotFound();
+            if (!TenantRecurso.EsDeLaSesion(HttpContext, empresa.IdEmpresa))
+                return NotFound();
 
             var dto = _Mapper.Map<EmpresaDto>(empresa);
 
@@ -88,6 +92,8 @@ namespace AlahiaPosApi.Controllers
         {
             var empresa = await _Empresas.GetEmpresaById(id);
             if (empresa == null) return NotFound();
+            if (!TenantRecurso.EsDeLaSesion(HttpContext, empresa.IdEmpresa))
+                return NotFound();
 
             var url = (body?.ApiPrint ?? string.Empty).Trim().TrimEnd('/');
             if (string.IsNullOrWhiteSpace(url))
@@ -105,10 +111,60 @@ namespace AlahiaPosApi.Controllers
             return Ok(new { message = "ApiPrint actualizado", apiPrint = url });
         }
 
+        [HttpGet("{id}/citas-config")]
+        public async Task<ActionResult<EmpresaCitasConfigDto>> GetCitasConfig(int id)
+        {
+            var empresa = await _Empresas.GetEmpresaById(id);
+            if (empresa == null) return NotFound();
+            if (!TenantRecurso.EsDeLaSesion(HttpContext, empresa.IdEmpresa))
+                return NotFound();
+
+            return Ok(new EmpresaCitasConfigDto
+            {
+                PedirVoucherCitas = empresa.PedirVoucherCitas,
+                MontoReservaCitas = empresa.MontoReservaCitas,
+                InfoAgendar = empresa.InfoAgendar,
+                NotificarCitasWhatsApp = empresa.NotificarCitasWhatsApp
+            });
+        }
+
+        [HttpPut("{id}/citas-config")]
+        public async Task<IActionResult> SetCitasConfig(int id, [FromBody] EmpresaCitasConfigDto body)
+        {
+            var empresa = await _Empresas.GetEmpresaById(id);
+            if (empresa == null) return NotFound();
+            if (!TenantRecurso.EsDeLaSesion(HttpContext, empresa.IdEmpresa))
+                return NotFound();
+
+            var pedir = body?.PedirVoucherCitas == true;
+            var monto = Math.Round(body?.MontoReservaCitas ?? 0m, 2);
+            if (pedir && monto <= 0)
+                return BadRequest(new { message = "Indique el monto de reserva que el cliente debe depositar." });
+            if (monto < 0)
+                return BadRequest(new { message = "El monto de reserva no puede ser negativo." });
+
+            empresa.PedirVoucherCitas = pedir;
+            empresa.MontoReservaCitas = pedir ? monto : 0m;
+            empresa.InfoAgendar = body?.InfoAgendar;
+            empresa.NotificarCitasWhatsApp = body?.NotificarCitasWhatsApp != false;
+            _Empresas.UpdateEmpresas(empresa.IdEmpresa, empresa);
+
+            return Ok(new
+            {
+                message = "Configuración de citas guardada",
+                pedirVoucherCitas = empresa.PedirVoucherCitas,
+                montoReservaCitas = empresa.MontoReservaCitas,
+                infoAgendar = empresa.InfoAgendar,
+                notificarCitasWhatsApp = empresa.NotificarCitasWhatsApp
+            });
+        }
+
         // =====================================================
         // 🔹 OBTENER EMPRESA POR GUID
         // =====================================================
+
         [HttpGet("GetEmpresa/{guid}")]
+        [AllowAnonymous]
         public async Task<ActionResult<EmpresaDto>> GetEmpresa(Guid guid)
         {
             var empresa = await _Empresas.GetEmpresaByGUID(guid);
@@ -127,6 +183,7 @@ namespace AlahiaPosApi.Controllers
         // 🔹 LOGO
         // =====================================================
         [HttpGet("GetLogo/{id}")]
+        [AllowAnonymous]
         public async Task<IActionResult> GetLogo(int id)
         {
             var empresa = await _Empresas.GetEmpresaById(id);
@@ -150,6 +207,7 @@ namespace AlahiaPosApi.Controllers
         // Cualquier empresa. Módulos guiados por un perfil con contabilidad.
         // =====================================================
         [HttpPost("demo")]
+        [AllowAnonymous]
         public async Task<IActionResult> CrearDemo([FromForm] EmpresaDto value)
         {
             try
@@ -521,6 +579,8 @@ namespace AlahiaPosApi.Controllers
             }
         }
         [HttpPost("ActualizarEstadoEmpresa/{empresaId}")]
+        [RequiereEmpresaSistema]
+        [PermitirEmpresaObjetivo]
         public async Task<IActionResult> ActualizarEstadoEmpresa(int empresaId)
         {
             await _Empresas.ActualizarEstadoEmpresa(empresaId);
@@ -548,18 +608,23 @@ namespace AlahiaPosApi.Controllers
             });
         }
         [HttpPost("ActualizarEstado")]
+        [RequiereEmpresaSistema]
         public async Task<IActionResult> ActualizarEstado()
         {
             await _Empresas.ActualizarEstadoAutomatico();
             return Ok(new { message = "Estados actualizados correctamente 🔄" });
         }
         [HttpPost("MarcarPago/{empresaId}")]
+        [RequiereEmpresaSistema]
+        [PermitirEmpresaObjetivo]
         public async Task<IActionResult> MarcarPago(int empresaId)
         {
             await _Empresas.MarcarPago(empresaId);
             return Ok(new { message = "Pago aprobado y servicio activado ✅" });
         }
         [HttpPost("MarcarPendiente/{empresaId}")]
+        [RequiereEmpresaSistema]
+        [PermitirEmpresaObjetivo]
         public async Task<IActionResult> MarcarPendiente(int empresaId)
         {
             await _Empresas.MarcarPendiente(empresaId);
@@ -570,6 +635,7 @@ namespace AlahiaPosApi.Controllers
         // 🔹 CATÁLOGO PÚBLICO
         // =====================================================
         [HttpGet("CatalogoGuid/{guid}")]
+        [AllowAnonymous]
         public async Task<ActionResult<CatalogoDto>> GetCatalogo(Guid guid)
         {
             var empresa = await _Empresas.GetEmpresaByGUID(guid);

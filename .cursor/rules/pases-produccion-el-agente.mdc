@@ -1,0 +1,39 @@
+---
+description: El agente ejecuta los pases a producción en el servidor IIS; no dejar checklist al usuario
+alwaysApply: true
+---
+
+# Pases a producción: el agente los hace
+
+Si el usuario pide **pase a prod**, **pasar a producción**, **súbelo** o equivalente: **ejecutarlo en el servidor**. No entregar un checklist de copiar carpetas.
+
+Antes de ejecutar el pase: correr `Scripts/pre-pase.ps1` (proyecto `AlahiaPosApi.Pase.Tests`). Si falla, **no publicar**. Luego `pases-impacto-y-pruebas.mdc` y `pases-no-tocar-config-empresas.mdc`.
+
+Eso cuenta como autorización explícita de `AlahiaPos_Prod` (regla solo-Dev). No desplegar solo porque se terminó un feature.
+
+## Cómo
+
+1. SQL: sibling `*_Prod.sql` (`USE AlahiaPos_Prod` + guard `DB_NAME()`), `sqlcmd` al SQL del VPS.
+2. **Backup obligatorio ANTES de sobrescribir IIS** (API y FE vivos):
+   - Destino: `C:\inetpub\backups\erp-vivo\yyyyMMdd-HHmm\` en el VPS.
+   - **Slim (default):** API con `/XD logs Secrets updates` (no copiar zips de printer); FE con `/XD assets` si hay muchos estáticos.
+   - Incluir `appsettings` / `web.config` del sitio vivo (sirven para rollback).
+   - No publicar si el backup falla (robocopy ≥ 8). No bloquear el chat esperando copias gigantes.
+3. API: `dotnet publish -c Release`. Copiar DLL **sin** `appsettings*.json`, `web.config` ni `Secrets`.
+4. FE: build con la API que usa el ERP (`https://alahiaposapidemo.alahiapos.com/api`). **No** usar `alahiabeautyapiprod`. Copiar `www` **sin** `web.config`. Restaurar `app-config.service.ts` a localhost después del build.
+5. Antes de reciclar API: crear carpeta `updates` en el sitio (si falta, IIS da 500.30).
+6. `app_offline.htm` → robocopy → quitar `app_offline`. Robocopy exit 0–7 = OK.
+7. Verificar login API (401/400 con usuario falso = viva) y que `erp.alahiapos.com` sirva el `main.*.js` nuevo.
+
+## IIS (VPS `144.126.143.154`)
+
+| URL | Carpeta |
+|-----|---------|
+| `erp.alahiapos.com` | `C:\inetpub\wwwroot\CloudAlahiaPosDemo` |
+| `cloud.alahiapos.com` | `C:\inetpub\wwwroot\CloudAlahiaPos_Prod` |
+| `alahiabeautyapiprod.alahiapos.com` | `C:\inetpub\wwwroot\AlahiaPosApi_Prod` |
+| `alahiaposapidemo.alahiapos.com` | `C:\inetpub\wwwroot\AlahiaPosApi_Demo` |
+
+`AlahiaPosApi_Demo` usa **`AlahiaPos_Prod`**. El ERP que usa la gente es **`erp.alahiapos.com`** + API **`alahiaposapidemo`**. Nunca `alahiabeautyapiprod`. Publicar API en `AlahiaPosApi_Demo` (y FE en `CloudAlahiaPosDemo`). `cloud` / `AlahiaPosApi_Prod` son el otro par, no el ERP vivo.
+
+Acceso: share `\\144.126.143.154\C$`. No guardar contraseñas en reglas ni en git.

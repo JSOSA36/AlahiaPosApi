@@ -148,19 +148,20 @@ namespace AlahiaPosApi.Controllers
         }
 
         /// <summary>
-        /// Busca saldo a favor por e-NCF o número interno de NC del cliente.
+        /// Busca saldo a favor por e-NCF, número interno de NC o NCF de la factura origen.
+        /// idCliente opcional: si no se envía, busca en toda la empresa (consumo al portador).
         /// </summary>
         [HttpGet("saldos-a-favor/{idEmpresa}/por-numero")]
         public async Task<IActionResult> ObtenerSaldoPorNumero(
             int idEmpresa,
-            [FromQuery] int idCliente,
-            [FromQuery] string numero)
+            [FromQuery] string numero,
+            [FromQuery] int? idCliente = null)
         {
             try
             {
                 var saldo = await _notasCredito.ObtenerSaldoAFavorPorNumeroAsync(
                     idEmpresa,
-                    idCliente,
+                    idCliente ?? 0,
                     numero);
                 if (saldo == null)
                     return NotFound("Saldo a favor no encontrado.");

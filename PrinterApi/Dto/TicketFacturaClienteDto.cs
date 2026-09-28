@@ -20,6 +20,11 @@
 
         public decimal TotalDescuento { get; set; }
 
+        public decimal MontoCargo { get; set; }
+
+        /// <summary>Nombre de la regla aplicada (ej. Cargo por tarjeta).</summary>
+        public string? NombreCargo { get; set; }
+
         public decimal Total { get; set; }
 
         public decimal Pagado { get; set; }
@@ -33,6 +38,8 @@
         public List<TicketFacturaClientePagoDto> Pagos { get; set; } = new();
 
         public string NombreEmpresa { get; set; } = "";
+
+        public string? NombreSucursal { get; set; }
 
         public string TelefonoEmpresa { get; set; } = "";
 
@@ -57,6 +64,19 @@
         public DateTime? FechaEmisionEcf { get; set; }
 
         public string? EstadoDgii { get; set; }
+
+        public string? AmbienteFE { get; set; }
+
+        /// <summary>
+        /// Ticket generado en el POS sin consultar el ERP (modo local / sin internet).
+        /// No incluye NCF ni e-CF.
+        /// </summary>
+        public bool EsLocal { get; set; }
+
+        /// <summary>
+        /// Leyenda al pie (ej. documento local sin validez fiscal).
+        /// </summary>
+        public string? NotaPie { get; set; }
 
         public List<TicketFacturaClienteDetalleDto> Detalles { get; set; } = new();
     }

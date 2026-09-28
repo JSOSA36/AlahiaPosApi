@@ -20,5 +20,11 @@ namespace AlahiaPos.Entities.Domain
 
         /// <summary>Vínculo explícito al movimiento de tesorería (nullable por históricos).</summary>
         public int? IdMovimientoFinanciero { get; set; }
+
+        /// <summary>ARS deudora cuando el movimiento es cobertura o cobro de aseguradora.</summary>
+        public int? IdArs { get; set; }
+
+        /// <summary>True = cobertura al facturar (no es dinero recibido). False = cobro posterior de la ARS.</summary>
+        public bool EsCoberturaArs { get; set; }
     }
 }

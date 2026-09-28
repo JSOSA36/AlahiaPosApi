@@ -1,5 +1,6 @@
 ﻿using AlahiaPos.Entities.Domain;
 using AlahiaPos.Entities.Interfaces;
+using AlahiaPosApi.Auth;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AlahiaPosApi.Controllers
@@ -50,6 +51,7 @@ namespace AlahiaPosApi.Controllers
 
         [HttpPost]
         [Route("Entrada")]
+        [RequiereTerminalPos]
         public async Task<IActionResult>
             Entrada(
                 [FromBody]
@@ -73,6 +75,7 @@ namespace AlahiaPosApi.Controllers
 
         [HttpPost]
         [Route("Salida")]
+        [RequiereTerminalPos]
         public async Task<IActionResult>
             Salida(
                 [FromBody]

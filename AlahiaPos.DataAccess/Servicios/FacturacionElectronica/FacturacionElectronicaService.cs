@@ -52,9 +52,9 @@ namespace AlahiaPos.DataAccess.Servicios.FacturacionElectronica
                     "Facturación electrónica no está activa para esta empresa");
             }
 
-            // 1. Reservar e-NCF atómicamente
+            var idSucursal = await ResolverIdSucursalAsync(request);
             var reserva = await _secuencias.ReservarSiguienteAsync(
-                request.IdEmpresa, request.TipoEcfDgii);
+                request.IdEmpresa, request.TipoEcfDgii, idSucursal);
             if (!reserva.Exitoso)
             {
                 _logger.LogWarning(
@@ -68,6 +68,9 @@ namespace AlahiaPos.DataAccess.Servicios.FacturacionElectronica
             var docInfo = await resolver.ObtenerDocumentoAsync(
                 request.IdOrigen, request.IdEmpresa);
 
+            var empresa = await _ctx.Empresas.AsNoTracking()
+                .FirstOrDefaultAsync(e => e.IdEmpresa == request.IdEmpresa);
+
             // 3. Crear fotografía fiscal
             await resolver.CrearFotografiaAsync(docInfo);
 
@@ -78,6 +81,7 @@ namespace AlahiaPos.DataAccess.Servicios.FacturacionElectronica
                 TipoECF = request.TipoEcfDgii.ToString(),
                 ENCF = reserva.Encf!,
                 FechaEmision = docInfo.FechaDocumento,
+                RncEmisor = CertecfArtefactos.RncEmisorParaEmpresa(empresa),
                 RncReceptor = docInfo.RncCliente,
                 NombreReceptor = docInfo.NombreCliente,
                 MontoGravado = docInfo.SubTotal,
@@ -102,7 +106,8 @@ namespace AlahiaPos.DataAccess.Servicios.FacturacionElectronica
                 request.IdOrigen,
                 request.TipoEcfDgii,
                 Encf = reserva.Encf,
-                request.IdUsuario
+                request.IdUsuario,
+                IdSucursal = idSucursal
             };
 
             var outbox = new EventoOutbox
@@ -137,42 +142,17 @@ namespace AlahiaPos.DataAccess.Servicios.FacturacionElectronica
             };
         }
 
+        private const int MaxReintentosSecuenciaUtilizada = 5;
+
         public async Task<EmisionEcfResultadoCompleto> EmitirYEnviarAsync(EmisionEcfRequest request)
         {
             var flags = await _features.GetFeaturesAsync(request.IdEmpresa);
             if (!flags.FacturacionElectronicaActiva)
                 return new EmisionEcfResultadoCompleto { Exitoso = false, MensajeError = "Facturación electrónica no está activa" };
 
-            // Reintento: reutilizar ECF ya reservado para este origen (no consumir otra secuencia).
-            var ecfExistente = await _ctx.ECFEncabezados
-                .AsTracking()
-                .Where(e =>
-                    e.IdEmpresa == request.IdEmpresa
-                    && e.OrigenDocumento == (int)request.OrigenDocumento
-                    && e.IdOrigen == request.IdOrigen
-                    && e.TipoECF == request.TipoEcfDgii.ToString())
-                .OrderByDescending(e => e.IdECF)
-                .FirstOrDefaultAsync();
-
-            if (ecfExistente != null
-                && !string.IsNullOrWhiteSpace(ecfExistente.ENCF)
-                && (string.Equals(ecfExistente.EstadoDGII, "Aceptado", StringComparison.OrdinalIgnoreCase)
-                    || (ecfExistente.EstadoDGII ?? "").Contains("Aceptado", StringComparison.OrdinalIgnoreCase)))
-            {
-                return new EmisionEcfResultadoCompleto
-                {
-                    Exitoso = true,
-                    Encf = ecfExistente.ENCF,
-                    IdEcf = ecfExistente.IdECF,
-                    TrackId = ecfExistente.TrackId,
-                    EstadoDgii = ecfExistente.EstadoDGII
-                };
-            }
-
             var resolver = _resolverFactory.Get(request.OrigenDocumento);
             var docInfo = await resolver.ObtenerDocumentoAsync(request.IdOrigen, request.IdEmpresa);
 
-            // Referencia para E33/E34 (ND/NC) cuando el origen no la trae
             if (!string.IsNullOrWhiteSpace(request.NcfModificado))
             {
                 docInfo.NcfModificado = request.NcfModificado;
@@ -183,216 +163,387 @@ namespace AlahiaPos.DataAccess.Servicios.FacturacionElectronica
 
             var empresa = await _ctx.Empresas.AsNoTracking()
                 .FirstOrDefaultAsync(e => e.IdEmpresa == request.IdEmpresa);
-            var secuencia = await _ctx.SecuenciasECF.AsNoTracking()
-                .FirstOrDefaultAsync(s => s.IdEmpresa == request.IdEmpresa
-                    && s.TipoEcfDgii == request.TipoEcfDgii && s.Activo);
+            var idSucursal = await ResolverIdSucursalAsync(request, docInfo);
+            var secuencia = await _secuencias.ObtenerActivaAsync(
+                request.IdEmpresa, request.TipoEcfDgii, idSucursal);
 
-            ECFEncabezado ecf;
-            string encfReservado;
+            EmisionEcfResultadoCompleto? ultimo = null;
+            var fotografiaCreada = false;
 
-            if (ecfExistente != null && !string.IsNullOrWhiteSpace(ecfExistente.ENCF))
+            for (var intento = 1; intento <= MaxReintentosSecuenciaUtilizada; intento++)
             {
-                encfReservado = ecfExistente.ENCF;
-                ecf = ecfExistente;
+                var ecfExistente = await BuscarEcfOrigenAsync(request);
 
-                var docPrevioReintento = FiscalDocumentoBuilder.Build(
+                if (ecfExistente != null
+                    && !string.IsNullOrWhiteSpace(ecfExistente.ENCF)
+                    && (ecfExistente.EstadoDGII ?? "").Contains("Aceptado", StringComparison.OrdinalIgnoreCase))
+                {
+                    return new EmisionEcfResultadoCompleto
+                    {
+                        Exitoso = true,
+                        Encf = ecfExistente.ENCF,
+                        IdEcf = ecfExistente.IdECF,
+                        TrackId = ecfExistente.TrackId,
+                        EstadoDgii = ecfExistente.EstadoDGII,
+                        RncEmisor = CertecfArtefactos.RncEmisorParaEmpresa(empresa),
+                        RazonSocialEmisor = empresa?.NombreComercial
+                    };
+                }
+
+                ECFEncabezado ecf;
+                string encfReservado;
+                var reutilizarPendiente = ecfExistente != null
+                    && !string.IsNullOrWhiteSpace(ecfExistente.ENCF)
+                    && !EcfSecuenciaYaUtilizada.EncabezadoYaFueEnviado(ecfExistente);
+
+                if (reutilizarPendiente)
+                {
+                    encfReservado = ecfExistente!.ENCF;
+                    ecf = ecfExistente;
+
+                    var docPrevioReintento = FiscalDocumentoBuilder.Build(
+                        ecf, docInfo, request.IdOrigen, (int)request.OrigenDocumento,
+                        request.TipoEcfDgii, empresa, secuencia);
+                    await AplicarRazonSocialPadronAsync(docPrevioReintento);
+                    var validacionReintento = _validator.Validar(docPrevioReintento);
+                    if (!validacionReintento.Ok)
+                    {
+                        return new EmisionEcfResultadoCompleto
+                        {
+                            Exitoso = false,
+                            Encf = encfReservado,
+                            IdEcf = ecf.IdECF,
+                            MensajeError = validacionReintento.Mensaje,
+                            MensajesDgii = validacionReintento.Mensajes,
+                            RncEmisor = CertecfArtefactos.RncEmisorParaEmpresa(empresa),
+                            RazonSocialEmisor = empresa?.NombreComercial
+                        };
+                    }
+                }
+                else
+                {
+                    var encfPeek = await _secuencias.PeekSiguienteAsync(request.IdEmpresa, request.TipoEcfDgii, idSucursal);
+                    if (string.IsNullOrWhiteSpace(encfPeek))
+                        return new EmisionEcfResultadoCompleto
+                        {
+                            Exitoso = false,
+                            MensajeError = "No hay secuencia e-NCF disponible para este tipo"
+                        };
+
+                    var ecfProvisional = new ECFEncabezado
+                    {
+                        IdEmpresa = request.IdEmpresa,
+                        TipoECF = request.TipoEcfDgii.ToString(),
+                        ENCF = encfPeek,
+                        FechaEmision = docInfo.FechaDocumento,
+                        RncEmisor = CertecfArtefactos.RncEmisorParaEmpresa(empresa),
+                        RncReceptor = docInfo.RncCliente,
+                        NombreReceptor = docInfo.NombreCliente,
+                        MontoGravado = docInfo.SubTotal,
+                        TotalITBIS = docInfo.TotalItbis,
+                        TotalGeneral = docInfo.Total,
+                        OrigenDocumento = (int)request.OrigenDocumento,
+                        IdOrigen = request.IdOrigen,
+                        NumeroFacturaInterna = docInfo.NumeroDocumentoInterno
+                    };
+
+                    var docPrevio = FiscalDocumentoBuilder.Build(
+                        ecfProvisional, docInfo, request.IdOrigen, (int)request.OrigenDocumento,
+                        request.TipoEcfDgii, empresa, secuencia);
+                    await AplicarRazonSocialPadronAsync(docPrevio);
+
+                    var validacion = _validator.Validar(docPrevio);
+                    if (!validacion.Ok)
+                    {
+                        _logger.LogWarning(
+                            "Validación FE fallida (sin reservar e-NCF): Empresa={Emp} Tipo={Tipo} Origen={Origen}/{Id} → {Msg}",
+                            request.IdEmpresa, request.TipoEcfDgii, request.OrigenDocumento, request.IdOrigen, validacion.Mensaje);
+                        return new EmisionEcfResultadoCompleto
+                        {
+                            Exitoso = false,
+                            MensajeError = validacion.Mensaje,
+                            MensajesDgii = validacion.Mensajes,
+                            RncEmisor = CertecfArtefactos.RncEmisorParaEmpresa(empresa),
+                            RazonSocialEmisor = empresa?.NombreComercial
+                        };
+                    }
+
+                    var reserva = await _secuencias.ReservarSiguienteAsync(request.IdEmpresa, request.TipoEcfDgii, idSucursal);
+                    if (!reserva.Exitoso)
+                        return new EmisionEcfResultadoCompleto { Exitoso = false, MensajeError = reserva.MensajeError };
+
+                    encfReservado = reserva.Encf!;
+                    if (!fotografiaCreada)
+                    {
+                        await resolver.CrearFotografiaAsync(docInfo);
+                        fotografiaCreada = true;
+                    }
+
+                    ecf = new ECFEncabezado
+                    {
+                        IdEmpresa = request.IdEmpresa,
+                        TipoECF = request.TipoEcfDgii.ToString(),
+                        ENCF = encfReservado,
+                        FechaEmision = docInfo.FechaDocumento,
+                        RncEmisor = CertecfArtefactos.RncEmisorParaEmpresa(empresa),
+                        RncReceptor = docInfo.RncCliente,
+                        NombreReceptor = docInfo.NombreCliente,
+                        MontoGravado = docInfo.SubTotal,
+                        TotalITBIS = docInfo.TotalItbis,
+                        TotalGeneral = docInfo.Total,
+                        OrigenDocumento = (int)request.OrigenDocumento,
+                        IdOrigen = request.IdOrigen,
+                        NumeroFacturaInterna = docInfo.NumeroDocumentoInterno,
+                        EstadoDocumento = EstadoDocumentoElectronico.PendienteEnvio,
+                        EstadoDGII = "Pendiente",
+                        FechaCreacion = DateTime.Now
+                    };
+
+                    _ctx.ECFEncabezados.Add(ecf);
+                    await _ctx.SaveChangesAsync();
+                }
+
+                var docElectronico = FiscalDocumentoBuilder.Build(
                     ecf, docInfo, request.IdOrigen, (int)request.OrigenDocumento,
                     request.TipoEcfDgii, empresa, secuencia);
-                var validacionReintento = _validator.Validar(docPrevioReintento);
-                if (!validacionReintento.Ok)
+                await AplicarRazonSocialPadronAsync(docElectronico);
+
+                _logger.LogInformation(
+                    "Envío síncrono ECF {Encf} intento {Intento}/{Max} (Origen={Origen}, Id={Id})",
+                    ecf.ENCF, intento, MaxReintentosSecuenciaUtilizada, request.OrigenDocumento, request.IdOrigen);
+
+                var resultado = await EnviarDocumentoFiscalAsync(docElectronico, CancellationToken.None);
+                var secuenciaYaUsada = EcfSecuenciaYaUtilizada.EnResultado(resultado);
+
+                ecf.TrackId = resultado.TrackId;
+                ecf.TransmissionJobId = resultado.TransmissionJobId;
+                ecf.SecurityCode = resultado.SecurityCode;
+                ecf.UrlQR = resultado.UrlQR;
+                ecf.FechaFirma = resultado.FechaFirma;
+                ecf.FechaEnvio = DateTime.Now;
+
+                var aceptado = resultado.Exitoso && !secuenciaYaUsada
+                    && !(resultado.Estado ?? "").Contains("Rechazado", StringComparison.OrdinalIgnoreCase);
+
+                if (aceptado)
                 {
-                    return new EmisionEcfResultadoCompleto
-                    {
-                        Exitoso = false,
-                        Encf = encfReservado,
-                        IdEcf = ecf.IdECF,
-                        MensajeError = validacionReintento.Mensaje,
-                        MensajesDgii = validacionReintento.Mensajes,
-                        RncEmisor = empresa?.RNC,
-                        RazonSocialEmisor = empresa?.NombreComercial
-                    };
+                    ecf.EstadoDocumento = EstadoDocumentoElectronico.Enviado;
+                    ecf.EstadoDGII = resultado.Estado;
+                    if (resultado.Mensajes.Count > 0)
+                        ecf.MensajeRespuesta = string.Join("; ", resultado.Mensajes);
                 }
-            }
-            else
-            {
-                var encfPeek = await _secuencias.PeekSiguienteAsync(request.IdEmpresa, request.TipoEcfDgii);
-                if (string.IsNullOrWhiteSpace(encfPeek))
-                    return new EmisionEcfResultadoCompleto
-                    {
-                        Exitoso = false,
-                        MensajeError = "No hay secuencia e-NCF disponible para este tipo"
-                    };
-
-                // Validación previa (Motor de Definiciones) sin consumir secuencia
-                var ecfProvisional = new ECFEncabezado
+                else
                 {
-                    IdEmpresa = request.IdEmpresa,
-                    TipoECF = request.TipoEcfDgii.ToString(),
-                    ENCF = encfPeek,
-                    FechaEmision = docInfo.FechaDocumento,
-                    RncReceptor = docInfo.RncCliente,
-                    NombreReceptor = docInfo.NombreCliente,
-                    MontoGravado = docInfo.SubTotal,
-                    TotalITBIS = docInfo.TotalItbis,
-                    TotalGeneral = docInfo.Total,
-                    OrigenDocumento = (int)request.OrigenDocumento,
-                    IdOrigen = request.IdOrigen,
-                    NumeroFacturaInterna = docInfo.NumeroDocumentoInterno
-                };
-
-                var docPrevio = FiscalDocumentoBuilder.Build(
-                    ecfProvisional, docInfo, request.IdOrigen, (int)request.OrigenDocumento,
-                    request.TipoEcfDgii, empresa, secuencia);
-
-                var validacion = _validator.Validar(docPrevio);
-                if (!validacion.Ok)
-                {
-                    _logger.LogWarning(
-                        "Validación FE fallida (sin reservar e-NCF): Empresa={Emp} Tipo={Tipo} Origen={Origen}/{Id} → {Msg}",
-                        request.IdEmpresa, request.TipoEcfDgii, request.OrigenDocumento, request.IdOrigen, validacion.Mensaje);
-                    return new EmisionEcfResultadoCompleto
-                    {
-                        Exitoso = false,
-                        MensajeError = validacion.Mensaje,
-                        MensajesDgii = validacion.Mensajes,
-                        RncEmisor = empresa?.RNC,
-                        RazonSocialEmisor = empresa?.NombreComercial
-                    };
+                    ecf.EstadoDocumento = EstadoDocumentoElectronico.Error;
+                    var estadoProv = (resultado.Estado ?? "").Trim();
+                    if (string.IsNullOrWhiteSpace(estadoProv)
+                        || estadoProv.Contains("Aceptado", StringComparison.OrdinalIgnoreCase))
+                        ecf.EstadoDGII = "Error";
+                    else
+                        ecf.EstadoDGII = estadoProv;
+                    ecf.MensajeRespuesta = string.Join("; ", resultado.Mensajes);
                 }
 
-                var reserva = await _secuencias.ReservarSiguienteAsync(request.IdEmpresa, request.TipoEcfDgii);
-                if (!reserva.Exitoso)
-                    return new EmisionEcfResultadoCompleto { Exitoso = false, MensajeError = reserva.MensajeError };
-
-                encfReservado = reserva.Encf!;
-                await resolver.CrearFotografiaAsync(docInfo);
-
-                ecf = new ECFEncabezado
-                {
-                    IdEmpresa = request.IdEmpresa,
-                    TipoECF = request.TipoEcfDgii.ToString(),
-                    ENCF = encfReservado,
-                    FechaEmision = docInfo.FechaDocumento,
-                    RncReceptor = docInfo.RncCliente,
-                    NombreReceptor = docInfo.NombreCliente,
-                    MontoGravado = docInfo.SubTotal,
-                    TotalITBIS = docInfo.TotalItbis,
-                    TotalGeneral = docInfo.Total,
-                    OrigenDocumento = (int)request.OrigenDocumento,
-                    IdOrigen = request.IdOrigen,
-                    NumeroFacturaInterna = docInfo.NumeroDocumentoInterno,
-                    EstadoDocumento = EstadoDocumentoElectronico.PendienteEnvio,
-                    EstadoDGII = "Pendiente",
-                    FechaCreacion = DateTime.Now
-                };
-
-                _ctx.ECFEncabezados.Add(ecf);
                 await _ctx.SaveChangesAsync();
-            }
 
-            var docElectronico = FiscalDocumentoBuilder.Build(
-                ecf, docInfo, request.IdOrigen, (int)request.OrigenDocumento,
-                request.TipoEcfDgii, empresa, secuencia);
-
-            _logger.LogInformation("Envío síncrono ECF {Encf} (Origen={Origen}, Id={Id})",
-                ecf.ENCF, request.OrigenDocumento, request.IdOrigen);
-
-            var resultado = await _gateway.EnviarDocumentoAsync(docElectronico, CancellationToken.None);
-
-            ecf.TrackId = resultado.TrackId;
-            ecf.TransmissionJobId = resultado.TransmissionJobId;
-            ecf.SecurityCode = resultado.SecurityCode;
-            ecf.UrlQR = resultado.UrlQR;
-            ecf.FechaFirma = resultado.FechaFirma;
-            ecf.FechaEnvio = DateTime.Now;
-
-            if (resultado.Exitoso)
-            {
-                ecf.EstadoDocumento = EstadoDocumentoElectronico.Enviado;
-                ecf.EstadoDGII = resultado.Estado;
-            }
-            else
-            {
-                ecf.EstadoDocumento = EstadoDocumentoElectronico.Error;
-                ecf.EstadoDGII = "Error";
-                ecf.MensajeRespuesta = string.Join("; ", resultado.Mensajes);
-            }
-
-            await _ctx.SaveChangesAsync();
-
-            // Propagar e-NCF al documento comercial.
-            // DbContext global es NoTracking → hace falta AsTracking / Attach.
-            if (resultado.Exitoso && !string.IsNullOrWhiteSpace(encfReservado))
-            {
-                if (request.OrigenDocumento == OrigenDocumento.Pos)
+                ultimo = new EmisionEcfResultadoCompleto
                 {
-                    var factura = await _ctx.FacturaHeaders
-                        .AsTracking()
-                        .FirstOrDefaultAsync(f => f.IdFacturaHeader == request.IdOrigen);
-                    if (factura != null && string.IsNullOrWhiteSpace(factura.NCF))
-                    {
-                        factura.NCF = encfReservado;
-                        await _ctx.SaveChangesAsync();
-                    }
-                }
-                else if (request.OrigenDocumento == OrigenDocumento.NotaCredito)
+                    Exitoso = aceptado,
+                    Encf = encfReservado,
+                    IdEcf = ecf.IdECF,
+                    SecuenciasRestantes = 0,
+                    TrackId = resultado.TrackId,
+                    TransmissionJobId = resultado.TransmissionJobId,
+                    EstadoDgii = ecf.EstadoDGII,
+                    UrlQR = resultado.UrlQR,
+                    SecurityCode = resultado.SecurityCode,
+                    MensajesDgii = resultado.Mensajes,
+                    MensajeError = aceptado ? null : string.Join("; ", resultado.Mensajes),
+                    RncEmisor = CertecfArtefactos.RncEmisorParaEmpresa(empresa),
+                    RazonSocialEmisor = empresa?.NombreComercial
+                };
+
+                if (aceptado)
                 {
-                    var nc = await _ctx.NotasCredito
-                        .AsTracking()
-                        .FirstOrDefaultAsync(n => n.IdNotaCredito == request.IdOrigen);
-                    if (nc != null)
-                    {
-                        nc.NCF = encfReservado;
-                        nc.IdEcf = ecf.IdECF;
-                        nc.TrackId = resultado.TrackId;
-                        nc.EstadoDgii = ecf.EstadoDGII;
-                        nc.FechaEmisionEcf = DateTime.Now;
-                        nc.CodigoTipoComprobanteDgii = "34";
-                        nc.MensajeEmision = null;
-                        await _ctx.SaveChangesAsync();
-                    }
+                    await PropagarNcfComercialAsync(request, encfReservado, ecf, resultado);
+                    return ultimo;
                 }
+
+                if (request.OrigenDocumento == OrigenDocumento.NotaCredito && !secuenciaYaUsada)
+                    await PropagarErrorNotaCreditoAsync(request, encfReservado, ecf, resultado);
+
+                if (!secuenciaYaUsada)
+                    return ultimo;
+
+                _logger.LogWarning(
+                    "e-NCF {Encf} ya utilizado en el proveedor. Se reserva el siguiente (intento {Intento}/{Max}). Empresa={Emp} Origen={Origen}/{Id}",
+                    encfReservado, intento, MaxReintentosSecuenciaUtilizada, request.IdEmpresa, request.OrigenDocumento, request.IdOrigen);
             }
-            else if (request.OrigenDocumento == OrigenDocumento.NotaCredito)
+
+            return ultimo ?? new EmisionEcfResultadoCompleto
+            {
+                Exitoso = false,
+                MensajeError = "No se pudo emitir un e-NCF nuevo: la secuencia ya estaba utilizada."
+            };
+        }
+
+        private Task<ECFEncabezado?> BuscarEcfOrigenAsync(EmisionEcfRequest request) =>
+            _ctx.ECFEncabezados
+                .AsTracking()
+                .Where(e =>
+                    e.IdEmpresa == request.IdEmpresa
+                    && e.OrigenDocumento == (int)request.OrigenDocumento
+                    && e.IdOrigen == request.IdOrigen
+                    && e.TipoECF == request.TipoEcfDgii.ToString())
+                .OrderByDescending(e => e.IdECF)
+                .FirstOrDefaultAsync();
+
+        private async Task PropagarNcfComercialAsync(
+            EmisionEcfRequest request,
+            string encfReservado,
+            ECFEncabezado ecf,
+            FiscalEnvioResultado resultado)
+        {
+            if (request.OrigenDocumento == OrigenDocumento.Pos)
+            {
+                var factura = await _ctx.FacturaHeaders
+                    .AsTracking()
+                    .FirstOrDefaultAsync(f => f.IdFacturaHeader == request.IdOrigen);
+                if (factura != null)
+                {
+                    factura.NCF = encfReservado;
+                    await _ctx.SaveChangesAsync();
+                }
+                return;
+            }
+
+            if (request.OrigenDocumento == OrigenDocumento.NotaCredito)
             {
                 var nc = await _ctx.NotasCredito
                     .AsTracking()
                     .FirstOrDefaultAsync(n => n.IdNotaCredito == request.IdOrigen);
-                if (nc != null)
-                {
-                    if (!string.IsNullOrWhiteSpace(encfReservado))
-                        nc.NCF = encfReservado;
-                    nc.IdEcf = ecf.IdECF;
-                    nc.TrackId = resultado.TrackId;
-                    nc.EstadoDgii = string.IsNullOrWhiteSpace(ecf.EstadoDGII) ? "Pendiente" : ecf.EstadoDGII;
-                    nc.FechaEmisionEcf = DateTime.Now;
-                    nc.CodigoTipoComprobanteDgii = "34";
-                    nc.MensajeEmision = string.Join("; ", resultado.Mensajes);
-                    await _ctx.SaveChangesAsync();
-                }
+                if (nc == null) return;
+                nc.NCF = encfReservado;
+                nc.IdEcf = ecf.IdECF;
+                nc.TrackId = resultado.TrackId;
+                nc.EstadoDgii = ecf.EstadoDGII;
+                nc.FechaEmisionEcf = DateTime.Now;
+                nc.CodigoTipoComprobanteDgii = "34";
+                nc.MensajeEmision = null;
+                await _ctx.SaveChangesAsync();
             }
-
-            return new EmisionEcfResultadoCompleto
-            {
-                Exitoso = resultado.Exitoso,
-                Encf = encfReservado,
-                IdEcf = ecf.IdECF,
-                SecuenciasRestantes = 0,
-                TrackId = resultado.TrackId,
-                TransmissionJobId = resultado.TransmissionJobId,
-                EstadoDgii = ecf.EstadoDGII,
-                UrlQR = resultado.UrlQR,
-                SecurityCode = resultado.SecurityCode,
-                MensajesDgii = resultado.Mensajes,
-                MensajeError = resultado.Exitoso ? null : string.Join("; ", resultado.Mensajes),
-                RncEmisor = empresa?.RNC,
-                RazonSocialEmisor = empresa?.NombreComercial
-            };
         }
 
-        public async Task<IReadOnlyList<SecuenciaEcfDisponibleDto>> ObtenerSecuenciasDisponiblesAsync(int idEmpresa)
+        private async Task PropagarErrorNotaCreditoAsync(
+            EmisionEcfRequest request,
+            string encfReservado,
+            ECFEncabezado ecf,
+            FiscalEnvioResultado resultado)
         {
-            return await _secuencias.ObtenerDisponiblesAsync(idEmpresa);
+            var nc = await _ctx.NotasCredito
+                .AsTracking()
+                .FirstOrDefaultAsync(n => n.IdNotaCredito == request.IdOrigen);
+            if (nc == null) return;
+            if (!string.IsNullOrWhiteSpace(encfReservado))
+                nc.NCF = encfReservado;
+            nc.IdEcf = ecf.IdECF;
+            nc.TrackId = resultado.TrackId;
+            nc.EstadoDgii = string.IsNullOrWhiteSpace(ecf.EstadoDGII) ? "Pendiente" : ecf.EstadoDGII;
+            nc.FechaEmisionEcf = DateTime.Now;
+            nc.CodigoTipoComprobanteDgii = "34";
+            nc.MensajeEmision = string.Join("; ", resultado.Mensajes);
+            await _ctx.SaveChangesAsync();
+        }
+
+        public async Task<IReadOnlyList<SecuenciaEcfDisponibleDto>> ObtenerSecuenciasDisponiblesAsync(
+            int idEmpresa, int? idSucursal = null)
+        {
+            return await _secuencias.ObtenerDisponiblesAsync(idEmpresa, idSucursal);
+        }
+
+        public async Task<FiscalEnvioResultado> EnviarDocumentoFiscalAsync(
+            FiscalDocumentoElectronico documento,
+            CancellationToken ct = default)
+        {
+            if (documento?.Encabezado == null)
+                return FiscalEnvioResultado.Error("VALIDACION", "Documento fiscal inválido: falta Encabezado.");
+
+            FiscalDocumentoBuilder.AlinearConDefinicionDgii(documento);
+            await AplicarRazonSocialPadronAsync(documento, ct);
+            var validacion = _validator.Validar(documento);
+            if (!validacion.Ok)
+                return FiscalEnvioResultado.Error("VALIDACION", validacion.Mensaje);
+
+            return await _gateway.EnviarDocumentoAsync(documento, ct);
+        }
+
+        public Task<FiscalConsultaResultado> ConsultarEstadoDgiiAsync(
+            string trackId,
+            int idEmpresa = 0,
+            CancellationToken ct = default)
+            => _gateway.ConsultarEstadoAsync(trackId, idEmpresa, ct);
+
+        private async Task AplicarRazonSocialPadronAsync(
+            FiscalDocumentoElectronico documento,
+            CancellationToken ct = default)
+        {
+            if (documento?.Encabezado == null) return;
+            var rnc = CertecfReceptorUrls.Digits(documento.Encabezado.RncEmisor);
+            string? razon = null;
+            string? comercial = null;
+            if (!string.IsNullOrWhiteSpace(rnc))
+            {
+                try
+                {
+                    var hit = await _ctx.ClientesDGII.AsNoTracking()
+                        .Where(c => c.RNC == rnc)
+                        .Select(c => new { c.RazonSocial, c.NombreComercial })
+                        .FirstOrDefaultAsync(ct);
+                    razon = hit?.RazonSocial;
+                    comercial = hit?.NombreComercial;
+                }
+                catch
+                {
+                    /* padrón opcional */
+                }
+            }
+            CertecfArtefactos.AplicarIdentidadEmisorReal(documento, razon, comercial);
+        }
+
+        private async Task<int?> ResolverIdSucursalAsync(
+            EmisionEcfRequest request,
+            DocumentoOrigenInfo? doc = null)
+        {
+            if (request.IdSucursal is > 0)
+                return request.IdSucursal;
+            if (doc?.IdSucursal is > 0)
+                return doc.IdSucursal;
+
+            if (request.OrigenDocumento is OrigenDocumento.Pos or OrigenDocumento.Facturacion)
+            {
+                return await _ctx.FacturaHeaders.AsNoTracking()
+                    .Where(f => f.IdFacturaHeader == request.IdOrigen)
+                    .Select(f => f.IdSucursal)
+                    .FirstOrDefaultAsync();
+            }
+
+            if (request.OrigenDocumento == OrigenDocumento.NotaCredito)
+            {
+                return await _ctx.NotasCredito.AsNoTracking()
+                    .Where(n => n.IdNotaCredito == request.IdOrigen)
+                    .Select(n => n.IdSucursal)
+                    .FirstOrDefaultAsync();
+            }
+
+            if (request.OrigenDocumento == OrigenDocumento.Gasto)
+            {
+                return await _ctx.Set<Gastos>().AsNoTracking()
+                    .Where(g => g.IdGasto == request.IdOrigen)
+                    .Select(g => g.IdSucursal)
+                    .FirstOrDefaultAsync();
+            }
+
+            return null;
         }
     }
 }

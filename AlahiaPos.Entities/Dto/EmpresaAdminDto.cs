@@ -12,9 +12,13 @@ namespace AlahiaPos.Entities.Dto
         public string CorreElectronico { get; set; } = "";
         public string AdminPassword { get; set; } = "";
         public int LimiteUsuario { get; set; } = 5;
+        public int LimiteTerminalesPos { get; set; } = 1;
 
         /// <summary>STANDARD | GOLD | PREMIUM. Default STANDARD.</summary>
         public string NivelSoporte { get; set; } = "STANDARD";
+
+        /// <summary>Si false y el 30 cae domingo, el modal de cobro pasa al día siguiente. Default true.</summary>
+        public bool TrabajaDomingo { get; set; } = true;
 
         /// <summary>Si true: MontoServicio=0 y FechaTerminacion = hoy + DiasDemo.</summary>
         public bool EsDemo { get; set; } = true;
@@ -53,12 +57,32 @@ namespace AlahiaPos.Entities.Dto
         public bool EsDemoVigente { get; set; }
         public int CantidadModulos { get; set; }
         public int? LimiteUsuario { get; set; }
+        public int UsuariosRegistrados { get; set; }
+        public int LimiteTerminalesPos { get; set; } = 1;
+        public int TerminalesPosActivos { get; set; }
         public string NivelSoporte { get; set; } = "STANDARD";
+        public bool TrabajaDomingo { get; set; } = true;
     }
 
     public class EmpresaAdminNivelSoporteRequest
     {
         public string NivelSoporte { get; set; } = "STANDARD";
+    }
+
+    public class EmpresaAdminTrabajaDomingoRequest
+    {
+        public bool TrabajaDomingo { get; set; } = true;
+    }
+
+    public class EmpresaAdminDatosRequest
+    {
+        public string NombreComercial { get; set; } = "";
+        public string? RNC { get; set; }
+        public string Direccion { get; set; } = "";
+        public string? Telefono { get; set; }
+        public string? CorreElectronico { get; set; }
+        public int LimiteUsuario { get; set; }
+        public int LimiteTerminalesPos { get; set; } = 1;
     }
 
     public class EmpresaAdminDetalleDto : EmpresaAdminListItemDto
@@ -67,6 +91,7 @@ namespace AlahiaPos.Entities.Dto
         public List<string> CodigosModulo { get; set; } = new();
         public List<ModuloCatalogoItemDto> ModulosDisponibles { get; set; } = new();
         public List<EmpresaAdminPerfilDto> Perfiles { get; set; } = new();
+        public List<PosTerminalDto> TerminalesPos { get; set; } = new();
     }
 
     public class EmpresaAdminPerfilDto
@@ -76,6 +101,9 @@ namespace AlahiaPos.Entities.Dto
         public string Nombre { get; set; } = "";
         public string? Descripcion { get; set; }
         public bool Activo { get; set; }
+
+        /// <summary>Ids de módulo activos del perfil (fuente de verdad: PerfilRoles).</summary>
+        [System.Text.Json.Serialization.JsonPropertyName("idsModulo")]
         public List<int> IdsModulo { get; set; } = new();
     }
 
@@ -94,6 +122,8 @@ namespace AlahiaPos.Entities.Dto
         public string Nombre { get; set; } = "";
         public bool Asignable { get; set; }
         public bool Seleccionado { get; set; }
+        public bool Activo { get; set; } = true;
+        public bool Interno { get; set; }
     }
 
     public class EmpresaAdminVerticalPresetDto

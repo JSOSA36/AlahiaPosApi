@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 using AlahiaPos.Entities.Dto;
 using AlahiaPos.Entities.Interfaces;
+using AlahiaPosApi.Auth;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -65,6 +66,8 @@ namespace AlahiaPosApi.Controllers
         }
 
         [HttpGet("admin/listar")]
+        [RequiereEmpresaSistema]
+        [PermitirEmpresaObjetivo]
         public async Task<IActionResult> ListarAdmin([FromQuery] TicketFiltroAdminDto filtro)
         {
             try
@@ -106,6 +109,8 @@ namespace AlahiaPosApi.Controllers
         }
 
         [HttpPost("admin/{idTicket:int}/estado")]
+        [RequiereEmpresaSistema]
+        [PermitirEmpresaObjetivo]
         public async Task<IActionResult> CambiarEstado(int idTicket, [FromBody] CambiarTicketEstadoDto dto)
         {
             try
@@ -121,6 +126,8 @@ namespace AlahiaPosApi.Controllers
         }
 
         [HttpGet("metricas")]
+        [RequiereEmpresaSistema]
+        [PermitirEmpresaObjetivo]
         public async Task<IActionResult> Metricas([FromQuery] int? idEmpresa)
         {
             try

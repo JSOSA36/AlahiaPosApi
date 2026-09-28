@@ -1,6 +1,7 @@
 ﻿using AlahiaPos.Entities.Domain;
 using AlahiaPos.Entities.Dto;
 using AlahiaPos.Entities.Interfaces;
+using AlahiaPosApi.Auth;
 using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
 
@@ -23,9 +24,8 @@ namespace AlahiaPosApi.Controllers
         IProductos
             _productos;
 
-        // ======================================================
-        // 🔥 CONSTRUCTOR
-        // ======================================================
+        private readonly ISucursalService _sucursales;
+        private readonly ISesionTokenResolver _tokens;
 
         public MovimientosInventarioController(
 
@@ -34,7 +34,11 @@ namespace AlahiaPosApi.Controllers
             IMovimientosInventarioService
                 movimientosInventario,
 
-            IProductos productos
+            IProductos productos,
+
+            ISucursalService sucursales,
+
+            ISesionTokenResolver tokens
         )
         {
 
@@ -45,6 +49,9 @@ namespace AlahiaPosApi.Controllers
 
             _productos =
                 productos;
+
+            _sucursales = sucursales;
+            _tokens = tokens;
         }
 
         // ======================================================
@@ -58,7 +65,7 @@ namespace AlahiaPosApi.Controllers
 
             return await
                 _movimientosInventario
-                .Listar(idEmpresa);
+                .Listar(idEmpresa, SucursalSesion());
         }
         // ======================================================
         // 🔥 FILTRAR HISTORIAL
@@ -81,12 +88,18 @@ namespace AlahiaPosApi.Controllers
 
             int? idUsuario,
 
-            int? idProducto
+            int? idProducto,
+
+            int? idSucursalFiltro = null
         )
         {
 
             try
             {
+                var (scope, error) = await SucursalConsultaHttp.ResolverAsync(
+                    HttpContext, _tokens, _sucursales, idEmpresa, idSucursalFiltro);
+                if (error != null)
+                    return error;
 
                 var result =
                     await _movimientosInventario
@@ -104,8 +117,18 @@ namespace AlahiaPosApi.Controllers
 
                         idUsuario,
 
-                        idProducto
+                        idProducto,
+
+                        scope.IdsPermitidos,
+                        scope.IdPrincipal
                     );
+
+                foreach (var row in result)
+                {
+                    var id = row.IdSucursal is > 0 ? row.IdSucursal.Value : scope.IdPrincipal;
+                    row.NombreSucursal = scope.Sucursales
+                        .FirstOrDefault(s => s.IdSucursal == id)?.Nombre ?? "";
+                }
 
                 return Ok(result);
             }
@@ -139,6 +162,9 @@ namespace AlahiaPosApi.Controllers
                 return NotFound(
                     "Movimiento no encontrado");
             }
+
+            var otra = TenantRecurso.RechazarSiOtraEmpresa(HttpContext, result.IdEmpresa);
+            if (otra != null) return otra;
 
             return Ok(result);
         }
@@ -183,6 +209,15 @@ namespace AlahiaPosApi.Controllers
                 value.Fecha =
                     DateTime.Now;
 
+                var sesion = SesionHttp.TryGet(HttpContext);
+                if (sesion != null)
+                {
+                    value.IdEmpresa = sesion.IdEmpresa;
+                    value.IdUsuario = sesion.IdUsuario;
+                    if (value.IdSucursal is null or <= 0 && sesion.IdSucursal > 0)
+                        value.IdSucursal = sesion.IdSucursal;
+                }
+
                 // =============================================
                 // 🔥 GUARDAR
                 // =============================================
@@ -225,15 +260,24 @@ namespace AlahiaPosApi.Controllers
             try
             {
 
-                var result =
+                var existente =
                     await _movimientosInventario
-                    .Eliminar(id);
+                    .ObtenerPorId(id);
 
-                if (!result)
+                if (existente == null)
                 {
                     return NotFound(
                         "Movimiento no encontrado");
                 }
+
+                var otra = TenantRecurso.RechazarSiOtraEmpresa(
+                    HttpContext,
+                    existente.IdEmpresa);
+                if (otra != null) return otra;
+
+                var result =
+                    await _movimientosInventario
+                    .Eliminar(id);
 
                 return Ok(new
                 {
@@ -281,7 +325,9 @@ namespace AlahiaPosApi.Controllers
 
                         desde,
 
-                        hasta
+                        hasta,
+
+                        SucursalSesion()
                     );
 
                 return Ok(result);
@@ -367,7 +413,9 @@ namespace AlahiaPosApi.Controllers
 
                         desde,
 
-                        hasta
+                        hasta,
+
+                        SucursalSesion()
                     );
 
                 return Ok(result);
@@ -468,6 +516,14 @@ namespace AlahiaPosApi.Controllers
                         ex.Message
                 });
             }
+        }
+
+        private int? SucursalSesion()
+        {
+            var sesion = SesionHttp.TryGet(HttpContext);
+            return sesion != null && sesion.IdSucursal > 0
+                ? sesion.IdSucursal
+                : null;
         }
     }
 }

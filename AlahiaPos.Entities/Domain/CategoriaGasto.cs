@@ -8,6 +8,7 @@ namespace AlahiaPos.Entities.Domain
     public class CategoriaGasto
     {
         [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int IdCategoriaGasto { get; set; }
 
         public int IdEmpresa { get; set; }

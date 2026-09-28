@@ -1,5 +1,6 @@
 using AlahiaPos.DataAccess.Seguridad;
 using AlahiaPos.Entities.Dto.Fiscal;
+using AlahiaPos.Entities.Fiscal;
 using System.Globalization;
 
 namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.DgiiDirecto
@@ -79,18 +80,19 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.DgiiDirecto
             DgiiDirectoSettings settings)
         {
             var enc = doc.Encabezado;
-            var qs = string.Join("&", new[]
-            {
-                "RncEmisor=" + Uri.EscapeDataString(SoloDigitos(enc.RncEmisor)),
-                "RncComprador=" + Uri.EscapeDataString(SoloDigitos(enc.RncComprador ?? "")),
-                "ENCF=" + Uri.EscapeDataString(enc.Encf),
-                "FechaEmision=" + Uri.EscapeDataString(enc.FechaEmision.ToString("dd-MM-yyyy", CultureInfo.InvariantCulture)),
-                "MontoTotal=" + Uri.EscapeDataString(enc.MontoTotal.ToString("0.00", CultureInfo.InvariantCulture)),
-                "FechaFirma=" + Uri.EscapeDataString(fechaFirma.ToString("dd-MM-yyyy HH:mm:ss", CultureInfo.InvariantCulture)),
-                "CodigoSeguridad=" + Uri.EscapeDataString(codigoSeguridad ?? "")
-            });
-
-            return settings.ConsultaTimbreBaseUrl + "?" + qs;
+            var ambiente = !string.IsNullOrWhiteSpace(doc.AmbienteDgii)
+                ? doc.AmbienteDgii
+                : settings.AmbientePath;
+            return EcfConsultaTimbreUrl.Build(
+                ambiente,
+                enc.TipoEcf,
+                enc.RncEmisor,
+                enc.RncComprador,
+                enc.Encf,
+                enc.FechaEmision,
+                enc.MontoTotal,
+                fechaFirma,
+                codigoSeguridad ?? "");
         }
 
         private static string NormalizeEstado(string? estado, string? codigo, bool httpOk, bool trackOk)

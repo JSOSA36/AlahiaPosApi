@@ -18,6 +18,12 @@ namespace AlahiaPos.Entities.Dto
         [Required]
         public int IdPerfil { get; set; }
 
+        /// <summary>
+        /// Sucursal operativa. Obligatorio si el perfil no es Administrador.
+        /// El administrador no se asigna a una sucursal.
+        /// </summary>
+        public int? IdSucursal { get; set; }
+
         [Required]
         public string Correo { get; set; }
 
@@ -33,6 +39,8 @@ namespace AlahiaPos.Entities.Dto
         public bool PuedeDisminuirCantidadCarrito { get; set; }
 
         public bool PuedeEditarPrecioCarrito { get; set; }
+
+        public bool PuedeAnularFactura { get; set; }
     }
 
 }

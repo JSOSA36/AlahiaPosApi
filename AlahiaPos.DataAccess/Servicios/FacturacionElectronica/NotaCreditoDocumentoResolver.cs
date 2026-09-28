@@ -35,6 +35,7 @@ namespace AlahiaPos.DataAccess.Servicios.FacturacionElectronica
                 IdOrigen = idOrigen,
                 IdEmpresa = idEmpresa,
                 FechaDocumento = nc.FechaInseccion,
+                IdSucursal = nc.IdSucursal,
                 RncCliente = nc.RNC,
                 NombreCliente = nc.NombreCliente,
                 NumeroDocumentoInterno = nc.NumeroDocumento,

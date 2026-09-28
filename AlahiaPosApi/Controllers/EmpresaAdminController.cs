@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 using AlahiaPos.Entities.Dto;
 using AlahiaPos.Entities.Interfaces;
+using AlahiaPosApi.Auth;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AlahiaPosApi.Controllers
@@ -12,20 +13,25 @@ namespace AlahiaPosApi.Controllers
     /// </summary>
     [Route("api/[controller]")]
     [ApiController]
+    [RequiereEmpresaSistema]
+    [PermitirEmpresaObjetivo]
     public class EmpresaAdminController : ControllerBase
     {
         private readonly IEmpresaAdminService _service;
         private readonly IUsuarios _usuarios;
         private readonly IEmpresas _empresas;
+        private readonly IPosTerminalService _posTerminales;
 
         public EmpresaAdminController(
             IEmpresaAdminService service,
             IUsuarios usuarios,
-            IEmpresas empresas)
+            IEmpresas empresas,
+            IPosTerminalService posTerminales)
         {
             _service = service;
             _usuarios = usuarios;
             _empresas = empresas;
+            _posTerminales = posTerminales;
         }
 
         [HttpGet("listado")]
@@ -85,6 +91,25 @@ namespace AlahiaPosApi.Controllers
             }
         }
 
+        [HttpPut("{idEmpresa:int}/datos")]
+        public async Task<IActionResult> Datos(
+            int idEmpresa,
+            [FromBody] EmpresaAdminDatosRequest req,
+            [FromHeader(Name = "X-IdUsuario")] int idUsuario = 0)
+        {
+            if (!await EsMacroBitsAsync(idUsuario))
+                return StatusCode(403, new { message = "Solo MacroBits puede gestionar empresas." });
+            try
+            {
+                await _service.ActualizarDatosAsync(idEmpresa, req);
+                return Ok(new { ok = true });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
         [HttpPut("{idEmpresa:int}/demo")]
         public async Task<IActionResult> Demo(
             int idEmpresa,
@@ -115,6 +140,25 @@ namespace AlahiaPosApi.Controllers
             try
             {
                 await _service.ActualizarNivelSoporteAsync(idEmpresa, req);
+                return Ok(new { ok = true });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpPut("{idEmpresa:int}/trabaja-domingo")]
+        public async Task<IActionResult> TrabajaDomingo(
+            int idEmpresa,
+            [FromBody] EmpresaAdminTrabajaDomingoRequest req,
+            [FromHeader(Name = "X-IdUsuario")] int idUsuario = 0)
+        {
+            if (!await EsMacroBitsAsync(idUsuario))
+                return StatusCode(403, new { message = "Solo MacroBits puede gestionar empresas." });
+            try
+            {
+                await _service.ActualizarTrabajaDomingoAsync(idEmpresa, req);
                 return Ok(new { ok = true });
             }
             catch (InvalidOperationException ex)
@@ -213,13 +257,41 @@ namespace AlahiaPosApi.Controllers
             }
         }
 
+        [HttpPost("{idEmpresa:int}/pos-terminales/{idPosTerminal:int}/revocar")]
+        public async Task<IActionResult> RevocarTerminalPos(
+            int idEmpresa,
+            int idPosTerminal,
+            [FromHeader(Name = "X-IdUsuario")] int idUsuario = 0)
+        {
+            if (!await EsMacroBitsAsync(idUsuario))
+                return StatusCode(403, new { message = "Solo MacroBits puede gestionar empresas." });
+            try
+            {
+                var sesion = SesionHttp.TryGet(HttpContext);
+                await _posTerminales.RevocarAsync(idEmpresa, idPosTerminal, sesion?.IdUsuario ?? idUsuario);
+                return Ok(new { ok = true });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
         private async Task<bool> EsMacroBitsAsync(int idUsuario)
         {
-            if (idUsuario <= 0) return false;
-            var user = await _usuarios.ObtenerPorId(idUsuario);
-            if (user == null || user.IdEmpresa <= 0) return false;
-            var emp = await _empresas.GetEmpresaById(user.IdEmpresa);
-            return emp != null && emp.EsEmpresaSistema;
+            var sesion = SesionHttp.TryGet(HttpContext);
+            if (sesion != null)
+                return sesion.EsEmpresaSistema;
+
+            if (idUsuario <= 0)
+                return false;
+
+            var usuario = await _usuarios.ObtenerPorId(idUsuario);
+            if (usuario == null || !usuario.Estado || usuario.IdEmpresa <= 0)
+                return false;
+
+            var empresa = await _empresas.GetEmpresaById(usuario.IdEmpresa);
+            return empresa?.EsEmpresaSistema == true;
         }
     }
 }

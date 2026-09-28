@@ -19,6 +19,9 @@ namespace AlahiaPos.Entities.Dto
         public int? LimiteUsuario { get; set; }
         public string? CorreoSMTP { get; set; }
         public string? InfoAgendar { get; set; }
+        public bool PedirVoucherCitas { get; set; }
+        public decimal MontoReservaCitas { get; set; }
+        public bool NotificarCitasWhatsApp { get; set; } = true;
 
         public string? PasswordSMTP { get; set; }
         public string? ServidorSMTP { get; set; }

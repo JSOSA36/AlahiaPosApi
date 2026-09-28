@@ -28,5 +28,10 @@ namespace AlahiaPos.Entities.Dto
         [Required]
         public int IdEmpresa { get; set; }
 
+        /// <summary>
+        /// Sucursal operativa. Obligatorio si la ocupación no es Administrador.
+        /// </summary>
+        public int? IdSucursal { get; set; }
+
     }
 }

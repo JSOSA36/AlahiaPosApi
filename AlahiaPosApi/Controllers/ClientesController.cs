@@ -1,7 +1,9 @@
 ﻿using AlahiaPos.Entities.Domain;
 using AlahiaPos.Entities.Dto;
 using AlahiaPos.Entities.Interfaces;
+using AlahiaPosApi.Auth;
 using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
@@ -28,6 +30,7 @@ namespace AlahiaPosApi.Controllers
         }
 
         [HttpGet("por-telefono")]
+        [AllowAnonymous]
         public async Task<IActionResult> GetByTelefono(
         [FromQuery] string telefono,
         [FromQuery] int idEmpresa
@@ -70,13 +73,19 @@ namespace AlahiaPosApi.Controllers
         // GET api/<ClientesController>/5
         [HttpGet]
         [Route("GetbyId/{id}")]
-        public async Task<Clientes> GetbyId(int id)
+        public async Task<IActionResult> GetbyId(int id)
         {
-            return await _IClientes.GetAllClientesById(id);
+            var cliente = await _IClientes.GetAllClientesById(id);
+            if (cliente == null)
+                return NotFound();
+            if (!TenantRecurso.EsDeLaSesion(HttpContext, cliente.IdEmpresa))
+                return NotFound();
+            return Ok(cliente);
         }
 
         // POST api/<ClientesController>
         [HttpPost()]
+        [AllowAnonymous]
         public async Task<ActionResult> Post(ClienteDto value)
         {
             try
@@ -119,9 +128,13 @@ namespace AlahiaPosApi.Controllers
 
         // PUT api/<ClientesController>/5
         [HttpPut]
-        public async Task Put(ClienteDto value)
+        public async Task<IActionResult> Put(ClienteDto value)
         {
             var _Udate = await _IClientes.GetAllClientesById(value.IdCliente);
+            if (_Udate == null)
+                return NotFound();
+            if (!TenantRecurso.EsDeLaSesion(HttpContext, _Udate.IdEmpresa))
+                return NotFound();
            
             _Udate.NombreComercial = value.NombreComercial;
             _Udate.Celular = value.Celular;
@@ -132,13 +145,20 @@ namespace AlahiaPosApi.Controllers
             _Udate.FechaNacimiento = value.FechaNacimiento;
             
             _IClientes.UpdateClientes(value.IdCliente, _Udate);
+            return Ok();
         }
 
         // DELETE api/<ClientesController>/5
         [HttpDelete("{id}")]
-        public void Delete(int id)
+        public async Task<IActionResult> Delete(int id)
         {
+            var cliente = await _IClientes.GetAllClientesById(id);
+            if (cliente == null)
+                return NotFound();
+            if (!TenantRecurso.EsDeLaSesion(HttpContext, cliente.IdEmpresa))
+                return NotFound();
             _IClientes.DeleteClientes(id);
+            return Ok();
         }
     }
 }

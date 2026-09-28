@@ -37,6 +37,8 @@ namespace AlahiaPos.DataAccess.Servicios.Notificaciones
             [NotificacionTipos.CxcVencida] = new() { Email = false },
             [NotificacionTipos.CompraPendiente] = new() { Email = false },
             [NotificacionTipos.AvisoAdministrativo] = new() { Email = true },
+            [NotificacionTipos.PedidoDeliveryAsignado] = new() { Email = false },
+            [NotificacionTipos.CierreCaja] = new() { Email = true },
         };
 
         public NotificacionCentroService(
@@ -334,34 +336,48 @@ namespace AlahiaPos.DataAccess.Servicios.Notificaciones
             }
             if (string.IsNullOrWhiteSpace(to)) return;
 
+            var destinatarios = to
+                .Split(new[] { ';', ',', ' ' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Where(x => x.Contains('@'))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            if (destinatarios.Count == 0) return;
+
             var mensajeHtml = string.Join("<br/>",
                 (evento.Mensaje ?? string.Empty)
                     .Replace("\r\n", "\n")
                     .Split('\n')
                     .Select(WebUtility.HtmlEncode));
 
+            var empresaHeader = string.IsNullOrWhiteSpace(evento.NombreEmpresa)
+                ? ""
+                : $@"<p style=""margin:6px 0 0;color:#e2e8f0;font-size:0.95rem;"">{WebUtility.HtmlEncode(evento.NombreEmpresa)}</p>";
+
             var body = $@"
               <div style=""font-family:Segoe UI,Arial,sans-serif;max-width:640px;color:#0f172a;"">
                 <div style=""background:linear-gradient(135deg,#2F80ED,#174A70);padding:16px 20px;border-radius:12px 12px 0 0;border-bottom:3px solid #F2C94C;"">
                   <h2 style=""margin:0;color:#fff;font-size:1.15rem;"">{WebUtility.HtmlEncode(evento.Titulo)}</h2>
+                  {empresaHeader}
                 </div>
                 <div style=""border:1px solid #e2e8f0;border-top:none;border-radius:0 0 12px 12px;padding:18px 20px;background:#fff;"">
-                  <p style=""line-height:1.5;"">{mensajeHtml}</p>
-                  {(string.IsNullOrWhiteSpace(evento.NombreEmpresa) ? "" : $"<p><strong>Empresa:</strong> {WebUtility.HtmlEncode(evento.NombreEmpresa)}</p>")}
-                  <p style=""margin-top:1.25rem;color:#64748b;"">— Alahia ERP / MacroBits</p>
+                  <p style=""line-height:1.5;white-space:pre-wrap;font-family:Consolas,monospace;font-size:14px;"">{mensajeHtml}</p>
+                  <p style=""margin-top:1.25rem;color:#64748b;"">— Alahia ERP</p>
                 </div>
               </div>";
 
-            Utility.Send(
-                "smtp.gmail.com",
-                587,
-                true,
-                "ing.joelarielsosa@gmail.com",
-                "wrcsdhewqdgrtula",
-                "MacroBits Software",
-                to.Trim(),
-                evento.Titulo,
-                body);
+            foreach (var dest in destinatarios)
+            {
+                Utility.Send(
+                    "smtp.gmail.com",
+                    587,
+                    true,
+                    "ing.joelarielsosa@gmail.com",
+                    "wrcsdhewqdgrtula",
+                    "Alahia ERP",
+                    dest,
+                    evento.Titulo,
+                    body);
+            }
         }
     }
 

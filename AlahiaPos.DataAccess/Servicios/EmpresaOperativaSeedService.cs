@@ -14,13 +14,16 @@ namespace AlahiaPos.DataAccess.Servicios
     {
         private readonly AlahiaPosContext _db;
         private readonly ILogger<EmpresaOperativaSeedService> _logger;
+        private readonly ISucursalService _sucursales;
 
         public EmpresaOperativaSeedService(
             AlahiaPosContext db,
-            ILogger<EmpresaOperativaSeedService> logger)
+            ILogger<EmpresaOperativaSeedService> logger,
+            ISucursalService sucursales)
         {
             _db = db;
             _logger = logger;
+            _sucursales = sucursales;
         }
 
         public async Task SeedDesdePlantillaAsync(int idEmpresaNueva, int idEmpresaPlantilla = 60)
@@ -44,6 +47,7 @@ namespace AlahiaPos.DataAccess.Servicios
             await ClonarParametrosAsync(idEmpresaNueva, idEmpresaPlantilla);
             await ClonarSecuenciasAsync(idEmpresaNueva, idEmpresaPlantilla);
             await AsegurarAlmacenPrincipalAsync(idEmpresaNueva);
+            await _sucursales.AsegurarPrincipalAsync(idEmpresaNueva);
             await AsegurarClienteAlPortadorAsync(idEmpresaNueva);
 
             _logger.LogInformation(
@@ -66,9 +70,13 @@ namespace AlahiaPos.DataAccess.Servicios
             foreach (var p in origen)
             {
                 var valor = p.Valor;
-                // Nueva empresa: FE apagada hasta que MacroBits configure certificado/ambiente
-                if (string.Equals(p.Clave, "FACTURACION_ELECTRONICA", StringComparison.OrdinalIgnoreCase))
+                // Nueva empresa: FE y preview POS apagados hasta que se configuren
+                if (string.Equals(p.Clave, "FACTURACION_ELECTRONICA", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(p.Clave, "PREVIEW_DGII", StringComparison.OrdinalIgnoreCase))
                     valor = "false";
+                // Cierre por billetes por defecto. Solo Sena usa el simplificado.
+                else if (string.Equals(p.Clave, "ControlEfectivoPorDenominacion", StringComparison.OrdinalIgnoreCase))
+                    valor = "true";
 
                 _db.Parametros.Add(new Parametros
                 {

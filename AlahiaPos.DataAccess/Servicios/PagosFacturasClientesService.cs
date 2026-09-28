@@ -69,6 +69,8 @@ namespace AlahiaPos.DataAccess.Servicios
                     Monto = p.Monto,
                     Nota = p.Nota,
                     IdMovimientoFinanciero = p.IdMovimientoFinanciero,
+                    IdArs = p.IdArs,
+                    EsCoberturaArs = p.EsCoberturaArs,
                     IdEmpresa = p.IdEmpresa,
                     FechaInseccion = p.FechaInseccion
                 })

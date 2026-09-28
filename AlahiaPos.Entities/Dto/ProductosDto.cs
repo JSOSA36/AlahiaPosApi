@@ -26,6 +26,7 @@ namespace AlahiaPos.Entities.Dto
         public bool? isActiva { get; set; }
         public int? DuracionServicio { get; set; } = 60; // minutos por defecto
         public bool? DisponibleEnCitas { get; set; } = true;
+        public bool ManejaGuarniciones { get; set; }
         public string? CodigoBarra { get; set; }
         public bool? Itbis { get; set; }
         public string? TipoComportamiento { get; set; }

@@ -1,4 +1,5 @@
 using AlahiaPos.Entities.Domain;
+using AlahiaPos.Entities.Dto;
 using AlahiaPos.Entities.Interfaces;
 using AlahiaPos.Payroll.Abstractions;
 using AlahiaPos.Payroll.Rules.DO;
@@ -11,17 +12,43 @@ namespace AlahiaPosApi.Controllers
     public class RrhhLaboralController : ControllerBase
     {
         private readonly IEmpleadoLaboralService _svc;
+        private readonly IEmpleadoFichaPersonalService _ficha;
         private readonly IEvaluationContextBuilder _contextBuilder;
         private readonly IPayrollEngine _engine;
 
         public RrhhLaboralController(
             IEmpleadoLaboralService svc,
+            IEmpleadoFichaPersonalService ficha,
             IEvaluationContextBuilder contextBuilder,
             IPayrollEngine engine)
         {
             _svc = svc;
+            _ficha = ficha;
             _contextBuilder = contextBuilder;
             _engine = engine;
+        }
+
+        private int IdUsuario() =>
+            int.TryParse(Request.Headers["X-IdUsuario"].FirstOrDefault(), out var id) ? id : 0;
+
+        [HttpGet("ficha-personal/{idEmpresa:int}/{idEmpleados:int}")]
+        public async Task<IActionResult> GetFichaPersonal(int idEmpresa, int idEmpleados)
+        {
+            try { return Ok(await _ficha.GetAsync(idEmpresa, idEmpleados)); }
+            catch (Exception ex) when (ex is InvalidOperationException or ArgumentException)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpPut("ficha-personal")]
+        public async Task<IActionResult> UpsertFichaPersonal([FromBody] EmpleadoFichaPersonalDto body)
+        {
+            try { return Ok(await _ficha.UpsertAsync(body, IdUsuario())); }
+            catch (Exception ex) when (ex is InvalidOperationException or ArgumentException)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         [HttpGet("laboral/{idEmpresa:int}/{idEmpleados:int}")]

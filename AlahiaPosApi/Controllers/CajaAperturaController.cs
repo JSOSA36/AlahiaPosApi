@@ -1,5 +1,6 @@
 ﻿using AlahiaPos.Entities.Domain;
 using AlahiaPos.Entities.Interfaces;
+using AlahiaPosApi.Auth;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AlahiaPosApi.Controllers
@@ -67,6 +68,7 @@ namespace AlahiaPosApi.Controllers
 
         [HttpPost]
         [Route("Abrir")]
+        [RequiereTerminalPos]
         public async Task<IActionResult>
             AbrirCaja(
                 [FromBody]
@@ -93,6 +95,10 @@ namespace AlahiaPosApi.Controllers
                 });
             }
 
+            var sesion = SesionHttp.TryGet(HttpContext);
+            if (sesion != null && sesion.IdSucursal > 0)
+                model.IdSucursal = sesion.IdSucursal;
+
             await _service
                 .AbrirCajaAsync(model);
 
@@ -111,6 +117,7 @@ namespace AlahiaPosApi.Controllers
 
         [HttpPut]
         [Route("Cerrar/{idCaja}")]
+        [RequiereTerminalPos]
         public async Task<IActionResult>
             CerrarCaja(
                 int idCaja

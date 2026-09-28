@@ -1,7 +1,9 @@
 ﻿using AlahiaPos.Entities.Domain;
 using AlahiaPos.Entities.Dto;
 using AlahiaPos.Entities.Interfaces;
+using AlahiaPosApi.Auth;
 using Microsoft.AspNetCore.Mvc;
+using System.Linq;
 
 namespace AlahiaPosApi.Controllers
 {
@@ -32,6 +34,8 @@ namespace AlahiaPosApi.Controllers
         private readonly ISecuenciaEcfService _secuenciaEcf;
         private readonly IContabilidadEventPublisher _contabilidadEvents;
         private readonly ICategoriaGastoService _categoriaGastoService;
+        private readonly ISucursalService _sucursales;
+        private readonly ISesionTokenResolver _tokens;
 
         // ======================================================
         // 🔥 CONSTRUCTOR
@@ -52,7 +56,9 @@ namespace AlahiaPosApi.Controllers
 
             ISecuenciaEcfService secuenciaEcf,
             IContabilidadEventPublisher contabilidadEvents,
-            ICategoriaGastoService categoriaGastoService
+            ICategoriaGastoService categoriaGastoService,
+            ISucursalService sucursales,
+            ISesionTokenResolver tokens
         )
         {
             _IGastos =
@@ -70,6 +76,8 @@ namespace AlahiaPosApi.Controllers
             _secuenciaEcf = secuenciaEcf;
             _contabilidadEvents = contabilidadEvents;
             _categoriaGastoService = categoriaGastoService;
+            _sucursales = sucursales;
+            _tokens = tokens;
         }
 
         // ======================================================
@@ -77,14 +85,18 @@ namespace AlahiaPosApi.Controllers
         // ======================================================
 
         [HttpGet("{IdEmpresa}")]
-        public async Task<
-            IEnumerable<Gastos>>
-            Get(int IdEmpresa)
+        public async Task<IActionResult> Get(int IdEmpresa, int? idSucursalFiltro = null)
         {
-            return await _IGastos
-            .GetAllGastos(
-                IdEmpresa
-            );
+            var (scope, error) = await SucursalConsultaHttp.ResolverAsync(
+                HttpContext, _tokens, _sucursales, IdEmpresa, idSucursalFiltro);
+            if (error != null)
+                return error;
+
+            var gastos = await _IGastos.GetAllGastos(IdEmpresa);
+            gastos = (gastos ?? Enumerable.Empty<Gastos>())
+                .Where(g => scope.Incluye(g.IdSucursal))
+                .ToList();
+            return Ok(gastos);
         }
 
         // ======================================================
@@ -112,11 +124,22 @@ namespace AlahiaPosApi.Controllers
                     value.TipoComprobante = GastoComprobanteTipos.SinComprobante;
                 }
 
+                if (GastoComprobanteTipos.EsGastosMenores(value.TipoComprobante)
+                    && (value.IdTipoBienesServicios is null or < 1 or > 11))
+                {
+                    return Ok(new
+                    {
+                        success = false,
+                        message = "Seleccione el Tipo de gasto DGII (606). Es obligatorio con comprobante de gastos menores."
+                    });
+                }
+
                 if (GastoComprobanteTipos.EsGastosMenores(value.TipoComprobante))
                 {
                     var reserva = await _secuenciaEcf.ReservarSiguienteAsync(
                         value.IdEmpresa,
-                        GastoComprobanteTipos.TipoEcfGastosMenores);
+                        GastoComprobanteTipos.TipoEcfGastosMenores,
+                        value.IdSucursal);
 
                     if (reserva.Exitoso && !string.IsNullOrWhiteSpace(reserva.Encf))
                     {
@@ -125,8 +148,12 @@ namespace AlahiaPosApi.Controllers
                     }
                     else
                     {
-                        value.NumeroComprobante = null;
-                        value.FechaComprobante = null;
+                        return Ok(new
+                        {
+                            success = false,
+                            message = reserva.MensajeError
+                                ?? "No hay secuencia E43 (Gastos Menores). Configure FE → Secuencias e-CF para que el gasto entre al Formato 606."
+                        });
                     }
 
                     value.RncEmisorComprobante = null;
@@ -166,6 +193,7 @@ namespace AlahiaPosApi.Controllers
                     NumeroComprobante = value.NumeroComprobante,
                     FechaComprobante = value.FechaComprobante,
                     IdProveedor = value.IdProveedor > 0 ? value.IdProveedor : 1,
+                    IdTipoBienesServicios = value.IdTipoBienesServicios,
                     DesdeExtractoBancario = false
                 });
 
@@ -220,6 +248,15 @@ namespace AlahiaPosApi.Controllers
                     });
                 }
 
+                if (GastoComprobanteTipos.EsGastosMenores(gastoExistente.TipoComprobante))
+                {
+                    return Ok(new
+                    {
+                        success = false,
+                        message = "Un gasto con comprobante de gastos menores no se puede editar (e-NCF E43 / Formato 606)."
+                    });
+                }
+
                 if (string.Equals(gastoExistente.OrigenModulo, "NOMINA", StringComparison.OrdinalIgnoreCase)
                     || string.Equals(gastoExistente.OrigenModulo, "COMPRAS", StringComparison.OrdinalIgnoreCase))
                 {
@@ -244,6 +281,16 @@ namespace AlahiaPosApi.Controllers
                     value.TipoComprobante = GastoComprobanteTipos.SinComprobante;
                 }
 
+                if (GastoComprobanteTipos.EsGastosMenores(value.TipoComprobante)
+                    && (value.IdTipoBienesServicios is null or < 1 or > 11))
+                {
+                    return Ok(new
+                    {
+                        success = false,
+                        message = "Seleccione el Tipo de gasto DGII (606). Es obligatorio con comprobante de gastos menores."
+                    });
+                }
+
                 if (GastoComprobanteTipos.EsGastosMenores(value.TipoComprobante))
                 {
                     // Conservar e-NCF ya asignado; si no tiene, intentar reservar sin bloquear
@@ -257,7 +304,8 @@ namespace AlahiaPosApi.Controllers
                     {
                         var reserva = await _secuenciaEcf.ReservarSiguienteAsync(
                             gastoExistente.IdEmpresa,
-                            GastoComprobanteTipos.TipoEcfGastosMenores);
+                            GastoComprobanteTipos.TipoEcfGastosMenores,
+                            value.IdSucursal ?? gastoExistente.IdSucursal);
 
                         if (reserva.Exitoso && !string.IsNullOrWhiteSpace(reserva.Encf))
                         {
@@ -304,6 +352,9 @@ namespace AlahiaPosApi.Controllers
                 gastoExistente.IdGasto = id;
                 gastoExistente.TipoGasto = value.TipoGasto;
                 gastoExistente.IdCategoriaGasto = value.IdCategoriaGasto;
+                gastoExistente.IdTipoBienesServicios = value.IdTipoBienesServicios is >= 1 and <= 11
+                    ? value.IdTipoBienesServicios
+                    : null;
                 gastoExistente.TipoComprobante = value.TipoComprobante;
                 gastoExistente.NumeroComprobante = value.NumeroComprobante;
                 gastoExistente.FechaComprobante = value.FechaComprobante;

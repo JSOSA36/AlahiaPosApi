@@ -10,7 +10,7 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.DgiiDirecto.Definitions
         public override bool RequiereInformacionReferencia => false;
         public override IReadOnlyList<EcfCampoDef>? InformacionReferencia => null;
         public override IReadOnlyList<EcfCampoDef>? Comprador { get; } =
-            BuildCompradorComun(forzarRncVacio: false, rncObligatorio: true);
+            BuildCompradorComun(forzarRncVacio: false, rncObligatorio: true, incluirDatosOrden: false);
         public override IReadOnlyList<EcfCampoDef> Item { get; } = BuildItemE41();
         public override IReadOnlyList<EcfCampoDef> Totales { get; } = BuildTotalesE41();
 
@@ -88,21 +88,30 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.DgiiDirecto.Definitions
             EcfXmlFormat.Campo("IndicadorBienoServicio", EcfCampoPresence.Obligatorio, 5,
                 c => 2,
                 nota: "E41: debe ser 2 (servicio) según Formato DGII"),
-            EcfXmlFormat.Campo("CantidadItem", EcfCampoPresence.Obligatorio, 6,
+            EcfXmlFormat.Campo("DescripcionItem", EcfCampoPresence.Opcional, 6,
+                c => string.IsNullOrWhiteSpace(c.LineaActual!.DescripcionItem)
+                    ? null
+                    : EcfXmlFormat.Esc(c.LineaActual.DescripcionItem, 1000)),
+            EcfXmlFormat.Campo("CantidadItem", EcfCampoPresence.Obligatorio, 7,
                 c => EcfXmlFormat.Money(c.LineaActual!.Cantidad)),
-            EcfXmlFormat.Campo("UnidadMedida", EcfCampoPresence.Opcional, 7,
+            EcfXmlFormat.Campo("UnidadMedida", EcfCampoPresence.Opcional, 8,
                 c => c.LineaActual!.UnidadMedida),
-            EcfXmlFormat.Campo("PrecioUnitarioItem", EcfCampoPresence.Obligatorio, 8,
+            EcfXmlFormat.Campo("PrecioUnitarioItem", EcfCampoPresence.Obligatorio, 9,
                 c => EcfXmlFormat.Money(c.LineaActual!.PrecioUnitario)),
-            EcfXmlFormat.Campo("DescuentoMonto", EcfCampoPresence.Opcional, 9,
+            EcfXmlFormat.Campo("DescuentoMonto", EcfCampoPresence.Opcional, 10,
                 c => c.LineaActual!.DescuentoMonto is > 0
                     ? EcfXmlFormat.Money(c.LineaActual.DescuentoMonto.Value)
                     : null),
-            EcfXmlFormat.Campo("RecargoMonto", EcfCampoPresence.Opcional, 10,
+            EcfXmlFormat.Campo("TablaSubDescuento", EcfCampoPresence.Opcional, 11,
+                c => EcfXmlFormat.TablaSubDescuentoItem(c), complejo: true,
+                nota: "CerteCF: DGII rechaza DescuentoMonto sin TablaSubDescuento"),
+            EcfXmlFormat.Campo("RecargoMonto", EcfCampoPresence.Opcional, 12,
                 c => c.LineaActual!.RecargoMonto is > 0
                     ? EcfXmlFormat.Money(c.LineaActual.RecargoMonto.Value)
                     : null),
-            EcfXmlFormat.Campo("MontoItem", EcfCampoPresence.Obligatorio, 11,
+            EcfXmlFormat.Campo("TablaSubRecargo", EcfCampoPresence.Opcional, 13,
+                c => EcfXmlFormat.TablaSubRecargoItem(c), complejo: true),
+            EcfXmlFormat.Campo("MontoItem", EcfCampoPresence.Obligatorio, 14,
                 c => EcfXmlFormat.Money(c.LineaActual!.MontoItem)),
         };
 
@@ -113,12 +122,11 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.DgiiDirecto.Definitions
         private static IReadOnlyList<EcfCampoDef> BuildTotalesE41()
         {
             var list = new List<EcfCampoDef>(BuildTotalesComun());
-            // Reemplazar campos de retención (orden 14/15) por emisión inclusive de cero.
             list.RemoveAll(c => c.Nombre is "TotalITBISRetenido" or "TotalISRRetencion");
-            list.Add(EcfXmlFormat.Campo("TotalITBISRetenido", EcfCampoPresence.Obligatorio, 14,
+            list.Add(EcfXmlFormat.Campo("TotalITBISRetenido", EcfCampoPresence.Obligatorio, 21,
                 c => EcfXmlFormat.Money(c.Enc.TotalItbisRetenido),
                 nota: "E41: emitir aunque sea 0 si hay Retencion en ítems"));
-            list.Add(EcfXmlFormat.Campo("TotalISRRetencion", EcfCampoPresence.Obligatorio, 15,
+            list.Add(EcfXmlFormat.Campo("TotalISRRetencion", EcfCampoPresence.Obligatorio, 22,
                 c => EcfXmlFormat.Money(c.Enc.TotalIsrRetencion),
                 nota: "E41: retención ISR típica en servicios"));
             return list;

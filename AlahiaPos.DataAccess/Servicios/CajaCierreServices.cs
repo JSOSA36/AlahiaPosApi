@@ -1,4 +1,5 @@
-﻿using AlahiaPos.Entities.Domain;
+﻿using Microsoft.Extensions.Logging;
+using AlahiaPos.Entities.Domain;
 using AlahiaPos.Entities.Dto;
 using AlahiaPos.Entities.Events;
 using AlahiaPos.Entities.Interfaces;
@@ -29,6 +30,11 @@ namespace AlahiaPos.DataAccess.Servicios
         private readonly IContabilidadEventPublisher _contabilidadEvents;
         private readonly IMovimientoFinancieroService _movimientoFinancieroService;
         private readonly ICuentaFinancieraService _cuentaFinancieraService;
+        private readonly IRepository<Sucursal> _sucursales;
+        private readonly IRepository<Empresas> _empresas;
+        private readonly IRepository<Perfiles> _perfiles;
+        private readonly INotificacionCentro _notificaciones;
+        private readonly ILogger<CajaCierreServices> _logger;
 
         public CajaCierreServices(
 
@@ -46,7 +52,12 @@ namespace AlahiaPos.DataAccess.Servicios
     IRepository<Productos> productoRepository,
     IContabilidadEventPublisher contabilidadEvents,
     IMovimientoFinancieroService movimientoFinancieroService,
-    ICuentaFinancieraService cuentaFinancieraService
+    ICuentaFinancieraService cuentaFinancieraService,
+    IRepository<Sucursal> sucursales,
+    IRepository<Empresas> empresas,
+    IRepository<Perfiles> perfiles,
+    INotificacionCentro notificaciones,
+    ILogger<CajaCierreServices> logger
 )
         {
             _repository = repository;
@@ -64,6 +75,11 @@ namespace AlahiaPos.DataAccess.Servicios
             _contabilidadEvents = contabilidadEvents;
             _movimientoFinancieroService = movimientoFinancieroService;
             _cuentaFinancieraService = cuentaFinancieraService;
+            _sucursales = sucursales;
+            _empresas = empresas;
+            _perfiles = perfiles;
+            _notificaciones = notificaciones;
+            _logger = logger;
         }
 
         /* =====================================
@@ -210,6 +226,9 @@ namespace AlahiaPos.DataAccess.Servicios
 
                     IdEmpresa =
                         apertura.IdEmpresa,
+
+                    IdSucursal =
+                        apertura.IdSucursal ?? cierre.IdSucursal,
 
                     IdUsuario =
                         cierre.IdUsuario,
@@ -414,6 +433,7 @@ namespace AlahiaPos.DataAccess.Servicios
                     IdCajaCierre = cierre?.IdCajaCierre ?? 0,
                     IdCajaApertura = apertura.IdCajaApertura,
                     IdEmpresa = apertura.IdEmpresa,
+                    IdSucursal = apertura.IdSucursal ?? cierre?.IdSucursal,
                     IdUsuario = apertura.IdUsuario,
 
                     FechaApertura = apertura.FechaApertura,
@@ -453,7 +473,8 @@ namespace AlahiaPos.DataAccess.Servicios
 
         public async Task<CajaCierre?>
             GetUltimoCierreAsync(
-                int idEmpresa
+                int idEmpresa,
+                int idUsuario = 0
             )
         {
 
@@ -467,6 +488,15 @@ namespace AlahiaPos.DataAccess.Servicios
                         x.IdEmpresa
                         ==
                         idEmpresa
+
+                        &&
+                        (
+                            idUsuario <= 0
+                            ||
+                            x.IdUsuario
+                            ==
+                            idUsuario
+                        )
                 );
 
             return cierres
@@ -504,6 +534,22 @@ namespace AlahiaPos.DataAccess.Servicios
             if (apertura == null)
                 return null;
 
+            var idSucursal = apertura.IdSucursal ?? cierre.IdSucursal;
+            string? nombreSucursal = null;
+            if (idSucursal is > 0)
+            {
+                nombreSucursal = _sucursales
+                    .GetAllByExpresionNoAsync(s =>
+                        s.IdSucursal == idSucursal.Value
+                        && s.IdEmpresa == apertura.IdEmpresa)
+                    .FirstOrDefault()?.Nombre;
+            }
+
+            var empresa = await _empresas.GetByIdAsync(apertura.IdEmpresa);
+            var nombreEmpresa = empresa?.NombreComercial?.Trim();
+            if (string.IsNullOrWhiteSpace(nombreEmpresa))
+                nombreEmpresa = null;
+
             /* =====================================
             🔥 USUARIOS
             ====================================== */
@@ -529,7 +575,7 @@ namespace AlahiaPos.DataAccess.Servicios
 
                     apertura.IdEmpresa,
 
-                    apertura.IdUsuario,
+                    cierre.IdUsuario,
 
                     cierre.IdCajaCierre
                 );
@@ -559,6 +605,10 @@ namespace AlahiaPos.DataAccess.Servicios
 
                 IdEmpresa =
                     apertura.IdEmpresa,
+
+                IdSucursal = idSucursal,
+                NombreSucursal = nombreSucursal,
+                NombreEmpresa = nombreEmpresa,
 
                 IdUsuario =
                     apertura.IdUsuario,
@@ -670,6 +720,9 @@ namespace AlahiaPos.DataAccess.Servicios
                     "La caja ya fue cerrada"
                 );
             }
+
+            if (model.IdSucursal is null or <= 0)
+                model.IdSucursal = apertura.IdSucursal;
 
             /* =====================================
             🔥 OBTENER RESUMEN DEL CIERRE
@@ -892,10 +945,206 @@ namespace AlahiaPos.DataAccess.Servicios
             }
 
             /* =====================================
+               Aviso al administrador (correo)
+               ===================================== */
+            try
+            {
+                await NotificarAdministradorCierreAsync(model, apertura);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex,
+                    "No se pudo enviar el correo de cierre de caja #{Id} empresa {Empresa}",
+                    model.IdCajaCierre, model.IdEmpresa);
+            }
+
+            /* =====================================
             🔥 RETORNO
             ====================================== */
 
             return model;
+        }
+
+        private async Task NotificarAdministradorCierreAsync(
+            CajaCierre model,
+            CajaApertura apertura)
+        {
+            var empresa = await _empresas.GetByIdAsync(model.IdEmpresa);
+            if (empresa == null)
+                return;
+
+            var correos = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            void AgregarCorreo(string? valor)
+            {
+                var c = (valor ?? "").Trim();
+                if (c.Contains('@'))
+                    correos.Add(c);
+            }
+
+            // Solo administradores / perfil principal — no al cajero ni al correo genérico de empresa.
+            var perfilesEmpresa = await _perfiles.GetAllByExpresionAsync(p =>
+                p.IdEmpresa == model.IdEmpresa && p.Activo && p.Nombre != null);
+
+            static bool EsPerfilAdmin(string? nombre)
+            {
+                var n = (nombre ?? "").Trim();
+                if (n.Length == 0) return false;
+                return n.Equals("Administrador", StringComparison.OrdinalIgnoreCase)
+                    || n.Contains("Administrador", StringComparison.OrdinalIgnoreCase)
+                    || n.Contains("Principal", StringComparison.OrdinalIgnoreCase)
+                    || n.Contains("ADMIN", StringComparison.OrdinalIgnoreCase);
+            }
+
+            var idsPerfilAdmin = perfilesEmpresa
+                .Where(p => EsPerfilAdmin(p.Nombre))
+                .Select(p => p.IdPerfil)
+                .ToHashSet();
+
+            if (idsPerfilAdmin.Count > 0)
+            {
+                var admins = await _usuarioRepository.GetAllByExpresionAsync(u =>
+                    u.IdEmpresa == model.IdEmpresa
+                    && u.Estado
+                    && idsPerfilAdmin.Contains(u.IdPerfil));
+
+                foreach (var admin in admins)
+                {
+                    AgregarCorreo(admin.Correo);
+                    AgregarCorreo(admin.UserName);
+                }
+            }
+
+            if (correos.Count == 0)
+            {
+                _logger.LogWarning(
+                    "Cierre #{Id} empresa {Empresa}: no hay correo de administrador (perfiles ADMIN).",
+                    model.IdCajaCierre, model.IdEmpresa);
+                return;
+            }
+
+            _logger.LogInformation(
+                "Cierre #{Id} empresa {Empresa}: correo a {Destinos}",
+                model.IdCajaCierre, model.IdEmpresa, string.Join("; ", correos));
+
+            var usuarioCierre = (await _usuarioRepository.GetAllByExpresionAsync(u =>
+                    u.IdUsuario == model.IdUsuario))
+                .FirstOrDefault();
+
+            var metodos = await _Ingresos.GetIngresosByCajaCierre(model.IdCajaCierre)
+                          ?? new List<CajaMetodoPagoDto>();
+
+            var productos = await _facturaRepository.GetProductosPorCajaCierre(
+                apertura.IdEmpresa,
+                model.IdUsuario,
+                model.IdCajaCierre)
+                ?? new List<CajaProductoDto>();
+
+            var totalGeneral = metodos.Sum(m => m.Total);
+            var efectivo = metodos
+                .Where(x => CajaMetodoPagoDto.EsEfectivo(x.FormaPago))
+                .Sum(x => x.Total);
+
+            string? nombreSucursal = null;
+            var idSucursal = apertura.IdSucursal ?? model.IdSucursal;
+            if (idSucursal is > 0)
+            {
+                nombreSucursal = _sucursales
+                    .GetAllByExpresionNoAsync(s =>
+                        s.IdSucursal == idSucursal.Value
+                        && s.IdEmpresa == model.IdEmpresa)
+                    .FirstOrDefault()?.Nombre;
+            }
+
+            var nombreUsuario = usuarioCierre?.Correo
+                ?? usuarioCierre?.UserName
+                ?? $"Usuario #{model.IdUsuario}";
+
+            var fechaCierre = model.FechaCierre == default ? DateTime.Now : model.FechaCierre;
+
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine("CIERRE DE CAJA");
+            if (!string.IsNullOrWhiteSpace(empresa.NombreComercial))
+                sb.AppendLine($"Empresa:  {empresa.NombreComercial.Trim()}");
+            if (!string.IsNullOrWhiteSpace(nombreSucursal))
+                sb.AppendLine($"Sucursal: {nombreSucursal}");
+            sb.AppendLine($"Caja #:   {model.IdCajaCierre}");
+            sb.AppendLine($"Apertura: {apertura.FechaApertura:dd/MM/yyyy hh:mm tt}");
+            sb.AppendLine($"Cierre:   {fechaCierre:dd/MM/yyyy hh:mm tt}");
+            sb.AppendLine($"Usuario:  {nombreUsuario}");
+            sb.AppendLine();
+
+            sb.AppendLine("RESUMEN DE VENTAS");
+            sb.AppendLine($"Ventas brutas : RD$ {model.VentasBrutas:N2}");
+            sb.AppendLine($"Descuentos    : RD$ {model.TotalDescuento:N2}");
+            sb.AppendLine($"Ingresos caja : RD$ {model.TotalIngresosExtra:N2}");
+            sb.AppendLine($"Gastos caja   : RD$ {model.TotalGastos:N2}");
+            sb.AppendLine($"TOTAL VENDIDO : RD$ {model.TotalIngresosNetos:N2}");
+            sb.AppendLine();
+
+            sb.AppendLine("FORMAS DE PAGO");
+            if (metodos.Count == 0)
+            {
+                sb.AppendLine("Sin cobros en esta caja");
+            }
+            else
+            {
+                foreach (var m in metodos)
+                {
+                    var nombre = string.IsNullOrWhiteSpace(m.FormaPago) ? "Otro" : m.FormaPago.Trim();
+                    sb.AppendLine($"{nombre}: RD$ {m.Total:N2}");
+                }
+            }
+            sb.AppendLine($"TOTAL COBRADO : RD$ {totalGeneral:N2}");
+            sb.AppendLine();
+
+            sb.AppendLine("CUADRE DE CAJA");
+            sb.AppendLine($"Fondo inicial : RD$ {apertura.MontoInicial:N2}");
+            sb.AppendLine($"+ Ventas efect.: RD$ {efectivo:N2}");
+            sb.AppendLine($"+ Ingresos caja: RD$ {model.TotalIngresosExtra:N2}");
+            sb.AppendLine($"- Gastos caja  : RD$ {model.TotalGastos:N2}");
+            sb.AppendLine($"DEBE HABER    : RD$ {model.DebeHaber:N2}");
+            sb.AppendLine($"Total contado : RD$ {model.MontoRealCaja:N2}");
+            sb.AppendLine($"DIFERENCIA    : RD$ {model.Diferencia:N2}");
+            sb.AppendLine();
+
+            if (productos.Count > 0)
+            {
+                sb.AppendLine("PRODUCTOS VENDIDOS");
+                foreach (var item in productos)
+                {
+                    var nombreProd = string.IsNullOrWhiteSpace(item.Producto)
+                        ? $"Producto #{item.IdProducto}"
+                        : item.Producto.Trim();
+                    sb.AppendLine(nombreProd);
+                    sb.AppendLine(
+                        $"  Cant: {item.CantidadVendida:N2}  |  Total: RD$ {item.TotalVendido:N2}  |  Exist: {item.ExistenciaActual:N2}");
+                }
+                sb.AppendLine();
+            }
+
+            if (!string.IsNullOrWhiteSpace(model.Observacion))
+            {
+                sb.AppendLine("OBSERVACION");
+                sb.AppendLine(model.Observacion.Trim());
+            }
+
+            await _notificaciones.PublicarAsync(new NotificacionEvento
+            {
+                Tipo = NotificacionTipos.CierreCaja,
+                IdEmpresa = model.IdEmpresa,
+                DestinoTipo = NotificacionDestinos.Empresa,
+                Prioridad = model.Diferencia != 0
+                    ? NotificacionPrioridades.Advertencia
+                    : NotificacionPrioridades.Exito,
+                Titulo = $"Cierre de caja #{model.IdCajaCierre}",
+                Mensaje = sb.ToString().Trim(),
+                Ruta = "/cierrecaja",
+                ReferenciaTipo = "CierreCaja",
+                ReferenciaId = model.IdCajaCierre,
+                CorreoDestino = string.Join(";", correos),
+                NombreEmpresa = empresa.NombreComercial
+            });
         }
     }
 }

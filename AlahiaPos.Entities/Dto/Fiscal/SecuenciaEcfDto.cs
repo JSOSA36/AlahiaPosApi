@@ -11,13 +11,43 @@ namespace AlahiaPos.Entities.Dto.Fiscal
         public string Descripcion { get; set; } = "";
         public string Serie { get; set; } = "";
         public int SecuenciaInicial { get; set; }
+        /// <summary>Próximo número a emitir. Se incrementa en cada generación.</summary>
         public int SecuenciaActual { get; set; }
+        public int ProximaSecuencia { get; set; }
         public int SecuenciaFinal { get; set; }
         public DateTime? FechaVencimiento { get; set; }
         public int StockMinimo { get; set; }
         public bool Activo { get; set; }
         public string Ambiente { get; set; } = "PRUEBAS";
         public DateTime FechaCreacion { get; set; }
+        public int? IdSucursal { get; set; }
+        public string? NombreSucursal { get; set; }
+        public List<SecuenciaEcfAsignacionDto> Asignaciones { get; set; } = new();
+        public int NumerosSinAsignar { get; set; }
+        public int? SiguienteHuecoInicial { get; set; }
+        public int? SiguienteHuecoFinal { get; set; }
+    }
+
+    public class SecuenciaEcfAsignacionDto
+    {
+        public int IdAsignacion { get; set; }
+        public int IdSecuencia { get; set; }
+        public int IdSucursal { get; set; }
+        public string? NombreSucursal { get; set; }
+        public int SecuenciaInicial { get; set; }
+        public int SecuenciaActual { get; set; }
+        public int ProximaSecuencia { get; set; }
+        public int SecuenciaFinal { get; set; }
+        public bool Activo { get; set; }
+    }
+
+    public class SecuenciaEcfAsignarDto
+    {
+        public int IdSucursal { get; set; }
+        public int SecuenciaInicial { get; set; }
+        public int SecuenciaFinal { get; set; }
+        public int? ProximaSecuencia { get; set; }
+        public int? SecuenciaActual { get; set; }
     }
 
     public class SecuenciaEcfCreateDto
@@ -27,6 +57,9 @@ namespace AlahiaPos.Entities.Dto.Fiscal
         public string? Descripcion { get; set; }
         public string Serie { get; set; } = "";
         public int SecuenciaInicial { get; set; } = 1;
+        /// <summary>Si no se envía, la próxima es igual a la inicial.</summary>
+        public int? SecuenciaActual { get; set; }
+        public int? ProximaSecuencia { get; set; }
         public int SecuenciaFinal { get; set; }
         public DateTime? FechaVencimiento { get; set; }
         public int StockMinimo { get; set; } = 50;
@@ -36,6 +69,10 @@ namespace AlahiaPos.Entities.Dto.Fiscal
 
     public class SecuenciaEcfUpdateDto
     {
+        public int? SecuenciaInicial { get; set; }
+        /// <summary>Próximo número a emitir (columna SecuenciaActual).</summary>
+        public int? SecuenciaActual { get; set; }
+        public int? ProximaSecuencia { get; set; }
         public int? SecuenciaFinal { get; set; }
         public DateTime? FechaVencimiento { get; set; }
         public int? StockMinimo { get; set; }

@@ -52,6 +52,7 @@ namespace AlahiaPos.DataAccess.Servicios
                 Usuario = usuario,
                 Token = usuario.Token,
                 PuedeEliminarOrden = usuario.PuedeEliminarOrden,
+                PuedeAnularFactura = usuario.PuedeAnularFactura,
                 Modulos = modulos.Select(m => new UsuarioModulo
                 {
                     ModuloId = m.Id,

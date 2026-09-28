@@ -37,6 +37,7 @@ namespace AlahiaPos.DataAccess.Servicios.FacturacionElectronica
                 IdOrigen = idOrigen,
                 IdEmpresa = idEmpresa,
                 FechaDocumento = factura.FechaInseccion,
+                IdSucursal = factura.IdSucursal,
                 RncCliente = SanearRnc(!string.IsNullOrWhiteSpace(factura.RNC) ? factura.RNC : factura.Clientes?.CedulaRNC),
                 NombreCliente = !string.IsNullOrWhiteSpace(factura.NombreEmpresa) ? factura.NombreEmpresa : factura.Clientes?.NombreComercial,
                 DireccionCliente = factura.Clientes?.Direccion,
@@ -84,6 +85,49 @@ namespace AlahiaPos.DataAccess.Servicios.FacturacionElectronica
                         MontoItbis = itbisLinea,
                         EsBien = true
                     });
+                }
+            }
+
+            if (factura.MontoCargo > 0.009m)
+            {
+                var cargos = await _ctx.FacturaCargos
+                    .AsNoTracking()
+                    .Where(c => c.IdFacturaHeader == factura.IdFacturaHeader && c.Monto > 0)
+                    .OrderBy(c => c.IdFacturaCargo)
+                    .ToListAsync();
+
+                if (cargos.Count == 0)
+                {
+                    info.Lineas.Add(new DocumentoOrigenLinea
+                    {
+                        NumeroLinea = info.Lineas.Count + 1,
+                        Descripcion = "Cargo por tarjeta",
+                        Cantidad = 1,
+                        PrecioUnitario = factura.MontoCargo,
+                        MontoItem = factura.MontoCargo,
+                        TasaItbis = 0m,
+                        MontoItbis = 0m,
+                        EsBien = false
+                    });
+                }
+                else
+                {
+                    foreach (var cargo in cargos)
+                    {
+                        info.Lineas.Add(new DocumentoOrigenLinea
+                        {
+                            NumeroLinea = info.Lineas.Count + 1,
+                            Descripcion = string.IsNullOrWhiteSpace(cargo.Nombre)
+                                ? "Cargo por tarjeta"
+                                : cargo.Nombre.Trim(),
+                            Cantidad = 1,
+                            PrecioUnitario = cargo.Monto,
+                            MontoItem = cargo.Monto,
+                            TasaItbis = 0m,
+                            MontoItbis = 0m,
+                            EsBien = false
+                        });
+                    }
                 }
             }
 

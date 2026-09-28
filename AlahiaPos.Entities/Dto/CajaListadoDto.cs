@@ -8,6 +8,12 @@ public class CajaListadoDto
 
     public int IdEmpresa { get; set; }
 
+    public int? IdSucursal { get; set; }
+
+    public string? NombreSucursal { get; set; }
+
+    public string? NombreEmpresa { get; set; }
+
     public int IdUsuario { get; set; }
 
     public DateTime FechaApertura { get; set; }

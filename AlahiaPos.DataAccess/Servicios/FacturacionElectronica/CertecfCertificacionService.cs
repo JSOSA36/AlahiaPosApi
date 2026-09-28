@@ -79,23 +79,12 @@ namespace AlahiaPos.DataAccess.Servicios.FacturacionElectronica
 
             var sesion = await ObtenerSesionTrackedAsync(idEmpresa, tracking: false, ct);
             var publicBase = CertecfReceptorUrls.PublicBase(_gw.PublicBaseUrl, _gw.BaseUrl);
-            var rnc = empresa.RNC;
-            var postulacion = sesion == null
-                ? new CertecfPostulacionDto
-                {
-                    UrlRecepcion = CertecfReceptorUrls.Recepcion(publicBase, rnc),
-                    UrlAprobacion = CertecfReceptorUrls.Aprobacion(publicBase, rnc),
-                    UrlAutenticacion = CertecfReceptorUrls.Autenticacion(publicBase, rnc),
-                    UrlRecepcionProd = CertecfReceptorUrls.RecepcionProd(publicBase, rnc),
-                    UrlAprobacionProd = CertecfReceptorUrls.AprobacionProd(publicBase, rnc),
-                    UrlAutenticacionProd = CertecfReceptorUrls.AutenticacionProd(publicBase, rnc)
-                }
-                : FromSesion(sesion, publicBase, rnc);
+            var rncEmpresa = CertecfReceptorUrls.Digits(empresa.RNC);
 
             var dto = new CertecfLabEstadoDto
             {
                 IdEmpresa = idEmpresa,
-                Rnc = rnc,
+                Rnc = rncEmpresa,
                 NombreEmpresa = empresa.NombreComercial,
                 CertificadoOk = cert != null
                     && (cert.ArchivoBytes is { Length: > 0 } || !string.IsNullOrWhiteSpace(cert.RutaArchivo))
@@ -106,7 +95,6 @@ namespace AlahiaPos.DataAccess.Servicios.FacturacionElectronica
                 Ambiente = DgiiAmbienteHelper.Normalize(empresa.AmbienteFE),
                 Proveedor = string.IsNullOrWhiteSpace(empresa.ProveedorFE) ? "DGII_DIRECTO" : empresa.ProveedorFE,
                 PasoActual = sesion?.PasoActual > 0 ? sesion.PasoActual : 1,
-                Postulacion = postulacion,
                 InboundBaseUrl = CertecfReceptorUrls.Base(publicBase),
                 RutaXmlConsumo250 = CertecfReceptorUrls.CarpetaXmlConsumoPortal(),
                 RutaRi = CertecfReceptorUrls.CarpetaRiPortal()
@@ -121,8 +109,27 @@ namespace AlahiaPos.DataAccess.Servicios.FacturacionElectronica
                 if (dto.SesionSimulacion.Total == 0) dto.SesionSimulacion = null;
             }
 
+            // CerteCF usa el RNC del Excel/e-CF, no Empresas.RNC (empresa 60 sigue siendo 133524899 de otro contribuyente).
+            var rncCertecf = RncEmisorDeSesion(sesion) ?? RncEmisorCertecf(dto) ?? rncEmpresa;
+            dto.Rnc = rncCertecf;
+            dto.RazonSocial = await RazonSocialDgiiAsync(idEmpresa, rncCertecf, ct);
+            dto.NombreEmpresa = await NombreComercialDgiiAsync(rncCertecf, ct) ?? empresa.NombreComercial;
+            dto.Postulacion = sesion == null
+                ? new CertecfPostulacionDto
+                {
+                    UrlRecepcion = CertecfReceptorUrls.Recepcion(publicBase, rncCertecf),
+                    UrlAprobacion = CertecfReceptorUrls.Aprobacion(publicBase, rncCertecf),
+                    UrlAutenticacion = CertecfReceptorUrls.Autenticacion(publicBase, rncCertecf),
+                    UrlRecepcionProd = CertecfReceptorUrls.RecepcionProd(publicBase, rncCertecf),
+                    UrlAprobacionProd = CertecfReceptorUrls.AprobacionProd(publicBase, rncCertecf),
+                    UrlAutenticacionProd = CertecfReceptorUrls.AutenticacionProd(publicBase, rncCertecf)
+                }
+                : FromSesion(sesion, publicBase, rncCertecf);
+
             dto.Inbound = await _ctx.CertecfInboundLogs.AsNoTracking()
-                .Where(l => l.IdEmpresa == idEmpresa || l.Rnc == CertecfReceptorUrls.Digits(rnc))
+                .Where(l => l.IdEmpresa == idEmpresa
+                    || l.Rnc == rncCertecf
+                    || l.Rnc == rncEmpresa)
                 .OrderByDescending(l => l.Fecha)
                 .Take(40)
                 .Select(l => new CertecfInboundLogDto
@@ -137,6 +144,7 @@ namespace AlahiaPos.DataAccess.Servicios.FacturacionElectronica
                 .ToListAsync(ct);
 
             dto.Pasos = ArmarPasos(sesion, dto);
+            dto.PasoActual = DerivarPasoActual(sesion, dto);
             if (dto.Proveedor != "DGII_DIRECTO")
                 dto.Aviso = "Este laboratorio firma con Alahia (DGII directo). Al cargar el Excel se pasa la empresa a DGII_DIRECTO + certecf.";
             else if (!string.Equals(dto.Ambiente, "certecf", StringComparison.OrdinalIgnoreCase))
@@ -155,15 +163,16 @@ namespace AlahiaPos.DataAccess.Servicios.FacturacionElectronica
 
             var sesion = await ObtenerOCrearSesionAsync(idEmpresa, null, ct);
             var baseUrl = CertecfReceptorUrls.PublicBase(_gw.PublicBaseUrl, _gw.BaseUrl);
+            var rncCertecf = RncEmisorDeSesion(sesion) ?? CertecfReceptorUrls.Digits(empresa.RNC);
             sesion.NombreSoftware = NullIfEmpty(dto.NombreSoftware) ?? "Alahia ERP";
             sesion.VersionSoftware = NullIfEmpty(dto.VersionSoftware) ?? "1.0";
             sesion.TipoSoftware = NullIfEmpty(dto.TipoSoftware) ?? "EXTERNO";
-            sesion.UrlRecepcion = UrlPublicaOGenerada(dto.UrlRecepcion, CertecfReceptorUrls.Recepcion(baseUrl, empresa.RNC));
-            sesion.UrlAprobacion = UrlPublicaOGenerada(dto.UrlAprobacion, CertecfReceptorUrls.Aprobacion(baseUrl, empresa.RNC));
-            sesion.UrlAutenticacion = UrlPublicaOGenerada(dto.UrlAutenticacion, CertecfReceptorUrls.Autenticacion(baseUrl, empresa.RNC));
-            sesion.UrlRecepcionProd = UrlPublicaOGenerada(dto.UrlRecepcionProd, CertecfReceptorUrls.RecepcionProd(baseUrl, empresa.RNC));
-            sesion.UrlAprobacionProd = UrlPublicaOGenerada(dto.UrlAprobacionProd, CertecfReceptorUrls.AprobacionProd(baseUrl, empresa.RNC));
-            sesion.UrlAutenticacionProd = UrlPublicaOGenerada(dto.UrlAutenticacionProd, CertecfReceptorUrls.AutenticacionProd(baseUrl, empresa.RNC));
+            sesion.UrlRecepcion = UrlAlineadaAlRnc(dto.UrlRecepcion, CertecfReceptorUrls.Recepcion(baseUrl, rncCertecf), rncCertecf);
+            sesion.UrlAprobacion = UrlAlineadaAlRnc(dto.UrlAprobacion, CertecfReceptorUrls.Aprobacion(baseUrl, rncCertecf), rncCertecf);
+            sesion.UrlAutenticacion = UrlAlineadaAlRnc(dto.UrlAutenticacion, CertecfReceptorUrls.Autenticacion(baseUrl, rncCertecf), rncCertecf);
+            sesion.UrlRecepcionProd = UrlAlineadaAlRnc(dto.UrlRecepcionProd, CertecfReceptorUrls.RecepcionProd(baseUrl, rncCertecf), rncCertecf);
+            sesion.UrlAprobacionProd = UrlAlineadaAlRnc(dto.UrlAprobacionProd, CertecfReceptorUrls.AprobacionProd(baseUrl, rncCertecf), rncCertecf);
+            sesion.UrlAutenticacionProd = UrlAlineadaAlRnc(dto.UrlAutenticacionProd, CertecfReceptorUrls.AutenticacionProd(baseUrl, rncCertecf), rncCertecf);
             if (sesion.PasoActual < 1) sesion.PasoActual = 1;
             SetPaso(sesion, 1, "EnCurso");
             sesion.FechaActualizacion = DateTime.Now;
@@ -396,6 +405,10 @@ namespace AlahiaPos.DataAccess.Servicios.FacturacionElectronica
                 c.RespuestaDgii = null;
                 c.FechaEnvio = null;
                 c.FechaRespuesta = null;
+                c.UrlQR = null;
+                c.CodigoSeguridad = null;
+                c.FechaFirma = null;
+                c.XmlFirmado = null;
             }
             sesion.Estado = "Cargado";
             sesion.Mensaje = "Set reiniciado. Cargue el Excel de CerteCF (el nuevo si DGII lo regeneró) y envíe desde el primer E31.";
@@ -444,6 +457,13 @@ namespace AlahiaPos.DataAccess.Servicios.FacturacionElectronica
             CertecfExcelParser.SanearTelefonosCertecf(doc);
             CertecfExcelParser.AplicarValoresDelExcelEnTotalesOpcionales(doc);
             AsegurarCertecfNoSaleIncompleto(doc);
+            var razonEmisor = await RazonSocialDgiiAsync(
+                idEmpresa, CertecfReceptorUrls.Digits(doc.Encabezado.RncEmisor), ct);
+            var comercialEmisor = await NombreComercialDgiiAsync(
+                CertecfReceptorUrls.Digits(doc.Encabezado.RncEmisor), ct);
+            CertecfArtefactos.AplicarIdentidadEmisorReal(doc, razonEmisor, comercialEmisor);
+            CertecfArtefactos.AsegurarFechaVencimientoSecuenciaCertecf(doc);
+            caso.PayloadJson = JsonSerializer.Serialize(doc, JsonOpts);
             _logger.LogInformation(
                 "CerteCF {Encf} sub={Sub} esp={Esp}",
                 caso.Encf,
@@ -524,6 +544,7 @@ namespace AlahiaPos.DataAccess.Servicios.FacturacionElectronica
                 ? string.Join(" | ", resultado.Mensajes)
                 : resultado.CodigoError, 2000);
             caso.RespuestaDgii = FormatearRespuestaDgii(caso, resultado);
+            GuardarTimbreDeEnvio(caso, resultado);
             if (EcfSecuenciaYaUtilizada.EnResultado(resultado))
             {
                 caso.Estado = "Aceptado";
@@ -549,11 +570,18 @@ namespace AlahiaPos.DataAccess.Servicios.FacturacionElectronica
                 throw new InvalidOperationException("El caso no tiene TrackId. Envíelo primero.");
 
             var consulta = await _fe.ConsultarEstadoDgiiAsync(caso.TrackId, idEmpresa, ct);
+            var qrEmitido = caso.UrlQR ?? CertecfArtefactos.ExtraerQrDeRespuesta(caso.RespuestaDgii);
             caso.Estado = string.IsNullOrWhiteSpace(consulta.Estado) ? caso.Estado : consulta.Estado;
             caso.Mensaje = Cortar(
                 consulta.Mensajes.Count > 0 ? string.Join(" | ", consulta.Mensajes) : caso.Mensaje,
                 2000);
-            caso.RespuestaDgii = FormatearConsultaDgii(caso, consulta);
+            caso.RespuestaDgii = FormatearConsultaDgii(caso, consulta, qrEmitido);
+            if (string.IsNullOrWhiteSpace(caso.UrlQR) && EcfQrUrlHelper.IsUsableHttpUrl(qrEmitido))
+                caso.UrlQR = qrEmitido;
+            if (string.IsNullOrWhiteSpace(caso.CodigoSeguridad) && !string.IsNullOrWhiteSpace(consulta.SecurityCode))
+                caso.CodigoSeguridad = consulta.SecurityCode.Trim();
+            if (!caso.FechaFirma.HasValue && consulta.FechaFirma.HasValue)
+                caso.FechaFirma = consulta.FechaFirma;
             caso.FechaRespuesta = DateTime.Now;
             caso.Sesion.FechaActualizacion = DateTime.Now;
             if (EcfSecuenciaYaUtilizada.EnMensajes(caso.Mensaje, consulta.Mensajes)
@@ -594,13 +622,25 @@ namespace AlahiaPos.DataAccess.Servicios.FacturacionElectronica
             var viejos = sesion.Casos.Where(c => c.TipoPrueba == "SIMULACION").ToList();
             _ctx.CertecfCasos.RemoveRange(viejos);
 
+            var idsSesion = await _ctx.CertecfSesiones.AsNoTracking()
+                .Where(s => s.IdEmpresa == idEmpresa)
+                .Select(s => s.IdSesion)
+                .ToListAsync(ct);
+            var usados = await _ctx.CertecfCasos.AsNoTracking()
+                .Where(c => idsSesion.Contains(c.IdSesion) && c.TipoEcf >= 31)
+                .Select(c => new { c.TipoEcf, c.Encf })
+                .ToListAsync(ct);
+
             var nextSeq = new Dictionary<int, long>();
-            foreach (var c in datos)
+            void TomarMax(int tipo, string? encf)
             {
-                var n = SecuenciaEncf(c.Encf);
-                if (!nextSeq.TryGetValue(c.TipoEcf, out var max) || n > max)
-                    nextSeq[c.TipoEcf] = n;
+                var n = SecuenciaEncf(encf);
+                if (!nextSeq.TryGetValue(tipo, out var max) || n > max)
+                    nextSeq[tipo] = n;
             }
+            foreach (var u in usados) TomarMax(u.TipoEcf, u.Encf);
+            foreach (var c in datos) TomarMax(c.TipoEcf, c.Encf);
+            foreach (var c in viejos) TomarMax(c.TipoEcf, c.Encf);
 
             var mapEncf = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             var clones = new List<(CertecfCaso Origen, FiscalDocumentoElectronico Doc, string Encf)>();
@@ -637,6 +677,12 @@ namespace AlahiaPos.DataAccess.Servicios.FacturacionElectronica
                 }
 
                 CertecfExcelParser.AlinearConDefinicionDgii(doc);
+                var razonRi = await RazonSocialDgiiAsync(
+                    idEmpresa, CertecfReceptorUrls.Digits(doc.Encabezado.RncEmisor), ct);
+                var comercialRi = await NombreComercialDgiiAsync(
+                    CertecfReceptorUrls.Digits(doc.Encabezado.RncEmisor), ct);
+                CertecfArtefactos.AplicarIdentidadEmisorReal(doc, razonRi, comercialRi);
+                CertecfArtefactos.AsegurarFechaVencimientoSecuenciaCertecf(doc);
 
                 sesion.Casos.Add(new CertecfCaso
                 {
@@ -650,9 +696,9 @@ namespace AlahiaPos.DataAccess.Servicios.FacturacionElectronica
                 });
             }
 
-            sesion.PasoActual = Math.Max(sesion.PasoActual, 4);
+            sesion.PasoActual = 4;
             SetPaso(sesion, 4, "EnCurso");
-            sesion.Mensaje = $"{clones.Count} e-CF de simulación (paso 4), mismas cantidades del portal, e-NCF nuevos.";
+            sesion.Mensaje = $"{clones.Count} e-CF de simulación (paso 4), e-NCF nuevos (no reutiliza secuencias ya usadas en DGII).";
             sesion.FechaActualizacion = DateTime.Now;
             await _ctx.SaveChangesAsync(ct);
             return ToDto(sesion, "SIMULACION");
@@ -662,10 +708,10 @@ namespace AlahiaPos.DataAccess.Servicios.FacturacionElectronica
         {
             var empresa = await EmpresaAsync(idEmpresa, ct);
             var estado = await GetEstadoAsync(idEmpresa, ct);
-            var xml = CertecfArtefactos.PostulacionXml(empresa, estado.Postulacion);
+            var xml = CertecfArtefactos.PostulacionXml(empresa, estado.Postulacion, estado.Rnc, estado.RazonSocial);
             return new CertecfArchivoDto
             {
-                NombreArchivo = $"postulacion-{CertecfReceptorUrls.Digits(empresa.RNC)}.xml",
+                NombreArchivo = $"postulacion-{CertecfReceptorUrls.Digits(estado.Rnc)}.xml",
                 Contenido = xml
             };
         }
@@ -674,10 +720,10 @@ namespace AlahiaPos.DataAccess.Servicios.FacturacionElectronica
         {
             var empresa = await EmpresaAsync(idEmpresa, ct);
             var estado = await GetEstadoAsync(idEmpresa, ct);
-            var xml = CertecfArtefactos.DeclaracionJuradaXml(empresa, estado.Postulacion);
+            var xml = CertecfArtefactos.DeclaracionJuradaXml(empresa, estado.Postulacion, estado.Rnc, estado.RazonSocial);
             return new CertecfArchivoDto
             {
-                NombreArchivo = $"declaracion-jurada-{CertecfReceptorUrls.Digits(empresa.RNC)}.xml",
+                NombreArchivo = $"declaracion-jurada-{CertecfReceptorUrls.Digits(estado.Rnc)}.xml",
                 Contenido = xml
             };
         }
@@ -693,22 +739,42 @@ namespace AlahiaPos.DataAccess.Servicios.FacturacionElectronica
                 throw new InvalidOperationException("La RI aplica a e-CF (pasos 4 y 5), no a ACECF.");
             var doc = JsonSerializer.Deserialize<FiscalDocumentoElectronico>(caso.PayloadJson, JsonOpts)
                 ?? throw new InvalidOperationException("No se pudo leer el e-CF.");
-            var xmlFirmado = CertecfArtefactos.BuscarXmlFirmado(caso.Encf, doc.Encabezado.RncEmisor)
-                ?? await BuscarXmlFirmadoEnBdAsync(idEmpresa, caso.Encf, ct);
-            var qrUrl = ResolverQrRi(caso, doc, xmlFirmado);
-            var html = CertecfArtefactos.RepresentacionImpresaHtml(empresa, doc, qrUrl);
-            try
+            // ConsultaTimbre compara la fecha y el monto del XML firmado, no los del payload.
+            var xmlFirmado = NullIfEmpty(caso.XmlFirmado)
+                ?? CertecfArtefactos.BuscarXmlFirmado(caso.Encf, doc.Encabezado.RncEmisor);
+            var qrUrl = ResolverQrGuardado(caso);
+            if (!string.IsNullOrWhiteSpace(xmlFirmado))
             {
-                var dir = CertecfReceptorUrls.CarpetaRiPortal();
-                Directory.CreateDirectory(dir);
-                File.WriteAllText(Path.Combine(dir, NombreArchivoRi(doc)), html, Encoding.UTF8);
+                AplicarFechasYMontosDelXml(doc, xmlFirmado);
+                qrUrl = AlinearQrConDocumento(qrUrl, doc);
             }
-            catch { /* no bloquear descarga */ }
+            else
+            {
+                AplicarTimbreDelQr(doc, qrUrl);
+            }
+            var rncDoc = CertecfReceptorUrls.Digits(doc.Encabezado.RncEmisor);
+            var razonDgii = await RazonSocialDgiiAsync(idEmpresa, rncDoc, ct);
+            var comercialDgii = await NombreComercialDgiiAsync(rncDoc, ct);
+            CertecfArtefactos.AplicarIdentidadEmisorReal(doc, razonDgii, comercialDgii);
+            if (!EcfQrUrlHelper.IsUsableHttpUrl(qrUrl))
+                qrUrl = null;
+            var emisor = CertecfArtefactos.ResolverEmisorRi(empresa, doc, xmlFirmado, razonDgii, comercialDgii);
+            var codigo = NullIfEmpty(caso.CodigoSeguridad);
+            string? fechaFirmaTxt = caso.FechaFirma?.ToString("dd-MM-yyyy HH:mm:ss", CultureInfo.InvariantCulture);
+            if (string.IsNullOrWhiteSpace(codigo) || string.IsNullOrWhiteSpace(fechaFirmaTxt))
+            {
+                var (codigoQr, fechaQr) = CertecfArtefactos.TimbreDesdeQr(qrUrl);
+                codigo = string.IsNullOrWhiteSpace(codigo) ? codigoQr : codigo;
+                fechaFirmaTxt = string.IsNullOrWhiteSpace(fechaFirmaTxt) ? fechaQr : fechaFirmaTxt;
+            }
+            var html = CertecfArtefactos.RepresentacionImpresaHtml(emisor, doc, qrUrl, codigo, fechaFirmaTxt);
+            var pdf = CertecfRiPdf.Crear(emisor, doc, qrUrl, codigo, fechaFirmaTxt);
             return new CertecfArchivoDto
             {
                 NombreArchivo = NombreArchivoRi(doc),
                 Contenido = html,
-                ContentType = "text/html"
+                ContenidoBinario = pdf,
+                ContentType = "application/pdf"
             };
         }
 
@@ -718,22 +784,68 @@ namespace AlahiaPos.DataAccess.Servicios.FacturacionElectronica
                 ?? throw new InvalidOperationException("No hay sesión CerteCF.");
             var sim = ToDto(sesion, "SIMULACION");
             if (sim.Casos.Count == 0)
-                throw new InvalidOperationException("Primero genere y envíe la simulación del paso 4.");
+                throw new InvalidOperationException("Primero genere la simulación del paso 4.");
 
             var dir = CertecfReceptorUrls.CarpetaRiPortal();
             Directory.CreateDirectory(dir);
+            LimpiarCarpetaRiPortal(dir);
             var lote = new CertecfRiLoteDto { Ruta = dir };
             var orden = 0;
             foreach (var def in SlotsRiPortal())
             {
                 orden++;
-                var caso = sim.Casos.FirstOrDefault(def.Match)
-                    ?? sim.Casos.FirstOrDefault(c => c.TipoEcf == def.TipoEcf);
-                if (caso == null) continue;
-                var archivo = await GenerarRiAsync(idEmpresa, caso.IdCaso, ct);
-                var nombre = $"{orden:00}-RI-{def.Clave}-{caso.Encf}.html";
+                var caso = ElegirCasoRi(sim.Casos, def.Match)
+                    ?? ElegirCasoRi(sim.Casos, c => c.TipoEcf == def.TipoEcf);
+                if (caso == null)
+                {
+                    var fallido = sim.Casos.FirstOrDefault(def.Match)
+                        ?? sim.Casos.FirstOrDefault(c => c.TipoEcf == def.TipoEcf);
+                    lote.Slots.Add(new CertecfRiSlotDto
+                    {
+                        Clave = def.Clave,
+                        Etiqueta = def.Etiqueta,
+                        TipoEcf = fallido?.TipoEcf ?? def.TipoEcf,
+                        Encf = fallido?.Encf ?? "",
+                        IdCaso = fallido?.IdCaso ?? 0,
+                        QrListo = false,
+                        NombreArchivo = "",
+                        Estado = fallido?.Estado ?? "Pendiente",
+                        Mensaje = (fallido != null && EsAceptadoParaRi(fallido.Estado))
+                            ? "DGII Aceptó este e-CF, pero no quedó el QR de ese envío. No se fabrica uno falso."
+                            : (string.IsNullOrWhiteSpace(fallido?.Mensaje)
+                                ? "No hay e-CF Aceptado para este recuadro."
+                                : fallido!.Mensaje)
+                    });
+                    continue;
+                }
+                CertecfArchivoDto archivo;
+                try
+                {
+                    archivo = await GenerarRiAsync(idEmpresa, caso.IdCaso, ct);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "CerteCF RI lote omitió PDF {Encf}", caso.Encf);
+                    lote.Slots.Add(new CertecfRiSlotDto
+                    {
+                        Clave = def.Clave,
+                        Etiqueta = def.Etiqueta,
+                        TipoEcf = caso.TipoEcf,
+                        Encf = caso.Encf,
+                        IdCaso = caso.IdCaso,
+                        QrListo = false,
+                        Estado = caso.Estado,
+                        Mensaje = ex.Message
+                    });
+                    continue;
+                }
+                var nombre = $"{orden:00}-RI-{def.Clave}-{caso.Encf}.pdf";
                 var dest = Path.Combine(dir, nombre);
-                try { File.WriteAllText(dest, archivo.Contenido, Encoding.UTF8); }
+                try
+                {
+                    if (archivo.ContenidoBinario is { Length: > 0 })
+                        File.WriteAllBytes(dest, archivo.ContenidoBinario);
+                }
                 catch { /* best-effort */ }
                 lote.Slots.Add(new CertecfRiSlotDto
                 {
@@ -742,32 +854,49 @@ namespace AlahiaPos.DataAccess.Servicios.FacturacionElectronica
                     TipoEcf = caso.TipoEcf,
                     Encf = caso.Encf,
                     IdCaso = caso.IdCaso,
-                    QrListo = !string.IsNullOrWhiteSpace(archivo.Contenido)
-                        && archivo.Contenido.Contains("data:image/png;base64,"),
-                    NombreArchivo = nombre
+                    QrListo = QrRiListo(caso),
+                    NombreArchivo = nombre,
+                    Estado = caso.Estado,
+                    Mensaje = QrRiListo(caso)
+                        ? "PDF con QR del envío Aceptado. Revíselo antes de subir."
+                        : "Hay PDF visual, pero no es el QR del envío Aceptado. No subir."
                 });
             }
 
-            try
-            {
-                File.WriteAllText(Path.Combine(dir, "_LEEME.txt"),
-                    "Paso 5 CerteCF: un PDF por recuadro (11 archivos)."
-                    + Environment.NewLine
-                    + "Abra cada HTML en Chrome → Imprimir → Guardar como PDF."
-                    + Environment.NewLine
-                    + "Suba el PDF en el recuadro del mismo tipo. Suma ≤ 10 MB."
-                    + Environment.NewLine
-                    + "No suba fotos ni HTML. El QR debe coincidir con el e-CF del paso 4.");
-            }
-            catch { /* ignore */ }
-
             return lote;
+        }
+
+        private static CertecfArchivoDto? BuscarPdfRiPortal(string? encf)
+        {
+            var e = (encf ?? "").Trim();
+            if (string.IsNullOrWhiteSpace(e)) return null;
+            var dir = CertecfReceptorUrls.CarpetaRiPortal();
+            if (!Directory.Exists(dir)) return null;
+            var hit = Directory.GetFiles(dir, "*.pdf")
+                .FirstOrDefault(f => Path.GetFileName(f).Contains(e, StringComparison.OrdinalIgnoreCase));
+            if (hit == null) return null;
+            return new CertecfArchivoDto
+            {
+                NombreArchivo = Path.GetFileName(hit),
+                ContenidoBinario = File.ReadAllBytes(hit),
+                ContentType = "application/pdf"
+            };
+        }
+
+        private static void LimpiarCarpetaRiPortal(string dir)
+        {
+            if (!Directory.Exists(dir)) return;
+            foreach (var file in Directory.GetFiles(dir))
+            {
+                try { File.Delete(file); } catch { /* ignore */ }
+            }
         }
 
         private static (string Clave, string Etiqueta, int TipoEcf, Func<CertecfCasoDto, bool> Match)[] SlotsRiPortal()
             => new (string, string, int, Func<CertecfCasoDto, bool>)[]
             {
-                ("tipo-31", "Representación para comprobante tipo 31", 31, c => c.TipoEcf == 31),
+                ("tipo-31", "Representación para comprobante tipo 31", 31,
+                    c => c.TipoEcf == 31 && !string.Equals(c.Encf, "E310000000009", StringComparison.OrdinalIgnoreCase)),
                 ("tipo-32-250mil", "Representación para comprobante tipo 32 ≥ RD$250 mil", 32,
                     c => c.TipoEcf == 32 && c.MontoTotal >= 250000m),
                 ("tipo-33", "Representación para comprobante tipo 33", 33, c => c.TipoEcf == 33),
@@ -784,29 +913,257 @@ namespace AlahiaPos.DataAccess.Servicios.FacturacionElectronica
 
         private string? ResolverQrRi(CertecfCaso caso, FiscalDocumentoElectronico doc, string? xmlFirmado)
         {
-            if (!string.IsNullOrWhiteSpace(xmlFirmado))
+            var qrEmitido = ResolverQrGuardado(caso);
+            return EcfQrUrlHelper.IsUsableHttpUrl(qrEmitido) ? qrEmitido : null;
+        }
+
+        private async Task AsegurarAceptadoParaRiAsync(int idEmpresa, int idCaso, CancellationToken ct)
+        {
+            var caso = await _ctx.CertecfCasos.AsNoTracking()
+                .FirstOrDefaultAsync(c => c.IdCaso == idCaso && c.Sesion.IdEmpresa == idEmpresa, ct)
+                ?? throw new InvalidOperationException("Caso no encontrado.");
+            if (DgiiAceptoParaRi(caso)) return;
+
+            var yaEnProceso = caso.Estado is "Enviado" or "EnProceso" or "Enviando"
+                && !string.IsNullOrWhiteSpace(caso.TrackId);
+            if (!yaEnProceso)
+                await EnviarCasoAsync(idEmpresa, idCaso, ct);
+
+            for (var i = 0; i < 20; i++)
             {
-                var codigo = XmlSigner.ExtractCodigoSeguridad(xmlFirmado);
-                if (!string.IsNullOrWhiteSpace(codigo))
-                {
-                    var fechaFirma = ExtraerFechaHoraFirma(xmlFirmado) ?? DateTime.Now;
-                    return EcfConsultaTimbreUrl.Build(
-                        "certecf",
-                        doc.Encabezado.TipoEcf,
-                        doc.Encabezado.RncEmisor,
-                        doc.Encabezado.RncComprador,
-                        doc.Encabezado.Encf,
-                        doc.Encabezado.FechaEmision,
-                        doc.Encabezado.MontoTotal,
-                        fechaFirma,
-                        codigo);
-                }
+                caso = await _ctx.CertecfCasos.AsNoTracking()
+                    .FirstOrDefaultAsync(c => c.IdCaso == idCaso, ct)
+                    ?? throw new InvalidOperationException("Caso no encontrado.");
+                if (DgiiAceptoParaRi(caso)) return;
+                if (caso.Estado is "Rechazado" or "Error")
+                    throw new InvalidOperationException(
+                        $"DGII dejó {caso.Encf} en {caso.Estado}: {caso.Mensaje}");
+                if (string.IsNullOrWhiteSpace(caso.TrackId))
+                    throw new InvalidOperationException(
+                        $"{caso.Encf} no tiene TrackId. El envío no llegó a DGII.");
+
+                await ConsultarCasoAsync(idEmpresa, idCaso, ct);
+                await Task.Delay(2000, ct);
             }
 
-            var qrTexto = CertecfArtefactos.ExtraerQrDeRespuesta(caso.RespuestaDgii);
-            if (!string.IsNullOrWhiteSpace(qrTexto)) return qrTexto;
+            caso = await _ctx.CertecfCasos.AsNoTracking()
+                .FirstOrDefaultAsync(c => c.IdCaso == idCaso, ct)
+                ?? throw new InvalidOperationException("Caso no encontrado.");
+            if (!DgiiAceptoParaRi(caso))
+                throw new InvalidOperationException(
+                    $"DGII no Aceptó {caso.Encf} a tiempo ({caso.Estado}). {caso.Mensaje}");
+        }
 
-            return null;
+        private static bool DgiiAceptoParaRi(CertecfCaso caso)
+            => DgiiAceptoParaRi(caso.Estado, caso.Mensaje, caso.RespuestaDgii);
+
+        private static bool DgiiAceptoParaRi(CertecfCasoDto caso)
+            => DgiiAceptoParaRi(caso.Estado, caso.Mensaje, caso.RespuestaDgii);
+
+        private static bool DgiiAceptoParaRi(string? estado, string? mensaje, string? respuesta)
+        {
+            if (EsRechazoQueNoViveEnConsultaTimbre(mensaje) || EsRechazoQueNoViveEnConsultaTimbre(respuesta))
+                return false;
+            var ultimo = UltimoEstadoDgii(respuesta);
+            if (ultimo.StartsWith("Rechazado", StringComparison.OrdinalIgnoreCase)
+                && !EcfSecuenciaYaUtilizada.EnMensajes(mensaje)
+                && !EcfSecuenciaYaUtilizada.EnMensajes(respuesta))
+                return false;
+            if (EcfSecuenciaYaUtilizada.EnMensajes(mensaje) || EcfSecuenciaYaUtilizada.EnMensajes(respuesta))
+                return true;
+            return EsAceptadoParaRi(estado) || EsAceptadoParaRi(ultimo)
+                || ultimo.Equals("Resumen", StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// QR imprimible: el del envío Aceptado. No un XML/QR de un reenvío
+        /// (eso sale NCF no encontrado o Rechazado en ConsultaTimbre).
+        /// </summary>
+        private static bool QrRiListo(CertecfCaso c)
+            => QrRiListo(c.Estado, c.Mensaje, c.RespuestaDgii, c.UrlQR);
+
+        private static bool QrRiListo(CertecfCasoDto c)
+            => QrRiListo(c.Estado, c.Mensaje, c.RespuestaDgii, c.UrlQR);
+
+        private static bool QrRiListo(string? estado, string? mensaje, string? respuesta, string? urlQr = null)
+        {
+            if (EcfSecuenciaYaUtilizada.EnMensajes(mensaje) || EcfSecuenciaYaUtilizada.EnMensajes(respuesta))
+                return false;
+            if (!DgiiAceptoParaRi(estado, mensaje, respuesta)) return false;
+            return EcfQrUrlHelper.IsUsableHttpUrl(urlQr)
+                || EcfQrUrlHelper.IsUsableHttpUrl(CertecfArtefactos.ExtraerQrDeRespuesta(respuesta));
+        }
+
+        private static bool XmlFirmadoCoincideConCaso(CertecfCaso caso, FiscalDocumentoElectronico doc, string? xml)
+        {
+            if (string.IsNullOrWhiteSpace(xml) || doc?.Encabezado == null) return false;
+            var xmlEncf = ExtraerValorXml(xml, "eNCF");
+            if (string.IsNullOrWhiteSpace(xmlEncf)
+                || !string.Equals(xmlEncf.Trim(), (caso.Encf ?? "").Trim(), StringComparison.OrdinalIgnoreCase))
+                return false;
+            var codigoXml = XmlSigner.ExtractCodigoSeguridad(xml);
+            if (!string.IsNullOrWhiteSpace(caso.CodigoSeguridad)
+                && !string.IsNullOrWhiteSpace(codigoXml)
+                && !string.Equals(codigoXml, caso.CodigoSeguridad, StringComparison.Ordinal))
+                return false;
+            return true;
+        }
+
+        private static bool EsRechazoQueNoViveEnConsultaTimbre(string? s)
+        {
+            if (string.IsNullOrWhiteSpace(s)) return false;
+            var t = s.ToLowerInvariant();
+            return t.Contains("no se encuentra en una fase", StringComparison.Ordinal)
+                || t.Contains("fase válida", StringComparison.Ordinal)
+                || t.Contains("fase valida", StringComparison.Ordinal);
+        }
+
+        private static string UltimoEstadoDgii(string? respuesta)
+        {
+            if (string.IsNullOrWhiteSpace(respuesta)) return "";
+            var ultimo = "";
+            foreach (var line in respuesta.Split('\n'))
+            {
+                var t = line.Trim();
+                if (!t.StartsWith("Estado", StringComparison.OrdinalIgnoreCase)) continue;
+                var i = t.IndexOf(':');
+                if (i >= 0) ultimo = t[(i + 1)..].Trim();
+            }
+            return ultimo;
+        }
+
+        private static bool EsAceptadoParaRi(string? estado)
+        {
+            var e = (estado ?? "").Trim();
+            return e.StartsWith("Aceptado", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static void AplicarFechasYMontosDelXml(FiscalDocumentoElectronico doc, string? xmlFirmado)
+        {
+            if (doc?.Encabezado == null || string.IsNullOrWhiteSpace(xmlFirmado)) return;
+            var fe = ExtraerFechaEmisionXml(xmlFirmado);
+            if (fe.HasValue) doc.Encabezado.FechaEmision = fe.Value;
+            var fv = ExtraerFechaXml(xmlFirmado, "FechaVencimientoSecuencia");
+            if (fv.HasValue) doc.Encabezado.FechaVencimientoSecuencia = fv.Value;
+            var monto = ExtraerMontoTotalXml(xmlFirmado);
+            if (monto.HasValue) doc.Encabezado.MontoTotal = monto.Value;
+        }
+
+        /// <summary>
+        /// Deja FechaEmision y MontoTotal del QR iguales a los del XML ya aplicado al documento.
+        /// No toca RNC, e-NCF, fecha de firma ni código.
+        /// </summary>
+        private static string? AlinearQrConDocumento(string? qrUrl, FiscalDocumentoElectronico doc)
+        {
+            if (string.IsNullOrWhiteSpace(qrUrl) || doc?.Encabezado == null) return qrUrl;
+            var q = qrUrl.IndexOf('?');
+            if (q < 0) return qrUrl;
+            var parts = qrUrl[(q + 1)..].Split('&').Select(part =>
+            {
+                var kv = part.Split('=', 2);
+                if (kv.Length != 2) return part;
+                if (kv[0].Equals("FechaEmision", StringComparison.OrdinalIgnoreCase))
+                    return "FechaEmision=" + Uri.EscapeDataString(
+                        doc.Encabezado.FechaEmision.ToString("dd-MM-yyyy", CultureInfo.InvariantCulture));
+                if (kv[0].Equals("MontoTotal", StringComparison.OrdinalIgnoreCase))
+                    return "MontoTotal=" + Uri.EscapeDataString(
+                        doc.Encabezado.MontoTotal.ToString("0.00", CultureInfo.InvariantCulture));
+                return part;
+            });
+            return qrUrl[..q] + "?" + string.Join("&", parts);
+        }
+
+        private static void AplicarTimbreDelQr(FiscalDocumentoElectronico doc, string? qrUrl)
+        {
+            if (doc?.Encabezado == null || string.IsNullOrWhiteSpace(qrUrl)) return;
+            try
+            {
+                var q = qrUrl.IndexOf('?');
+                if (q < 0) return;
+                foreach (var part in qrUrl[(q + 1)..].Split('&'))
+                {
+                    var kv = part.Split('=', 2);
+                    if (kv.Length != 2) continue;
+                    var key = kv[0];
+                    var val = Uri.UnescapeDataString(kv[1].Replace("+", " "));
+                    if (key.Equals("FechaEmision", StringComparison.OrdinalIgnoreCase)
+                        && EcfDgiiFecha.Parse(val) is DateTime fe)
+                        doc.Encabezado.FechaEmision = fe;
+                    if (key.Equals("MontoTotal", StringComparison.OrdinalIgnoreCase)
+                        && decimal.TryParse(val, NumberStyles.Number, CultureInfo.InvariantCulture, out var monto))
+                        doc.Encabezado.MontoTotal = monto;
+                }
+            }
+            catch
+            {
+                /* QR best-effort */
+            }
+        }
+
+        private static DateTime? ExtraerFechaEmisionXml(string xml)
+        {
+            try
+            {
+                var x = System.Xml.Linq.XDocument.Parse(xml);
+                var enc = x.Descendants().FirstOrDefault(n => n.Name.LocalName == "Encabezado");
+                if (enc == null) return null;
+                var emisor = enc.Elements().FirstOrDefault(n => n.Name.LocalName == "Emisor");
+                var idDoc = enc.Elements().FirstOrDefault(n => n.Name.LocalName == "IdDoc");
+                var raw = emisor?.Elements().FirstOrDefault(n => n.Name.LocalName == "FechaEmision")?.Value
+                    ?? idDoc?.Elements().FirstOrDefault(n => n.Name.LocalName == "FechaEmision")?.Value
+                    ?? enc.Elements().FirstOrDefault(n => n.Name.LocalName == "FechaEmision")?.Value;
+                return EcfDgiiFecha.Parse(raw);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private static DateTime? ExtraerFechaXml(string xml, string localName)
+        {
+            try
+            {
+                var x = System.Xml.Linq.XDocument.Parse(xml);
+                var raw = x.Descendants().FirstOrDefault(n => n.Name.LocalName == localName)?.Value;
+                return EcfDgiiFecha.Parse(raw);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private static decimal? ExtraerMontoTotalXml(string xml)
+        {
+            try
+            {
+                var x = System.Xml.Linq.XDocument.Parse(xml);
+                var tot = x.Descendants().FirstOrDefault(n => n.Name.LocalName == "Totales");
+                var raw = tot?.Elements().FirstOrDefault(n => n.Name.LocalName == "MontoTotal")?.Value;
+                if (string.IsNullOrWhiteSpace(raw)) return null;
+                return decimal.TryParse(raw, NumberStyles.Number, CultureInfo.InvariantCulture, out var n)
+                    ? n
+                    : null;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private static string? ExtraerValorXml(string xml, string localName)
+        {
+            try
+            {
+                var x = System.Xml.Linq.XDocument.Parse(xml);
+                var raw = x.Descendants().FirstOrDefault(n => n.Name.LocalName == localName)?.Value;
+                return string.IsNullOrWhiteSpace(raw) ? null : raw.Trim();
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         private async Task<string?> BuscarXmlFirmadoEnBdAsync(int idEmpresa, string encf, CancellationToken ct)
@@ -830,9 +1187,145 @@ namespace AlahiaPos.DataAccess.Servicios.FacturacionElectronica
         private static string NombreArchivoRi(FiscalDocumentoElectronico doc)
         {
             var t = doc.Encabezado.TipoEcf;
-            if (t == 32 && doc.Encabezado.MontoTotal >= 250000m) return $"RI-tipo-32-250mil-{doc.Encabezado.Encf}.html";
-            if (t == 32) return $"RI-tipo-32-consumo-{doc.Encabezado.Encf}.html";
-            return $"RI-tipo-{t}-{doc.Encabezado.Encf}.html";
+            if (t == 32 && doc.Encabezado.MontoTotal >= 250000m) return $"RI-tipo-32-250mil-{doc.Encabezado.Encf}.pdf";
+            if (t == 32) return $"RI-tipo-32-consumo-{doc.Encabezado.Encf}.pdf";
+            return $"RI-tipo-{t}-{doc.Encabezado.Encf}.pdf";
+        }
+
+        private static string? RncEmisorDeSesion(CertecfSesion? sesion)
+        {
+            if (sesion?.Casos == null) return null;
+            foreach (var c in sesion.Casos.OrderBy(x => string.Equals(x.TipoPrueba, "SIMULACION", StringComparison.OrdinalIgnoreCase) ? 0 : 1))
+            {
+                var r = CertecfReceptorUrls.ExtraerRncEmisorJson(c.PayloadJson);
+                if (!string.IsNullOrWhiteSpace(r) && r.Length >= 9) return r;
+            }
+            return null;
+        }
+
+        private static string? RncEmisorCertecf(CertecfLabEstadoDto dto)
+        {
+            foreach (var sesion in new[] { dto.SesionSimulacion, dto.SesionActiva, dto.SesionAcecf })
+            {
+                if (sesion?.Casos == null) continue;
+                foreach (var c in sesion.Casos)
+                {
+                    var r = CertecfReceptorUrls.Digits(c.RncEmisor);
+                    if (r.Length >= 9) return r;
+                }
+            }
+            return null;
+        }
+
+        private async Task<string?> RazonSocialDgiiAsync(int idEmpresa, string? rncDocumento, CancellationToken ct)
+        {
+            string? cfg = null;
+            string? nombreComercial = null;
+            try
+            {
+                var row = await _ctx.DgiiConfiguracionEmpresa.AsNoTracking()
+                    .Where(c => c.IdEmpresa == idEmpresa)
+                    .Select(c => new { c.RazonSocial })
+                    .FirstOrDefaultAsync(ct);
+                cfg = row?.RazonSocial;
+            }
+            catch
+            {
+                /* tabla opcional */
+            }
+
+            try
+            {
+                nombreComercial = await _ctx.Empresas.AsNoTracking()
+                    .Where(e => e.IdEmpresa == idEmpresa)
+                    .Select(e => e.NombreComercial)
+                    .FirstOrDefaultAsync(ct);
+            }
+            catch
+            {
+                /* ignore */
+            }
+
+            var rncDoc = CertecfReceptorUrls.Digits(rncDocumento);
+            if (string.IsNullOrWhiteSpace(rncDoc))
+            {
+                try
+                {
+                    rncDoc = CertecfReceptorUrls.Digits(
+                        await _ctx.Empresas.AsNoTracking()
+                            .Where(e => e.IdEmpresa == idEmpresa)
+                            .Select(e => e.RNC)
+                            .FirstOrDefaultAsync(ct));
+                }
+                catch
+                {
+                    /* ignore */
+                }
+            }
+
+            var dgiiDoc = await RazonSocialClientesDgiiAsync(rncDoc, ct);
+            var rncEmpresa = "";
+            try
+            {
+                rncEmpresa = CertecfReceptorUrls.Digits(
+                    await _ctx.Empresas.AsNoTracking()
+                        .Where(e => e.IdEmpresa == idEmpresa)
+                        .Select(e => e.RNC)
+                        .FirstOrDefaultAsync(ct));
+            }
+            catch
+            {
+                /* ignore */
+            }
+
+            // No mezclar el padrón de Empresas.RNC (otro contribuyente) con el RNC del e-CF.
+            if (!string.IsNullOrWhiteSpace(rncDoc) && rncDoc != rncEmpresa)
+            {
+                var soloPadron = CertecfArtefactos.RazonSocialRealParaRnc(rncDoc, dgiiDoc);
+                return string.IsNullOrWhiteSpace(soloPadron) ? null : soloPadron;
+            }
+
+            var razon = CertecfArtefactos.RazonSocialRealParaRnc(rncDoc, dgiiDoc, cfg, nombreComercial);
+            return string.IsNullOrWhiteSpace(razon) ? null : razon;
+        }
+
+        private async Task<string?> NombreComercialDgiiAsync(string? rnc, CancellationToken ct)
+        {
+            var digits = CertecfReceptorUrls.Digits(rnc);
+            if (string.IsNullOrWhiteSpace(digits)) return null;
+            try
+            {
+                var hit = await _ctx.ClientesDGII.AsNoTracking()
+                    .Where(c => c.RNC == digits)
+                    .Select(c => c.NombreComercial)
+                    .FirstOrDefaultAsync(ct);
+                var comercial = CertecfArtefactos.NombreComercialRealParaRnc(digits, hit);
+                return string.IsNullOrWhiteSpace(comercial) ? null : comercial;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private async Task<string?> RazonSocialClientesDgiiAsync(string? rnc, CancellationToken ct)
+        {
+            var digits = CertecfReceptorUrls.Digits(rnc);
+            if (string.IsNullOrWhiteSpace(digits)) return null;
+            try
+            {
+                var hit = await _ctx.ClientesDGII.AsNoTracking()
+                    .Where(c => c.RNC == digits)
+                    .Select(c => c.RazonSocial)
+                    .FirstOrDefaultAsync(ct);
+                if (string.IsNullOrWhiteSpace(hit) || CertecfArtefactos.EsNombreLaboratorio(hit))
+                    return null;
+                return hit.Trim();
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         private static DateTime? ExtraerFechaHoraFirma(string xml)
@@ -875,6 +1368,7 @@ namespace AlahiaPos.DataAccess.Servicios.FacturacionElectronica
             caso.FechaRespuesta = DateTime.Now;
             caso.Mensaje = Cortar(resultado.Mensajes.Count > 0 ? string.Join(" | ", resultado.Mensajes) : resultado.CodigoError, 2000);
             caso.RespuestaDgii = FormatearRespuestaDgii(caso, resultado);
+            GuardarTimbreDeEnvio(caso, resultado);
             if (EcfSecuenciaYaUtilizada.EnResultado(resultado))
             {
                 caso.Estado = "Aceptado";
@@ -1046,22 +1540,61 @@ namespace AlahiaPos.DataAccess.Servicios.FacturacionElectronica
 
         private async Task<CertecfSesion?> ObtenerSesionTrackedAsync(int idEmpresa, bool tracking, CancellationToken ct)
         {
-            var q = tracking ? _ctx.CertecfSesiones.AsTracking() : _ctx.CertecfSesiones.AsNoTracking();
-            return await q.Include(s => s.Casos)
-                .Where(s => s.IdEmpresa == idEmpresa)
-                .OrderByDescending(s => s.FechaCreacion)
-                .FirstOrDefaultAsync(ct);
+            return await ResolverSesionLabAsync(idEmpresa, crearSiFalta: false, idUsuario: null, tracking, ct);
         }
 
         private async Task<CertecfSesion> ObtenerOCrearSesionAsync(int idEmpresa, int? idUsuario, CancellationToken ct)
+            => await ResolverSesionLabAsync(idEmpresa, crearSiFalta: true, idUsuario, tracking: true, ct)
+               ?? throw new InvalidOperationException("No se pudo abrir la sesión CerteCF.");
+
+        /// <summary>
+        /// El lab es de la empresa del select. Si el Excel se cargó estando en MacroBits,
+        /// esa sesión vive en la empresa sistema: se reasigna al cliente.
+        /// </summary>
+        private async Task<CertecfSesion?> ResolverSesionLabAsync(
+            int idEmpresa, bool crearSiFalta, int? idUsuario, bool tracking, CancellationToken ct)
         {
-            var sesion = await _ctx.CertecfSesiones.AsTracking()
-                .Include(s => s.Casos)
+            var q = tracking ? _ctx.CertecfSesiones.AsTracking() : _ctx.CertecfSesiones.AsNoTracking();
+            var propias = await q.Include(s => s.Casos)
                 .Where(s => s.IdEmpresa == idEmpresa)
-                .OrderByDescending(s => s.FechaCreacion)
+                .ToListAsync(ct);
+            var elegida = ElegirSesionLab(propias);
+
+            var esSistema = await _ctx.Empresas.AsNoTracking()
+                .Where(e => e.IdEmpresa == idEmpresa)
+                .Select(e => e.EsEmpresaSistema)
                 .FirstOrDefaultAsync(ct);
-            if (sesion != null) return sesion;
-            sesion = new CertecfSesion
+
+            if (!esSistema)
+            {
+                var rnc = RncEmisorDeSesion(elegida);
+                var idsSistema = await _ctx.Empresas.AsNoTracking()
+                    .Where(e => e.EsEmpresaSistema)
+                    .Select(e => e.IdEmpresa)
+                    .ToListAsync(ct);
+                if (idsSistema.Count > 0 && !string.IsNullOrWhiteSpace(rnc))
+                {
+                    var qSys = tracking ? _ctx.CertecfSesiones.AsTracking() : _ctx.CertecfSesiones.AsNoTracking();
+                    var enSistema = await qSys.Include(s => s.Casos)
+                        .Where(s => idsSistema.Contains(s.IdEmpresa))
+                        .ToListAsync(ct);
+                    var prestada = ElegirSesionLab(enSistema.Where(s => RncEmisorDeSesion(s) == rnc));
+                    if (prestada != null && EsMejorSesionLab(prestada, elegida))
+                    {
+                        await _ctx.Database.ExecuteSqlInterpolatedAsync(
+                            $"UPDATE CertecfSesion SET IdEmpresa = {idEmpresa}, FechaActualizacion = {DateTime.Now} WHERE IdSesion = {prestada.IdSesion}",
+                            ct);
+                        prestada.IdEmpresa = idEmpresa;
+                        prestada.FechaActualizacion = DateTime.Now;
+                        elegida = prestada;
+                    }
+                }
+            }
+
+            if (elegida != null) return elegida;
+            if (!crearSiFalta) return null;
+
+            var sesion = new CertecfSesion
             {
                 IdEmpresa = idEmpresa,
                 IdUsuario = idUsuario,
@@ -1077,6 +1610,30 @@ namespace AlahiaPos.DataAccess.Servicios.FacturacionElectronica
             return sesion;
         }
 
+        private static bool EsSesionLabFallida(CertecfSesion s)
+            => string.Equals(s.Estado, "Fallido", StringComparison.OrdinalIgnoreCase);
+
+        private static CertecfSesion? ElegirSesionLab(IEnumerable<CertecfSesion> sesiones)
+            => sesiones
+                .OrderByDescending(s => EsSesionLabFallida(s) ? 0 : 1)
+                .ThenByDescending(s => s.PasoActual)
+                .ThenByDescending(s => s.Casos?.Count ?? 0)
+                .ThenByDescending(s => s.FechaActualizacion ?? s.FechaCreacion)
+                .FirstOrDefault();
+
+        private static bool EsMejorSesionLab(CertecfSesion candidata, CertecfSesion? actual)
+        {
+            if (actual == null) return true;
+            if (EsSesionLabFallida(actual) && !EsSesionLabFallida(candidata)) return true;
+            if (candidata.PasoActual != actual.PasoActual)
+                return candidata.PasoActual > actual.PasoActual;
+            var nC = candidata.Casos?.Count ?? 0;
+            var nA = actual.Casos?.Count ?? 0;
+            if (nC != nA) return nC > nA;
+            return (candidata.FechaActualizacion ?? candidata.FechaCreacion)
+                > (actual.FechaActualizacion ?? actual.FechaCreacion);
+        }
+
         private async Task<Empresas> EmpresaAsync(int idEmpresa, CancellationToken ct)
             => await _ctx.Empresas.AsNoTracking().FirstOrDefaultAsync(e => e.IdEmpresa == idEmpresa, ct)
                ?? throw new InvalidOperationException("Empresa no encontrada.");
@@ -1086,13 +1643,22 @@ namespace AlahiaPos.DataAccess.Servicios.FacturacionElectronica
             NombreSoftware = NullIfEmpty(s.NombreSoftware) ?? "Alahia ERP",
             VersionSoftware = NullIfEmpty(s.VersionSoftware) ?? "1.0",
             TipoSoftware = NullIfEmpty(s.TipoSoftware) ?? "EXTERNO",
-            UrlRecepcion = UrlPublicaOGenerada(s.UrlRecepcion, CertecfReceptorUrls.Recepcion(publicBase, rnc)),
-            UrlAprobacion = UrlPublicaOGenerada(s.UrlAprobacion, CertecfReceptorUrls.Aprobacion(publicBase, rnc)),
-            UrlAutenticacion = UrlPublicaOGenerada(s.UrlAutenticacion, CertecfReceptorUrls.Autenticacion(publicBase, rnc)),
-            UrlRecepcionProd = UrlPublicaOGenerada(s.UrlRecepcionProd, CertecfReceptorUrls.RecepcionProd(publicBase, rnc)),
-            UrlAprobacionProd = UrlPublicaOGenerada(s.UrlAprobacionProd, CertecfReceptorUrls.AprobacionProd(publicBase, rnc)),
-            UrlAutenticacionProd = UrlPublicaOGenerada(s.UrlAutenticacionProd, CertecfReceptorUrls.AutenticacionProd(publicBase, rnc))
+            UrlRecepcion = UrlAlineadaAlRnc(s.UrlRecepcion, CertecfReceptorUrls.Recepcion(publicBase, rnc), rnc),
+            UrlAprobacion = UrlAlineadaAlRnc(s.UrlAprobacion, CertecfReceptorUrls.Aprobacion(publicBase, rnc), rnc),
+            UrlAutenticacion = UrlAlineadaAlRnc(s.UrlAutenticacion, CertecfReceptorUrls.Autenticacion(publicBase, rnc), rnc),
+            UrlRecepcionProd = UrlAlineadaAlRnc(s.UrlRecepcionProd, CertecfReceptorUrls.RecepcionProd(publicBase, rnc), rnc),
+            UrlAprobacionProd = UrlAlineadaAlRnc(s.UrlAprobacionProd, CertecfReceptorUrls.AprobacionProd(publicBase, rnc), rnc),
+            UrlAutenticacionProd = UrlAlineadaAlRnc(s.UrlAutenticacionProd, CertecfReceptorUrls.AutenticacionProd(publicBase, rnc), rnc)
         };
+
+        private static string UrlAlineadaAlRnc(string? guardada, string generada, string? rnc)
+        {
+            var url = UrlPublicaOGenerada(guardada, generada);
+            var r = CertecfReceptorUrls.Digits(rnc);
+            if (string.IsNullOrWhiteSpace(r) || string.IsNullOrWhiteSpace(url)) return url;
+            if (url.Contains(r, StringComparison.Ordinal)) return url;
+            return generada;
+        }
 
         private static string UrlPublicaOGenerada(string? guardada, string generada)
             => string.IsNullOrWhiteSpace(guardada) || CertecfReceptorUrls.EsLocal(guardada)
@@ -1111,6 +1677,22 @@ namespace AlahiaPos.DataAccess.Servicios.FacturacionElectronica
             {
                 return new Dictionary<string, string>();
             }
+        }
+
+        private static int DerivarPasoActual(CertecfSesion? sesion, CertecfLabEstadoDto lab)
+        {
+            var saved = sesion?.PasoActual > 0 ? sesion.PasoActual : 1;
+            var derivado = saved;
+            if (lab.SesionActiva is { Total: > 0 }) derivado = Math.Max(derivado, 2);
+            if (lab.SesionAcecf is { Total: > 0 }) derivado = Math.Max(derivado, 3);
+            if (lab.SesionSimulacion is { Total: > 0 })
+            {
+                derivado = Math.Max(derivado, 4);
+                var p5 = lab.Pasos?.FirstOrDefault(p => p.Numero == 5);
+                if (p5 == null || !string.Equals(p5.Estado, "Hecho", StringComparison.OrdinalIgnoreCase))
+                    derivado = Math.Max(derivado, 5);
+            }
+            return Math.Min(15, derivado);
         }
 
         private static void SetPaso(CertecfSesion sesion, int paso, string estado)
@@ -1202,6 +1784,35 @@ namespace AlahiaPos.DataAccess.Servicios.FacturacionElectronica
 
         private static string? NullIfEmpty(string? v) => string.IsNullOrWhiteSpace(v) ? null : v.Trim();
 
+        /// <summary>
+        /// El QR de la RI es el del lote. UrlQR manda; la respuesta del TrackId solo si UrlQR no sirve.
+        /// </summary>
+        private static string? ResolverQrGuardado(CertecfCaso caso)
+        {
+            var deUrl = NullIfEmpty(caso.UrlQR);
+            var deResp = CertecfArtefactos.ExtraerQrDeRespuesta(caso.RespuestaDgii);
+            var elegido = EcfQrUrlHelper.IsUsableHttpUrl(deUrl) ? deUrl : deResp;
+            return EcfConsultaTimbreUrl.OmitirRncCompradorVacio(elegido);
+        }
+
+        /// <summary>
+        /// Timbre del envío: QR, código, fecha de firma y XML. La consulta de TrackId no los borra.
+        /// </summary>
+        private static void GuardarTimbreDeEnvio(CertecfCaso caso, FiscalEnvioResultado r)
+        {
+            if (EcfQrUrlHelper.IsUsableHttpUrl(r.UrlQR))
+                caso.UrlQR = r.UrlQR.Trim();
+            else if (string.IsNullOrWhiteSpace(caso.UrlQR))
+                caso.UrlQR = CertecfArtefactos.ExtraerQrDeRespuesta(caso.RespuestaDgii);
+
+            if (!string.IsNullOrWhiteSpace(r.SecurityCode))
+                caso.CodigoSeguridad = r.SecurityCode.Trim();
+            if (r.FechaFirma.HasValue)
+                caso.FechaFirma = r.FechaFirma;
+            if (!string.IsNullOrWhiteSpace(r.XmlFirmado))
+                caso.XmlFirmado = r.XmlFirmado;
+        }
+
         private static string FormatearRespuestaDgii(CertecfCaso caso, FiscalEnvioResultado r)
         {
             var sb = new StringBuilder();
@@ -1227,17 +1838,75 @@ namespace AlahiaPos.DataAccess.Servicios.FacturacionElectronica
             return sb.ToString().TrimEnd();
         }
 
-        private static string FormatearConsultaDgii(CertecfCaso caso, FiscalConsultaResultado r)
+        private static string FormatearConsultaDgii(CertecfCaso caso, FiscalConsultaResultado r, string? qrEmitido = null)
         {
+            var previa = caso.RespuestaDgii;
+            var qr = qrEmitido;
+            if (!EcfQrUrlHelper.IsUsableHttpUrl(qr))
+                qr = CertecfArtefactos.ExtraerQrDeRespuesta(previa);
+            if (!EcfQrUrlHelper.IsUsableHttpUrl(qr) && EcfQrUrlHelper.IsUsableHttpUrl(r.UrlQR))
+                qr = r.UrlQR;
             var sb = new StringBuilder();
             sb.AppendLine($"[{DateTime.Now:HH:mm:ss}] Consulta TrackId {caso.Encf}");
             sb.AppendLine($"Estado   : {r.Estado}");
             if (!string.IsNullOrWhiteSpace(r.TrackId)) sb.AppendLine($"TrackId  : {r.TrackId}");
             if (!string.IsNullOrWhiteSpace(r.Encf)) sb.AppendLine($"e-NCF    : {r.Encf}");
             if (!string.IsNullOrWhiteSpace(r.CodigoError)) sb.AppendLine($"Código   : {r.CodigoError}");
+            CopiarLineaSiExiste(previa, "CodigoSeguridad", sb);
+            CopiarLineaSiExiste(previa, "FechaFirma", sb);
+            if (EcfQrUrlHelper.IsUsableHttpUrl(qr))
+                sb.AppendLine($"QR       : {qr}");
             foreach (var m in r.Mensajes.Where(x => !string.IsNullOrWhiteSpace(x)))
                 sb.AppendLine($"Mensaje  : {m}");
             return sb.ToString().TrimEnd();
+        }
+
+        private static void CopiarLineaSiExiste(string? texto, string etiqueta, StringBuilder sb)
+        {
+            if (string.IsNullOrWhiteSpace(texto)) return;
+            foreach (var line in texto.Split('\n'))
+            {
+                var t = line.Trim();
+                if (t.StartsWith(etiqueta, StringComparison.OrdinalIgnoreCase))
+                {
+                    sb.AppendLine(t);
+                    return;
+                }
+            }
+        }
+
+        /// <summary>
+        /// RI del e-CF de simulación que DGII Aceptó primero (paso 4).
+        /// No usa reenvíos del 17 ni XML/QR de un intento posterior.
+        /// </summary>
+        private static CertecfCasoDto? ElegirCasoRi(
+            IEnumerable<CertecfCasoDto> casos,
+            Func<CertecfCasoDto, bool> match)
+        {
+            var aceptados = casos.Where(DgiiAceptoParaRi).Where(c => !EsReintentoMuerto(c)).ToList();
+            if (aceptados.Count == 0) return null;
+            var origen = aceptados
+                .Where(c => c.FechaEnvio.HasValue)
+                .Select(c => c.FechaEnvio!.Value.Date)
+                .OrderBy(d => d)
+                .Cast<DateTime?>()
+                .FirstOrDefault();
+            var pool = origen.HasValue
+                ? aceptados.Where(c => c.FechaEnvio?.Date == origen.Value).ToList()
+                : aceptados;
+            if (pool.Count == 0) pool = aceptados;
+            return pool.Where(match).OrderBy(c => c.FechaEnvio).ThenBy(c => c.IdCaso).FirstOrDefault();
+        }
+
+        private static bool EsReintentoMuerto(CertecfCasoDto c)
+        {
+            var t = $"{c.Mensaje} {c.RespuestaDgii}";
+            if (string.IsNullOrWhiteSpace(t)) return false;
+            return t.Contains("combinación e-NCF", StringComparison.OrdinalIgnoreCase)
+                || t.Contains("Ya Aceptado en simulación", StringComparison.OrdinalIgnoreCase)
+                || t.Contains("Omitido:", StringComparison.OrdinalIgnoreCase)
+                || t.Contains("fase válid", StringComparison.OrdinalIgnoreCase)
+                || t.Contains("fase valid", StringComparison.OrdinalIgnoreCase);
         }
 
         private static string FormatearRespuestaLocal(CertecfCaso caso, string titulo, string? detalle)
@@ -1327,9 +1996,10 @@ namespace AlahiaPos.DataAccess.Servicios.FacturacionElectronica
                     Lineas = lineas,
                     FechaEnvio = c.FechaEnvio,
                     FechaRespuesta = c.FechaRespuesta,
-                    UrlQR = CertecfArtefactos.ExtraerQrDeRespuesta(c.RespuestaDgii),
-                    QrListo = !string.IsNullOrWhiteSpace(CertecfArtefactos.BuscarXmlFirmado(c.Encf, rncEmisor))
-                        || !string.IsNullOrWhiteSpace(CertecfArtefactos.ExtraerQrDeRespuesta(c.RespuestaDgii))
+                    UrlQR = NullIfEmpty(c.UrlQR) ?? CertecfArtefactos.ExtraerQrDeRespuesta(c.RespuestaDgii),
+                    CodigoSeguridad = c.CodigoSeguridad,
+                    FechaFirma = c.FechaFirma,
+                    QrListo = QrRiListo(c)
                 };
             })
             .OrderBy(c => CertecfExcelParser.PrioridadEnvio(c.TipoEcf, c.MontoTotal))

@@ -1,7 +1,9 @@
+using AlahiaPos.DataAccess.Servicios.FacturacionElectronica;
 using AlahiaPos.DataAccess.Servicios.FiscalGateway.DgiiDirecto;
 using AlahiaPos.Entities.Domain;
 using AlahiaPos.Entities.Dto.Fiscal;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace AlahiaPos.DataAccess.Servicios.FiscalGateway
@@ -17,10 +19,10 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway
             Empresas? empresa,
             SecuenciaECF? secuencia)
         {
-            // Misma convención que certificación directa / ejemplos aceptados:
-            // IndicadorMontoGravado = 0 → MontoItem y MontoGravado SIN ITBIS.
             var hayGravadoItbis = docInfo.Lineas.Any(l => l.MontoItbis > 0)
-                || docInfo.TotalItbis > 0;
+                || docInfo.TotalItbis > 0
+                || docInfo.Lineas.Any(l => l.TasaItbis is > 0);
+            var rncEmisor = CertecfArtefactos.RncEmisorParaEmpresa(empresa);
 
             var doc = new FiscalDocumentoElectronico
             {
@@ -50,9 +52,13 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway
                     FechaEmision = docInfo.FechaDocumento,
                     NumeroFacturaInterna = docInfo.NumeroDocumentoInterno,
 
-                    RncEmisor = empresa?.RNC ?? "",
-                    RazonSocialEmisor = empresa?.NombreComercial ?? "",
-                    NombreComercialEmisor = empresa?.NombreComercial,
+                    RncEmisor = rncEmisor,
+                    RazonSocialEmisor = CertecfArtefactos.RazonSocialRealParaRnc(
+                        rncEmisor,
+                        CertecfArtefactos.EsRncDraSena(rncEmisor) ? CertecfArtefactos.RazonSocialDraSena : null,
+                        empresa?.NombreComercial),
+                    NombreComercialEmisor = CertecfArtefactos.NombreComercialRealParaRnc(
+                        rncEmisor, empresa?.NombreComercial),
                     DireccionEmisor = empresa?.Direccion,
                     TelefonoEmisor = FormatearTelefono(empresa?.Telefono),
                     CorreoEmisor = empresa?.CorreElectronico,
@@ -177,6 +183,13 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway
                 doc.FormasPago[0].Monto = montoTotal;
             }
 
+            // Alinear con validación DGII: si quedó alguna línea gravada (1/2/3), forzar indicador.
+            if (doc.Lineas.Any(l => l.IndicadorFacturacion is 1 or 2 or 3)
+                && doc.Encabezado.IndicadorMontoGravado is not (0 or 1))
+            {
+                doc.Encabezado.IndicadorMontoGravado = 0;
+            }
+
             if (!string.IsNullOrEmpty(docInfo.NcfModificado))
             {
                 doc.Referencia = new FiscalDocumentoReferencia
@@ -188,7 +201,141 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway
                 };
             }
 
+            AlinearConDefinicionDgii(doc);
             return doc;
+        }
+
+        /// <summary>
+        /// Misma reglas que ya exigen/emiten las definiciones e-CF (E41/43/44/46/47
+        /// e IndicadorMontoGravado). No inventa montos de retención.
+        /// </summary>
+        public static void AlinearConDefinicionDgii(FiscalDocumentoElectronico doc)
+        {
+            if (doc?.Encabezado == null) return;
+            QuitarLineasPlantillaVacias(doc);
+            var amb = (doc.AmbienteDgii ?? "").Trim().ToLowerInvariant();
+            if (amb is "certecf" or "cert" or "certificacion")
+                return;
+
+            var enc = doc.Encabezado;
+            var tipo = enc.TipoEcf;
+            var lineas = doc.Lineas ?? new List<FiscalDocumentoLinea>();
+
+            switch (tipo)
+            {
+                case 41:
+                    foreach (var l in lineas)
+                    {
+                        l.EsBien = false;
+                        if (l.IndicadorAgenteRetencionoPercepcion is not (1 or 2))
+                            l.IndicadorAgenteRetencionoPercepcion = 1;
+                    }
+                    AlinearRetencion(enc, lineas, incluirItbis: true);
+                    break;
+                case 43:
+                    enc.RncComprador = null;
+                    enc.RazonSocialComprador = null;
+                    enc.DireccionComprador = null;
+                    enc.CorreoComprador = null;
+                    enc.IndicadorMontoGravado = null;
+                    foreach (var l in lineas) l.IndicadorFacturacion = 4;
+                    if (enc.MontoExento <= 0) enc.MontoExento = enc.MontoTotal;
+                    break;
+                case 44:
+                    enc.IndicadorMontoGravado = null;
+                    foreach (var l in lineas) l.IndicadorFacturacion = 4;
+                    if (enc.MontoExento <= 0) enc.MontoExento = enc.MontoTotal;
+                    break;
+                case 46:
+                    enc.IndicadorMontoGravado = null;
+                    foreach (var l in lineas) l.IndicadorFacturacion = 3;
+                    break;
+                case 47:
+                    enc.IndicadorMontoGravado = null;
+                    foreach (var l in lineas)
+                    {
+                        l.IndicadorFacturacion = 4;
+                        l.MontoIsrRetenido ??= 0m;
+                    }
+                    AlinearRetencion(enc, lineas, incluirItbis: false);
+                    break;
+            }
+
+            var hayGravado = lineas.Any(l => l.IndicadorFacturacion is 1 or 2 or 3);
+            if (hayGravado && enc.IndicadorMontoGravado is not (0 or 1) && tipo is 31 or 32 or 33 or 34 or 41 or 45)
+                enc.IndicadorMontoGravado = 1;
+
+            if (enc.IndicadorMontoGravado == 0)
+            {
+                var esperado = Math.Round(enc.MontoGravadoTotal + enc.TotalItbis + enc.MontoExento, 2);
+                if (Math.Abs(enc.MontoTotal - esperado) > 0.01m)
+                    enc.IndicadorMontoGravado = 1;
+            }
+        }
+
+        /// <summary>
+        /// El Excel CerteCF trae ~60 columnas de ítem; las vacías llegan como #e / monto 0.
+        /// </summary>
+        private static void QuitarLineasPlantillaVacias(FiscalDocumentoElectronico doc)
+        {
+            if (doc.Lineas == null || doc.Lineas.Count == 0) return;
+            doc.Lineas = doc.Lineas.Where(l => !EsLineaPlantillaVacia(l)).ToList();
+            for (var i = 0; i < doc.Lineas.Count; i++)
+                doc.Lineas[i].NumeroLinea = i + 1;
+        }
+
+        private static bool EsLineaPlantillaVacia(FiscalDocumentoLinea l)
+        {
+            var nombre = (l.NombreItem ?? "").Trim();
+            if (nombre.StartsWith("#", StringComparison.Ordinal))
+                return true;
+            if (l.MontoItem <= 0 && l.PrecioUnitario <= 0 && l.Cantidad <= 0)
+                return string.IsNullOrWhiteSpace(nombre) || nombre.StartsWith("Item ", StringComparison.OrdinalIgnoreCase);
+            return false;
+        }
+
+        private static void AlinearRetencion(
+            FiscalDocumentoEncabezado enc,
+            List<FiscalDocumentoLinea> lineas,
+            bool incluirItbis)
+        {
+            if (lineas.Count == 0) return;
+            var isrLineas = lineas.Sum(l => l.MontoIsrRetenido ?? 0m);
+            var itbLineas = lineas.Sum(l => l.MontoItbisRetenido ?? 0m);
+
+            if (enc.TotalIsrRetencion <= 0 && isrLineas > 0)
+                enc.TotalIsrRetencion = isrLineas;
+            if (incluirItbis && enc.TotalItbisRetenido <= 0 && itbLineas > 0)
+                enc.TotalItbisRetenido = itbLineas;
+
+            if (enc.TotalIsrRetencion > 0 && isrLineas <= 0)
+                RepartirMonto(lineas, enc.TotalIsrRetencion, (l, v) => l.MontoIsrRetenido = v);
+            if (incluirItbis && enc.TotalItbisRetenido > 0 && itbLineas <= 0)
+                RepartirMonto(lineas, enc.TotalItbisRetenido, (l, v) => l.MontoItbisRetenido = v);
+        }
+
+        private static void RepartirMonto(
+            List<FiscalDocumentoLinea> lineas,
+            decimal total,
+            Action<FiscalDocumentoLinea, decimal> set)
+        {
+            var baseSum = lineas.Sum(l => l.MontoItem);
+            if (baseSum <= 0 || lineas.Count == 1)
+            {
+                set(lineas[0], Math.Round(total, 2));
+                for (var i = 1; i < lineas.Count; i++) set(lineas[i], 0m);
+                return;
+            }
+
+            decimal acumulado = 0;
+            for (var i = 0; i < lineas.Count; i++)
+            {
+                var parte = i == lineas.Count - 1
+                    ? Math.Round(total - acumulado, 2)
+                    : Math.Round(total * (lineas[i].MontoItem / baseSum), 2);
+                set(lineas[i], parte);
+                acumulado += parte;
+            }
         }
 
         public static string? FormatearTelefono(string? tel)
@@ -202,7 +349,8 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway
 
         public static int ResolverIndicadorFacturacion(decimal? tasaItbis)
         {
-            if (tasaItbis == null) return 1;
+            // Sin tasa conocida: exento (3). Si la línea trae ITBIS, el caller fuerza 1.
+            if (tasaItbis == null) return 3;
             var tasa = tasaItbis.Value;
             if (tasa >= 16m && tasa <= 18m) return 1;
             if (tasa > 0m && tasa < 16m) return 2;

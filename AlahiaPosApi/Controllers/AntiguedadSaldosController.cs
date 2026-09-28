@@ -1,5 +1,6 @@
 using AlahiaPos.Entities.Dto;
 using AlahiaPos.Entities.Interfaces;
+using AlahiaPosApi.Auth;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Threading.Tasks;
@@ -11,10 +12,17 @@ namespace AlahiaPosApi.Controllers
     public class AntiguedadSaldosController : ControllerBase
     {
         private readonly IAntiguedadSaldosService _service;
+        private readonly ISucursalService _sucursales;
+        private readonly ISesionTokenResolver _tokens;
 
-        public AntiguedadSaldosController(IAntiguedadSaldosService service)
+        public AntiguedadSaldosController(
+            IAntiguedadSaldosService service,
+            ISucursalService sucursales,
+            ISesionTokenResolver tokens)
         {
             _service = service;
+            _sucursales = sucursales;
+            _tokens = tokens;
         }
 
         /// <summary>
@@ -29,10 +37,16 @@ namespace AlahiaPosApi.Controllers
             [FromQuery] DateTime? fechaHasta = null,
             [FromQuery] bool soloVencidas = false,
             [FromQuery] bool soloPendientes = true,
-            [FromQuery] DateTime? fechaCorte = null)
+            [FromQuery] DateTime? fechaCorte = null,
+            [FromQuery] int? idSucursalFiltro = null)
         {
             try
             {
+                var (scope, error) = await SucursalConsultaHttp.ResolverAsync(
+                    HttpContext, _tokens, _sucursales, idEmpresa, idSucursalFiltro);
+                if (error != null)
+                    return error;
+
                 var result = await _service.ObtenerAntiguedadCxCAsync(new AntiguedadSaldosFiltroRequest
                 {
                     IdEmpresa = idEmpresa,
@@ -42,7 +56,9 @@ namespace AlahiaPosApi.Controllers
                     FechaHasta = fechaHasta,
                     SoloVencidas = soloVencidas,
                     SoloPendientes = soloPendientes,
-                    FechaCorte = fechaCorte
+                    FechaCorte = fechaCorte,
+                    IdsSucursalConsulta = scope.IdsPermitidos,
+                    IdSucursalPrincipal = scope.IdPrincipal
                 });
                 return Ok(result);
             }
@@ -64,10 +80,16 @@ namespace AlahiaPosApi.Controllers
             [FromQuery] DateTime? fechaHasta = null,
             [FromQuery] bool soloVencidas = false,
             [FromQuery] bool soloPendientes = true,
-            [FromQuery] DateTime? fechaCorte = null)
+            [FromQuery] DateTime? fechaCorte = null,
+            [FromQuery] int? idSucursalFiltro = null)
         {
             try
             {
+                var (scope, error) = await SucursalConsultaHttp.ResolverAsync(
+                    HttpContext, _tokens, _sucursales, idEmpresa, idSucursalFiltro);
+                if (error != null)
+                    return error;
+
                 var result = await _service.ObtenerAntiguedadCxPAsync(new AntiguedadSaldosFiltroRequest
                 {
                     IdEmpresa = idEmpresa,
@@ -77,7 +99,9 @@ namespace AlahiaPosApi.Controllers
                     FechaHasta = fechaHasta,
                     SoloVencidas = soloVencidas,
                     SoloPendientes = soloPendientes,
-                    FechaCorte = fechaCorte
+                    FechaCorte = fechaCorte,
+                    IdsSucursalConsulta = scope.IdsPermitidos,
+                    IdSucursalPrincipal = scope.IdPrincipal
                 });
                 return Ok(result);
             }

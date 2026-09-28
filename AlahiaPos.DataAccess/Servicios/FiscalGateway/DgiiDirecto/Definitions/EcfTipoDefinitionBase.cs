@@ -63,6 +63,10 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.DgiiDirecto.Definitions
         /// </summary>
         protected void ValidarIndicadorMontoGravadoSiAplica(EcfBuildContext ctx)
         {
+            var amb = (ctx.Documento.AmbienteDgii ?? "").Trim().ToLowerInvariant();
+            if (amb is "certecf" or "cert" or "certificacion")
+                return;
+
             var campo = IdDoc.FirstOrDefault(c => c.Nombre == "IndicadorMontoGravado");
             if (campo == null || campo.Presence == EcfCampoPresence.Prohibido)
                 return;
@@ -75,9 +79,12 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.DgiiDirecto.Definitions
 
         /// <summary>
         /// Con IndicadorMontoGravado=0 (montos netos): MontoTotal ≈ gravado + ITBIS + exento (±0.01).
+        /// En CerteCF el Excel es el conjunto de datos: no recalcular ni bloquear.
         /// </summary>
         protected void ValidarCoherenciaMontoTotalSiNeto(EcfBuildContext ctx)
         {
+            var amb = (ctx.Documento.AmbienteDgii ?? "").Trim().ToLowerInvariant();
+            if (amb is "certecf" or "cert" or "certificacion") return;
             if (ctx.Enc.IndicadorMontoGravado != 0) return;
             var esperado = Math.Round(
                 ctx.Enc.MontoGravadoTotal + ctx.Enc.TotalItbis + ctx.Enc.MontoExento, 2);
@@ -113,28 +120,46 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.DgiiDirecto.Definitions
                 c => EcfXmlFormat.Esc(c.Enc.RazonSocialEmisor, 150)),
             EcfXmlFormat.Campo("NombreComercial", EcfCampoPresence.Opcional, 3,
                 c => string.IsNullOrWhiteSpace(c.Enc.NombreComercialEmisor) ? null : EcfXmlFormat.Esc(c.Enc.NombreComercialEmisor, 150)),
-            EcfXmlFormat.Campo("DireccionEmisor", EcfCampoPresence.Obligatorio, 4,
+            EcfXmlFormat.Campo("Sucursal", EcfCampoPresence.Opcional, 4,
+                c => string.IsNullOrWhiteSpace(c.Enc.Sucursal) ? null : EcfXmlFormat.Esc(c.Enc.Sucursal, 20)),
+            EcfXmlFormat.Campo("DireccionEmisor", EcfCampoPresence.Obligatorio, 5,
                 c => EcfXmlFormat.Esc(string.IsNullOrWhiteSpace(c.Enc.DireccionEmisor) ? "N/D" : c.Enc.DireccionEmisor, 100)),
-            EcfXmlFormat.Campo("Municipio", EcfCampoPresence.Opcional, 5,
+            EcfXmlFormat.Campo("Municipio", EcfCampoPresence.Opcional, 6,
                 c => EcfXmlFormat.CodigoProvMun(c.Enc.MunicipioEmisor) ? c.Enc.MunicipioEmisor : null,
                 nota: "Solo código DGII 6 dígitos"),
-            EcfXmlFormat.Campo("Provincia", EcfCampoPresence.Opcional, 6,
+            EcfXmlFormat.Campo("Provincia", EcfCampoPresence.Opcional, 7,
                 c => EcfXmlFormat.CodigoProvMun(c.Enc.ProvinciaEmisor) ? c.Enc.ProvinciaEmisor : null),
-            EcfXmlFormat.Campo("TablaTelefonoEmisor", EcfCampoPresence.Opcional, 7,
+            EcfXmlFormat.Campo("TablaTelefonoEmisor", EcfCampoPresence.Opcional, 8,
                 c => EcfXmlFormat.TablaTelefono(c), complejo: true,
                 nota: "Teléfono ###-###-####"),
-            EcfXmlFormat.Campo("CorreoEmisor", EcfCampoPresence.Opcional, 8,
+            EcfXmlFormat.Campo("CorreoEmisor", EcfCampoPresence.Opcional, 9,
                 c => EcfXmlFormat.CorreoOk(c.Enc.CorreoEmisor) ? EcfXmlFormat.Esc(c.Enc.CorreoEmisor, 80) : null),
-            EcfXmlFormat.Campo("NumeroFacturaInterna", EcfCampoPresence.Opcional, 9,
+            EcfXmlFormat.Campo("WebSite", EcfCampoPresence.Opcional, 10,
+                c => string.IsNullOrWhiteSpace(c.Enc.WebSite) ? null : EcfXmlFormat.Esc(c.Enc.WebSite, 50)),
+            EcfXmlFormat.Campo("ActividadEconomica", EcfCampoPresence.Opcional, 11,
+                c => string.IsNullOrWhiteSpace(c.Enc.ActividadEconomica) ? null : EcfXmlFormat.Esc(c.Enc.ActividadEconomica, 100)),
+            EcfXmlFormat.Campo("CodigoVendedor", EcfCampoPresence.Opcional, 12,
+                c => string.IsNullOrWhiteSpace(c.Enc.CodigoVendedor) ? null : EcfXmlFormat.Esc(c.Enc.CodigoVendedor, 60)),
+            EcfXmlFormat.Campo("NumeroFacturaInterna", EcfCampoPresence.Opcional, 13,
                 c => string.IsNullOrWhiteSpace(c.Enc.NumeroFacturaInterna) ? null : EcfXmlFormat.Esc(c.Enc.NumeroFacturaInterna, 20)),
-            EcfXmlFormat.Campo("FechaEmision", EcfCampoPresence.Obligatorio, 10,
+            EcfXmlFormat.Campo("NumeroPedidoInterno", EcfCampoPresence.Opcional, 14,
+                c => string.IsNullOrWhiteSpace(c.Enc.NumeroPedidoInterno) ? null : EcfXmlFormat.Esc(c.Enc.NumeroPedidoInterno, 20)),
+            EcfXmlFormat.Campo("ZonaVenta", EcfCampoPresence.Opcional, 15,
+                c => string.IsNullOrWhiteSpace(c.Enc.ZonaVenta) ? null : EcfXmlFormat.Esc(c.Enc.ZonaVenta, 20)),
+            EcfXmlFormat.Campo("InformacionAdicionalEmisor", EcfCampoPresence.Opcional, 16,
+                c => string.IsNullOrWhiteSpace(c.Enc.InformacionAdicionalEmisor) ? null : EcfXmlFormat.Esc(c.Enc.InformacionAdicionalEmisor, 250)),
+            EcfXmlFormat.Campo("FechaEmision", EcfCampoPresence.Obligatorio, 17,
                 c => EcfXmlFormat.Date(c.Enc.FechaEmision)),
         };
 
         /// <param name="forzarRncVacio">Si true y no hay RNC, emite 000000000 (crédito fiscal / NC / ND).</param>
         /// <param name="rncObligatorio">Si true, RNCComprador es Obligatorio (E41 Compras).</param>
-        protected static IReadOnlyList<EcfCampoDef> BuildCompradorComun(bool forzarRncVacio, bool rncObligatorio = false) => new[]
+        /// <param name="incluirDatosOrden">FechaEntrega / orden de compra (E31–E34, E44–E46). E41 no las tiene en XSD.</param>
+        protected static IReadOnlyList<EcfCampoDef> BuildCompradorComun(
+            bool forzarRncVacio, bool rncObligatorio = false, bool incluirDatosOrden = true)
         {
+            var campos = new List<EcfCampoDef>
+            {
             EcfXmlFormat.Campo("RNCComprador",
                 rncObligatorio ? EcfCampoPresence.Obligatorio : EcfCampoPresence.Opcional, 1,
                 c =>
@@ -149,14 +174,52 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.DgiiDirecto.Definitions
                     : forzarRncVacio
                         ? "Si no hay RNC se emite 000000000"
                         : "Opcional en consumo (E32)"),
-            EcfXmlFormat.Campo("RazonSocialComprador", EcfCampoPresence.Obligatorio, 2,
+            EcfXmlFormat.Campo("IdentificadorExtranjero", EcfCampoPresence.Opcional, 2,
+                c => string.IsNullOrWhiteSpace(c.Enc.IdentificadorExtranjero)
+                    ? null
+                    : EcfXmlFormat.Esc(c.Enc.IdentificadorExtranjero, 20),
+                nota: "E46 CerteCF: Excel trae ID extranjero y RNC vacío"),
+            EcfXmlFormat.Campo("RazonSocialComprador", EcfCampoPresence.Obligatorio, 3,
                 c => EcfXmlFormat.Esc(string.IsNullOrWhiteSpace(c.Enc.RazonSocialComprador) ? "CONSUMIDOR FINAL" : c.Enc.RazonSocialComprador, 150),
-                nota: "Orden XSD: Correo antes de Direccion"),
-            EcfXmlFormat.Campo("CorreoComprador", EcfCampoPresence.Opcional, 3,
+                nota: "Orden XSD: Contacto, Correo, Direccion, Municipio, Provincia"),
+            EcfXmlFormat.Campo("ContactoComprador", EcfCampoPresence.Opcional, 4,
+                c => string.IsNullOrWhiteSpace(c.Enc.ContactoComprador) ? null : EcfXmlFormat.Esc(c.Enc.ContactoComprador, 80)),
+            EcfXmlFormat.Campo("CorreoComprador", EcfCampoPresence.Opcional, 5,
                 c => EcfXmlFormat.CorreoOk(c.Enc.CorreoComprador) ? EcfXmlFormat.Esc(c.Enc.CorreoComprador, 80) : null),
-            EcfXmlFormat.Campo("DireccionComprador", EcfCampoPresence.Opcional, 4,
+            EcfXmlFormat.Campo("DireccionComprador", EcfCampoPresence.Opcional, 6,
                 c => string.IsNullOrWhiteSpace(c.Enc.DireccionComprador) ? null : EcfXmlFormat.Esc(c.Enc.DireccionComprador, 100)),
-        };
+            EcfXmlFormat.Campo("MunicipioComprador", EcfCampoPresence.Opcional, 7,
+                c => EcfXmlFormat.CodigoProvMun(c.Enc.MunicipioComprador) ? c.Enc.MunicipioComprador!.Trim() : null),
+            EcfXmlFormat.Campo("ProvinciaComprador", EcfCampoPresence.Opcional, 8,
+                c => EcfXmlFormat.CodigoProvMun(c.Enc.ProvinciaComprador) ? c.Enc.ProvinciaComprador!.Trim() : null),
+            };
+            var orden = 9;
+            if (incluirDatosOrden)
+            {
+                campos.Add(EcfXmlFormat.Campo("FechaEntrega", EcfCampoPresence.Opcional, orden++,
+                    c => c.Enc.FechaEntrega is DateTime fe ? EcfXmlFormat.Date(fe) : null));
+                campos.Add(EcfXmlFormat.Campo("ContactoEntrega", EcfCampoPresence.Opcional, orden++,
+                    _ => null,
+                    nota: "XSD entre FechaEntrega y DireccionEntrega. CerteCF: celda vacía = omitir"));
+                campos.Add(EcfXmlFormat.Campo("DireccionEntrega", EcfCampoPresence.Opcional, orden++,
+                    _ => null,
+                    nota: "CerteCF: celda vacía = omitir"));
+                campos.Add(EcfXmlFormat.Campo("TelefonoAdicional", EcfCampoPresence.Opcional, orden++,
+                    _ => null,
+                    nota: "CerteCF: emitir si el Excel trae valor, aunque copie TelefonoEmisor"));
+                campos.Add(EcfXmlFormat.Campo("FechaOrdenCompra", EcfCampoPresence.Opcional, orden++,
+                    c => c.Enc.FechaOrdenCompra is DateTime fo ? EcfXmlFormat.Date(fo) : null));
+                campos.Add(EcfXmlFormat.Campo("NumeroOrdenCompra", EcfCampoPresence.Opcional, orden++,
+                    c => string.IsNullOrWhiteSpace(c.Enc.NumeroOrdenCompra)
+                        ? null
+                        : EcfXmlFormat.Esc(c.Enc.NumeroOrdenCompra, 20)));
+            }
+            campos.Add(EcfXmlFormat.Campo("CodigoInternoComprador", EcfCampoPresence.Opcional, orden,
+                c => string.IsNullOrWhiteSpace(c.Enc.CodigoInternoComprador)
+                    ? null
+                    : EcfXmlFormat.Esc(c.Enc.CodigoInternoComprador, 20)));
+            return campos;
+        }
 
         protected static IReadOnlyList<EcfCampoDef> BuildTotalesComun() => new[]
         {
@@ -175,9 +238,26 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.DgiiDirecto.Definitions
             EcfXmlFormat.Campo("TotalITBIS1", EcfCampoPresence.Opcional, 10, c => Pos(c.Enc.TotalItbis1)),
             EcfXmlFormat.Campo("TotalITBIS2", EcfCampoPresence.Opcional, 11, c => Pos(c.Enc.TotalItbis2)),
             EcfXmlFormat.Campo("TotalITBIS3", EcfCampoPresence.Opcional, 12, c => Pos(c.Enc.TotalItbis3)),
-            EcfXmlFormat.Campo("MontoTotal", EcfCampoPresence.Obligatorio, 13, c => EcfXmlFormat.Money(c.Enc.MontoTotal)),
-            EcfXmlFormat.Campo("TotalITBISRetenido", EcfCampoPresence.Opcional, 14, c => Pos(c.Enc.TotalItbisRetenido)),
-            EcfXmlFormat.Campo("TotalISRRetencion", EcfCampoPresence.Opcional, 15, c => Pos(c.Enc.TotalIsrRetencion)),
+            EcfXmlFormat.Campo("MontoImpuestoAdicional", EcfCampoPresence.Opcional, 13,
+                c => c.Enc.MontoImpuestoAdicional is > 0 and var mia ? EcfXmlFormat.Money(mia) : null,
+                nota: "XSD antes de MontoTotal. CerteCF: celda vacía = omitir"),
+            EcfXmlFormat.Campo("ImpuestosAdicionales", EcfCampoPresence.Opcional, 14,
+                c => EcfXmlFormat.ImpuestosAdicionales(c), complejo: true,
+                nota: "Solo si Excel trae TipoImpuesto + Tasa"),
+            EcfXmlFormat.Campo("MontoTotal", EcfCampoPresence.Obligatorio, 15, c => EcfXmlFormat.Money(c.Enc.MontoTotal)),
+            EcfXmlFormat.Campo("MontoNoFacturable", EcfCampoPresence.Opcional, 16,
+                c => c.Enc.MontoNoFacturable is decimal nf ? EcfXmlFormat.Money(nf) : null),
+            EcfXmlFormat.Campo("MontoPeriodo", EcfCampoPresence.Opcional, 17,
+                c => c.Enc.MontoPeriodo is decimal mp ? EcfXmlFormat.Money(mp) : null),
+            EcfXmlFormat.Campo("SaldoAnterior", EcfCampoPresence.Opcional, 18,
+                c => c.Enc.SaldoAnterior is decimal sa ? EcfXmlFormat.Money(sa) : null),
+            EcfXmlFormat.Campo("MontoAvancePago", EcfCampoPresence.Opcional, 19,
+                c => c.Enc.MontoAvancePago is decimal ap ? EcfXmlFormat.Money(ap) : null),
+            EcfXmlFormat.Campo("ValorPagar", EcfCampoPresence.Opcional, 20,
+                c => c.Enc.ValorPagar is decimal vp ? EcfXmlFormat.Money(vp) : null,
+                nota: "Solo si el Excel trae número (0.00 incluido). Celda vacía = omitir, no enviar 0.00"),
+            EcfXmlFormat.Campo("TotalITBISRetenido", EcfCampoPresence.Opcional, 21, c => Pos(c.Enc.TotalItbisRetenido)),
+            EcfXmlFormat.Campo("TotalISRRetencion", EcfCampoPresence.Opcional, 22, c => Pos(c.Enc.TotalIsrRetencion)),
             EcfXmlFormat.Campo("MontoPropinaLegal", EcfCampoPresence.Prohibido, 99,
                 nota: "No existe en XSD Totales e-CF; no emitir",
                 prohibidoModo: EcfProhibidoModo.Omitir),
@@ -193,17 +273,46 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.DgiiDirecto.Definitions
                 c => EcfXmlFormat.Esc(c.LineaActual!.NombreItem, 80)),
             EcfXmlFormat.Campo("IndicadorBienoServicio", EcfCampoPresence.Obligatorio, 4,
                 c => c.LineaActual!.EsBien ? 1 : 2),
-            EcfXmlFormat.Campo("CantidadItem", EcfCampoPresence.Obligatorio, 5,
-                c => EcfXmlFormat.Money(c.LineaActual!.Cantidad)),
-            EcfXmlFormat.Campo("UnidadMedida", EcfCampoPresence.Opcional, 6,
+            EcfXmlFormat.Campo("DescripcionItem", EcfCampoPresence.Opcional, 5,
+                c => string.IsNullOrWhiteSpace(c.LineaActual!.DescripcionItem)
+                    ? null
+                    : EcfXmlFormat.Esc(c.LineaActual.DescripcionItem, 1000)),
+            EcfXmlFormat.Campo("CantidadItem", EcfCampoPresence.Obligatorio, 6,
+                c => EcfXmlFormat.CantidadOPrecio(c, c.LineaActual!.Cantidad)),
+            EcfXmlFormat.Campo("UnidadMedida", EcfCampoPresence.Opcional, 7,
                 c => c.LineaActual!.UnidadMedida),
-            EcfXmlFormat.Campo("PrecioUnitarioItem", EcfCampoPresence.Obligatorio, 7,
-                c => EcfXmlFormat.Money(c.LineaActual!.PrecioUnitario)),
-            EcfXmlFormat.Campo("DescuentoMonto", EcfCampoPresence.Opcional, 8,
+            EcfXmlFormat.Campo("CantidadReferencia", EcfCampoPresence.Opcional, 8,
+                c => c.LineaActual!.CantidadReferencia is decimal cr ? EcfXmlFormat.DecimalComoDato(cr) : null),
+            EcfXmlFormat.Campo("UnidadReferencia", EcfCampoPresence.Opcional, 9,
+                c => c.LineaActual!.UnidadReferencia),
+            EcfXmlFormat.Campo("TablaSubcantidad", EcfCampoPresence.Opcional, 10,
+                c => EcfXmlFormat.TablaSubcantidadItem(c), complejo: true,
+                nota: "Obligatoria si hay ISC 006-039 (alcohol/tabaco)"),
+            EcfXmlFormat.Campo("GradosAlcohol", EcfCampoPresence.Opcional, 11,
+                c => c.LineaActual!.GradosAlcohol is > 0 and var ga ? EcfXmlFormat.Money(ga) : null),
+            EcfXmlFormat.Campo("PrecioUnitarioReferencia", EcfCampoPresence.Opcional, 12,
+                c => c.LineaActual!.PrecioUnitarioReferencia is > 0 and var pur
+                    ? EcfXmlFormat.Money(pur)
+                    : null),
+            EcfXmlFormat.Campo("FechaElaboracion", EcfCampoPresence.Opcional, 13,
+                c => c.LineaActual!.FechaElaboracion is DateTime fe ? EcfXmlFormat.Date(fe) : null),
+            EcfXmlFormat.Campo("FechaVencimientoItem", EcfCampoPresence.Opcional, 14,
+                c => c.LineaActual!.FechaVencimientoItem is DateTime fv ? EcfXmlFormat.Date(fv) : null),
+            EcfXmlFormat.Campo("PrecioUnitarioItem", EcfCampoPresence.Obligatorio, 15,
+                c => EcfXmlFormat.CantidadOPrecio(c, c.LineaActual!.PrecioUnitario)),
+            EcfXmlFormat.Campo("DescuentoMonto", EcfCampoPresence.Opcional, 16,
                 c => c.LineaActual!.DescuentoMonto is > 0 ? EcfXmlFormat.Money(c.LineaActual.DescuentoMonto.Value) : null),
-            EcfXmlFormat.Campo("RecargoMonto", EcfCampoPresence.Opcional, 9,
+            EcfXmlFormat.Campo("TablaSubDescuento", EcfCampoPresence.Opcional, 17,
+                c => EcfXmlFormat.TablaSubDescuentoItem(c), complejo: true,
+                nota: "Obligatoria si hay DescuentoMonto"),
+            EcfXmlFormat.Campo("RecargoMonto", EcfCampoPresence.Opcional, 18,
                 c => c.LineaActual!.RecargoMonto is > 0 ? EcfXmlFormat.Money(c.LineaActual.RecargoMonto.Value) : null),
-            EcfXmlFormat.Campo("MontoItem", EcfCampoPresence.Obligatorio, 10,
+            EcfXmlFormat.Campo("TablaSubRecargo", EcfCampoPresence.Opcional, 19,
+                c => EcfXmlFormat.TablaSubRecargoItem(c), complejo: true,
+                nota: "Obligatoria si hay RecargoMonto"),
+            EcfXmlFormat.Campo("TablaImpuestoAdicional", EcfCampoPresence.Opcional, 20,
+                c => EcfXmlFormat.TablaImpuestoAdicionalItem(c), complejo: true),
+            EcfXmlFormat.Campo("MontoItem", EcfCampoPresence.Obligatorio, 21,
                 c => EcfXmlFormat.Money(c.LineaActual!.MontoItem)),
         };
 

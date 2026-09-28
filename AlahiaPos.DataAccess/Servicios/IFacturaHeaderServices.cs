@@ -27,6 +27,8 @@ namespace AlahiaPos.DataAccess.Servicios
         IRepository<LavadorConsumo> _ILavadorConsumo;
         IRepository<Ingresos> _Ingresos;
         IRepository<ECFEncabezado> _EcfEncabezados;
+        IRepository<Sucursal> _Sucursales;
+        IRepository<FacturaCargo> _FacturaCargos;
         IPagoReclasificacionService _reclasificacionService;
         public IFacturaHeaderServices(IRepository<FacturaHeaders> repository,
             IRepository<Empleados> Empleados, IRepository<Productos> Productos,
@@ -36,7 +38,9 @@ namespace AlahiaPos.DataAccess.Servicios
         IRepository<Empresas> empresas,
             IRepository<LavadorConsumo> LavadorConsumo, IRepository<Ingresos> ingresos,
             IPagoReclasificacionService reclasificacionService,
-            IRepository<ECFEncabezado> ecfEncabezados)
+            IRepository<ECFEncabezado> ecfEncabezados,
+            IRepository<Sucursal> sucursales,
+            IRepository<FacturaCargo> facturaCargos)
         {
             _repository = repository;
             _Empleados = Empleados;
@@ -50,6 +54,8 @@ namespace AlahiaPos.DataAccess.Servicios
             _Ingresos = ingresos;
             _reclasificacionService = reclasificacionService;
             _EcfEncabezados = ecfEncabezados;
+            _Sucursales = sucursales;
+            _FacturaCargos = facturaCargos;
         }
 
 
@@ -70,7 +76,7 @@ namespace AlahiaPos.DataAccess.Servicios
                     c.IdEmpresa == IdEmpresa,
 
                     "Clientes",
-                    "FacturaDetalles.Productos"
+                    "FacturaDetalles"
                 );
         }
 
@@ -87,7 +93,7 @@ namespace AlahiaPos.DataAccess.Servicios
                     c.IdEmpresa == IdEmpresa,
 
                     "Clientes",
-                    "FacturaDetalles.Productos"
+                    "FacturaDetalles"
                 );
         }
         public async Task<IEnumerable<FacturaHeaders>> GetAllFacturas(int IdEmpresa)
@@ -137,26 +143,39 @@ namespace AlahiaPos.DataAccess.Servicios
         }
         public async Task<bool> EliminarFacturaCompleta(int idFactura)
         {
-            // 🔥 eliminar detalles primero
+            var header = await _repository.GetByIdAsync(idFactura);
+            if (header == null)
+                return false;
+
+            if (header.IdTipoDocumentos == 1)
+                throw new InvalidOperationException("Las facturas se anulan, no se eliminan.");
+
+            var cargos = _FacturaCargos
+                .GetAllByExpresionNoAsync(x => x.IdFacturaHeader == idFactura);
+
+            if (cargos != null)
+            {
+                foreach (var cargo in cargos)
+                    _FacturaCargos.Delete(cargo.IdFacturaCargo);
+            }
+
             var detalles = _FacturaDetalles
                 .GetAllByExpresionNoAsync(x => x.IdFacturaHeader == idFactura);
 
-            if (detalles != null && detalles.Any())
+            if (detalles != null)
             {
                 foreach (var d in detalles)
-                {
                     _FacturaDetalles.Delete(d.IdFacturaDetalle);
-                }
             }
 
-            // 🔥 eliminar header limpio sin tracking de relaciones
-            var factura = new FacturaHeaders
-            {
-                IdFacturaHeader = idFactura
-            };
-
-            _repository.DeleteEntity(factura); // 👈 ahora te explico esto
-
+            // FacturaHeaders inicializa Clientes/Empleados vacíos: si quedan
+            // en el grafo, SaveChanges intenta INSERT y tumba el DELETE.
+            header.Clientes = null;
+            header.Empleados = null;
+            header.FacturaDetalles = null;
+            header.TipoDocumentos = null;
+            header.Mesas = null;
+            _repository.DeleteEntity(header);
             return true;
         }
 
@@ -360,22 +379,20 @@ namespace AlahiaPos.DataAccess.Servicios
         }
         public async Task<decimal> GetVentaDelDia(int IdEmpresa)
         {
-            var Total = await _repository.
-                GetAllByExpresionAsync(c => c.Estado == "Pagada" &&
-           c.IdTipoDocumentos == IdEmpresa && c.EstaCancelada == false &&
-           c.FechaInseccion == DateTime.Now.Date &&
-           c.IdEmpresa == IdEmpresa);
+            var hoy = DateTime.Today;
+            var manana = hoy.AddDays(1);
 
+            // IdTipoDocumentos = 1 (factura). Nunca comparar con IdEmpresa.
+            // FechaInseccion tiene hora: usar rango [hoy, mañana).
+            var delDia = await _repository.GetAllByExpresionAsync(c =>
+                c.IdEmpresa == IdEmpresa
+                && c.IdTipoDocumentos == 1
+                && c.EstaCancelada == false
+                && c.Estado == "Pagada"
+                && c.FechaInseccion >= hoy
+                && c.FechaInseccion < manana);
 
-
-            if (Total == null)
-            {
-                return 0;
-            }
-            else
-            {
-                return (decimal)Total.Sum(c => c.Total);
-            }
+            return delDia?.Sum(c => c.Total) ?? 0m;
         }
 
         public async Task<IEnumerable<FacturaHeaders>>
@@ -931,7 +948,9 @@ namespace AlahiaPos.DataAccess.Servicios
 
 
 
-        public async Task<IEnumerable<CuentaPorCobrarDto>> GetCuentasPorCobrar(int IdEmpresa)
+        public async Task<IEnumerable<CuentaPorCobrarDto>> GetCuentasPorCobrar(
+            int IdEmpresa,
+            SucursalConsultaScope? consulta = null)
         {
             // 🔹 Traer facturas pendientes de crédito
             var facturasPendientes = await _repository.GetAllByExpresionAsync(f =>
@@ -943,6 +962,12 @@ namespace AlahiaPos.DataAccess.Servicios
             );
 
             if (facturasPendientes == null || !facturasPendientes.Any())
+                return new List<CuentaPorCobrarDto>();
+
+            if (consulta != null)
+                facturasPendientes = facturasPendientes.Where(f => consulta.Incluye(f.IdSucursal)).ToList();
+
+            if (!facturasPendientes.Any())
                 return new List<CuentaPorCobrarDto>();
 
             // 🔹 Obtenemos los Ids únicos de clientes que tienen facturas pendientes
@@ -1056,6 +1081,23 @@ namespace AlahiaPos.DataAccess.Servicios
                     .FirstOrDefault();
             }
 
+            var empresa = _Empresas.GetById(factura.IdEmpresa);
+            Sucursal? sucursal = null;
+            if (factura.IdSucursal is > 0)
+            {
+                sucursal = _Sucursales
+                    .GetAllByExpresionNoAsync(s =>
+                        s.IdSucursal == factura.IdSucursal.Value
+                        && s.IdEmpresa == factura.IdEmpresa)
+                    .FirstOrDefault();
+            }
+
+            var nombreEmpresa = empresa?.NombreComercial ?? "";
+            var nombreSucursal = DocumentoSucursalContacto.Nombre(sucursal) ?? "";
+            var direccionEmpresa = DocumentoSucursalContacto.FormatearDireccion(sucursal, empresa);
+            var telefonoEmpresa = DocumentoSucursalContacto.Telefono(sucursal, empresa);
+            var rncEmpresa = empresa?.RNC ?? "";
+
             // ⭐ agrupar por lavador
             var gruposLavador = detalles.GroupBy(x => x.IdEmpleadoComision);
 
@@ -1069,6 +1111,11 @@ namespace AlahiaPos.DataAccess.Servicios
                     Fecha = factura.FechaInseccion,
                     Cliente = cliente?.NombreComercial ?? "Consumidor Final",
                     AtendidoPor = empleado?.Nombre ?? "—",
+                    NombreEmpresa = nombreEmpresa,
+                    NombreSucursal = nombreSucursal,
+                    DireccionEmpresa = direccionEmpresa,
+                    TelefonoEmpresa = telefonoEmpresa,
+                    RncEmpresa = rncEmpresa,
                     Caja = "Caja 1",
                     Servicios = grupo.Select(det =>
                     {
@@ -1244,6 +1291,16 @@ namespace AlahiaPos.DataAccess.Servicios
             var esElectronico = !string.IsNullOrWhiteSpace(ncf)
                 && ncf.StartsWith("E", StringComparison.OrdinalIgnoreCase);
 
+            Sucursal? sucursal = null;
+            if (factura.IdSucursal is > 0)
+            {
+                sucursal = _Sucursales
+                    .GetAllByExpresionNoAsync(s =>
+                        s.IdSucursal == factura.IdSucursal.Value
+                        && s.IdEmpresa == factura.IdEmpresa)
+                    .FirstOrDefault();
+            }
+
             // ⭐ ARMAR DTO
             var dto = new TicketFacturaClienteDto
             {
@@ -1262,6 +1319,7 @@ namespace AlahiaPos.DataAccess.Servicios
                 SubTotal = factura.SubTotal,
                 TotalItbis = factura.TotalItbis,
                 TotalDescuento = factura.TotalDescuento,
+                MontoCargo = factura.MontoCargo,
                 Total = factura.Total,
                 Pagado = factura.Pagado,
                 Pendiente = factura.Pendiente,
@@ -1269,8 +1327,9 @@ namespace AlahiaPos.DataAccess.Servicios
                 FormaPago = factura.FormaPago ?? "",
 
                 NombreEmpresa = empresa?.NombreComercial ?? "",
-                TelefonoEmpresa = empresa?.Telefono ?? "",
-                DireccionEmpresa = empresa?.Direccion ?? "",
+                NombreSucursal = DocumentoSucursalContacto.Nombre(sucursal),
+                TelefonoEmpresa = DocumentoSucursalContacto.Telefono(sucursal, empresa),
+                DireccionEmpresa = DocumentoSucursalContacto.FormatearDireccion(sucursal, empresa),
                 RncEmpresa = empresa?.RNC,
 
                 NCF = ncf,
@@ -1282,15 +1341,20 @@ namespace AlahiaPos.DataAccess.Servicios
                 FechaFirma = ecf?.FechaFirma,
                 FechaEmisionEcf = ecf?.FechaEmision,
                 EstadoDgii = ecf?.EstadoDGII,
+                AmbienteFE = empresa?.AmbienteFE,
 
                 Detalles = detalles.Select(det =>
                 {
                     var prod = productos.FirstOrDefault(p => p.IdProducto == det.IdProducto);
 
+                    var nombreLinea = prod?.Nombre ?? $"Producto {det.IdProducto}";
+                    var guarnicion = (det.Comentario ?? "").Trim();
                     return new TicketFacturaClienteDetalleDto
                     {
                         Cantidad = det.Cantidad,
-                        Descripcion = prod?.Nombre ?? $"Producto {det.IdProducto}",
+                        Descripcion = string.IsNullOrWhiteSpace(guarnicion)
+                            ? nombreLinea
+                            : $"{nombreLinea} — {guarnicion}",
                         Precio = det.SubTotal
                     };
                 }).ToList()
@@ -1316,6 +1380,9 @@ namespace AlahiaPos.DataAccess.Servicios
                     : pagosIng.Count > 1 ? "Mixto" : "";
             }
 
+            if (dto.MontoCargo > 0.009m && string.IsNullOrWhiteSpace(dto.NombreCargo))
+                dto.NombreCargo = ResolverNombreCargoTicket(idFacturaHeader, dto.FormaPago);
+
             // Invoice guarda data:image truncada en UrlQR (NVARCHAR 500).
             // Reconstruir ConsultaTimbre para que la térmica pueda imprimir el QR.
             // Nunca tumbar el ticket si falla el armado del QR.
@@ -1334,7 +1401,8 @@ namespace AlahiaPos.DataAccess.Servicios
                         dto.FechaEmisionEcf ?? dto.Fecha,
                         dto.Total,
                         dto.FechaFirma,
-                        dto.SecurityCode);
+                        dto.SecurityCode,
+                        dto.TipoECF);
                 }
             }
             catch
@@ -1342,14 +1410,41 @@ namespace AlahiaPos.DataAccess.Servicios
                 // Dejar UrlQR original; el PrinterApi puede reconstruir en impresión.
             }
 
-            // QR ya armado con la marca de DGII. En el ticket, completar 00:00 con Hora de la factura.
-            dto.FechaFirma = TicketFechaHora.ParaImpresion(
-                dto.FechaFirma,
-                dto.FechaEmisionEcf,
-                dto.Fecha,
-                dto.Hora);
-
             return dto;
+        }
+
+        private string ResolverNombreCargoTicket(int idFacturaHeader, string? formaPago)
+        {
+            var cargos = _FacturaCargos
+                .GetAllByExpresionNoAsync(c => c.IdFacturaHeader == idFacturaHeader && c.Monto > 0)
+                ?.ToList() ?? new List<FacturaCargo>();
+
+            var nombres = cargos
+                .Select(c => (c.Nombre ?? "").Trim())
+                .Where(n => n.Length > 0)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            if (nombres.Count == 1)
+                return nombres[0];
+            if (nombres.Count > 1)
+                return "Cargos de cobro";
+
+            var metodo = (formaPago ?? "").Trim();
+            if (metodo.Length == 0)
+                return "Cargo por tarjeta";
+
+            var m = metodo.ToUpperInvariant();
+            if (m.Contains("TARJETA") || m.Contains("VISA") || m.Contains("MASTER") || m.Contains("CARD"))
+                return "Cargo por tarjeta";
+            if (m.Contains("TRANSFERENCIA"))
+                return "Cargo por transferencia";
+            if (m.Contains("EFECTIVO"))
+                return "Cargo por efectivo";
+            if (m.Contains("CHEQUE"))
+                return "Cargo por cheque";
+
+            return $"Cargo por {metodo}";
         }
 
         public async Task
@@ -1597,10 +1692,14 @@ namespace AlahiaPos.DataAccess.Servicios
             // =====================================
 
             var resultado = todosLosIngresos
-                .GroupBy(x => metodosEfectivos.TryGetValue(x.IdIngreso, out var m) ? m : x.FormaPago)
+                .GroupBy(x => CajaMetodoPagoDto.Clave(
+                    metodosEfectivos.TryGetValue(x.IdIngreso, out var m) ? m : x.FormaPago))
                 .Select(g => new CierreCajaDto
                 {
-                    FormaPago = g.Key,
+                    FormaPago = CajaMetodoPagoDto.Etiqueta(
+                        g.Key,
+                        g.Select(x => metodosEfectivos.TryGetValue(x.IdIngreso, out var m) ? m : x.FormaPago)
+                            .FirstOrDefault(s => !string.IsNullOrWhiteSpace(s))),
 
                     Total = g.Sum(x => x.Monto),
 
@@ -1822,15 +1921,15 @@ namespace AlahiaPos.DataAccess.Servicios
 
                         &&
 
-                        x.IdUsuario == idUsuario
-
-                        &&
-
                         x.IdCajaCierre == idCajaCierre
 
                         &&
 
                         x.EstaCerrada == true
+
+                        &&
+
+                        x.EstaCancelada == false
 
                         &&
 

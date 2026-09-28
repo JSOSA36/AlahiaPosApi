@@ -56,6 +56,9 @@ public class Cita : BaseEntity
     public string? Telefono { get; set; }
     public string? Correo { get; set; }
 
+    /// <summary>Cuándo se envió el recordatorio WhatsApp/correo del día de la cita.</summary>
+    public DateTime? FechaRecordatorioWhatsApp { get; set; }
+
     // ============================
     // CLIENTE (🔥 AQUÍ ESTABA EL PROBLEMA)
     // ============================

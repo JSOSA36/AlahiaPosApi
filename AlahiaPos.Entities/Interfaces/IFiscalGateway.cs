@@ -17,6 +17,7 @@ namespace AlahiaPos.Entities.Interfaces
 
         Task<FiscalConsultaResultado> ConsultarEstadoAsync(
             string trackId,
+            int idEmpresa = 0,
             CancellationToken ct = default);
 
         Task<bool> VerificarConexionAsync(CancellationToken ct = default);

@@ -1,4 +1,5 @@
 using AlahiaPos.DataAccess.Data;
+using AlahiaPos.DataAccess.Servicios.FacturacionElectronica;
 using AlahiaPos.Entities.Domain;
 using AlahiaPos.Entities.Dto;
 using AlahiaPos.Entities.Dto.Fiscal;
@@ -30,6 +31,7 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway
         private readonly IFiscalGateway _gateway;
         private readonly IFiscalDocumentoValidator _validator;
         private readonly IDocumentoOrigenResolverFactory _resolverFactory;
+        private readonly ISecuenciaEcfService _secuencias;
         private readonly ILogger<EcfGatewayOutboxProcessor> _logger;
 
         private static readonly JsonSerializerOptions JsonOpts = new()
@@ -43,12 +45,14 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway
             IFiscalGateway gateway,
             IFiscalDocumentoValidator validator,
             IDocumentoOrigenResolverFactory resolverFactory,
+            ISecuenciaEcfService secuencias,
             ILogger<EcfGatewayOutboxProcessor> logger)
         {
             _ctx = ctx;
             _gateway = gateway;
             _validator = validator;
             _resolverFactory = resolverFactory;
+            _secuencias = secuencias;
             _logger = logger;
             var id = $"ecf-gw-{Environment.MachineName}-{Guid.NewGuid():N}";
             _workerId = id.Length > 100 ? id[..100] : id;
@@ -108,14 +112,13 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway
             if (empresa == null)
                 _logger.LogWarning("Empresa {IdEmpresa} no encontrada para ECF {Encf}", payload.IdEmpresa, ecf.ENCF);
 
-            var secuencia = await _ctx.SecuenciasECF.AsNoTracking()
-                .FirstOrDefaultAsync(s => s.IdEmpresa == payload.IdEmpresa
-                    && s.TipoEcfDgii == payload.TipoEcfDgii
-                    && s.Activo, ct);
-
             var origen = (OrigenDocumento)payload.OrigenDocumento;
             var resolver = _resolverFactory.Get(origen);
             var docInfo = await resolver.ObtenerDocumentoAsync(payload.IdOrigen, payload.IdEmpresa);
+            var secuencia = await _secuencias.ObtenerActivaAsync(
+                payload.IdEmpresa,
+                payload.TipoEcfDgii,
+                payload.IdSucursal ?? docInfo.IdSucursal);
 
             var docElectronico = FiscalDocumentoBuilder.Build(
                 ecf, docInfo, payload.IdOrigen, payload.OrigenDocumento,
@@ -139,15 +142,77 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway
                 ecf.ENCF, origen, payload.IdOrigen);
 
             var resultado = await _gateway.EnviarDocumentoAsync(docElectronico, ct);
+            AplicarResultado(ecf, resultado);
+            await _ctx.SaveChangesAsync(ct);
 
+            var reintentos = 0;
+            while (!resultado.Exitoso
+                && EcfSecuenciaYaUtilizada.EnResultado(resultado)
+                && reintentos < MaxIntentos)
+            {
+                reintentos++;
+                var reserva = await _secuencias.ReservarSiguienteAsync(
+                    payload.IdEmpresa,
+                    payload.TipoEcfDgii,
+                    payload.IdSucursal ?? docInfo.IdSucursal);
+                if (!reserva.Exitoso || string.IsNullOrWhiteSpace(reserva.Encf))
+                {
+                    _logger.LogError(
+                        "ECF {Encf} ya utilizado y no hay secuencia siguiente: {Error}",
+                        ecf.ENCF, reserva.MensajeError);
+                    return;
+                }
+
+                _logger.LogWarning(
+                    "ECF {EncfAnterior} ya utilizado. Outbox reintenta con {EncfNuevo} ({Intento}/{Max})",
+                    ecf.ENCF, reserva.Encf, reintentos, MaxIntentos);
+
+                var nuevo = new ECFEncabezado
+                {
+                    IdEmpresa = ecf.IdEmpresa,
+                    TipoECF = ecf.TipoECF,
+                    ENCF = reserva.Encf,
+                    FechaEmision = ecf.FechaEmision,
+                    RncEmisor = ecf.RncEmisor,
+                    RncReceptor = ecf.RncReceptor,
+                    NombreReceptor = ecf.NombreReceptor,
+                    MontoGravado = ecf.MontoGravado,
+                    TotalITBIS = ecf.TotalITBIS,
+                    TotalGeneral = ecf.TotalGeneral,
+                    OrigenDocumento = ecf.OrigenDocumento,
+                    IdOrigen = ecf.IdOrigen,
+                    NumeroFacturaInterna = ecf.NumeroFacturaInterna,
+                    EstadoDocumento = EstadoDocumentoElectronico.PendienteEnvio,
+                    EstadoDGII = "Pendiente",
+                    FechaCreacion = DateTime.Now
+                };
+                _ctx.ECFEncabezados.Add(nuevo);
+                await _ctx.SaveChangesAsync(ct);
+
+                evento.ReferenciaId = nuevo.IdECF;
+                ecf = nuevo;
+                docElectronico = FiscalDocumentoBuilder.Build(
+                    ecf, docInfo, payload.IdOrigen, payload.OrigenDocumento,
+                    payload.TipoEcfDgii, empresa, secuencia);
+                docElectronico.Encabezado.Encf = reserva.Encf;
+
+                resultado = await _gateway.EnviarDocumentoAsync(docElectronico, ct);
+                AplicarResultado(ecf, resultado);
+                await _ctx.SaveChangesAsync(ct);
+            }
+        }
+
+        private void AplicarResultado(ECFEncabezado ecf, FiscalEnvioResultado resultado)
+        {
             ecf.TrackId = resultado.TrackId;
             if (!string.IsNullOrWhiteSpace(resultado.TransmissionJobId))
                 ecf.TransmissionJobId = resultado.TransmissionJobId;
             ecf.SecurityCode = resultado.SecurityCode;
             ecf.UrlQR = resultado.UrlQR;
             ecf.FechaFirma = resultado.FechaFirma;
+            ecf.FechaEnvio = DateTime.Now;
 
-            if (resultado.Exitoso)
+            if (resultado.Exitoso && !EcfSecuenciaYaUtilizada.EnResultado(resultado))
             {
                 ecf.EstadoDocumento = EstadoDocumentoElectronico.Enviado;
                 ecf.EstadoDGII = resultado.Estado;
@@ -156,12 +221,13 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway
             else
             {
                 ecf.EstadoDocumento = EstadoDocumentoElectronico.Error;
-                ecf.EstadoDGII = "Error";
+                ecf.EstadoDGII = string.IsNullOrWhiteSpace(resultado.Estado)
+                    || (resultado.Estado ?? "").Contains("Aceptado", StringComparison.OrdinalIgnoreCase)
+                    ? "Error"
+                    : resultado.Estado;
                 ecf.MensajeRespuesta = string.Join("; ", resultado.Mensajes);
                 _logger.LogWarning("ECF {Encf} rechazado por proveedor: {Error}", ecf.ENCF, ecf.MensajeRespuesta);
             }
-
-            await _ctx.SaveChangesAsync(ct);
         }
 
         private async Task<int?> ClaimNextIdAsync(CancellationToken ct)
@@ -215,6 +281,7 @@ SELECT Id FROM @claimed;";
             public int TipoEcfDgii { get; set; }
             public string? Encf { get; set; }
             public int IdUsuario { get; set; }
+            public int? IdSucursal { get; set; }
         }
     }
 }

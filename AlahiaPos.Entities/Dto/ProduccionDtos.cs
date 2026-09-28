@@ -6,6 +6,7 @@ namespace AlahiaPos.Entities.Dto
         public const string TipoPosOrden = "POS_ORDEN";
         public const string EstacionGeneral = "GENERAL";
         public const string OrigenModuloPos = "POS";
+        public const string OrigenModuloOnline = "ONLINE";
         public const string OrigenTipoFacturaHeader = "FacturaHeader";
         public const string PrioridadNormal = "Normal";
         public const string PrioridadAlta = "Alta";

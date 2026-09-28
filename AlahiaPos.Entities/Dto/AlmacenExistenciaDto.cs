@@ -4,6 +4,8 @@ namespace AlahiaPos.Entities.Dto
     {
         public int IdAlmacen { get; set; }
 
+        public int? IdSucursal { get; set; }
+
         public string NombreAlmacen { get; set; } = string.Empty;
 
         public decimal Cantidad { get; set; }

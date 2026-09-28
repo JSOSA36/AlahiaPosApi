@@ -18,9 +18,16 @@ namespace AlahiaPos.Entities.Domain
 
         public decimal Valor { get; set; }
 
-        /// <summary>TARJETA | EFECTIVO | TRANSFERENCIA | CHEQUE | TODOS</summary>
+        /// <summary>TARJETA | EFECTIVO | TRANSFERENCIA | CHEQUE | TODOS | PERSONALIZADO</summary>
         [Required, MaxLength(30)]
         public string GrupoMetodo { get; set; } = CargoPagoGrupos.Tarjeta;
+
+        /// <summary>
+        /// Nombres exactos de MetodoPagoCuenta (ej. Billet BHD).
+        /// Se suman al grupo, salvo PERSONALIZADO (solo estos).
+        /// En SQL se guardan unidos por |.
+        /// </summary>
+        public List<string> MetodosVinculados { get; set; } = new();
 
         public bool Activo { get; set; } = true;
 
@@ -40,5 +47,6 @@ namespace AlahiaPos.Entities.Domain
         public const string Transferencia = "TRANSFERENCIA";
         public const string Cheque = "CHEQUE";
         public const string Todos = "TODOS";
+        public const string Personalizado = "PERSONALIZADO";
     }
 }

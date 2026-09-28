@@ -18,6 +18,9 @@ namespace AlahiaPos.Entities.Dto
 
         /// <summary>e-NCF o número interno de la NC (auditoría / UI).</summary>
         public string? NcfNotaCredito { get; set; }
+
+        /// <summary>ARS que cubre este pago cuando Metodo = ARS.</summary>
+        public int? IdArs { get; set; }
     }
 
     public static class FormaPagoNotaCredito

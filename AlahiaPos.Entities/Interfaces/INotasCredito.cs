@@ -11,6 +11,8 @@ namespace AlahiaPos.Entities.Interfaces
         Task<NotasCreditoResultadoDto> CrearNotaCreditoComercialAsync(
             CrearNotaCreditoComercialDto dto);
 
+        Task<bool> ExisteAnticipoPorCitaAsync(int idEmpresa, int idCita);
+
         Task<NotasCreditoResultadoDto> AnularNotaCredito(
             int idNotaCredito,
             int idEmpresa,
@@ -37,7 +39,8 @@ namespace AlahiaPos.Entities.Interfaces
             int? idCliente = null);
 
         /// <summary>
-        /// Busca saldo a favor disponible por e-NCF o número interno de NC, del cliente indicado.
+        /// Busca saldo a favor disponible por e-NCF o número interno de NC.
+        /// idCliente opcional: 0 = cualquier titular (consumo al portador).
         /// </summary>
         Task<ClienteSaldoAFavorListadoDto?> ObtenerSaldoAFavorPorNumeroAsync(
             int idEmpresa,
@@ -46,6 +49,7 @@ namespace AlahiaPos.Entities.Interfaces
 
         /// <summary>
         /// Consume saldo a favor al pagar una venta. Idempotente por factura+saldo.
+        /// No exige cliente: aplica también a facturas de consumo al portador.
         /// </summary>
         Task ConsumirSaldoAFavorEnVentaAsync(
             int idEmpresa,

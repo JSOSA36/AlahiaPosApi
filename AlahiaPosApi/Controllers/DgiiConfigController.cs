@@ -12,17 +12,23 @@ namespace AlahiaPosApi.Controllers
         private readonly IFiscalFeatureService _features;
         private readonly IDgiiFiscalAuthService _auth;
         private readonly IReporteIt1Service _reporteIt1;
+        private readonly IReporteIr17Service _reporteIr17;
+        private readonly IReporteIr3Service _reporteIr3;
 
         public DgiiConfigController(
             IDgiiConfigService config,
             IFiscalFeatureService features,
             IDgiiFiscalAuthService auth,
-            IReporteIt1Service reporteIt1)
+            IReporteIt1Service reporteIt1,
+            IReporteIr17Service reporteIr17,
+            IReporteIr3Service reporteIr3)
         {
             _config = config;
             _features = features;
             _auth = auth;
             _reporteIt1 = reporteIt1;
+            _reporteIr17 = reporteIr17;
+            _reporteIr3 = reporteIr3;
         }
 
         [HttpGet("{idEmpresa:int}")]
@@ -80,6 +86,50 @@ namespace AlahiaPosApi.Controllers
             try
             {
                 var result = await _reporteIt1.ObtenerAsync(idEmpresa, desde, hasta, periodo);
+                return Ok(result);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Liquidación IR-17 2026 (Julio 2026 en adelante). Preview en vivo desde retenciones ISR del 606.
+        /// GET api/DgiiConfig/ReporteIr17/{idEmpresa}?periodo=yyyyMM
+        /// </summary>
+        [HttpGet("ReporteIr17/{idEmpresa:int}")]
+        public async Task<ActionResult<ReporteIr17Dto>> ReporteIr17(
+            int idEmpresa,
+            [FromQuery] string? periodo = null,
+            [FromQuery] DateTime? desde = null,
+            [FromQuery] DateTime? hasta = null)
+        {
+            try
+            {
+                var result = await _reporteIr17.ObtenerAsync(idEmpresa, desde, hasta, periodo);
+                return Ok(result);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Liquidación IR-3 (retenciones ISR de asalariados) desde nómina pagada/cerrada.
+        /// GET api/DgiiConfig/ReporteIr3/{idEmpresa}?periodo=yyyyMM
+        /// </summary>
+        [HttpGet("ReporteIr3/{idEmpresa:int}")]
+        public async Task<ActionResult<ReporteIr3Dto>> ReporteIr3(
+            int idEmpresa,
+            [FromQuery] string? periodo = null,
+            [FromQuery] DateTime? desde = null,
+            [FromQuery] DateTime? hasta = null)
+        {
+            try
+            {
+                var result = await _reporteIr3.ObtenerAsync(idEmpresa, desde, hasta, periodo);
                 return Ok(result);
             }
             catch (ArgumentException ex)

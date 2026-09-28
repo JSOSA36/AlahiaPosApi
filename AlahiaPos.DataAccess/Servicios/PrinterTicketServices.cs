@@ -46,7 +46,10 @@ public class PrinterTicketServices: IPrinterTicket
 
                     bytes.AddRange(emitter.CenterAlign());
                     bytes.AddRange(emitter.SetStyles(PrintStyle.Bold | PrintStyle.DoubleWidth | PrintStyle.DoubleHeight));
-                    bytes.AddRange(emitter.PrintLine("THE JH CAR WASH"));
+                    bytes.AddRange(emitter.PrintLine(
+                        string.IsNullOrWhiteSpace(ticket.NombreEmpresa)
+                            ? "TICKET LAVADOR"
+                            : ticket.NombreEmpresa));
 
                     bytes.AddRange(emitter.SetStyles(PrintStyle.None));
                     bytes.AddRange(emitter.PrintLine("TICKET LAVADOR"));
@@ -140,6 +143,11 @@ public class PrinterTicketServices: IPrinterTicket
             bytes.AddRange(emitter.PrintLine(factura.NombreEmpresa));
 
             bytes.AddRange(emitter.SetStyles(PrintStyle.None));
+            if (!string.IsNullOrWhiteSpace(factura.NombreSucursal)
+                && !string.Equals(factura.NombreSucursal.Trim(), factura.NombreEmpresa?.Trim(), StringComparison.OrdinalIgnoreCase))
+            {
+                bytes.AddRange(emitter.PrintLine(factura.NombreSucursal));
+            }
             bytes.AddRange(emitter.PrintLine(factura.DireccionEmpresa));
             bytes.AddRange(emitter.PrintLine($"Tel: {factura.TelefonoEmpresa}"));
 

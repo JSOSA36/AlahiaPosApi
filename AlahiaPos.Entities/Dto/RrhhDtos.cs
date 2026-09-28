@@ -382,4 +382,49 @@ namespace AlahiaPos.Entities.Dto
         public int SinMapa { get; set; }
         public int Ignoradas { get; set; }
     }
+
+    public class EmpleadoFichaPersonalDto
+    {
+        public int IdFichaPersonal { get; set; }
+        public int IdEmpresa { get; set; }
+        public int IdEmpleados { get; set; }
+        public string? NombreEmpleado { get; set; }
+        public string? Cedula { get; set; }
+        public string? Telefono { get; set; }
+        public string? Celular { get; set; }
+        public string? Direccion { get; set; }
+        public DateTime? FechaNacimiento { get; set; }
+        public string? Sexo { get; set; }
+        public string? Nacionalidad { get; set; }
+        public string? EstadoCivil { get; set; }
+        public string? Profesion { get; set; }
+        public string? Nss { get; set; }
+        public DateTime? FechaSalida { get; set; }
+        public string? Alergias { get; set; }
+        public string? TipoSangre { get; set; }
+        public string? ObservacionesMedicas { get; set; }
+        public int CantidadHijos { get; set; }
+        public List<EmpleadoFamiliarDto> Familiares { get; set; } = new();
+    }
+
+    public class EmpleadoFamiliarDto
+    {
+        public int IdFamiliar { get; set; }
+        public int IdEmpresa { get; set; }
+        public int IdEmpleados { get; set; }
+        public string Tipo { get; set; } = "";
+        public string Nombre { get; set; } = "";
+        public string? Cedula { get; set; }
+        public DateTime? FechaNacimiento { get; set; }
+        public string? Sexo { get; set; }
+        public string? Parentesco { get; set; }
+        public string? Telefono { get; set; }
+        public string? Celular { get; set; }
+        public string? Direccion { get; set; }
+        public string? Ocupacion { get; set; }
+        public bool ViveConEmpleado { get; set; }
+        public bool EsDependiente { get; set; }
+        public string? Nota { get; set; }
+        public int Orden { get; set; }
+    }
 }

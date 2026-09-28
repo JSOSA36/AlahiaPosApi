@@ -1,4 +1,5 @@
 using AlahiaPos.DataAccess.Data;
+using AlahiaPos.DataAccess.Servicios.Dgii;
 using AlahiaPos.Entities.Domain;
 using AlahiaPos.Entities.Dto;
 using AlahiaPos.Entities.Events;
@@ -1324,6 +1325,7 @@ namespace AlahiaPos.DataAccess.Servicios
                         Fecha = DateTime.Now,
                         IdUsuario = request.IdUsuario > 0 ? request.IdUsuario : null,
                         IdEmpresa = header.IdEmpresa,
+                        IdSucursal = header.IdSucursal,
                         IdAlmacen = request.IdAlmacen,
                         Activo = true,
                         Detalles = lineasInventario
@@ -1583,6 +1585,7 @@ namespace AlahiaPos.DataAccess.Servicios
             (decimal TotalDescuento, decimal TotalItbis, decimal Total) totales)
         {
             var montos = ResolverMontosDgii(request, totales);
+            var montoIsr = ResolverMontoRetencionIsr(request, montos, totales);
 
             return new OrdenCompraHeader
             {
@@ -1604,7 +1607,7 @@ namespace AlahiaPos.DataAccess.Servicios
                 ItbisProporcionalidad = request.ItbisProporcionalidad,
                 ItbisLlevadoAlCosto = request.ItbisLlevadoAlCosto,
                 TipoRetencionIsr = request.TipoRetencionIsr,
-                MontoRetencionRenta = request.MontoRetencionRenta,
+                MontoRetencionRenta = montoIsr,
                 FechaPagoFiscal = request.FechaPagoFiscal,
                 DestinoItbis = request.DestinoItbis,
                 ClasificacionConfirmada = request.ClasificacionConfirmada && request.DestinoItbis is >= 1 and <= 7,
@@ -1636,6 +1639,7 @@ namespace AlahiaPos.DataAccess.Servicios
             (decimal TotalDescuento, decimal TotalItbis, decimal Total) totales)
         {
             var montos = ResolverMontosDgii(request, totales);
+            var montoIsr = ResolverMontoRetencionIsr(request, montos, totales);
 
             header.IdProveedor = request.IdProveedor;
             header.NCF = request.NumeroComprobanteProveedor;
@@ -1653,7 +1657,7 @@ namespace AlahiaPos.DataAccess.Servicios
             header.ItbisProporcionalidad = request.ItbisProporcionalidad;
             header.ItbisLlevadoAlCosto = request.ItbisLlevadoAlCosto;
             header.TipoRetencionIsr = request.TipoRetencionIsr;
-            header.MontoRetencionRenta = request.MontoRetencionRenta;
+            header.MontoRetencionRenta = montoIsr;
             header.FechaPagoFiscal = request.FechaPagoFiscal;
             header.DestinoItbis = request.DestinoItbis;
             header.ClasificacionConfirmada = request.ClasificacionConfirmada && request.DestinoItbis is >= 1 and <= 7;
@@ -1692,6 +1696,29 @@ namespace AlahiaPos.DataAccess.Servicios
             }
 
             return (0, neto);
+        }
+
+        /// <summary>
+        /// Si el usuario ya capturó un monto, se respeta (override). Si hay tipo 606
+        /// y el monto viene en cero, se aplica base × tasa legal al momento del pago.
+        /// </summary>
+        private static decimal ResolverMontoRetencionIsr(
+            GuardarFacturaCompraRequest request,
+            (decimal Servicios, decimal Bienes) montos,
+            (decimal TotalDescuento, decimal TotalItbis, decimal Total) totales)
+        {
+            if (request.TipoRetencionIsr is null or <= 0)
+                return 0m;
+
+            if (request.MontoRetencionRenta > 0)
+                return request.MontoRetencionRenta;
+
+            var baseImp = montos.Servicios + montos.Bienes;
+            if (baseImp <= 0)
+                baseImp = Math.Max(0, totales.Total - totales.TotalItbis);
+
+            var fecha = request.FechaPagoFiscal ?? request.FechaDocumento;
+            return RetencionIsrLegal.Calcular(request.TipoRetencionIsr.Value, baseImp, fecha);
         }
 
         private async Task GuardarDetallesAsync(
@@ -2100,6 +2127,9 @@ namespace AlahiaPos.DataAccess.Servicios
 
             // Default DGII: 02 — trabajos, suministros y servicios (gastos operativos).
             const int tipoBienesDefault = 2;
+            var tipoBienes = gasto.IdTipoBienesServicios is >= 1 and <= 11
+                ? gasto.IdTipoBienesServicios.Value
+                : tipoBienesDefault;
             var formaPago = ResolverFormaPagoDgiiDesdeTexto(gasto.FormaPago ?? gasto.Orien);
 
             var linea = new Reporte606LineaDto
@@ -2110,7 +2140,7 @@ namespace AlahiaPos.DataAccess.Servicios
                 ProveedorNombre = FirstNonEmpty(gasto.NombreEmisorComprobante, proveedor?.NombreComercial, gasto.TipoGasto),
                 RncCedula = rnc,
                 TipoId = tipoId,
-                TipoBienesServicios = tipoBienesDefault,
+                TipoBienesServicios = tipoBienes,
                 Ncf = ncf,
                 FechaComprobante = fecha,
                 FechaPago = gasto.FechaInseccion.Date,

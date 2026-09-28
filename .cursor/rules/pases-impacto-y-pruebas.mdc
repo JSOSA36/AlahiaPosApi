@@ -1,0 +1,47 @@
+---
+description: Antes de un pase, mapear impacto cruzado y probar en ambiente controlado (incluye módulos colaterales)
+alwaysApply: true
+---
+
+# Pases: impacto cruzado y pruebas antes de publicar
+
+Antes de un **pase a prod** (FE, API o SQL), no publicar “solo el cambio pedido” sin revisar colaterales.
+
+## 1. Identificar impacto
+
+Para cada modificación, listar brevemente:
+
+- Módulos / pantallas / endpoints que **tocan el mismo código o dato**
+- Flujos compartidos (login, menú/perfiles, POS, caja/cierre, facturación, inventario, reportes, sucursal, etc.)
+- Empresas o verticales sensibles que usan esa zona (si aplica)
+- Riesgo de romper config existente (ver `pases-no-tocar-config-empresas`)
+
+Si el radio de impacto no está claro, **pararse y aclararlo** antes de desplegar.
+
+## 2. Probar en ambiente controlado
+
+- Probar el cambio en **Dev / local** (o ambiente aislado), no “directo a vivo” como primera validación
+- Datos y SQL de prueba solo en `AlahiaPos_Dev` salvo autorización explícita de Prod
+- Comprobar el happy path del feature **y** al menos un caso borde relevante
+
+## 3. Probar módulos comprometidos
+
+Además del feature pedido, ejercitar módulos que podrían quedar afectados, por ejemplo:
+
+- Shell: login, menú, selector de sucursal (si hay sesión/tenant)
+- POS / cobro / ticket si se tocó pagos, cargos o impresión
+- Caja / cierre si se tocó efectivo, módulos o permisos
+- Reportes / dashboard si se tocó filtros, sucursal o totales
+- Un cliente ancla conocido (p. ej. Flawless, Terraza, Sena) cuando el cambio es de shell o multi-empresa
+
+No hace falta una batería infinita: sí hace falta **evidencia** de que lo colateral crítico sigue en pie.
+
+## 4. Criterio para publicar
+
+Solo pasar a prod cuando:
+
+1. El cambio pedido funciona en controlado
+2. Los colaterales identificados no regresionan de forma obvia
+3. El SQL/pase no reescribe config de empresas ajenas
+
+Si algo falla en colateral: **no publicar**; corregir o acotar el alcance.

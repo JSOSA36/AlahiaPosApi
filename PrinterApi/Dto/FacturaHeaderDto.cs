@@ -44,6 +44,8 @@ namespace PrinterApi.Dto
         public decimal Total { get; set; }
         public decimal TotalItbis { get; set; }
         public decimal TotalDescuento { get; set; }
+        public decimal MontoCargo { get; set; }
+        public string? NombreCargo { get; set; }
        
         public bool EstaCancelada { get; set; }
         public bool EstaCerrada { get; set; }
@@ -81,5 +83,6 @@ namespace PrinterApi.Dto
         public DateTime? FechaFirma { get; set; }
         public DateTime? FechaEmisionEcf { get; set; }
         public string? EstadoDgii { get; set; }
+        public string? AmbienteFE { get; set; }
     }
 }

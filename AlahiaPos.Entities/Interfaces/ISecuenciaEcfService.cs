@@ -1,3 +1,4 @@
+using AlahiaPos.Entities.Domain;
 using AlahiaPos.Entities.Dto.Fiscal;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -16,14 +17,19 @@ namespace AlahiaPos.Entities.Interfaces
         Task UpdateAsync(int id, SecuenciaEcfUpdateDto dto);
         Task DesactivarAsync(int id);
 
+        Task<SecuenciaEcfAsignacionDto> AsignarRangoAsync(int idSecuencia, SecuenciaEcfAsignarDto dto);
+        Task ActualizarAsignacionAsync(int idAsignacion, SecuenciaEcfAsignarDto dto);
+        Task DesactivarAsignacionAsync(int idAsignacion);
+
         /// <summary>
         /// Reserva atómica via SQL UPDATE...OUTPUT.
         /// Segura bajo concurrencia (múltiples cajas simultáneas).
         /// </summary>
-        Task<ReservaEcfResultado> ReservarSiguienteAsync(int idEmpresa, int tipoEcfDgii);
+        Task<ReservaEcfResultado> ReservarSiguienteAsync(int idEmpresa, int tipoEcfDgii, int? idSucursal = null);
 
-        Task<string?> PeekSiguienteAsync(int idEmpresa, int tipoEcfDgii);
-        Task<SecuenciaAlertaDto> ValidarDisponibilidadAsync(int idEmpresa, int tipoEcfDgii);
-        Task<IReadOnlyList<SecuenciaEcfDisponibleDto>> ObtenerDisponiblesAsync(int idEmpresa);
+        Task<string?> PeekSiguienteAsync(int idEmpresa, int tipoEcfDgii, int? idSucursal = null);
+        Task<SecuenciaAlertaDto> ValidarDisponibilidadAsync(int idEmpresa, int tipoEcfDgii, int? idSucursal = null);
+        Task<IReadOnlyList<SecuenciaEcfDisponibleDto>> ObtenerDisponiblesAsync(int idEmpresa, int? idSucursal = null);
+        Task<SecuenciaECF?> ObtenerActivaAsync(int idEmpresa, int tipoEcfDgii, int? idSucursal = null);
     }
 }

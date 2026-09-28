@@ -47,6 +47,14 @@ namespace AlahiaPos.DataAccess.Servicios
 
             regla.Tipo = NormalizarTipo(regla.Tipo);
             regla.GrupoMetodo = NormalizarGrupo(regla.GrupoMetodo);
+            regla.MetodosVinculados = NormalizarListaVinculos(regla.MetodosVinculados);
+
+            if (regla.GrupoMetodo == CargoPagoGrupos.Personalizado
+                && regla.MetodosVinculados.Count == 0)
+            {
+                throw new InvalidOperationException(
+                    "Elija al menos un método de pago de la empresa, o use un grupo (Tarjeta, Efectivo…).");
+            }
 
             if (regla.Valor < 0)
                 throw new InvalidOperationException("El valor del cargo no puede ser negativo.");
@@ -74,14 +82,20 @@ namespace AlahiaPos.DataAccess.Servicios
                 existente.Tipo = regla.Tipo;
                 existente.Valor = regla.Valor;
                 existente.GrupoMetodo = regla.GrupoMetodo;
+                existente.MetodosVinculados = regla.MetodosVinculados;
                 existente.Activo = regla.Activo;
                 existente.Orden = regla.Orden;
+                _db.Entry(existente).Property(x => x.MetodosVinculados).IsModified = true;
                 regla = existente;
             }
 
             await _db.SaveChangesAsync(ct);
             return regla;
         }
+
+        private static List<string> NormalizarListaVinculos(IEnumerable<string>? metodos)
+            => CargoPagoMetodoMatcher.SplitVinculados(
+                CargoPagoMetodoMatcher.SerializarVinculados(metodos)).ToList();
 
         public async Task EliminarAsync(int idEmpresa, int id, CancellationToken ct = default)
         {
@@ -135,7 +149,7 @@ namespace AlahiaPos.DataAccess.Servicios
                          .ThenBy(r => r.IdCargoPagoRegla))
             {
                 var disparador = medios.FirstOrDefault(m =>
-                    CargoPagoMetodoMatcher.Coincide(regla.GrupoMetodo, m));
+                    CargoPagoMetodoMatcher.CoincideRegla(regla, m));
                 if (disparador == null)
                     continue;
 
@@ -239,6 +253,7 @@ namespace AlahiaPos.DataAccess.Servicios
                 "TRANSFERENCIA" => CargoPagoGrupos.Transferencia,
                 "CHEQUE" => CargoPagoGrupos.Cheque,
                 "TODOS" => CargoPagoGrupos.Todos,
+                "PERSONALIZADO" => CargoPagoGrupos.Personalizado,
                 _ => CargoPagoGrupos.Tarjeta
             };
         }

@@ -1,0 +1,34 @@
+---
+description: En pases, no alterar perfiles, módulos, parámetros ni config ya existente de empresas
+alwaysApply: true
+---
+
+# Pases: no tocar configuración existente de empresas
+
+En todo **pase a prod**, SQL de despliegue, seed o “arreglo rápido”, está **prohibido** cambiar la configuración que cada empresa ya tiene, salvo que el usuario lo pida **explícitamente** (empresa concreta + qué cambiar).
+
+## No tocar (salvo pedido explícito)
+
+- **Perfiles** y **PerfilRoles** (quién ve qué)
+- **Empresa_Modulos** / licencias de módulos
+- **Parámetros** de empresa (tabla/config operativa, flags, límites, etc.)
+- **Usuarios**, cupos (`LimiteUsuario`, `LimiteTerminalesPos`) y asignaciones de sucursal
+- **Secuencias** fiscales / NCF / e-CF ya en uso
+- **Métodos de pago**, cargos, almacenes, cajas, sucursales y demás maestro operativo ya configurado
+- Cualquier `UPDATE`/`DELETE` masivo sobre datos de tenant (`IdEmpresa`) “para que el feature funcione”
+
+## Qué sí se puede en un pase
+
+- Código (DLL / frontend) que **lee** la config existente y se comporta bien si falta un flag (defaults seguros)
+- DDL/scripts que **agregan** columnas/tablas/módulos en catálogo **sin** activarlos a todas las empresas
+- Activar módulo/perfil **solo** en la(s) empresa(s) y perfil(es) que el usuario nombre
+- Corregir un bug de datos **puntual** (una fila / una empresa) cuando el usuario lo autorice
+
+## Relacionado
+
+- Detalle de módulos/perfiles: `perfiles-no-regalar-modulos.mdc`
+- Plantilla: `Scripts/_Plantilla_ActivarModulo_SoloAdmin.sql`
+
+## Al dudar
+
+No “homogeneizar” empresas. Preguntar. Preferir feature flag / default en código antes que SQL que reescriba config viva.

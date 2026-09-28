@@ -16,6 +16,7 @@ using System.Text;
 
 using TicketNotaCreditoDto = AlahiaPos.Entities.Dto.TicketNotaCreditoDto;
 using TicketFechaHora = AlahiaPos.Entities.Dto.TicketFechaHora;
+using CajaMetodoPagoDto = AlahiaPos.Entities.Dto.CajaMetodoPagoDto;
 
 
 
@@ -42,15 +43,35 @@ public class PrinterTicketServices : IPrinterTicket
     {
         try
         {
+            if (string.IsNullOrWhiteSpace(_baseUrl))
+                throw new InvalidOperationException(
+                    "ApiBaseUrl no configurado en PrinterApi (appsettings.Local.json).");
+
+            if (string.IsNullOrWhiteSpace(PrinterLavador))
+                throw new InvalidOperationException(
+                    "Impresora de lavador no configurada en el agente de impresión.");
+
             var listado = await _http.GetFromJsonAsync<List<TicketLavadorDto>>(
                 $"{_baseUrl}/api/FacturaHeader/ticket-lavador/{idFacturaHeader}");
-
-            
 
             if (listado == null || listado.Count == 0)
             {
                 Console.WriteLine("No hay tickets.");
                 return;
+            }
+
+            TicketFacturaClienteDto? empresaTicket = null;
+            if (listado.All(t => string.IsNullOrWhiteSpace(t.NombreEmpresa)))
+            {
+                try
+                {
+                    empresaTicket = await _http.GetFromJsonAsync<TicketFacturaClienteDto>(
+                        $"{_baseUrl}/api/FacturaHeader/factura-cliente/{idFacturaHeader}");
+                }
+                catch (Exception exEmpresa)
+                {
+                    Console.WriteLine($"Encabezado empresa lavador: {exEmpresa.Message}");
+                }
             }
 
             var emitter = new EPSON();
@@ -60,56 +81,71 @@ public class PrinterTicketServices : IPrinterTicket
                 var bytes = new List<byte>();
 
                 bytes.AddRange(emitter.Initialize());
+                bytes.AddRange(EscPosSelectCp850);
+
+                AppendEmpresaHeaderLavador(
+                    bytes,
+                    emitter,
+                    PrimeroTexto(ticket.NombreEmpresa, empresaTicket?.NombreEmpresa));
 
                 bytes.AddRange(emitter.CenterAlign());
-                bytes.AddRange(emitter.SetStyles(PrintStyle.Bold | PrintStyle.DoubleWidth | PrintStyle.DoubleHeight));
-                bytes.AddRange(emitter.PrintLine("AUTOSERVICIOSTOTALCLEAN N&C.,S.R.L"));
-
                 bytes.AddRange(emitter.SetStyles(PrintStyle.None));
-                bytes.AddRange(emitter.PrintLine("TICKET LAVADOR"));
-                bytes.AddRange(emitter.PrintLine("--------------------------------"));
+                TicketLine(bytes, "TICKET LAVADOR");
+                bytes.AddRange(emitter.SetStyles(PrintStyle.None));
+                TicketLine(bytes, "--------------------------------");
 
                 bytes.AddRange(emitter.LeftAlign());
-                bytes.AddRange(emitter.PrintLine($"Factura : {ticket.NumeroFactura}"));
-                bytes.AddRange(emitter.PrintLine($"Fecha   : {DateTime.Now:dd/MM/yyyy hh:mm tt}"));
-              
-                bytes.AddRange(emitter.PrintLine($"Cliente : {ticket.Cliente}"));
-
-                bytes.AddRange(emitter.PrintLine("--------------------------------"));
+                var fecha = ticket.Fecha == default ? DateTime.Now : ticket.Fecha;
+                TicketLine(bytes, $"Factura : {ticket.NumeroFactura}");
+                TicketLine(bytes, $"Fecha   : {fecha:dd/MM/yyyy hh:mm tt}");
+                TicketLine(bytes, $"Cliente : {ticket.Cliente}");
+                TicketLine(bytes, "--------------------------------");
 
                 bytes.AddRange(emitter.CenterAlign());
                 bytes.AddRange(emitter.SetStyles(PrintStyle.Bold | PrintStyle.DoubleHeight));
-                bytes.AddRange(emitter.PrintLine($"LAVADOR: {ticket.AtendidoPor}"));
+                TicketLine(bytes, $"LAVADOR: {ticket.AtendidoPor}");
 
                 bytes.AddRange(emitter.SetStyles(PrintStyle.None));
-                bytes.AddRange(emitter.PrintLine("--------------------------------"));
+                TicketLine(bytes, "--------------------------------");
 
                 bytes.AddRange(emitter.LeftAlign());
-                bytes.AddRange(emitter.PrintLine("CANT   SERVICIO"));
+                TicketLine(bytes, "CANT   SERVICIO");
 
-                foreach (var det in ticket.Servicios)
+                foreach (var det in ticket.Servicios ?? new List<TicketLavadorDetalleDto>())
                 {
                     bytes.AddRange(emitter.SetStyles(PrintStyle.Bold));
-                    bytes.AddRange(emitter.PrintLine($"{det.Cantidad}   {det.Servicio} {(det.Precio * det.Cantidad)}"));
+                    var lineaServicio = $"{det.Cantidad}   {det.Servicio} {(det.Precio * det.Cantidad)}";
+                    foreach (var parte in DividirTextoTicket(lineaServicio, 32))
+                        TicketLine(bytes, parte);
                     bytes.AddRange(emitter.SetStyles(PrintStyle.None));
                 }
 
-                bytes.AddRange(emitter.PrintLine("--------------------------------"));
+                TicketLine(bytes, "--------------------------------");
                 bytes.AddRange(emitter.CenterAlign());
                 bytes.AddRange(emitter.SetStyles(PrintStyle.Bold));
-                bytes.AddRange(emitter.PrintLine("GRACIAS POR SU TRABAJO"));
+                TicketLine(bytes, "GRACIAS POR SU TRABAJO");
+                bytes.AddRange(emitter.SetStyles(PrintStyle.None));
 
                 bytes.AddRange(emitter.FeedLines(4));
                 bytes.AddRange(emitter.FullCut());
 
-                // ? USA CONFIG
                 RawPrinterHelper.SendBytesToPrinter(PrinterLavador, bytes.ToArray());
             }
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error lavador: {ex.Message}");
+            throw;
         }
+    }
+
+    private static string PrimeroTexto(string? preferido, string? respaldo)
+    {
+        if (!string.IsNullOrWhiteSpace(preferido))
+            return preferido.Trim();
+        if (!string.IsNullOrWhiteSpace(respaldo))
+            return respaldo.Trim();
+        return "";
     }
     public async Task GenerateFactDirect(int idFactura)
     {
@@ -143,6 +179,13 @@ public class PrinterTicketServices : IPrinterTicket
                 // ?? EMPRESA
                 e.Graphics.DrawString(factura.NombreEmpresa, bold, Brushes.Black, left, y);
                 y += 25;
+
+                if (!string.IsNullOrWhiteSpace(factura.NombreSucursal)
+                    && !string.Equals(factura.NombreSucursal.Trim(), factura.NombreEmpresa?.Trim(), StringComparison.OrdinalIgnoreCase))
+                {
+                    e.Graphics.DrawString(factura.NombreSucursal, normal, Brushes.Black, left, y);
+                    y += 20;
+                }
 
                 e.Graphics.DrawString(factura.DireccionEmpresa, normal, Brushes.Black, left, y);
                 y += 20;
@@ -532,6 +575,8 @@ public async Task GenerateTicketBizcocho(int idFacturaHeader, int idEmpresa)
                     LeftLine($"DESCUENTO : RD$ {factura.TotalDescuento:N2}");
 
                 LeftLine($"ITBIS     : RD$ {factura.TotalItbis:N2}");
+                if (factura.MontoCargo > 0.009m)
+                    LeftLine($"{EtiquetaCargoTicket(factura.NombreCargo)} : RD$ {factura.MontoCargo:N2}");
 
                 Separator();
             }
@@ -577,7 +622,7 @@ public async Task GenerateTicketBizcocho(int idFacturaHeader, int idEmpresa)
                     factura.TipoECF,
                     factura.SecurityCode,
                     factura.UrlQR,
-                    factura.FechaFirma ?? factura.FechaEmisionEcf,
+                    factura.FechaFirma,
                     factura.EstadoDgii,
                     factura.RNCEmpresa,
                     factura.RNC,
@@ -585,7 +630,8 @@ public async Task GenerateTicketBizcocho(int idFacturaHeader, int idEmpresa)
                     factura.Total,
                     factura.FechaEmisionEcf ?? factura.FechaInseccion,
                     factura.Hora,
-                    factura.FechaInseccion);
+                    factura.FechaInseccion,
+                    factura.AmbienteFE);
             }
 
             bytes.AddRange(emitter.FeedLines(4));
@@ -604,22 +650,88 @@ public async Task GenerateTicketBizcocho(int idFacturaHeader, int idEmpresa)
     }
 }
 
-private static string LimpiarTextoTicket(string texto)
-{
-    if (string.IsNullOrWhiteSpace(texto))
-        return "";
+    private static readonly Lazy<Encoding> TicketCp850 = new(() =>
+    {
+        Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+        return Encoding.GetEncoding(850);
+    });
 
-    return texto
-        .Replace("=", "?")
-        .Replace("?", "")
-        .Replace("??", "")
-        .Replace("?", "-")
-        .Replace("?", "-")
-        .Replace("?", "\"")
-        .Replace("?", "\"")
-        .Replace("?", "'")
-        .Trim();
-}
+    /// <summary>PC850: acentos (ó, ú, ñ) en térmica 80mm. Tras Initialize().</summary>
+    private static readonly byte[] EscPosSelectCp850 = { 0x1B, 0x74, 0x02 };
+
+    private static string LimpiarTextoTicket(string texto)
+    {
+        if (string.IsNullOrWhiteSpace(texto))
+            return "";
+
+        return texto.Trim()
+            .Replace('\u2013', '-')
+            .Replace('\u2014', '-')
+            .Replace('\u2018', '\'')
+            .Replace('\u2019', '\'')
+            .Replace('\u201C', '"')
+            .Replace('\u201D', '"')
+            .Replace('\u00A0', ' ');
+    }
+
+    private static string EtiquetaCargoTicket(string? nombre)
+    {
+        var n = (nombre ?? "").Trim();
+        return n.Length > 0 ? n : "Cargo por tarjeta";
+    }
+
+    private static void TicketLine(List<byte> bytes, string text)
+    {
+        bytes.AddRange(TicketCp850.Value.GetBytes(LimpiarTextoTicket(text ?? "") + "\n"));
+    }
+
+    /// <summary>
+    /// Misma cabecera de antes, un poco más baja: doble alto, sin doble ancho.
+    /// </summary>
+    private static void AppendEmpresaHeaderLavador(
+        List<byte> bytes,
+        EPSON emitter,
+        string? nombre)
+    {
+        bytes.AddRange(emitter.CenterAlign());
+        bytes.AddRange(emitter.SetStyles(PrintStyle.Bold | PrintStyle.DoubleHeight));
+        foreach (var line in DividirTextoTicket(nombre ?? "", 32))
+            TicketLine(bytes, line);
+        bytes.AddRange(emitter.SetStyles(PrintStyle.None));
+    }
+
+    /// <summary>
+    /// Encabezado 80mm: negrita y wrap. Sin DoubleWidth+DoubleHeight (recorta la T y parte nombres largos).
+    /// </summary>
+    private static void AppendEmpresaHeaderEscPos(
+        List<byte> bytes,
+        EPSON emitter,
+        string? nombre,
+        string? direccion,
+        string? rnc,
+        string? telefono,
+        string? nombreSucursal = null)
+    {
+        bytes.AddRange(emitter.CenterAlign());
+        bytes.AddRange(emitter.SetStyles(PrintStyle.Bold));
+        foreach (var line in DividirTextoTicket(nombre ?? "", 32))
+            TicketLine(bytes, line);
+
+        bytes.AddRange(emitter.SetStyles(PrintStyle.None));
+        if (!string.IsNullOrWhiteSpace(nombreSucursal)
+            && !string.Equals(nombreSucursal.Trim(), nombre?.Trim(), StringComparison.OrdinalIgnoreCase))
+        {
+            foreach (var line in DividirTextoTicket(nombreSucursal.Trim(), 32))
+                TicketLine(bytes, line);
+        }
+        foreach (var line in DividirTextoTicket(direccion ?? "", 32))
+            TicketLine(bytes, line);
+
+        if (!string.IsNullOrWhiteSpace(rnc))
+            TicketLine(bytes, $"RNC: {rnc}");
+        if (!string.IsNullOrWhiteSpace(telefono))
+            TicketLine(bytes, $"Tel: {telefono}");
+    }
 
 private static List<string> DividirTextoTicket(string texto, int max)
 {
@@ -661,10 +773,6 @@ public async Task GenerateTicketFacturaCliente(int idFactura)
                 throw new InvalidOperationException(
                     "ApiBaseUrl no configurado en PrinterApi (appsettings.Local.json).");
 
-            if (string.IsNullOrWhiteSpace(PrinterFactura))
-                throw new InvalidOperationException(
-                    "Impresora de factura no configurada en el agente.");
-
             var factura = await _http.GetFromJsonAsync<TicketFacturaClienteDto>(
                 $"{_baseUrl}/api/FacturaHeader/factura-cliente/{idFactura}");
 
@@ -672,109 +780,156 @@ public async Task GenerateTicketFacturaCliente(int idFactura)
                 throw new InvalidOperationException(
                     $"Factura {idFactura} no encontrada en la API ({_baseUrl}).");
 
+            ImprimirEscPosFacturaCliente(factura);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error factura: {ex.Message}");
+            throw;
+        }
+    }
+
+    public Task GenerateTicketFacturaClienteLocal(TicketFacturaClienteDto factura)
+    {
+        if (factura == null)
+            throw new ArgumentNullException(nameof(factura));
+
+        ImprimirEscPosFacturaCliente(factura);
+        return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// ESC/POS desde el DTO. No consulta el ERP.
+    /// </summary>
+    private void ImprimirEscPosFacturaCliente(TicketFacturaClienteDto factura)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(PrinterFactura))
+                throw new InvalidOperationException(
+                    "Impresora de factura no configurada en el agente.");
+
+            factura.Detalles ??= new List<TicketFacturaClienteDetalleDto>();
+
             var emitter = new EPSON();
             var bytes = new List<byte>();
 
             bytes.AddRange(emitter.Initialize());
+            bytes.AddRange(EscPosSelectCp850);
 
-            bytes.AddRange(emitter.CenterAlign());
-            bytes.AddRange(emitter.SetStyles(PrintStyle.Bold | PrintStyle.DoubleWidth | PrintStyle.DoubleHeight));
-            bytes.AddRange(emitter.PrintLine(factura.NombreEmpresa ?? ""));
+            AppendEmpresaHeaderEscPos(
+                bytes,
+                emitter,
+                factura.NombreEmpresa,
+                factura.DireccionEmpresa,
+                factura.RncEmpresa,
+                factura.TelefonoEmpresa,
+                factura.NombreSucursal);
 
-            bytes.AddRange(emitter.SetStyles(PrintStyle.None));
-            bytes.AddRange(emitter.PrintLine(factura.DireccionEmpresa ?? ""));
-            if (!string.IsNullOrWhiteSpace(factura.RncEmpresa))
-                bytes.AddRange(emitter.PrintLine($"RNC: {factura.RncEmpresa}"));
-            bytes.AddRange(emitter.PrintLine($"Tel: {factura.TelefonoEmpresa}"));
-
-            bytes.AddRange(emitter.PrintLine("--------------------------------"));
+            TicketLine(bytes, "--------------------------------");
 
             bytes.AddRange(emitter.CenterAlign());
             bytes.AddRange(emitter.SetStyles(PrintStyle.Bold));
-            bytes.AddRange(emitter.PrintLine(
-                TituloComprobanteElectronico(
-                    factura.EsComprobanteElectronico,
-                    factura.TipoECF,
-                    factura.NCF,
-                    facturaCliente: true)));
+            TicketLine(bytes,
+                factura.EsLocal
+                    ? TituloTicketLocal(factura.TipoFactura)
+                    : TituloComprobanteElectronico(
+                        factura.EsComprobanteElectronico,
+                        factura.TipoECF,
+                        factura.NCF,
+                        facturaCliente: true));
+            bytes.AddRange(emitter.SetStyles(PrintStyle.None));
 
-            bytes.AddRange(emitter.PrintLine("--------------------------------"));
+            TicketLine(bytes, "--------------------------------");
 
             bytes.AddRange(emitter.LeftAlign());
-            bytes.AddRange(emitter.PrintLine(
+            TicketLine(bytes,
                 !string.IsNullOrWhiteSpace(factura.NumeroDocumento)
                     ? $"Documento: {factura.NumeroDocumento}"
-                    : $"Factura : {factura.NumeroFactura}"));
-            bytes.AddRange(emitter.PrintLine($"Fecha   : {factura.Fecha:dd/MM/yyyy} {factura.Hora}"));
-            bytes.AddRange(emitter.PrintLine($"Cliente : {factura.Cliente}"));
+                    : $"Factura : {factura.NumeroFactura}");
+            TicketLine(bytes, $"Fecha   : {factura.Fecha:dd/MM/yyyy} {factura.Hora}");
+            TicketLine(bytes, $"Cliente : {factura.Cliente}");
             if (!string.IsNullOrWhiteSpace(factura.RncCliente))
-                bytes.AddRange(emitter.PrintLine($"RNC/Ced : {factura.RncCliente}"));
+                TicketLine(bytes, $"RNC/Ced : {factura.RncCliente}");
 
-            if (!string.IsNullOrWhiteSpace(factura.NCF))
+            if (!string.IsNullOrWhiteSpace(factura.NCF) && !factura.EsLocal)
             {
-                bytes.AddRange(emitter.PrintLine(
+                TicketLine(bytes,
                     factura.EsComprobanteElectronico
                         ? $"e-NCF   : {factura.NCF}"
-                        : $"NCF     : {factura.NCF}"));
+                        : $"NCF     : {factura.NCF}");
             }
 
             AppendTipoYFormaPagoEscPos(bytes, emitter, factura);
 
-            bytes.AddRange(emitter.PrintLine("--------------------------------"));
+            TicketLine(bytes, "--------------------------------");
 
-            bytes.AddRange(emitter.PrintLine("CANT   DESCRIPCION"));
+            TicketLine(bytes, "CANT   DESCRIPCION");
 
-            foreach (var det in factura.Detalles)
+            foreach (var det in factura.Detalles.Where(d => d != null))
             {
                 bytes.AddRange(emitter.SetStyles(PrintStyle.Bold));
-                bytes.AddRange(emitter.PrintLine($"{det.Cantidad}   {det.Descripcion}"));
+                TicketLine(bytes, $"{det.Cantidad}   {det.Descripcion}");
 
                 bytes.AddRange(emitter.SetStyles(PrintStyle.None));
-                bytes.AddRange(emitter.PrintLine($"       RD$ {det.Precio:N2}"));
+                TicketLine(bytes, $"       RD$ {det.Precio:N2}");
             }
 
-            bytes.AddRange(emitter.PrintLine("--------------------------------"));
+            TicketLine(bytes, "--------------------------------");
 
             if (factura.SubTotal > 0)
-                bytes.AddRange(emitter.PrintLine($"SubTotal RD$ {factura.SubTotal:N2}"));
+                TicketLine(bytes, $"SubTotal RD$ {factura.SubTotal:N2}");
             if (factura.TotalDescuento > 0)
-                bytes.AddRange(emitter.PrintLine($"Desc.    RD$ {factura.TotalDescuento:N2}"));
+                TicketLine(bytes, $"Desc.    RD$ {factura.TotalDescuento:N2}");
             if (factura.TotalItbis > 0)
-                bytes.AddRange(emitter.PrintLine($"ITBIS    RD$ {factura.TotalItbis:N2}"));
+                TicketLine(bytes, $"ITBIS    RD$ {factura.TotalItbis:N2}");
+            if (factura.MontoCargo > 0.009m)
+                TicketLine(bytes, $"{EtiquetaCargoTicket(factura.NombreCargo)} RD$ {factura.MontoCargo:N2}");
 
             bytes.AddRange(emitter.CenterAlign());
-            bytes.AddRange(emitter.SetStyles(PrintStyle.Bold | PrintStyle.DoubleWidth | PrintStyle.DoubleHeight));
-            bytes.AddRange(emitter.PrintLine($"TOTAL RD$ {factura.Total:N2}"));
+            bytes.AddRange(emitter.SetStyles(PrintStyle.Bold));
+            TicketLine(bytes, $"TOTAL RD$ {factura.Total:N2}");
 
             bytes.AddRange(emitter.SetStyles(PrintStyle.None));
             bytes.AddRange(emitter.LeftAlign());
             if (factura.Pendiente > 0.02m)
             {
-                bytes.AddRange(emitter.PrintLine($"PAGADO   RD$ {factura.Pagado:N2}"));
-                bytes.AddRange(emitter.PrintLine($"PENDIENTE RD$ {factura.Pendiente:N2}"));
+                TicketLine(bytes, $"PAGADO   RD$ {factura.Pagado:N2}");
+                TicketLine(bytes, $"PENDIENTE RD$ {factura.Pendiente:N2}");
             }
 
-            bytes.AddRange(emitter.PrintLine("--------------------------------"));
+            TicketLine(bytes, "--------------------------------");
 
-            AppendEcfFiscalBlockEscPos(
-                bytes,
-                emitter,
-                factura.EsComprobanteElectronico,
-                factura.TipoECF,
-                factura.SecurityCode,
-                factura.UrlQR,
-                factura.FechaFirma ?? factura.FechaEmisionEcf,
-                factura.EstadoDgii,
-                factura.RncEmpresa,
-                factura.RncCliente,
-                factura.NCF,
-                factura.Total,
-                factura.FechaEmisionEcf ?? factura.Fecha,
-                factura.Hora,
-                factura.Fecha);
+            if (!factura.EsLocal)
+            {
+                AppendEcfFiscalBlockEscPos(
+                    bytes,
+                    emitter,
+                    factura.EsComprobanteElectronico,
+                    factura.TipoECF,
+                    factura.SecurityCode,
+                    factura.UrlQR,
+                    factura.FechaFirma,
+                    factura.EstadoDgii,
+                    factura.RncEmpresa,
+                    factura.RncCliente,
+                    factura.NCF,
+                    factura.Total,
+                    factura.FechaEmisionEcf ?? factura.Fecha,
+                    factura.Hora,
+                    factura.Fecha,
+                    factura.AmbienteFE);
+            }
+
+            if (!string.IsNullOrWhiteSpace(factura.NotaPie))
+            {
+                bytes.AddRange(emitter.CenterAlign());
+                foreach (var linea in DividirTextoTicket(factura.NotaPie.Trim(), 32))
+                    TicketLine(bytes, linea);
+            }
 
             bytes.AddRange(emitter.CenterAlign());
-            bytes.AddRange(emitter.PrintLine("GRACIAS POR PREFERIRNOS"));
+            TicketLine(bytes, "GRACIAS POR PREFERIRNOS");
 
             bytes.AddRange(emitter.FeedLines(4));
             // Abrir caj?n (pin 2)
@@ -825,10 +980,10 @@ public async Task GenerateTicketFacturaCliente(int idFactura)
         bytes.AddRange(emitter.SetStyles(PrintStyle.None));
 
         if (!string.IsNullOrWhiteSpace(factura.TipoFactura))
-            bytes.AddRange(emitter.PrintLine($"Tipo     : {factura.TipoFactura}"));
+            TicketLine(bytes, $"Tipo     : {factura.TipoFactura}");
 
         if (!string.IsNullOrWhiteSpace(formaPago))
-            bytes.AddRange(emitter.PrintLine($"Forma Pago: {formaPago}"));
+            TicketLine(bytes, $"Forma Pago: {formaPago}");
     }
 
     /// <summary>
@@ -852,7 +1007,8 @@ public async Task GenerateTicketFacturaCliente(int idFactura)
         decimal? montoTotal = null,
         DateTime? fechaEmision = null,
         string? hora = null,
-        DateTime? fechaDocumento = null)
+        DateTime? fechaDocumento = null,
+        string? ambienteFe = null)
     {
         if (!esElectronico
             && string.IsNullOrWhiteSpace(securityCode)
@@ -879,9 +1035,10 @@ public async Task GenerateTicketFacturaCliente(int idFactura)
         if (fFirmaVisible.HasValue)
             bytes.AddRange(emitter.PrintLine($"F.Firma : {fFirmaVisible:dd/MM/yyyy HH:mm}"));
 
-        // Estado legible al cliente solo si es Aceptado (no TrackId)
+        // Estado legible al cliente si DGII/suplidor cerró el documento
         if (!string.IsNullOrWhiteSpace(estadoDgii)
-            && estadoDgii.Contains("Acept", StringComparison.OrdinalIgnoreCase))
+            && (estadoDgii.Contains("Acept", StringComparison.OrdinalIgnoreCase)
+                || estadoDgii.Contains("Resumen", StringComparison.OrdinalIgnoreCase)))
         {
             bytes.AddRange(emitter.PrintLine($"Estado  : {estadoDgii}"));
         }
@@ -894,7 +1051,9 @@ public async Task GenerateTicketFacturaCliente(int idFactura)
             encf,
             montoTotal,
             fechaEmision,
-            fechaFirma);
+            fechaFirma,
+            tipoEcf,
+            ambienteFe);
 
         if (!string.IsNullOrWhiteSpace(qrPayload))
         {
@@ -909,6 +1068,16 @@ public async Task GenerateTicketFacturaCliente(int idFactura)
         }
 
         bytes.AddRange(emitter.PrintLine("--------------------------------"));
+    }
+
+    private static string TituloTicketLocal(string? tipoFactura)
+    {
+        var tipo = (tipoFactura ?? "").Trim();
+        if (tipo.Contains("COTIZ", StringComparison.OrdinalIgnoreCase))
+            return "COTIZACION";
+        if (tipo.Contains("ORDEN", StringComparison.OrdinalIgnoreCase))
+            return "ORDEN";
+        return "FACTURA CLIENTE";
     }
 
     private static string TituloComprobanteElectronico(
@@ -958,7 +1127,9 @@ public async Task GenerateTicketFacturaCliente(int idFactura)
         string? encf,
         decimal? montoTotal,
         DateTime? fechaEmision,
-        DateTime? fechaFirma)
+        DateTime? fechaFirma,
+        string? tipoEcf,
+        string? ambienteFe)
     {
         if (!string.IsNullOrWhiteSpace(urlQr))
         {
@@ -973,28 +1144,28 @@ public async Task GenerateTicketFacturaCliente(int idFactura)
             || string.IsNullOrWhiteSpace(rncEmisor))
             return null;
 
-        static string Digitos(string? s) =>
-            string.IsNullOrWhiteSpace(s)
-                ? ""
-                : new string(s.Where(char.IsDigit).ToArray());
+        var tipo = AlahiaPos.Entities.Fiscal.EcfConsultaTimbreUrl.ParseTipoEcf(tipoEcf, encf);
+        var monto = montoTotal ?? 0m;
+        var firma = fechaFirma
+                    ?? AlahiaPos.Entities.Fiscal.EcfConsultaTimbreUrl.TryGetFechaFirma(urlQr);
+        if (!firma.HasValue
+            && !AlahiaPos.Entities.Fiscal.EcfConsultaTimbreUrl.EsCanalRfce(tipo, monto))
+            return null;
 
-        var firma = fechaFirma ?? DateTime.Now;
-        var emision = fechaEmision ?? firma;
-        var monto = (montoTotal ?? 0m).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture);
+        var ambiente = ambienteFe
+                       ?? AlahiaPos.Entities.Fiscal.EcfConsultaTimbreUrl.ExtraerAmbienteDeUrl(urlQr);
+        var emision = fechaEmision ?? firma ?? DateTime.Today;
 
-        // Misma forma que DgiiDirectoMapper.BuildQrUrl (producción).
-        var qs = string.Join("&", new[]
-        {
-            "RncEmisor=" + Uri.EscapeDataString(Digitos(rncEmisor)),
-            "RncComprador=" + Uri.EscapeDataString(Digitos(rncComprador)),
-            "ENCF=" + Uri.EscapeDataString(encf.Trim()),
-            "FechaEmision=" + Uri.EscapeDataString(emision.ToString("dd-MM-yyyy", System.Globalization.CultureInfo.InvariantCulture)),
-            "MontoTotal=" + Uri.EscapeDataString(monto),
-            "FechaFirma=" + Uri.EscapeDataString(firma.ToString("dd-MM-yyyy HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture)),
-            "CodigoSeguridad=" + Uri.EscapeDataString(securityCode.Trim())
-        });
-
-        return "https://ecf.dgii.gov.do/ecf/ConsultaTimbre?" + qs;
+        return AlahiaPos.Entities.Fiscal.EcfConsultaTimbreUrl.Build(
+            ambiente,
+            tipo,
+            rncEmisor,
+            rncComprador,
+            encf.Trim(),
+            emision,
+            monto,
+            firma ?? DateTime.MinValue,
+            securityCode.Trim());
     }
 
     public async Task GenerateTicketNotaCredito(
@@ -1078,8 +1249,7 @@ public async Task GenerateTicketFacturaCliente(int idFactura)
             bytes.AddRange(emitter.PrintLine(
                 $"ITBIS    RD$ {nota.TotalItbis:N2}"));
             bytes.AddRange(emitter.CenterAlign());
-            bytes.AddRange(emitter.SetStyles(
-                PrintStyle.Bold | PrintStyle.DoubleWidth));
+            bytes.AddRange(emitter.SetStyles(PrintStyle.Bold));
             bytes.AddRange(emitter.PrintLine(
                 $"TOTAL RD$ {nota.Total:N2}"));
             bytes.AddRange(emitter.SetStyles(PrintStyle.None));
@@ -1135,18 +1305,14 @@ public async Task GenerateTicketFacturaCliente(int idFactura)
             var bytes = new List<byte>();
 
             bytes.AddRange(emitter.Initialize());
-            bytes.AddRange(emitter.CenterAlign());
-            bytes.AddRange(emitter.SetStyles(
-                PrintStyle.Bold | PrintStyle.DoubleWidth | PrintStyle.DoubleHeight));
-            bytes.AddRange(emitter.PrintLine(recibo.NombreEmpresa ?? ""));
-            bytes.AddRange(emitter.SetStyles(PrintStyle.None));
-
-            if (!string.IsNullOrWhiteSpace(recibo.DireccionEmpresa))
-                bytes.AddRange(emitter.PrintLine(recibo.DireccionEmpresa));
-            if (!string.IsNullOrWhiteSpace(recibo.RncEmpresa))
-                bytes.AddRange(emitter.PrintLine($"RNC: {recibo.RncEmpresa}"));
-            if (!string.IsNullOrWhiteSpace(recibo.TelefonoEmpresa))
-                bytes.AddRange(emitter.PrintLine($"Tel: {recibo.TelefonoEmpresa}"));
+            bytes.AddRange(EscPosSelectCp850);
+            AppendEmpresaHeaderEscPos(
+                bytes,
+                emitter,
+                recibo.NombreEmpresa,
+                recibo.DireccionEmpresa,
+                recibo.RncEmpresa,
+                recibo.TelefonoEmpresa);
 
             bytes.AddRange(emitter.PrintLine("--------------------------------"));
             bytes.AddRange(emitter.CenterAlign());
@@ -1238,6 +1404,19 @@ public async Task GenerateTicketFacturaCliente(int idFactura)
                 PrintStyle.DoubleHeight
             ));
             bytes.AddRange(emitter.PrintLine("CIERRE DE CAJA"));
+            bytes.AddRange(emitter.SetStyles(PrintStyle.Bold));
+            if (!string.IsNullOrWhiteSpace(cierre.NombreEmpresa))
+            {
+                bytes.AddRange(emitter.PrintLine(cierre.NombreEmpresa.Trim()));
+            }
+            if (!string.IsNullOrWhiteSpace(cierre.NombreSucursal)
+                && !string.Equals(
+                    cierre.NombreSucursal.Trim(),
+                    cierre.NombreEmpresa?.Trim(),
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                bytes.AddRange(emitter.PrintLine(cierre.NombreSucursal.Trim()));
+            }
             bytes.AddRange(emitter.SetStyles(PrintStyle.None));
             bytes.AddRange(emitter.PrintLine("--------------------------------"));
 
@@ -1262,177 +1441,101 @@ public async Task GenerateTicketFacturaCliente(int idFactura)
             }
             bytes.AddRange(emitter.PrintLine("--------------------------------"));
 
-            /* =====================================
-            ?? RESUMEN DE VENTAS
-            ===================================== */
+            var metodos = cierre.MetodosPago ?? new List<CajaMetodoPagoDto>();
+            var productos = cierre.ProductosVendidos ?? new();
+            var totalGeneral = metodos.Sum(m => m.Total);
+            var efectivo = metodos
+                .Where(x => CajaMetodoPagoDto.EsEfectivo(x.FormaPago))
+                .Sum(x => x.Total);
 
             bytes.AddRange(emitter.SetStyles(PrintStyle.Bold));
             bytes.AddRange(emitter.PrintLine("RESUMEN DE VENTAS"));
             bytes.AddRange(emitter.SetStyles(PrintStyle.None));
-
-            bytes.AddRange(emitter.PrintLine(
-                $"Ventas Brutas : RD$ {cierre.VentasBrutas:N2}"
-            ));
-
-            bytes.AddRange(emitter.PrintLine(
-                $"Descuentos    : RD$ {cierre.TotalDescuento:N2}"
-            ));
-
-            bytes.AddRange(emitter.PrintLine(
-                $"Ingresos Caja : RD$ {cierre.TotalIngresosExtra:N2}"
-            ));
-
-            bytes.AddRange(emitter.PrintLine(
-                $"Gastos Caja   : RD$ {cierre.TotalGastos:N2}"
-            ));
-
-            bytes.AddRange(emitter.PrintLine("--------------------------------"));
-
+            bytes.AddRange(emitter.PrintLine($"Ventas brutas : RD$ {cierre.VentasBrutas:N2}"));
+            bytes.AddRange(emitter.PrintLine($"Descuentos    : RD$ {cierre.TotalDescuento:N2}"));
+            bytes.AddRange(emitter.PrintLine($"Ingresos caja : RD$ {cierre.TotalIngresosExtra:N2}"));
+            bytes.AddRange(emitter.PrintLine($"Gastos caja   : RD$ {cierre.TotalGastos:N2}"));
             bytes.AddRange(emitter.SetStyles(PrintStyle.Bold));
-
-            bytes.AddRange(emitter.PrintLine(
-                $"TOTAL VENDIDO : RD$ {cierre.TotalIngresosNetos:N2}"
-            ));
-
+            bytes.AddRange(emitter.PrintLine($"TOTAL VENDIDO : RD$ {cierre.TotalIngresosNetos:N2}"));
             bytes.AddRange(emitter.SetStyles(PrintStyle.None));
-
             bytes.AddRange(emitter.PrintLine("--------------------------------"));
-
-            /* =====================================
-            ?? FORMAS DE PAGO
-            ===================================== */
 
             bytes.AddRange(emitter.SetStyles(PrintStyle.Bold));
             bytes.AddRange(emitter.PrintLine("FORMAS DE PAGO"));
             bytes.AddRange(emitter.SetStyles(PrintStyle.None));
 
-            decimal totalMetodos = 0;
-
-            if (cierre.MetodosPago != null &&
-                cierre.MetodosPago.Any())
+            if (metodos.Count == 0)
             {
-                foreach (var metodo in cierre.MetodosPago)
+                bytes.AddRange(emitter.PrintLine("Sin cobros en esta caja"));
+            }
+            else
+            {
+                foreach (var metodo in metodos)
                 {
+                    var nombre = string.IsNullOrWhiteSpace(metodo.FormaPago) ? "Otro" : metodo.FormaPago.Trim();
+                    if (nombre.Length > 18)
+                        nombre = nombre.Substring(0, 18);
+
                     bytes.AddRange(emitter.PrintLine(
-                        $"{metodo.FormaPago.PadRight(18)} RD$ {metodo.Total:N2}"
+                        $"{nombre.PadRight(18)} RD$ {metodo.Total:N2}"
                     ));
-
-                    totalMetodos += metodo.Total;
                 }
-
-                bytes.AddRange(emitter.PrintLine("--------------------------------"));
-
-                bytes.AddRange(emitter.SetStyles(PrintStyle.Bold));
-
-                bytes.AddRange(emitter.PrintLine(
-                    $"TOTAL COBRADO : RD$ {totalMetodos:N2}"
-                ));
-
-                bytes.AddRange(emitter.SetStyles(PrintStyle.None));
-
-                bytes.AddRange(emitter.PrintLine("--------------------------------"));
             }
 
-            /* =====================================
-            ?? CUADRE DE CAJA
-            ===================================== */
+            bytes.AddRange(emitter.SetStyles(PrintStyle.Bold));
+            bytes.AddRange(emitter.PrintLine($"TOTAL COBRADO : RD$ {totalGeneral:N2}"));
+            bytes.AddRange(emitter.SetStyles(PrintStyle.None));
+            bytes.AddRange(emitter.PrintLine("--------------------------------"));
 
             bytes.AddRange(emitter.SetStyles(PrintStyle.Bold));
             bytes.AddRange(emitter.PrintLine("CUADRE DE CAJA"));
             bytes.AddRange(emitter.SetStyles(PrintStyle.None));
-
-            bytes.AddRange(emitter.PrintLine(
-                $"Fondo Inicial : RD$ {cierre.MontoInicial:N2}"
-            ));
-
-            var efectivo = cierre.MetodosPago?
-                .FirstOrDefault(x =>
-                    x.FormaPago.ToUpper() == "EFECTIVO")
-                ?.Total ?? 0;
-
-            bytes.AddRange(emitter.PrintLine(
-                $"+ Ventas Efect.: RD$ {efectivo:N2}"
-            ));
-
-            bytes.AddRange(emitter.PrintLine(
-                $"+ Ingresos Caja: RD$ {cierre.TotalIngresosExtra:N2}"
-            ));
-
-            bytes.AddRange(emitter.PrintLine(
-                $"- Gastos Caja  : RD$ {cierre.TotalGastos:N2}"
-            ));
-
+            bytes.AddRange(emitter.PrintLine($"Fondo inicial : RD$ {cierre.MontoInicial:N2}"));
+            bytes.AddRange(emitter.PrintLine($"+ Ventas efect.: RD$ {efectivo:N2}"));
+            bytes.AddRange(emitter.PrintLine($"+ Ingresos caja: RD$ {cierre.TotalIngresosExtra:N2}"));
+            bytes.AddRange(emitter.PrintLine($"- Gastos caja  : RD$ {cierre.TotalGastos:N2}"));
+            bytes.AddRange(emitter.PrintLine($"DEBE HABER    : RD$ {cierre.DebeHaber:N2}"));
+            bytes.AddRange(emitter.PrintLine($"Total contado : RD$ {cierre.MontoRealCaja:N2}"));
+            bytes.AddRange(emitter.SetStyles(PrintStyle.Bold));
+            bytes.AddRange(emitter.PrintLine($"DIFERENCIA    : RD$ {cierre.Diferencia:N2}"));
+            bytes.AddRange(emitter.SetStyles(PrintStyle.None));
             bytes.AddRange(emitter.PrintLine("--------------------------------"));
 
             bytes.AddRange(emitter.SetStyles(PrintStyle.Bold));
-
-            bytes.AddRange(emitter.PrintLine(
-                $"DEBE HABER    : RD$ {cierre.DebeHaber:N2}"
-            ));
-
+            bytes.AddRange(emitter.PrintLine("PRODUCTOS VENDIDOS"));
             bytes.AddRange(emitter.SetStyles(PrintStyle.None));
 
-            bytes.AddRange(emitter.PrintLine(
-                $"Total Contado : RD$ {cierre.MontoRealCaja:N2}"
-            ));
-
-            bytes.AddRange(emitter.PrintLine("--------------------------------"));
-
-            bytes.AddRange(emitter.SetStyles(PrintStyle.Bold));
-
-            bytes.AddRange(emitter.PrintLine(
-                $"DIFERENCIA    : RD$ {cierre.Diferencia:N2}"
-            ));
-
-            bytes.AddRange(emitter.SetStyles(PrintStyle.None));
-
-            bytes.AddRange(emitter.PrintLine("--------------------------------"));
-
-            /* =====================================
-            ?? PRODUCTOS
-            ====================================== */
-
-            if (cierre.ProductosVendidos != null &&
-                cierre.ProductosVendidos.Any())
+            if (productos.Count > 0)
             {
-                bytes.AddRange(emitter.SetStyles(PrintStyle.Bold));
-                bytes.AddRange(emitter.PrintLine("PRODUCTOS VENDIDOS"));
-                bytes.AddRange(emitter.SetStyles(PrintStyle.None));
-
-                bytes.AddRange(emitter.PrintLine("--------------------------------"));
-
-                foreach (var item in cierre.ProductosVendidos)
+                foreach (var item in productos)
                 {
-                    bytes.AddRange(emitter.SetStyles(PrintStyle.Bold));
-                    bytes.AddRange(emitter.PrintLine(item.Producto));
-                    bytes.AddRange(emitter.SetStyles(PrintStyle.None));
+                    var nombreProd = string.IsNullOrWhiteSpace(item.Producto)
+                        ? $"Producto #{item.IdProducto}"
+                        : item.Producto.Trim();
+                    if (nombreProd.Length > 32)
+                        nombreProd = nombreProd.Substring(0, 32);
 
+                    bytes.AddRange(emitter.PrintLine(nombreProd));
                     bytes.AddRange(emitter.PrintLine(
-                        $"Cant : {item.CantidadVendida:N2}"
+                        $"  Cant: {item.CantidadVendida:N2}  Total: RD$ {item.TotalVendido:N2}"
                     ));
-
                     bytes.AddRange(emitter.PrintLine(
-                        $"Total: RD$ {item.TotalVendido:N2}"
+                        $"  Exist: {item.ExistenciaActual:N2}"
                     ));
-
-                    bytes.AddRange(emitter.PrintLine(
-                        $"Exist: {item.ExistenciaActual:N2}"
-                    ));
-
-                    bytes.AddRange(emitter.PrintLine("--------------------------------"));
                 }
             }
+            else
+            {
+                bytes.AddRange(emitter.PrintLine("Sin productos en esta caja"));
+            }
 
-            /* =====================================
-            ?? OBSERVACI?N
-            ====================================== */
+            bytes.AddRange(emitter.PrintLine("--------------------------------"));
 
             if (!string.IsNullOrWhiteSpace(cierre.Observacion))
             {
                 bytes.AddRange(emitter.SetStyles(PrintStyle.Bold));
                 bytes.AddRange(emitter.PrintLine("OBSERVACION"));
                 bytes.AddRange(emitter.SetStyles(PrintStyle.None));
-
                 bytes.AddRange(emitter.PrintLine(cierre.Observacion));
                 bytes.AddRange(emitter.PrintLine("--------------------------------"));
             }

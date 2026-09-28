@@ -29,13 +29,15 @@ namespace AlahiaPos.DataAccess.Servicios
             "TICKETS_ADMIN",
             "POLITICAS_VERSIONES",
             "POLITICAS_ACEPTACIONES",
+            "NCF_SECUENCIAS",
+            "FE_CERTIFICACION",
         };
 
         private static readonly string[] Nucleo =
         {
             "EMPRESA", "USUARIOS", "PERFILES", "PARAMETROS", "DASHBOARD",
             "PRODUCTOS", "CATEGORIAS", "CLIENTES", "POS", "ORDENES",
-            "HISTORICO_FACTURAS", "NCF_SECUENCIAS", "IMPRESION_TERMICA",
+            "HISTORICO_FACTURAS", "FE_SECUENCIAS", "IMPRESION_TERMICA",
             "DESCUENTOS", "EMPLEADOS", "TICKETS",
             "LISTADO_DEVOLUCIONES", "NOTAS_CREDITO_APLICADAS",
             "REPORTE_VENTA", "REPORTE_607", "CUENTAS_COBRAR",
@@ -93,14 +95,14 @@ namespace AlahiaPos.DataAccess.Servicios
             {
                 Codigo = "comida",
                 Nombre = "Comida / restaurante",
-                Descripcion = "POS + cocina/producción. Ref: La Leyenda Hotdog.",
+                Descripcion = "POS + cocina/producci\u00f3n. Ref: La Leyenda Hotdog.",
                 CodigosModulo = Merge(Nucleo, Caja, Produccion, Tesoreria, Contabilidad),
             },
             new VerticalPreset
             {
                 Codigo = "reposteria",
-                Nombre = "Repostería / pastelería",
-                Descripcion = "POS + bizcocho por encargo + producción. Ref: De Laura Pastelería.",
+                Nombre = "Reposter\u00eda / pasteler\u00eda",
+                Descripcion = "POS + bizcocho por encargo + producci\u00f3n. Ref: De Laura Pasteler\u00eda.",
                 CodigosModulo = Merge(Nucleo, Caja, Inventario, Compras, Tesoreria, Contabilidad, Produccion,
                     new[] { "BIZCOCHO_ENCARGO", "CONDUCES" }),
             },
@@ -115,14 +117,14 @@ namespace AlahiaPos.DataAccess.Servicios
             new VerticalPreset
             {
                 Codigo = "salon",
-                Nombre = "Salón de belleza",
-                Descripcion = "Citas, áreas, comisiones y CRM ligero.",
+                Nombre = "Sal\u00f3n de belleza",
+                Descripcion = "Citas, \u00e1reas, comisiones y CRM ligero.",
                 CodigosModulo = Merge(Nucleo, Caja, Tesoreria, Contabilidad, ComisionesServicio, SalonExtra),
             },
             new VerticalPreset
             {
                 Codigo = "ferreteria",
-                Nombre = "Ferretería",
+                Nombre = "Ferreter\u00eda",
                 Descripcion = "Inventario + compras + CxC/CxP para mostrador.",
                 CodigosModulo = Merge(Nucleo, Caja, Inventario, Compras, Tesoreria, Contabilidad,
                     new[] { "CONDUCES" }),

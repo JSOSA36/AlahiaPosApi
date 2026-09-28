@@ -38,6 +38,9 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.DgiiDirecto
             if (!string.IsNullOrWhiteSpace(_settings.TokenFijo))
                 return _settings.TokenFijo!;
 
+            if (idEmpresa <= 0)
+                idEmpresa = DgiiEmpresaContext.Current;
+
             var ambiente = Eff.AmbientePath;
             var cacheKey = $"{ambiente}|{idEmpresa}";
 

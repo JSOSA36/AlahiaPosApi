@@ -3,11 +3,14 @@ using AlahiaPos.Entities.Dto;
 using AlahiaPos.Entities.Dto.Fiscal;
 using AlahiaPos.Entities.Interfaces;
 using AlahiaPos.DataAccess.Data;
+using AlahiaPos.DataAccess.Servicios.FacturacionElectronica;
 using AlahiaPos.DataAccess.Servicios.FiscalGateway;
 using AlahiaPos.DataAccess.Servicios.FiscalGateway.DgiiDirecto;
+using AlahiaPosApi.Auth;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using System;
 using System.Security.Cryptography.X509Certificates;
 
 namespace AlahiaPosApi.Controllers
@@ -80,9 +83,9 @@ namespace AlahiaPosApi.Controllers
         // ============================================================
 
         [HttpGet("secuencias-disponibles/{idEmpresa}")]
-        public async Task<IActionResult> SecuenciasDisponibles(int idEmpresa)
+        public async Task<IActionResult> SecuenciasDisponibles(int idEmpresa, int? idSucursal = null)
         {
-            var lista = await _feService.ObtenerSecuenciasDisponiblesAsync(idEmpresa);
+            var lista = await _feService.ObtenerSecuenciasDisponiblesAsync(idEmpresa, idSucursal);
             return Ok(lista);
         }
 
@@ -108,25 +111,83 @@ namespace AlahiaPosApi.Controllers
         [HttpPost("secuencias")]
         public async Task<IActionResult> CreateSecuencia([FromBody] SecuenciaEcfCreateDto dto)
         {
-            if (dto.IdEmpresa == 0 || dto.TipoEcfDgii == 0 || dto.SecuenciaFinal == 0)
-                return BadRequest("IdEmpresa, TipoEcfDgii y SecuenciaFinal son requeridos");
+            if (dto.IdEmpresa == 0 || dto.TipoEcfDgii == 0)
+                return BadRequest("IdEmpresa y TipoEcfDgii son requeridos");
+            if (dto.SecuenciaInicial < 1)
+                return BadRequest("La secuencia inicial debe ser mayor o igual a 1");
+            if (dto.SecuenciaFinal < dto.SecuenciaInicial)
+                return BadRequest("Defina un rango: secuencia inicial y final (ejemplo: del 1 al 10)");
 
-            var created = await _secuencias.CreateAsync(dto);
-            return CreatedAtAction(nameof(GetSecuencia),
-                new { id = created.IdSecuencia }, created);
+            try
+            {
+                var created = await _secuencias.CreateAsync(dto);
+                return CreatedAtAction(nameof(GetSecuencia),
+                    new { id = created.IdSecuencia }, created);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         [HttpPut("secuencias/{id}")]
         public async Task<IActionResult> UpdateSecuencia(int id, [FromBody] SecuenciaEcfUpdateDto dto)
         {
-            await _secuencias.UpdateAsync(id, dto);
-            return NoContent();
+            try
+            {
+                await _secuencias.UpdateAsync(id, dto);
+                return NoContent();
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         [HttpPatch("secuencias/{id}/desactivar")]
         public async Task<IActionResult> DesactivarSecuencia(int id)
         {
             await _secuencias.DesactivarAsync(id);
+            return NoContent();
+        }
+
+        [HttpPost("secuencias/{id}/asignaciones")]
+        public async Task<IActionResult> AsignarRango(int id, [FromBody] SecuenciaEcfAsignarDto dto)
+        {
+            if (dto == null || dto.IdSucursal <= 0)
+                return BadRequest("Indique la sucursal que usará este rango.");
+            if (dto.SecuenciaInicial < 1 || dto.SecuenciaFinal < dto.SecuenciaInicial)
+                return BadRequest("Defina un rango dentro de la autorización de la empresa.");
+
+            try
+            {
+                var creada = await _secuencias.AsignarRangoAsync(id, dto);
+                return Ok(creada);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpPut("secuencias/asignaciones/{idAsignacion}")]
+        public async Task<IActionResult> ActualizarAsignacion(int idAsignacion, [FromBody] SecuenciaEcfAsignarDto dto)
+        {
+            try
+            {
+                await _secuencias.ActualizarAsignacionAsync(idAsignacion, dto);
+                return NoContent();
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpPatch("secuencias/asignaciones/{idAsignacion}/desactivar")]
+        public async Task<IActionResult> DesactivarAsignacion(int idAsignacion)
+        {
+            await _secuencias.DesactivarAsignacionAsync(idAsignacion);
             return NoContent();
         }
 
@@ -192,15 +253,25 @@ namespace AlahiaPosApi.Controllers
                     ? empresa.ProveedorFE_Nombre
                     : body.Nombre.Trim();
                 empresa.ProveedorFE_BaseUrl = url.TrimEnd('/');
-                empresa.ProveedorFE_Usuario = body.Usuario?.Trim();
 
-                if (!string.IsNullOrWhiteSpace(body.ApiKey))
-                    empresa.ProveedorFE_ApiKey = body.ApiKey.Trim();
+                // La pantalla muestra las credenciales: lo enviado es la fuente de verdad.
+                // null = no vino el campo (compatibilidad: conservar). "" = borrar.
+                if (body.Usuario != null)
+                    empresa.ProveedorFE_Usuario = string.IsNullOrWhiteSpace(body.Usuario)
+                        ? null
+                        : body.Usuario.Trim();
+
+                if (body.ApiKey != null)
+                    empresa.ProveedorFE_ApiKey = string.IsNullOrWhiteSpace(body.ApiKey)
+                        ? null
+                        : body.ApiKey.Trim();
                 else if (body.ClearApiKey == true)
                     empresa.ProveedorFE_ApiKey = null;
 
-                if (!string.IsNullOrWhiteSpace(body.Password))
-                    empresa.ProveedorFE_Password = body.Password;
+                if (body.Password != null)
+                    empresa.ProveedorFE_Password = string.IsNullOrWhiteSpace(body.Password)
+                        ? null
+                        : body.Password;
                 else if (body.ClearPassword == true)
                     empresa.ProveedorFE_Password = null;
             }
@@ -227,6 +298,8 @@ namespace AlahiaPosApi.Controllers
                 nombre = esExterno ? empresa.ProveedorFE_Nombre : "Alahia.eCF.Api",
                 baseUrl = esExterno ? empresa.ProveedorFE_BaseUrl : _gatewayDefaults.BaseUrl,
                 usuario = esExterno ? empresa.ProveedorFE_Usuario : null,
+                password = esExterno ? empresa.ProveedorFE_Password : null,
+                apiKey = esExterno ? empresa.ProveedorFE_ApiKey : null,
                 apiKeyConfigurado = esExterno
                     ? !string.IsNullOrWhiteSpace(empresa.ProveedorFE_ApiKey)
                     : !string.IsNullOrWhiteSpace(_gatewayDefaults.ApiKey),
@@ -244,6 +317,7 @@ namespace AlahiaPosApi.Controllers
         // ============================================================
 
         [HttpGet("certificado/{idEmpresa}")]
+        [PermitirEmpresaObjetivo]
         public async Task<IActionResult> GetCertificado(int idEmpresa)
         {
             var existeEmpresa = await _ctx.Empresas.AsNoTracking()
@@ -260,6 +334,7 @@ namespace AlahiaPosApi.Controllers
                     c.FechaExpiracion,
                     c.FechaCreacion,
                     c.Ambiente,
+                    password = c.PasswordEncriptado,
                     tieneBytes = c.ArchivoBytes != null && c.ArchivoBytes.Length > 0,
                     tieneRuta = c.RutaArchivo != null && c.RutaArchivo != ""
                 })
@@ -282,12 +357,14 @@ namespace AlahiaPosApi.Controllers
                 fechaExpiracion = cert.FechaExpiracion,
                 fechaCreacion = cert.FechaCreacion,
                 ambiente = cert.Ambiente,
+                password = cert.password,
                 vencido = cert.FechaExpiracion < DateTime.Now,
                 usable = cert.tieneBytes || cert.tieneRuta
             });
         }
 
         [HttpPost("certificado/{idEmpresa}")]
+        [PermitirEmpresaObjetivo]
         [RequestSizeLimit(15_000_000)]
         public async Task<IActionResult> UploadCertificado(
             int idEmpresa,
@@ -465,25 +542,45 @@ namespace AlahiaPosApi.Controllers
         {
             var resultado = await _gateway.ConsultarEstadoAsync(trackId);
 
-            // Persistir estado final en historial ERP (sin reenviar)
+            // Persistir estado, QR y fecha de firma (aunque el estado no cambie:
+            // reconsulta repara ConsultaTimbre de E31 con FechaFirma mal parseada).
             if (!string.IsNullOrWhiteSpace(trackId) && !string.IsNullOrWhiteSpace(resultado.Estado))
             {
                 var ecf = await _ctx.ECFEncabezados
                     .AsTracking()
                     .FirstOrDefaultAsync(e => e.TrackId == trackId);
-                if (ecf != null && !string.Equals(ecf.EstadoDGII, resultado.Estado, StringComparison.OrdinalIgnoreCase))
+                if (ecf != null)
                 {
-                    ecf.EstadoDGII = resultado.Estado;
-                    if (resultado.EsAceptado || resultado.Estado is "AceptadoCondicional")
-                        ecf.EstadoDocumento = EstadoDocumentoElectronico.Aceptado;
-                    else if (resultado.EsRechazado)
-                        ecf.EstadoDocumento = EstadoDocumentoElectronico.Rechazado;
-                    ecf.FechaRespuesta = DateTime.Now;
-                    if (!string.IsNullOrWhiteSpace(resultado.SecurityCode))
+                    var dirty = false;
+                    if (!string.Equals(ecf.EstadoDGII, resultado.Estado, StringComparison.OrdinalIgnoreCase))
+                    {
+                        ecf.EstadoDGII = resultado.Estado;
+                        if (resultado.EsAceptado || resultado.Estado is "AceptadoCondicional")
+                            ecf.EstadoDocumento = EstadoDocumentoElectronico.Aceptado;
+                        else if (resultado.EsRechazado)
+                            ecf.EstadoDocumento = EstadoDocumentoElectronico.Rechazado;
+                        ecf.FechaRespuesta = DateTime.Now;
+                        dirty = true;
+                    }
+                    if (!string.IsNullOrWhiteSpace(resultado.SecurityCode)
+                        && !string.Equals(ecf.SecurityCode, resultado.SecurityCode, StringComparison.Ordinal))
+                    {
                         ecf.SecurityCode = resultado.SecurityCode;
-                    if (!string.IsNullOrWhiteSpace(resultado.UrlQR))
+                        dirty = true;
+                    }
+                    if (!string.IsNullOrWhiteSpace(resultado.UrlQR)
+                        && !string.Equals(ecf.UrlQR, resultado.UrlQR, StringComparison.Ordinal))
+                    {
                         ecf.UrlQR = resultado.UrlQR;
-                    await _ctx.SaveChangesAsync();
+                        dirty = true;
+                    }
+                    if (resultado.FechaFirma.HasValue && ecf.FechaFirma != resultado.FechaFirma)
+                    {
+                        ecf.FechaFirma = resultado.FechaFirma;
+                        dirty = true;
+                    }
+                    if (dirty)
+                        await _ctx.SaveChangesAsync();
                 }
             }
 
@@ -581,6 +678,22 @@ namespace AlahiaPosApi.Controllers
 
             if (ecf.EstadoDGII != "Error" && ecf.EstadoDGII != "Rechazado" && ecf.EstadoDocumento != "ERROR")
                 return BadRequest("Solo se pueden reprocesar documentos en estado Error o Rechazado");
+
+            if (EcfSecuenciaYaUtilizada.EncabezadoYaFueEnviado(ecf)
+                || EcfSecuenciaYaUtilizada.EnMensajes(ecf.MensajeRespuesta))
+            {
+                if (!int.TryParse(ecf.TipoECF, out var tipoEcf) || tipoEcf <= 0)
+                    return BadRequest("Tipo e-CF inválido para reprocesar con secuencia nueva");
+
+                var resultado = await _feService.EmitirYEnviarAsync(new EmisionEcfRequest
+                {
+                    IdEmpresa = ecf.IdEmpresa,
+                    TipoEcfDgii = tipoEcf,
+                    OrigenDocumento = (OrigenDocumento)ecf.OrigenDocumento,
+                    IdOrigen = ecf.IdOrigen
+                });
+                return Ok(resultado);
+            }
 
             ecf.EstadoDGII = "Pendiente";
             ecf.EstadoDocumento = EstadoDocumentoElectronico.PendienteEnvio;

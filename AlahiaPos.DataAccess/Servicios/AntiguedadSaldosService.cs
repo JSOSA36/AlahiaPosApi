@@ -51,6 +51,8 @@ namespace AlahiaPos.DataAccess.Servicios
             else
                 facturas = facturas.Where(h => h.Pendiente > 0).ToList();
 
+            facturas = facturas.Where(h => IncluyeSucursal(filtro, h.IdSucursal)).ToList();
+
             facturas = AplicarFiltroFechasDocumento(facturas, filtro, h => h.FechaInseccion.Date);
 
             if (!string.IsNullOrWhiteSpace(filtro.Documento))
@@ -128,6 +130,8 @@ namespace AlahiaPos.DataAccess.Servicios
             if (filtro.SoloPendientes)
                 facturas = facturas.Where(h => h.Pendiente > 0).ToList();
 
+            facturas = facturas.Where(h => IncluyeSucursal(filtro, h.IdSucursal)).ToList();
+
             facturas = AplicarFiltroFechasDocumento(facturas, filtro, h => h.FechaInseccion.Date);
 
             if (!string.IsNullOrWhiteSpace(filtro.Documento))
@@ -185,6 +189,16 @@ namespace AlahiaPos.DataAccess.Servicios
             if (filtro.FechaDesde.HasValue && filtro.FechaHasta.HasValue
                 && filtro.FechaHasta.Value.Date < filtro.FechaDesde.Value.Date)
                 throw new ArgumentException("La fecha hasta no puede ser menor que desde.");
+        }
+
+        private static bool IncluyeSucursal(AntiguedadSaldosFiltroRequest filtro, int? idSucursal)
+        {
+            if (filtro.IdsSucursalConsulta == null)
+                return true;
+            if (filtro.IdsSucursalConsulta.Count == 0)
+                return false;
+            var id = idSucursal is > 0 ? idSucursal.Value : filtro.IdSucursalPrincipal;
+            return id > 0 && filtro.IdsSucursalConsulta.Contains(id);
         }
 
         private static List<T> AplicarFiltroFechasDocumento<T>(

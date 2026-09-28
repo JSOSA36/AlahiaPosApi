@@ -70,7 +70,9 @@ CerrarFacturasPendientes(
            DateTime? Hasta, int IdCliente, int IdEmpresa);
 
         public Task<IEnumerable<ServicioRankingDto>> GetTopServiciosDelMes(int IdEmpresa);
-        public Task<IEnumerable<CuentaPorCobrarDto>> GetCuentasPorCobrar(int IdEmpresa);
+        public Task<IEnumerable<CuentaPorCobrarDto>> GetCuentasPorCobrar(
+            int IdEmpresa,
+            SucursalConsultaScope? consulta = null);
         Task<
 List<CajaProductoDto>>
 GetProductosPendientesCierre(

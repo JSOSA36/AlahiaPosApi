@@ -1,6 +1,7 @@
 using System.Text;
 using System.Xml;
 using System.Xml.Linq;
+using AlahiaPos.DataAccess.Servicios.FacturacionElectronica;
 using AlahiaPos.Entities.Dto.Fiscal;
 
 namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.DgiiDirecto.Definitions
@@ -14,6 +15,10 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.DgiiDirecto.Definitions
     {
         public static string Build(FiscalDocumentoElectronico doc, DateTime fechaHoraFirma)
         {
+            if (string.Equals(doc.AmbienteDgii, "certecf", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(DgiiAmbienteContext.Current, "certecf", StringComparison.OrdinalIgnoreCase))
+                CertecfExcelParser.SanearTelefonosCertecf(doc);
+
             var def = EcfTipoDefinitionRegistry.Get(doc.Encabezado.TipoEcf);
             var ctx = new EcfBuildContext
             {
@@ -66,16 +71,43 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.DgiiDirecto.Definitions
                 campo.Validar?.Invoke(ctx);
                 if (campo.Resolver == null) continue;
 
-                object? valor;
-                try
+                object? valor = null;
+                var respetarExcel = EcfXmlFormat.DebeRespetarExcel(ctx) && !campo.EsComplejo;
+                if (respetarExcel
+                    && campo.Nombre.Equals("TelefonoAdicional", StringComparison.OrdinalIgnoreCase))
                 {
-                    valor = campo.Resolver(ctx);
+                    // El set CerteCF E32 <250k duplica TelefonoEmisor en TelefonoAdicional.
+                    // Hay que emitir los dos; omitir el tag hace que DGII lo reclame igual.
+                    if (!EcfXmlFormat.TryCeldaExcel(ctx, campo.Nombre, out var adicRaw))
+                        continue;
+                    var adic = EcfXmlFormat.Telefono(adicRaw);
+                    if (adic == null) continue;
+                    valor = adic;
                 }
-                catch (Exception ex) when (campo.Presence == EcfCampoPresence.Opcional)
+                else if (respetarExcel
+                    && !EcfXmlFormat.EsCampoCodigo(campo.Nombre)
+                    && EcfXmlFormat.TryCeldaExcel(ctx, campo.Nombre, out var excel))
                 {
-                    // Opcional fallido → omitir
-                    _ = ex;
+                    valor = excel;
+                }
+                else if (respetarExcel
+                    && campo.Presence == EcfCampoPresence.Opcional
+                    && !EcfXmlFormat.EsCampoCodigo(campo.Nombre))
+                {
+                    // CerteCF: celda vacía = no emitir (no inventar 0.00).
                     continue;
+                }
+                else
+                {
+                    try
+                    {
+                        valor = campo.Resolver(ctx);
+                    }
+                    catch (Exception ex) when (campo.Presence == EcfCampoPresence.Opcional)
+                    {
+                        _ = ex;
+                        continue;
+                    }
                 }
 
                 if (valor is null || (valor is string s && string.IsNullOrWhiteSpace(s)))
@@ -117,16 +149,30 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.DgiiDirecto.Definitions
                 return null;
 
             var root = new XElement("DescuentosORecargos");
+            var respetarExcel = EcfXmlFormat.DebeRespetarExcel(ctx);
             foreach (var d in ctx.Documento.Descuentos)
             {
+                var n = d.NumeroLinea;
                 var el = new XElement("DescuentoORecargo",
-                    new XElement("NumeroLinea", d.NumeroLinea),
+                    new XElement("NumeroLinea", n),
                     new XElement("TipoAjuste", d.EsDescuento ? "D" : "R"));
                 if (!string.IsNullOrWhiteSpace(d.Descripcion))
                     el.Add(new XElement("DescripcionDescuentooRecargo", EcfXmlFormat.Esc(d.Descripcion, 45)));
-                el.Add(new XElement("TipoValor", d.EsMontoFijo ? "$" : "%"));
-                el.Add(new XElement("ValorDescuentooRecargo", EcfXmlFormat.Money(d.Monto)));
-                el.Add(new XElement("MontoDescuentooRecargo", EcfXmlFormat.Money(d.Monto)));
+                el.Add(new XElement("TipoValor",
+                    EcfXmlFormat.TryCeldaExcel(ctx, "TipoValor", out var tipoValorExcel, n)
+                        ? tipoValorExcel
+                        : (d.EsMontoFijo ? "$" : "%")));
+
+                // CerteCF: celda vacía de ValorDescuentooRecargo = no emitir (Excel trae Monto, no Valor).
+                if (EcfXmlFormat.TryCeldaExcel(ctx, "ValorDescuentooRecargo", out var valorExcel, n))
+                    el.Add(new XElement("ValorDescuentooRecargo", valorExcel));
+                else if (!respetarExcel)
+                    el.Add(new XElement("ValorDescuentooRecargo", EcfXmlFormat.Money(d.Monto)));
+
+                var montoTxt = EcfXmlFormat.TryCeldaExcel(ctx, "MontoDescuentooRecargo", out var montoExcel, n)
+                    ? montoExcel
+                    : EcfXmlFormat.Money(d.Monto);
+                el.Add(new XElement("MontoDescuentooRecargo", montoTxt));
                 if (d.IndicadorFacturacion.HasValue)
                     el.Add(new XElement("IndicadorFacturacionDescuentooRecargo", d.IndicadorFacturacion.Value));
                 root.Add(el);

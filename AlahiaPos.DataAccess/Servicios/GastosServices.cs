@@ -79,6 +79,10 @@ namespace AlahiaPos.DataAccess.Servicios
                 throw new InvalidOperationException(
                     "No se puede anular un gasto ya cerrado en caja.");
 
+            if (GastoComprobanteTipos.EsGastosMenores(gasto.TipoComprobante))
+                throw new InvalidOperationException(
+                    "Un gasto con comprobante de gastos menores no se puede anular (e-NCF E43 / Formato 606).");
+
             if (string.Equals(gasto.OrigenModulo, "COMPRAS", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(gasto.OrigenModulo, "NOMINA", StringComparison.OrdinalIgnoreCase))
                 throw new InvalidOperationException(
@@ -181,6 +185,13 @@ namespace AlahiaPos.DataAccess.Servicios
                 ? GastoComprobanteTipos.SinComprobante
                 : request.TipoComprobante;
 
+            if (GastoComprobanteTipos.EsGastosMenores(tipoComprobante)
+                && (request.IdTipoBienesServicios is null or < 1 or > 11))
+            {
+                throw new ArgumentException(
+                    "Seleccione el Tipo de gasto DGII (606). Es obligatorio con comprobante de gastos menores.");
+            }
+
             var origenModulo = string.IsNullOrWhiteSpace(request.OrigenModulo)
                 ? "MANUAL"
                 : request.OrigenModulo.Trim().ToUpperInvariant();
@@ -192,6 +203,7 @@ namespace AlahiaPos.DataAccess.Servicios
             var numeroComprobante = string.IsNullOrWhiteSpace(request.NumeroComprobante)
                 ? null
                 : request.NumeroComprobante.Trim().ToUpperInvariant();
+
             DateTime? fechaComprobante = request.FechaComprobante;
             string? rncEmisor = null;
             string? nombreEmisor = null;
@@ -203,22 +215,36 @@ namespace AlahiaPos.DataAccess.Servicios
             {
                 var reserva = await _secuenciaEcf.ReservarSiguienteAsync(
                     request.IdEmpresa,
-                    GastoComprobanteTipos.TipoEcfGastosMenores);
+                    GastoComprobanteTipos.TipoEcfGastosMenores,
+                    request.IdSucursal);
 
                 if (reserva.Exitoso && !string.IsNullOrWhiteSpace(reserva.Encf))
                 {
                     numeroComprobante = reserva.Encf;
                     fechaComprobante ??= fecha.Date;
-                    var empresa = await _context.Empresas.AsNoTracking()
-                        .FirstOrDefaultAsync(e => e.IdEmpresa == request.IdEmpresa);
-                    rncEmisor = empresa?.RNC;
-                    nombreEmisor = empresa?.NombreComercial;
                 }
                 else
                 {
                     mensajeEcf = reserva.MensajeError
                         ?? "No hay secuencia E43 (Gastos Menores). Configure FE → Secuencias e-CF.";
                 }
+            }
+
+            if (GastoComprobanteTipos.EsGastosMenores(tipoComprobante)
+                && string.IsNullOrWhiteSpace(numeroComprobante))
+            {
+                throw new InvalidOperationException(
+                    mensajeEcf
+                    ?? "No hay secuencia E43 (Gastos Menores). Configure FE → Secuencias e-CF para que el gasto entre al Formato 606.");
+            }
+
+            if (GastoComprobanteTipos.EsGastosMenores(tipoComprobante)
+                && (string.IsNullOrWhiteSpace(rncEmisor) || string.IsNullOrWhiteSpace(nombreEmisor)))
+            {
+                var empresa = await _context.Empresas.AsNoTracking()
+                    .FirstOrDefaultAsync(e => e.IdEmpresa == request.IdEmpresa);
+                rncEmisor ??= empresa?.RNC;
+                nombreEmisor ??= empresa?.NombreComercial;
             }
 
             // Movimiento primero (categoría GASTO → contabilidad por GastoRegistrado, no por Banco).
@@ -264,6 +290,7 @@ namespace AlahiaPos.DataAccess.Servicios
             var gasto = new Gastos
             {
                 IdEmpresa = request.IdEmpresa,
+                IdSucursal = request.IdSucursal,
                 FechaInseccion = fecha,
                 IdProveedor = request.IdProveedor > 0 ? request.IdProveedor : 1,
                 TipoGasto = request.TipoGasto.Trim(),
@@ -282,6 +309,7 @@ namespace AlahiaPos.DataAccess.Servicios
                 IdCuentaFinanciera = idCuenta,
                 Referencia = referencia,
                 OrigenModulo = origenModulo,
+                IdTipoBienesServicios = NormalizarTipoBienes(request.IdTipoBienesServicios),
                 EstaAnulado = false,
                 EstaCerrada = false
             };
@@ -366,5 +394,8 @@ namespace AlahiaPos.DataAccess.Servicios
         {
             _services.Update(gastos.IdGasto, gastos);
         }
+
+        private static int? NormalizarTipoBienes(int? value)
+            => value is >= 1 and <= 11 ? value : null;
     }
 }

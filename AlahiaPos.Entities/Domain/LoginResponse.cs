@@ -13,5 +13,6 @@ namespace AlahiaPos.Entities.Domain
         public IEnumerable<UsuarioModulo> Modulos { get; set; }
         public string Token { get; set; }
         public bool PuedeEliminarOrden { get; set; } // 👈 NUEVO
+        public bool PuedeAnularFactura { get; set; }
     }
 }

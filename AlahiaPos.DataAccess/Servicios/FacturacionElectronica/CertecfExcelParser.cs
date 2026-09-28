@@ -432,6 +432,8 @@ namespace AlahiaPos.DataAccess.Servicios.FacturacionElectronica
             RestaurarIscYSubcantidadDesdeCeldas(doc);
             AlinearConDefinicionDgii(doc);
             AplicarValoresDelExcelEnTotalesOpcionales(doc);
+            CertecfArtefactos.AplicarIdentidadEmisorReal(doc);
+            CertecfArtefactos.AsegurarFechaVencimientoSecuenciaCertecf(doc);
             return doc;
         }
 

@@ -14,6 +14,7 @@ namespace AlahiaPos.Entities.Dto.Fiscal
         public OrigenDocumento Origen { get; set; }
         public int IdOrigen { get; set; }
         public int IdEmpresa { get; set; }
+        public int? IdSucursal { get; set; }
 
         public DateTime FechaDocumento { get; set; }
         public string? RncCliente { get; set; }

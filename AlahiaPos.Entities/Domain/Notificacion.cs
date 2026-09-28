@@ -107,6 +107,8 @@ namespace AlahiaPos.Entities.Domain
         public const string CxcVencida = "CXC_VENCIDA";
         public const string CompraPendiente = "COMPRA_PENDIENTE";
         public const string AvisoAdministrativo = "AVISO_ADMINISTRATIVO";
+        public const string PedidoDeliveryAsignado = "PEDIDO_DELIVERY_ASIGNADO";
+        public const string CierreCaja = "CIERRE_CAJA";
     }
 
     public static class NotificacionCanales

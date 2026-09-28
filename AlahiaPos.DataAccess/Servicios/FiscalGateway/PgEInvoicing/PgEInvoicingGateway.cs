@@ -20,8 +20,9 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.PgEInvoicing
 
         public Task<FiscalConsultaResultado> ConsultarEstadoAsync(
             string trackId,
+            int idEmpresa = 0,
             CancellationToken ct = default)
-            => _inner.ConsultarEstadoAsync(trackId, ct);
+            => _inner.ConsultarEstadoAsync(trackId, idEmpresa, ct);
 
         public Task<bool> VerificarConexionAsync(CancellationToken ct = default)
             => _inner.VerificarConexionAsync(ct);

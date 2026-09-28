@@ -1,6 +1,5 @@
 using AlahiaPos.DataAccess.Servicios.FiscalGateway.PgEInvoicing;
 using AlahiaPos.Entities.Dto.Fiscal;
-using System.Globalization;
 
 namespace Alahia.eCF.Api.Services
 {
@@ -19,6 +18,11 @@ namespace Alahia.eCF.Api.Services
 
             var doc = new FiscalDocumentoElectronico
             {
+                IdEmpresa = pg.IdEmpresa,
+                AmbienteDgii = pg.AmbienteDgii,
+                CeldasExcel = pg.CeldasExcel is { Count: > 0 }
+                    ? new Dictionary<string, string>(pg.CeldasExcel, StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase),
                 Encabezado = new FiscalDocumentoEncabezado
                 {
                     TipoEcf = id.TipoeCF,
@@ -37,12 +41,31 @@ namespace Alahia.eCF.Api.Services
                     ProvinciaEmisor = em.Provincia,
                     TelefonoEmisor = em.TablaTelefonoEmisor?.FirstOrDefault()?.TelefonoEmisor,
                     CorreoEmisor = em.CorreoEmisor,
+                    WebSite = em.WebSite,
+                    Sucursal = em.Sucursal,
+                    ActividadEconomica = em.ActividadEconomica,
+                    CodigoVendedor = em.CodigoVendedor,
                     NumeroFacturaInterna = em.NumeroFacturaInterna,
+                    NumeroPedidoInterno = em.NumeroPedidoInterno,
+                    ZonaVenta = em.ZonaVenta,
+                    InformacionAdicionalEmisor = em.InformacionAdicionalEmisor,
                     RncComprador = co.RNCComprador,
                     RazonSocialComprador = co.RazonSocialComprador,
+                    ContactoComprador = co.ContactoComprador,
                     DireccionComprador = co.DireccionComprador,
                     CorreoComprador = co.CorreoComprador,
+                    MunicipioComprador = co.MunicipioComprador,
+                    ProvinciaComprador = co.ProvinciaComprador,
+                    FechaEntrega = ParseDate(co.FechaEntrega),
+                    FechaOrdenCompra = ParseDate(co.FechaOrdenCompra),
+                    NumeroOrdenCompra = co.NumeroOrdenCompra,
+                    CodigoInternoComprador = co.CodigoInternoComprador,
                     MontoTotal = to.MontoTotal,
+                    MontoNoFacturable = to.MontoNoFacturable,
+                    MontoPeriodo = to.MontoPeriodo,
+                    ValorPagar = to.ValorPagar,
+                    SaldoAnterior = to.SaldoAnterior,
+                    MontoAvancePago = to.MontoAvancePago,
                     MontoGravadoTotal = to.MontoGravadoTotal ?? 0,
                     MontoGravadoI1 = to.MontoGravado1 ?? 0,
                     MontoGravadoI2 = to.MontoGravado2 ?? 0,
@@ -52,6 +75,16 @@ namespace Alahia.eCF.Api.Services
                     TotalItbis1 = to.TotalITBIS1 ?? 0,
                     TotalItbis2 = to.TotalITBIS2 ?? 0,
                     TotalItbis3 = to.TotalITBIS3 ?? 0,
+                    MontoImpuestoAdicional = to.MontoImpuestoAdicional,
+                    ImpuestosAdicionales = to.ImpuestosAdicionales?
+                        .Select(i => new FiscalImpuestoAdicional
+                        {
+                            TipoImpuesto = i.TipoImpuesto,
+                            TasaImpuestoAdicional = i.TasaImpuestoAdicional,
+                            MontoImpuestoSelectivoConsumoEspecifico = i.MontoImpuestoSelectivoConsumoEspecifico,
+                            MontoImpuestoSelectivoConsumoAdvalorem = i.MontoImpuestoSelectivoConsumoAdvalorem,
+                            OtrosImpuestosAdicionales = i.OtrosImpuestosAdicionales
+                        }).ToList() ?? new(),
                     TotalItbisRetenido = to.TotalITBISRetenido ?? 0,
                     TotalIsrRetencion = to.TotalISRRetencion ?? 0,
                     MontoPropinaLegal = to.MontoPropinaLegal ?? 0
@@ -65,13 +98,23 @@ namespace Alahia.eCF.Api.Services
                     NumeroLinea = i.NumeroLinea,
                     IndicadorFacturacion = i.IndicadorFacturacion,
                     NombreItem = i.NombreItem,
+                    DescripcionItem = i.DescripcionItem,
                     EsBien = i.IndicadorBienoServicio != 2,
                     Cantidad = i.CantidadItem,
+                    CantidadReferencia = i.CantidadReferencia,
+                    UnidadReferencia = i.UnidadReferencia,
+                    GradosAlcohol = i.GradosAlcohol,
+                    PrecioUnitarioReferencia = i.PrecioUnitarioReferencia,
+                    FechaElaboracion = ParseDate(i.FechaElaboracion),
+                    FechaVencimientoItem = ParseDate(i.FechaVencimientoItem),
+                    Subcantidad = i.Subcantidad,
+                    CodigoSubcantidad = i.CodigoSubcantidad,
                     PrecioUnitario = i.PrecioUnitarioItem,
                     MontoItem = i.MontoItem,
                     DescuentoMonto = i.DescuentoMonto,
                     RecargoMonto = i.RecargoMonto,
                     UnidadMedida = i.UnidadMedida,
+                    TipoImpuestoAdicional = i.TipoImpuestoAdicional,
                     IndicadorAgenteRetencionoPercepcion = i.Retencion?.IndicadorAgenteRetencionoPercepcion,
                     MontoItbisRetenido = i.Retencion?.MontoITBISRetenido,
                     MontoIsrRetenido = i.Retencion?.MontoISRRetenido
@@ -158,14 +201,6 @@ namespace Alahia.eCF.Api.Services
         }
 
         private static DateTime? ParseDate(string? s)
-        {
-            if (string.IsNullOrWhiteSpace(s)) return null;
-            if (DateTime.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.None, out var dt))
-                return dt;
-            if (DateTime.TryParseExact(s, new[] { "dd-MM-yyyy", "dd-MM-yyyy HH:mm:ss", "yyyy-MM-dd", "yyyy-MM-ddTHH:mm:ss" },
-                    CultureInfo.InvariantCulture, DateTimeStyles.None, out dt))
-                return dt;
-            return null;
-        }
+            => AlahiaPos.Entities.Fiscal.EcfDgiiFecha.Parse(s);
     }
 }

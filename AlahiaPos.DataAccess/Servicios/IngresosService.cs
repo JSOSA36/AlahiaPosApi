@@ -506,18 +506,15 @@ GetIngresosByCajaCierre(
             ===================================== */
 
             return ingresos
-
-                .GroupBy(x => x.FormaPago)
-
+                .GroupBy(x => CajaMetodoPagoDto.Clave(x.FormaPago))
                 .Select(g => new CajaMetodoPagoDto
                 {
-                    FormaPago = g.Key,
-
+                    FormaPago = CajaMetodoPagoDto.Etiqueta(
+                        g.Key,
+                        g.Select(x => x.FormaPago).FirstOrDefault(s => !string.IsNullOrWhiteSpace(s))),
                     Total = g.Sum(x => x.Monto)
                 })
-
                 .OrderBy(x => x.FormaPago)
-
                 .ToList();
         }
 

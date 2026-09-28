@@ -1,0 +1,30 @@
+---
+description: ERP vivo = erp.alahiapos.com + alahiaposapidemo. Nunca alahiabeautyapiprod.
+alwaysApply: true
+---
+
+# ERP vivo — no confundir hosts
+
+Esto es fijo. No improvisar otra URL.
+
+| Qué | Host | Carpeta IIS |
+|-----|------|-------------|
+| **Frontend** que usa la gente | `https://erp.alahiapos.com` | `C:\inetpub\wwwroot\CloudAlahiaPosDemo` |
+| **API** de ese ERP | `https://alahiaposapidemo.alahiapos.com/api` | `C:\inetpub\wwwroot\AlahiaPosApi_Demo` |
+
+`AlahiaPosApi_Demo` usa la base **`AlahiaPos_Prod`**.
+
+## Prohibido
+
+- **Nunca** construir ni publicar el ERP apuntando a `alahiabeautyapiprod.alahiapos.com`.
+- Ese host no es el API del ERP. Un 504/CORS hacia `alahiabeauty` es señal de que el FE se compiló mal.
+
+## Al hacer build de producción (repo frontend)
+
+En `app-config.service.ts` debe quedar:
+
+```ts
+public readonly apiUrl: string = 'https://alahiaposapidemo.alahiapos.com/api';
+```
+
+Después del build, restaurar `http://localhost:5039/api`.
