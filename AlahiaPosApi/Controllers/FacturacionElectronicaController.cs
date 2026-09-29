@@ -228,61 +228,14 @@ namespace AlahiaPosApi.Controllers
         [HttpPut("proveedor/{idEmpresa}")]
         public async Task<IActionResult> PutProveedor(int idEmpresa, [FromBody] ProveedorFeRequest body)
         {
-            if (body == null || string.IsNullOrWhiteSpace(body.Proveedor))
-                return BadRequest("proveedor es requerido (DGII_DIRECTO | PROVEEDOR_EXTERNO)");
-
-            if (!ProveedorFiscalHelper.EsValido(body.Proveedor))
-                return BadRequest("Proveedor inválido. Use DGII_DIRECTO o PROVEEDOR_EXTERNO.");
-
-            var modo = ProveedorFiscalHelper.Normalize(body.Proveedor);
             var empresa = await _ctx.Empresas.AsTracking()
                 .FirstOrDefaultAsync(e => e.IdEmpresa == idEmpresa);
             if (empresa == null) return NotFound("Empresa no encontrada");
 
-            if (modo == ProveedorFiscalHelper.ProveedorExterno)
-            {
-                var url = (body.BaseUrl ?? empresa.ProveedorFE_BaseUrl ?? "").Trim();
-                if (string.IsNullOrWhiteSpace(url))
-                    return BadRequest("baseUrl es requerido para PROVEEDOR_EXTERNO");
-                if (!Uri.TryCreate(url, UriKind.Absolute, out var uri)
-                    || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
-                    return BadRequest("baseUrl debe ser una URL http(s) absoluta");
-
-                empresa.ProveedorFE = modo;
-                empresa.ProveedorFE_Nombre = string.IsNullOrWhiteSpace(body.Nombre)
-                    ? empresa.ProveedorFE_Nombre
-                    : body.Nombre.Trim();
-                empresa.ProveedorFE_BaseUrl = url.TrimEnd('/');
-
-                // La pantalla muestra las credenciales: lo enviado es la fuente de verdad.
-                // null = no vino el campo (compatibilidad: conservar). "" = borrar.
-                if (body.Usuario != null)
-                    empresa.ProveedorFE_Usuario = string.IsNullOrWhiteSpace(body.Usuario)
-                        ? null
-                        : body.Usuario.Trim();
-
-                if (body.ApiKey != null)
-                    empresa.ProveedorFE_ApiKey = string.IsNullOrWhiteSpace(body.ApiKey)
-                        ? null
-                        : body.ApiKey.Trim();
-                else if (body.ClearApiKey == true)
-                    empresa.ProveedorFE_ApiKey = null;
-
-                if (body.Password != null)
-                    empresa.ProveedorFE_Password = string.IsNullOrWhiteSpace(body.Password)
-                        ? null
-                        : body.Password;
-                else if (body.ClearPassword == true)
-                    empresa.ProveedorFE_Password = null;
-            }
-            else
-            {
-                empresa.ProveedorFE = ProveedorFiscalHelper.DgiiDirecto;
-                // Credenciales externas se conservan por si vuelven a modo externo.
-            }
+            empresa.ProveedorFE = ProveedorFiscalHelper.DgiiDirecto;
 
             await _ctx.SaveChangesAsync();
-            return Ok(BuildProveedorDto(empresa, modo));
+            return Ok(BuildProveedorDto(empresa, ProveedorFiscalHelper.DgiiDirecto));
         }
 
         private object BuildProveedorDto(Empresas empresa, string modo)
@@ -334,6 +287,7 @@ namespace AlahiaPosApi.Controllers
                     c.FechaExpiracion,
                     c.FechaCreacion,
                     c.Ambiente,
+                    c.RutaArchivo,
                     password = c.PasswordEncriptado,
                     tieneBytes = c.ArchivoBytes != null && c.ArchivoBytes.Length > 0,
                     tieneRuta = c.RutaArchivo != null && c.RutaArchivo != ""
@@ -357,6 +311,7 @@ namespace AlahiaPosApi.Controllers
                 fechaExpiracion = cert.FechaExpiracion,
                 fechaCreacion = cert.FechaCreacion,
                 ambiente = cert.Ambiente,
+                rutaArchivo = cert.RutaArchivo,
                 password = cert.password,
                 vencido = cert.FechaExpiracion < DateTime.Now,
                 usable = cert.tieneBytes || cert.tieneRuta

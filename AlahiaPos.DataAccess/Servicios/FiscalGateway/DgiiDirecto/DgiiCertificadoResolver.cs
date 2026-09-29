@@ -44,18 +44,7 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.DgiiDirecto
                 if (cert != null)
                 {
                     var password = cert.PasswordEncriptado;
-                    if (cert.ArchivoBytes is { Length: > 0 })
-                    {
-                        return new DgiiCertificadoMaterial
-                        {
-                            Certificate = new X509Certificate2(
-                                cert.ArchivoBytes,
-                                password,
-                                X509KeyStorageFlags.MachineKeySet | X509KeyStorageFlags.Exportable),
-                            Source = $"DB:{cert.IdCertificado}"
-                        };
-                    }
-
+                    // La ruta en disco es la fuente para firmar. Un pase del sitio no la pisa.
                     if (!string.IsNullOrWhiteSpace(cert.RutaArchivo) && File.Exists(cert.RutaArchivo))
                     {
                         return new DgiiCertificadoMaterial
@@ -65,6 +54,18 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.DgiiDirecto
                                 password,
                                 X509KeyStorageFlags.MachineKeySet | X509KeyStorageFlags.Exportable),
                             Source = $"File:{cert.RutaArchivo}"
+                        };
+                    }
+
+                    if (cert.ArchivoBytes is { Length: > 0 })
+                    {
+                        return new DgiiCertificadoMaterial
+                        {
+                            Certificate = new X509Certificate2(
+                                cert.ArchivoBytes,
+                                password,
+                                X509KeyStorageFlags.MachineKeySet | X509KeyStorageFlags.Exportable),
+                            Source = $"DB:{cert.IdCertificado}"
                         };
                     }
 

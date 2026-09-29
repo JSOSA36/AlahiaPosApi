@@ -7,17 +7,12 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway
 
         public static string Normalize(string? proveedor)
         {
-            var p = (proveedor ?? "").Trim().ToUpperInvariant();
-            return p switch
-            {
-                "EXTERNO" or "PROVEEDOR" or "PROVEEDOR_EXTERNO" or "PEDRO" or "PG" or "THIRD_PARTY"
-                    => ProveedorExterno,
-                _ => DgiiDirecto
-            };
+            // El envío es siempre DGII directo. Un valor viejo de proveedor externo no se usa.
+            return DgiiDirecto;
         }
 
         public static bool EsExterno(string? proveedor)
-            => Normalize(proveedor) == ProveedorExterno;
+            => false;
 
         public static string Etiqueta(string? proveedor)
             => EsExterno(proveedor) ? "Proveedor externo" : "DGII directo (Alahia)";
