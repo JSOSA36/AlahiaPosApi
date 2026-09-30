@@ -458,11 +458,6 @@ namespace AlahiaPos.DataAccess.Servicios.FacturacionElectronica
             CertecfExcelParser.SanearTelefonosCertecf(doc);
             CertecfExcelParser.AplicarValoresDelExcelEnTotalesOpcionales(doc);
             AsegurarCertecfNoSaleIncompleto(doc);
-            var razonEmisor = await RazonSocialDgiiAsync(
-                idEmpresa, CertecfReceptorUrls.Digits(doc.Encabezado.RncEmisor), ct);
-            var comercialEmisor = await NombreComercialDgiiAsync(
-                CertecfReceptorUrls.Digits(doc.Encabezado.RncEmisor), ct);
-            CertecfArtefactos.AplicarIdentidadEmisorReal(doc, razonEmisor, comercialEmisor);
             CertecfArtefactos.AsegurarFechaVencimientoSecuenciaCertecf(doc);
             caso.PayloadJson = JsonSerializer.Serialize(doc, JsonOpts);
             _logger.LogInformation(
@@ -679,11 +674,6 @@ namespace AlahiaPos.DataAccess.Servicios.FacturacionElectronica
                 }
 
                 CertecfExcelParser.AlinearConDefinicionDgii(doc);
-                var razonRi = await RazonSocialDgiiAsync(
-                    idEmpresa, CertecfReceptorUrls.Digits(doc.Encabezado.RncEmisor), ct);
-                var comercialRi = await NombreComercialDgiiAsync(
-                    CertecfReceptorUrls.Digits(doc.Encabezado.RncEmisor), ct);
-                CertecfArtefactos.AplicarIdentidadEmisorReal(doc, razonRi, comercialRi);
                 CertecfArtefactos.AsegurarFechaVencimientoSecuenciaCertecf(doc);
 
                 sesion.Casos.Add(new CertecfCaso
