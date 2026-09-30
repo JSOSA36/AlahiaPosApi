@@ -1,13 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using AlahiaBackup.Models;
 
 namespace AlahiaBackup.Interfaces
 {
     public interface ISqlBackupService
     {
-        Task RealizarBackupAsync();
+        Task<BackupArtifact> RealizarBackupAsync(
+            string baseDeDatos,
+            DateOnly fecha,
+            CancellationToken cancellationToken);
+
+        void EliminarAntiguos(int diasRetencion);
     }
 }

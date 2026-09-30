@@ -7,9 +7,7 @@ namespace AlahiaBackup
         private readonly ILogger<Worker> _logger;
         private readonly IBackupService _backupService;
 
-        public Worker(
-            ILogger<Worker> logger,
-            IBackupService backupService)
+        public Worker(ILogger<Worker> logger, IBackupService backupService)
         {
             _logger = logger;
             _backupService = backupService;
@@ -17,24 +15,27 @@ namespace AlahiaBackup
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            _logger.LogInformation("Servicio de Backup iniciado.");
+            _logger.LogInformation("Servicio de backup iniciado. Revisa cada minuto si ya es la hora.");
 
             while (!stoppingToken.IsCancellationRequested)
             {
                 try
                 {
-                    await _backupService.EjecutarBackupAsync();
+                    await _backupService.EjecutarBackupAsync(stoppingToken);
+                }
+                catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+                {
+                    break;
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Ocurrió un error ejecutando el servicio de Backup.");
+                    _logger.LogError(ex, "Error inesperado en el ciclo de backup.");
                 }
 
-                // Espera 1 minuto antes de volver a verificar
                 await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
             }
 
-            _logger.LogInformation("Servicio de Backup detenido.");
+            _logger.LogInformation("Servicio de backup detenido.");
         }
     }
 }
