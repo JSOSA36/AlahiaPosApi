@@ -118,13 +118,12 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway
                         itbis2 += itbis > 0 ? itbis : Math.Round(montoItem * 0.16m, 2);
                         break;
                     case 3:
-                        exento += montoItem;
-                        break;
-                    case 4:
-                        // tasa 0% (export/cero) — en E31/E32 local usamos 3 para exento;
-                        // 4 se trata como gravado tasa 0 en algunos flujos.
+                        // ITBIS 0% (indicador 3). El total va en MontoGravadoI3, no en exento.
                         gravado3 += montoItem;
                         itbis3 += itbis;
+                        break;
+                    case 4:
+                        exento += montoItem;
                         break;
                 }
             }
@@ -349,14 +348,14 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway
 
         public static int ResolverIndicadorFacturacion(decimal? tasaItbis)
         {
-            // Sin tasa conocida: exento (3). Si la línea trae ITBIS, el caller fuerza 1.
-            if (tasaItbis == null) return 3;
+            // DGII: 1 = 18%, 2 = 16%, 3 = tasa cero, 4 = exento.
+            // Sin ITBIS (tasa nula o 0) es exento. Tasa cero no se infiere.
+            if (tasaItbis == null || tasaItbis.Value == 0m) return 4;
             var tasa = tasaItbis.Value;
             if (tasa >= 16m && tasa <= 18m) return 1;
             if (tasa > 0m && tasa < 16m) return 2;
             if (tasa > 0.15m && tasa <= 0.18m) return 1;
             if (tasa > 0m && tasa <= 0.16m) return 2;
-            if (tasa == 0m) return 3;
             return 1;
         }
 
