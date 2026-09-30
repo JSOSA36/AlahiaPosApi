@@ -49,7 +49,7 @@ public class CertecfPuenteController : ControllerBase
                 estado.Aviso
             });
         }
-        catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
+        catch (Exception ex) { return Error(ex); }
     }
 
     [HttpPost("excel")]
@@ -83,7 +83,7 @@ public class CertecfPuenteController : ControllerBase
             var sesion = await _cert.CargarExcelAsync(id, null, archivo.FileName ?? "set.xlsx", stream, ct);
             return Ok(sesion);
         }
-        catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
+        catch (Exception ex) { return Error(ex); }
     }
 
     [HttpPost("caso/{idCaso:int}/enviar")]
@@ -95,7 +95,7 @@ public class CertecfPuenteController : ControllerBase
             var id = await ResolverEmpresaAsync(rnc, null, ct);
             return Ok(await _cert.EnviarCasoAsync(id, idCaso, ct));
         }
-        catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
+        catch (Exception ex) { return Error(ex); }
     }
 
     [HttpPost("caso/{idCaso:int}/consultar")]
@@ -107,7 +107,7 @@ public class CertecfPuenteController : ControllerBase
             var id = await ResolverEmpresaAsync(rnc, null, ct);
             return Ok(await _cert.ConsultarCasoAsync(id, idCaso, ct));
         }
-        catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
+        catch (Exception ex) { return Error(ex); }
     }
 
     [HttpPost("reiniciar")]
@@ -119,7 +119,15 @@ public class CertecfPuenteController : ControllerBase
             var id = await ResolverEmpresaAsync(rnc, null, ct);
             return Ok(await _cert.ReiniciarSetDatosAsync(id, ct));
         }
-        catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
+        catch (Exception ex) { return Error(ex); }
+    }
+
+    private IActionResult Error(Exception ex)
+    {
+        var texto = ex.GetBaseException().Message;
+        if (string.IsNullOrWhiteSpace(texto))
+            texto = ex.Message;
+        return BadRequest(new { message = texto });
     }
 
     private async Task<int> ResolverEmpresaAsync(string? rncRaw, DatosEmpresa? alta, CancellationToken ct)
@@ -157,7 +165,7 @@ public class CertecfPuenteController : ControllerBase
         {
             NombreComercial = (alta.NombreComercial ?? alta.RazonSocial ?? rnc).Trim(),
             RNC = rnc,
-            Direccion = alta.Direccion?.Trim() ?? "",
+            Direccion = string.IsNullOrWhiteSpace(alta.Direccion) ? "Certificación e-CF" : alta.Direccion.Trim(),
             Telefono = alta.Telefono?.Trim() ?? "",
             CorreElectronico = alta.Correo?.Trim() ?? "",
             FechaInseccion = DateTime.Now,
@@ -167,7 +175,19 @@ public class CertecfPuenteController : ControllerBase
             EstadoServicio = "ACTIVA",
             PagadoServicio = true,
             PoliticasAceptadas = true,
+            IdPlan = 1,
+            LimiteUsuario = 5,
+            LimiteTerminalesPos = 1,
+            NivelSoporte = NivelesSoporte.Standard,
+            TrabajaDomingo = true,
             MontoServicio = 0m,
+            PrecioPlanEspecialUsd = 0m,
+            PrimaryColor = "#0a3d91",
+            SecondaryColor = "#f5c518",
+            TertiaryColor = "#072a66",
+            titleColor = "#072a66",
+            UsaSSL = true,
+            PuertoSMTP = 587,
             AmbienteFE = DgiiAmbienteHelper.Certificacion,
             ProveedorFE = "DGII_DIRECTO",
             EsEmisorElectronico = false,
