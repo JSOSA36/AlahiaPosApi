@@ -425,17 +425,47 @@ namespace AlahiaPos.DataAccess.Servicios
 
         public async Task<List<PedidoDeliveryListadoDto>> ListarTodosAsync(int idEmpresa)
         {
-            return await MapearPedidosAsync(idEmpresa, null);
+            return await MapearPedidosAsync(idEmpresa, null, null, incluirCerradas: true);
         }
 
         public async Task<List<PedidoDeliveryListadoDto>> ListarMisPedidosAsync(int idEmpresa, int idUsuario)
         {
             var todos = await MapearPedidosAsync(idEmpresa, idUsuario);
             return todos
-                .Where(p => p.IdUsuarioRepartidor == idUsuario
-                    && p.EstadoLogistico != PedidoOnlineEstados.Entregado
-                    && p.EstadoLogistico != PedidoOnlineEstados.Cancelado)
+                .Where(p => p.IdUsuarioRepartidor == idUsuario && !EsPedidoCerrado(p))
                 .ToList();
+        }
+
+        public async Task<List<PedidoDeliveryListadoDto>> ListarMiHistorialAsync(int idEmpresa, int idUsuario)
+        {
+            var ids = await _ctx.DeliveryAsignacion.AsNoTracking()
+                .Where(a => a.IdEmpresa == idEmpresa
+                    && a.IdUsuarioRepartidor == idUsuario
+                    && (a.Estado == DeliveryEstados.Entregado || a.Estado == PedidoOnlineEstados.Cancelado))
+                .OrderByDescending(a => a.FechaEntregado ?? a.FechaAsignacion)
+                .Select(a => a.IdPedidoOnline)
+                .Take(60)
+                .ToListAsync();
+
+            var distintos = ids.Distinct().Take(40).ToArray();
+            if (distintos.Length == 0)
+                return new List<PedidoDeliveryListadoDto>();
+
+            var mapped = await MapearPedidosAsync(idEmpresa, idUsuario, distintos, incluirCerradas: true);
+            return mapped
+                .Where(EsPedidoCerrado)
+                .OrderByDescending(p => p.Fecha)
+                .ToList();
+        }
+
+        private static bool EsPedidoCerrado(PedidoDeliveryListadoDto p)
+        {
+            var log = (p.EstadoLogistico ?? "").Trim();
+            var uni = (p.EstadoUnificado ?? "").Trim();
+            return log.Equals(PedidoOnlineEstados.Entregado, StringComparison.OrdinalIgnoreCase)
+                || log.Equals(PedidoOnlineEstados.Cancelado, StringComparison.OrdinalIgnoreCase)
+                || uni.Equals("Entregado", StringComparison.OrdinalIgnoreCase)
+                || uni.Equals("Cancelado", StringComparison.OrdinalIgnoreCase);
         }
 
         public async Task<PedidoDeliveryListadoDto?> ObtenerPedidoAsync(int idEmpresa, int idPedidoOnline)
@@ -603,17 +633,30 @@ namespace AlahiaPos.DataAccess.Servicios
                 DeliveryEstados.Entregado => PedidoOnlineEstados.Entregado,
                 _ => pedido.EstadoLogistico
             };
-            _ctx.Entry(pedido).Property(x => x.EstadoLogistico).IsModified = true;
+            // El contexto va en NoTracking: hay que marcar cada cambio o no se guarda.
+            var pedidoEntry = _ctx.Entry(pedido);
+            pedidoEntry.Property(x => x.EstadoLogistico).IsModified = true;
+            var asigEntry = _ctx.Entry(asig);
+            asigEntry.Property(x => x.Estado).IsModified = true;
             if (destino == DeliveryEstados.Recogido)
+            {
                 asig.FechaRecogido = DateTime.Now;
+                asigEntry.Property(x => x.FechaRecogido).IsModified = true;
+            }
             if (destino == DeliveryEstados.EnCamino)
+            {
                 asig.FechaEnCamino = DateTime.Now;
+                asigEntry.Property(x => x.FechaEnCamino).IsModified = true;
+            }
             if (destino == DeliveryEstados.Entregado)
             {
                 if (asig.FechaEnCamino == null)
                     asig.FechaEnCamino = DateTime.Now;
                 asig.FechaEntregado = DateTime.Now;
                 asig.Activa = false;
+                asigEntry.Property(x => x.FechaEnCamino).IsModified = true;
+                asigEntry.Property(x => x.FechaEntregado).IsModified = true;
+                asigEntry.Property(x => x.Activa).IsModified = true;
                 await IntentarEntregarCocinaAsync(idEmpresa, pedido.IdFacturaHeader, request.IdUsuario);
             }
 
@@ -666,7 +709,8 @@ namespace AlahiaPos.DataAccess.Servicios
         private async Task<List<PedidoDeliveryListadoDto>> MapearPedidosAsync(
             int idEmpresa,
             int? idUsuarioFiltro,
-            int[]? idsPedido = null)
+            int[]? idsPedido = null,
+            bool incluirCerradas = false)
         {
             var query = _ctx.PedidoOnline.AsNoTracking().Where(p => p.IdEmpresa == idEmpresa);
             if (idsPedido != null && idsPedido.Length > 0)
@@ -691,9 +735,13 @@ namespace AlahiaPos.DataAccess.Servicios
                 .Where(p => prodIds.Contains(p.IdProducto))
                 .ToDictionaryAsync(p => p.IdProducto, p => p.Nombre ?? "");
 
-            var asignaciones = await _ctx.DeliveryAsignacion.AsNoTracking()
-                .Where(a => a.IdEmpresa == idEmpresa && a.Activa)
-                .ToListAsync();
+            var asignacionesQuery = _ctx.DeliveryAsignacion.AsNoTracking()
+                .Where(a => a.IdEmpresa == idEmpresa);
+            if (!incluirCerradas)
+                asignacionesQuery = asignacionesQuery.Where(a => a.Activa);
+            if (idsPedido != null && idsPedido.Length > 0)
+                asignacionesQuery = asignacionesQuery.Where(a => idsPedido.Contains(a.IdPedidoOnline));
+            var asignaciones = await asignacionesQuery.ToListAsync();
             if (idUsuarioFiltro.HasValue)
                 asignaciones = asignaciones.Where(a => a.IdUsuarioRepartidor == idUsuarioFiltro.Value).ToList();
 
@@ -720,7 +768,9 @@ namespace AlahiaPos.DataAccess.Servicios
             foreach (var p in pedidos)
             {
                 var fh = headers.FirstOrDefault(h => h.IdFacturaHeader == p.IdFacturaHeader);
-                var asig = asignaciones.FirstOrDefault(a => a.IdPedidoOnline == p.IdPedidoOnline);
+                var candidatas = asignaciones.Where(a => a.IdPedidoOnline == p.IdPedidoOnline).ToList();
+                var asig = candidatas.FirstOrDefault(a => a.Activa)
+                    ?? candidatas.OrderByDescending(a => a.FechaEntregado ?? a.FechaAsignacion).FirstOrDefault();
                 cocinaMap.TryGetValue(p.IdFacturaHeader, out var coc);
                 var items = detalles.Where(d => d.IdFacturaHeader == p.IdFacturaHeader)
                     .Select(d => new PedidoDeliveryItemDto
@@ -788,14 +838,18 @@ namespace AlahiaPos.DataAccess.Servicios
         {
             var log = (logistico ?? "").Trim();
             var coc = (cocina ?? "").Trim();
+            var cocinaCerrada = Es(coc, "ENTREGADA") || Es(coc, "ENTREGADO");
+            var esDelivery = tipo == PedidoOnlineTiposEntrega.Delivery;
             if (Es(log, PedidoOnlineEstados.Cancelado) || Es(coc, "CANCELADA")) return "Cancelado";
-            if (Es(log, PedidoOnlineEstados.Entregado) || Es(coc, "ENTREGADA") || Es(coc, "ENTREGADO"))
+            // En delivery, Entregado solo cuando el repartidor toca Entregar.
+            // Cocina en ENTREGADA significa que ya salió de producción, no que el cliente lo recibió.
+            if (Es(log, PedidoOnlineEstados.Entregado) || (cocinaCerrada && !esDelivery))
                 return "Entregado";
             if (Es(log, PedidoOnlineEstados.EnCamino) || string.Equals(log, "En camino", StringComparison.OrdinalIgnoreCase))
                 return "En camino";
             if (Es(log, PedidoOnlineEstados.Recogido)) return "Recogido";
             if (Es(log, PedidoOnlineEstados.Asignado)) return "Asignado a delivery";
-            if (Es(coc, "LISTA") && tipo == PedidoOnlineTiposEntrega.Delivery)
+            if ((Es(coc, "LISTA") || cocinaCerrada) && esDelivery)
                 return "Pendiente de asignación";
             if (Es(coc, "LISTA")) return "Listo";
             if (Es(coc, "EN_PREPARACION")) return "En preparación";
@@ -810,7 +864,7 @@ namespace AlahiaPos.DataAccess.Servicios
         {
             return estadoUnificado switch
             {
-                "Pendiente de asignación" or "Asignado a delivery" or "Recogido" or "En camino" => "En camino",
+                "Recogido" or "En camino" => "En camino",
                 _ => estadoUnificado
             };
         }
@@ -985,7 +1039,7 @@ namespace AlahiaPos.DataAccess.Servicios
                 "En preparación" => "La cocina está preparando tu pedido.",
                 "Pendiente de asignación" => "Ya está listo. Estamos asignando un repartidor.",
                 "Listo" => "Tu pedido está listo para recoger.",
-                "Asignado a delivery" => "Un repartidor ya tiene tu pedido.",
+                "Asignado a delivery" => "Ya se asignó un repartidor. Falta que acepte el pedido.",
                 "Recogido" => "El repartidor recogió tu pedido.",
                 "En camino" => "Tu pedido va en camino.",
                 "Entregado" => "Pedido entregado. ¡Buen provecho!",

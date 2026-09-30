@@ -16,6 +16,7 @@ namespace AlahiaPos.Entities.Interfaces
         Task<List<PedidoDeliveryListadoDto>> ListarColaDeliveryAsync(int idEmpresa);
         Task<List<PedidoDeliveryListadoDto>> ListarTodosAsync(int idEmpresa);
         Task<List<PedidoDeliveryListadoDto>> ListarMisPedidosAsync(int idEmpresa, int idUsuario);
+        Task<List<PedidoDeliveryListadoDto>> ListarMiHistorialAsync(int idEmpresa, int idUsuario);
         Task<PedidoDeliveryListadoDto?> ObtenerPedidoAsync(int idEmpresa, int idPedidoOnline);
 
         Task<List<DeliveryRepartidorDto>> ListarRepartidoresAsync(int idEmpresa);

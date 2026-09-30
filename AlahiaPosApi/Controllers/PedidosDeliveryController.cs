@@ -52,6 +52,14 @@ namespace AlahiaPosApi.Controllers
             return Ok(await _svc.ListarMisPedidosAsync(idEmpresa, idUsuario));
         }
 
+        [HttpGet("mios/historial")]
+        public async Task<IActionResult> Historial([FromQuery] int idEmpresa, [FromQuery] int idUsuario)
+        {
+            if (idEmpresa <= 0 || idUsuario <= 0)
+                return BadRequest(new { message = "idEmpresa e idUsuario son obligatorios." });
+            return Ok(await _svc.ListarMiHistorialAsync(idEmpresa, idUsuario));
+        }
+
         [HttpGet("{idPedidoOnline:int}")]
         public async Task<IActionResult> Obtener(int idPedidoOnline, [FromQuery] int idEmpresa)
         {
