@@ -434,6 +434,7 @@ namespace AlahiaPos.DataAccess.Servicios.FacturacionElectronica
                 .FirstOrDefaultAsync(c => c.IdCaso == idCaso && c.Sesion.IdEmpresa == idEmpresa, ct)
                 ?? throw new InvalidOperationException("Caso no encontrado.");
 
+            await AsegurarCasosCargadosAsync(caso.Sesion, ct);
             if (caso.Estado is "Aceptado" or "AceptadoCondicional")
                 return ToDto(caso.Sesion, caso.TipoPrueba);
 
@@ -470,9 +471,9 @@ namespace AlahiaPos.DataAccess.Servicios.FacturacionElectronica
                 doc.Lineas.FirstOrDefault()?.Subcantidad,
                 doc.Encabezado.ImpuestosAdicionales?.FirstOrDefault()?.MontoImpuestoSelectivoConsumoEspecifico);
 
-            var hermanos = await _ctx.CertecfCasos.AsNoTracking()
-                .Where(c => c.IdSesion == caso.IdSesion && c.TipoPrueba == caso.TipoPrueba && c.IdCaso != caso.IdCaso)
-                .ToListAsync(ct);
+            var hermanos = caso.Sesion.Casos
+                .Where(c => c.TipoPrueba == caso.TipoPrueba && c.IdCaso != caso.IdCaso)
+                .ToList();
             if (doc.Encabezado.TipoEcf == 46 && string.IsNullOrWhiteSpace(doc.Encabezado.RncComprador))
             {
                 var lote = new List<FiscalDocumentoElectronico> { doc };
@@ -566,6 +567,7 @@ namespace AlahiaPos.DataAccess.Servicios.FacturacionElectronica
                 .FirstOrDefaultAsync(c => c.IdCaso == idCaso && c.Sesion.IdEmpresa == idEmpresa, ct)
                 ?? throw new InvalidOperationException("Caso no encontrado.");
 
+            await AsegurarCasosCargadosAsync(caso.Sesion, ct);
             if (string.IsNullOrWhiteSpace(caso.TrackId))
                 throw new InvalidOperationException("El caso no tiene TrackId. Envíelo primero.");
 
@@ -1347,6 +1349,7 @@ namespace AlahiaPos.DataAccess.Servicios.FacturacionElectronica
 
         private async Task<CertecfSesionDto> EnviarAcecfCasoAsync(CertecfCaso caso, int idEmpresa, CancellationToken ct)
         {
+            await AsegurarCasosCargadosAsync(caso.Sesion, ct);
             var ace = JsonSerializer.Deserialize<AcecfDocumento>(caso.PayloadJson, JsonOpts)
                 ?? throw new InvalidOperationException("No se pudo leer el ACECF.");
             ace.IdEmpresa = idEmpresa;
@@ -1536,6 +1539,17 @@ namespace AlahiaPos.DataAccess.Servicios.FacturacionElectronica
                 }
             }
             caso.Sesion.FechaActualizacion = DateTime.Now;
+        }
+
+        /// <summary>
+        /// El caso se carga solo. Sin esto, Sesion.Casos queda con ese único comprobante
+        /// y al guardar el resto del set se pierde.
+        /// </summary>
+        private async Task AsegurarCasosCargadosAsync(CertecfSesion sesion, CancellationToken ct)
+        {
+            var nav = _ctx.Entry(sesion).Collection(s => s.Casos);
+            nav.IsLoaded = false;
+            await nav.LoadAsync(ct);
         }
 
         private async Task<CertecfSesion?> ObtenerSesionTrackedAsync(int idEmpresa, bool tracking, CancellationToken ct)
