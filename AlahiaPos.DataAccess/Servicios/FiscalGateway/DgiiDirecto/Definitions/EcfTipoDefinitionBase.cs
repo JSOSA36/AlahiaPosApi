@@ -358,8 +358,19 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.DgiiDirecto.Definitions
                 c => c.Enc.IndicadorMontoGravado);
 
         protected static EcfCampoDef CampoTipoIngresos(EcfCampoPresence presence, int orden)
-            => EcfXmlFormat.Campo("TipoIngresos", presence, orden,
-                c => EcfXmlFormat.TipoIngreso(c.Enc.TipoIngreso > 0 ? c.Enc.TipoIngreso : 1));
+            => EcfXmlFormat.Campo("TipoIngresos", presence, orden, c =>
+            {
+                if (EcfXmlFormat.TryCeldaExcel(c, "TipoIngresos", out var excel, 0)
+                    && int.TryParse(excel.Trim(), out var desdeSet)
+                    && desdeSet > 0)
+                    return EcfXmlFormat.TipoIngreso(desdeSet);
+
+                // El set marca #e: no inventar 01. Solo se rellena si el XSD lo exige.
+                if (EcfXmlFormat.DebeRespetarExcel(c) && presence != EcfCampoPresence.Obligatorio)
+                    return null;
+
+                return EcfXmlFormat.TipoIngreso(c.Enc.TipoIngreso > 0 ? c.Enc.TipoIngreso : 1);
+            });
 
         protected static EcfCampoDef CampoTipoPago(int orden)
             => CampoTipoPago(EcfCampoPresence.Obligatorio, orden);
@@ -371,6 +382,29 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.DgiiDirecto.Definitions
                     if (c.Enc.TipoPago > 0) return c.Enc.TipoPago;
                     return presence == EcfCampoPresence.Obligatorio ? 1 : null;
                 });
+
+        /// <summary>Solo si el set trae la celda. Vacío (#e) no se inventa.</summary>
+        protected static EcfCampoDef CampoFechaLimitePago(int orden)
+            => EcfXmlFormat.Campo("FechaLimitePago", EcfCampoPresence.Opcional, orden,
+                c => EcfXmlFormat.TryCeldaExcel(c, "FechaLimitePago", out var excel, 0) ? excel.Trim() : null);
+
+        protected static EcfCampoDef CampoTerminoPago(int orden)
+            => EcfXmlFormat.Campo("TerminoPago", EcfCampoPresence.Opcional, orden,
+                c => EcfXmlFormat.TryCeldaExcel(c, "TerminoPago", out var excel, 0)
+                    ? EcfXmlFormat.Esc(excel.Trim(), 15)
+                    : null);
+
+        protected static EcfCampoDef CampoTipoCuentaPago(int orden)
+            => EcfXmlFormat.Campo("TipoCuentaPago", EcfCampoPresence.Opcional, orden,
+                c => EcfXmlFormat.TryCeldaExcel(c, "TipoCuentaPago", out var excel, 0) ? excel.Trim() : null);
+
+        protected static EcfCampoDef CampoNumeroCuentaPago(int orden)
+            => EcfXmlFormat.Campo("NumeroCuentaPago", EcfCampoPresence.Opcional, orden,
+                c => EcfXmlFormat.TryCeldaExcel(c, "NumeroCuentaPago", out var excel, 0) ? excel.Trim() : null);
+
+        protected static EcfCampoDef CampoBancoPago(int orden)
+            => EcfXmlFormat.Campo("BancoPago", EcfCampoPresence.Opcional, orden,
+                c => EcfXmlFormat.TryCeldaExcel(c, "BancoPago", out var excel, 0) ? excel.Trim() : null);
 
         protected static EcfCampoDef CampoTablaFormasPago(EcfCampoPresence presence, int orden)
             => EcfXmlFormat.Campo("TablaFormasPago", presence, orden,

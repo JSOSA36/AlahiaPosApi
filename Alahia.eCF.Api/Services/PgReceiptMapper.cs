@@ -19,6 +19,7 @@ namespace Alahia.eCF.Api.Services
             var doc = new FiscalDocumentoElectronico
             {
                 IdEmpresa = pg.IdEmpresa,
+                TipoDocumentoAlahia = pg.TipoDocumentoAlahia,
                 AmbienteDgii = pg.AmbienteDgii,
                 CeldasExcel = pg.CeldasExcel is { Count: > 0 }
                     ? new Dictionary<string, string>(pg.CeldasExcel, StringComparer.OrdinalIgnoreCase)

@@ -1585,6 +1585,9 @@ namespace AlahiaPos.DataAccess.Servicios.FacturacionElectronica
             if (string.IsNullOrWhiteSpace(nombre)) return;
             doc.Encabezado.RazonSocialEmisor = nombre;
             doc.Encabezado.NombreComercialEmisor = nombre;
+            doc.CeldasExcel ??= new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var key in new[] { "razonsocialemisor", "razonsocial", "nombrecomercial", "nombrecomercialemisor" })
+                doc.CeldasExcel[key] = nombre;
         }
 
         private async Task<CertecfSesion?> ObtenerSesionTrackedAsync(int idEmpresa, bool tracking, CancellationToken ct)

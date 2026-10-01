@@ -75,6 +75,7 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.PgEInvoicing
             var pg = new PgDgiiDocumentDto
             {
                 IdEmpresa = doc.IdEmpresa,
+                TipoDocumentoAlahia = doc.TipoDocumentoAlahia,
                 AmbienteDgii = doc.AmbienteDgii,
                 CeldasExcel = doc.CeldasExcel is { Count: > 0 } ? doc.CeldasExcel : null,
                 Encabezado = new PgEncabezadoWrapper

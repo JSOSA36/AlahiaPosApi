@@ -11,6 +11,8 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.PgEInvoicing
     public class PgDgiiDocumentDto
     {
         public int IdEmpresa { get; set; }
+        /// <summary>CertificacionSimulacion: el firmador usa la razón social del formulario, no la celda del Excel.</summary>
+        public string? TipoDocumentoAlahia { get; set; }
         /// <summary>Ambiente DGII en el cuerpo (ley CerteCF): testecf | certecf | ecf. El header X-Dgii-Ambiente es respaldo.</summary>
         public string? AmbienteDgii { get; set; }
         /// <summary>Texto exacto de celdas del Excel CerteCF. Vacío = omitir nodo.</summary>

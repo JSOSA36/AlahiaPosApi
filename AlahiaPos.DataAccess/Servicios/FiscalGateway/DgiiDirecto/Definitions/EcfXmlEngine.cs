@@ -85,12 +85,14 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.DgiiDirecto.Definitions
                     valor = adic;
                 }
                 else if (respetarExcel
+                    && !NombreEmisorDeSimulacion(ctx, campo.Nombre)
                     && !EcfXmlFormat.EsCampoCodigo(campo.Nombre)
                     && EcfXmlFormat.TryCeldaExcel(ctx, campo.Nombre, out var excel))
                 {
                     valor = excel;
                 }
                 else if (respetarExcel
+                    && !NombreEmisorDeSimulacion(ctx, campo.Nombre)
                     && campo.Presence == EcfCampoPresence.Opcional
                     && !EcfXmlFormat.EsCampoCodigo(campo.Nombre))
                 {
@@ -127,6 +129,18 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.DgiiDirecto.Definitions
 
                 parent.Add(new XElement(campo.Nombre, valor));
             }
+        }
+
+        /// <summary>
+        /// Paso 4: RazonSocial y NombreComercial salen del caso guardado (formulario),
+        /// no de la celda del Excel de pruebas de datos.
+        /// </summary>
+        private static bool NombreEmisorDeSimulacion(EcfBuildContext ctx, string nombre)
+        {
+            if (!string.Equals(ctx.Documento.TipoDocumentoAlahia, "CertificacionSimulacion", StringComparison.OrdinalIgnoreCase))
+                return false;
+            return nombre.Equals("RazonSocialEmisor", StringComparison.OrdinalIgnoreCase)
+                || nombre.Equals("NombreComercial", StringComparison.OrdinalIgnoreCase);
         }
 
         private static XElement BuildDetalles(IEcfTipoDefinition def, EcfBuildContext ctx)

@@ -37,7 +37,12 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.DgiiDirecto.Definitions
                 nota: "No existe en XSD E46"));
             id.Add(CampoTipoIngresos(EcfCampoPresence.Obligatorio, 5));
             id.Add(CampoTipoPago(EcfCampoPresence.Obligatorio, 6));
-            id.Add(CampoTablaFormasPago(EcfCampoPresence.Opcional, 7));
+            id.Add(CampoFechaLimitePago(7));
+            id.Add(CampoTerminoPago(8));
+            id.Add(CampoTablaFormasPago(EcfCampoPresence.Opcional, 9));
+            id.Add(CampoTipoCuentaPago(10));
+            id.Add(CampoNumeroCuentaPago(11));
+            id.Add(CampoBancoPago(12));
             IdDoc = id;
         }
 

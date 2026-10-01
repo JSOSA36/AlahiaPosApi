@@ -28,7 +28,12 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.DgiiDirecto.Definitions
             id.Add(CampoIndicadorMontoGravado(4));
             id.Add(CampoTipoIngresos(EcfCampoPresence.Opcional, 5));
             id.Add(CampoTipoPago(6));
-            id.Add(CampoTablaFormasPago(EcfCampoPresence.Opcional, 7));
+            id.Add(CampoFechaLimitePago(7));
+            id.Add(CampoTerminoPago(8));
+            id.Add(CampoTablaFormasPago(EcfCampoPresence.Opcional, 9));
+            id.Add(CampoTipoCuentaPago(10));
+            id.Add(CampoNumeroCuentaPago(11));
+            id.Add(CampoBancoPago(12));
             IdDoc = id;
         }
     }
