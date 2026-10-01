@@ -458,6 +458,16 @@ namespace AlahiaPos.DataAccess.Servicios.FacturacionElectronica
             CertecfExcelParser.SanearTelefonosCertecf(doc);
             CertecfExcelParser.AplicarValoresDelExcelEnTotalesOpcionales(doc);
             AsegurarCertecfNoSaleIncompleto(doc);
+            if (string.Equals(caso.TipoPrueba, "SIMULACION", StringComparison.OrdinalIgnoreCase))
+            {
+                await AplicarNombreDelFormularioAsync(doc, idEmpresa, ct);
+                doc.TipoDocumentoAlahia = "CertificacionSimulacion";
+            }
+            else
+            {
+                AplicarNombresDelSet(doc);
+                doc.TipoDocumentoAlahia = "Certificacion";
+            }
             CertecfArtefactos.AsegurarFechaVencimientoSecuenciaCertecf(doc);
             caso.PayloadJson = JsonSerializer.Serialize(doc, JsonOpts);
             _logger.LogInformation(
@@ -674,6 +684,8 @@ namespace AlahiaPos.DataAccess.Servicios.FacturacionElectronica
                 }
 
                 CertecfExcelParser.AlinearConDefinicionDgii(doc);
+                await AplicarNombreDelFormularioAsync(doc, idEmpresa, ct);
+                doc.TipoDocumentoAlahia = "CertificacionSimulacion";
                 CertecfArtefactos.AsegurarFechaVencimientoSecuenciaCertecf(doc);
 
                 sesion.Casos.Add(new CertecfCaso
@@ -1540,6 +1552,39 @@ namespace AlahiaPos.DataAccess.Servicios.FacturacionElectronica
             var nav = _ctx.Entry(sesion).Collection(s => s.Casos);
             nav.IsLoaded = false;
             await nav.LoadAsync(ct);
+        }
+
+        private static void AplicarNombresDelSet(FiscalDocumentoElectronico doc)
+        {
+            if (doc.Encabezado == null) return;
+            var razon = CeldaSet(doc, "razonsocialemisor", "razonsocial", "razonsocialdelemisor");
+            var comercial = CeldaSet(doc, "nombrecomercial", "nombrecomercialemisor");
+            if (!string.IsNullOrWhiteSpace(razon))
+                doc.Encabezado.RazonSocialEmisor = razon;
+            if (!string.IsNullOrWhiteSpace(comercial))
+                doc.Encabezado.NombreComercialEmisor = comercial;
+        }
+
+        private static string? CeldaSet(FiscalDocumentoElectronico doc, params string[] keys)
+        {
+            if (doc.CeldasExcel == null) return null;
+            foreach (var key in keys)
+            {
+                if (doc.CeldasExcel.TryGetValue(key, out var valor) && !string.IsNullOrWhiteSpace(valor))
+                    return valor.Trim();
+            }
+            return null;
+        }
+
+        private async Task AplicarNombreDelFormularioAsync(
+            FiscalDocumentoElectronico doc, int idEmpresa, CancellationToken ct)
+        {
+            if (doc.Encabezado == null) return;
+            var empresa = await EmpresaAsync(idEmpresa, ct);
+            var nombre = (empresa.NombreComercial ?? "").Trim();
+            if (string.IsNullOrWhiteSpace(nombre)) return;
+            doc.Encabezado.RazonSocialEmisor = nombre;
+            doc.Encabezado.NombreComercialEmisor = nombre;
         }
 
         private async Task<CertecfSesion?> ObtenerSesionTrackedAsync(int idEmpresa, bool tracking, CancellationToken ct)

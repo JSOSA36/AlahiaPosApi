@@ -488,8 +488,8 @@ namespace AlahiaPos.DataAccess.Servicios.FacturacionElectronica
             CancellationToken ct = default)
         {
             if (documento?.Encabezado == null) return;
-            // El set de datos y la simulación tienen que salir con el nombre del Excel de DGII.
-            // La razón social del padrón se usa en la representación impresa, no en este XML.
+            // Paso 2: el XML ya trae RazonSocial y NombreComercial del Excel.
+            // Paso 4: ya trae los del formulario. El padrón no los pisa.
             var tipo = documento.TipoDocumentoAlahia ?? "";
             if (tipo is "Certificacion" or "CertificacionSimulacion")
                 return;

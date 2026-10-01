@@ -286,8 +286,13 @@ namespace AlahiaPos.DataAccess.Servicios.FacturacionElectronica
                     FechaVencimientoSecuencia = ParseDate(Cell("fechavencimientosecuencia", "fechavencimiento")),
                     FechaEmision = ParseDate(Cell("fechaemision")) ?? DateTime.Today,
                     RncEmisor = rncEmisor,
-                    RazonSocialEmisor = FirstNonEmpty(Cell("razonsocialemisor"), empresa.NombreComercial) ?? "",
-                    NombreComercialEmisor = FirstNonEmpty(Cell("nombrecomercial", "nombrecomercialemisor"), empresa.NombreComercial),
+                    RazonSocialEmisor = FirstNonEmpty(
+                        Cell("razonsocialemisor"),
+                        Cell("razonsocial"),
+                        Cell("razonsocialdelemisor")) ?? "",
+                    NombreComercialEmisor = FirstNonEmpty(
+                        Cell("nombrecomercial"),
+                        Cell("nombrecomercialemisor")),
                     DireccionEmisor = FirstNonEmpty(Cell("direccionemisor"), empresa.Direccion),
                     MunicipioEmisor = FirstNonEmpty(Cell("municipio", "municipioemisor"), empresa.Municipio),
                     ProvinciaEmisor = FirstNonEmpty(Cell("provincia", "provinciaemisor"), empresa.Provincia),
