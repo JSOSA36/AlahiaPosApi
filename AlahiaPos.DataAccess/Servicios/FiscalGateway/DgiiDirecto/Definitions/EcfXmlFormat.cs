@@ -260,22 +260,19 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.DgiiDirecto.Definitions
                     new XElement("TipoImpuesto", tipo),
                     new XElement("TasaImpuestoAdicional", tasaTxt));
 
-                var espTxt = TextoMontoExcelOTyped(ctx,
-                    n == 1 ? "MontoImpuestoSelectivoConsumoEspecifico" : $"MontoImpuestoSelectivoConsumoEspecifico{n}",
+                var espTxt = TextoMontoImpuestoAdicional(ctx, n,
                     "MontoImpuestoSelectivoConsumoEspecifico",
                     i.MontoImpuestoSelectivoConsumoEspecifico);
                 if (espTxt != null)
                     nodo.Add(new XElement("MontoImpuestoSelectivoConsumoEspecifico", espTxt));
 
-                var advTxt = TextoMontoExcelOTyped(ctx,
-                    n == 1 ? "MontoImpuestoSelectivoConsumoAdvalorem" : $"MontoImpuestoSelectivoConsumoAdvalorem{n}",
+                var advTxt = TextoMontoImpuestoAdicional(ctx, n,
                     "MontoImpuestoSelectivoConsumoAdvalorem",
                     i.MontoImpuestoSelectivoConsumoAdvalorem);
                 if (advTxt != null)
                     nodo.Add(new XElement("MontoImpuestoSelectivoConsumoAdvalorem", advTxt));
 
-                var otrTxt = TextoMontoExcelOTyped(ctx,
-                    n == 1 ? "OtrosImpuestosAdicionales" : $"OtrosImpuestosAdicionales{n}",
+                var otrTxt = TextoMontoImpuestoAdicional(ctx, n,
                     "OtrosImpuestosAdicionales",
                     i.OtrosImpuestosAdicionales);
                 if (otrTxt != null)
@@ -290,6 +287,20 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.DgiiDirecto.Definitions
             EcfBuildContext ctx, string claveN, string clave, decimal? typed)
         {
             if (TryCeldaExcel(ctx, claveN, out var a) || TryCeldaExcel(ctx, clave, out a))
+                return a;
+            return typed is > 0 and var v ? Money(v) : null;
+        }
+
+        /// <summary>
+        /// Monto del impuesto adicional N del encabezado. El set usa el sufijo 1
+        /// (OtrosImpuestosAdicionales1). No se lee como celda de línea.
+        /// </summary>
+        private static string? TextoMontoImpuestoAdicional(
+            EcfBuildContext ctx, int n, string nombre, decimal? typed)
+        {
+            if (TryCeldaExcel(ctx, nombre + n, out var a, 0))
+                return a;
+            if (n == 1 && TryCeldaExcel(ctx, nombre, out a, 0))
                 return a;
             return typed is > 0 and var v ? Money(v) : null;
         }

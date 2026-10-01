@@ -253,6 +253,12 @@ namespace AlahiaPos.DataAccess.Servicios.FacturacionElectronica
                 return TryDecimal(raw, out var v) ? v : null;
             }
 
+            // El set numera desde 1 (OtrosImpuestosAdicionales1). El primero no viene sin número.
+            decimal? MontoImpuestoAdicional(int indice, string nombre)
+                => indice == 1
+                    ? DecN(nombre + "1", nombre)
+                    : DecN(nombre + indice);
+
             int Int(params string[] keys)
             {
                 var raw = Cell(keys);
@@ -354,14 +360,13 @@ namespace AlahiaPos.DataAccess.Servicios.FacturacionElectronica
                     continue;
                 var tipoNorm = tipoImpuesto.Trim();
                 if (!tipoSeen.Add(tipoNorm)) continue;
-                var suf = i == 1 ? "" : i.ToString();
                 doc.Encabezado.ImpuestosAdicionales.Add(new FiscalImpuestoAdicional
                 {
                     TipoImpuesto = tipoNorm,
                     TasaImpuestoAdicional = tasaImp.Value,
-                    MontoImpuestoSelectivoConsumoEspecifico = DecN("montoimpuestoselectivoconsumoespecifico" + suf),
-                    MontoImpuestoSelectivoConsumoAdvalorem = DecN("montoimpuestoselectivoconsumoadvalorem" + suf),
-                    OtrosImpuestosAdicionales = DecN("otrosimpuestosadicionales" + suf)
+                    MontoImpuestoSelectivoConsumoEspecifico = MontoImpuestoAdicional(i, "montoimpuestoselectivoconsumoespecifico"),
+                    MontoImpuestoSelectivoConsumoAdvalorem = MontoImpuestoAdicional(i, "montoimpuestoselectivoconsumoadvalorem"),
+                    OtrosImpuestosAdicionales = MontoImpuestoAdicional(i, "otrosimpuestosadicionales")
                 });
             }
 
