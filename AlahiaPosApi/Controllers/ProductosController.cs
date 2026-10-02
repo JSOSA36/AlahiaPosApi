@@ -148,6 +148,7 @@ namespace AlahiaPosApi.Controllers
 
                 p.Descuento = 0;
                 p.IsActivo = true;
+                p.SeVende = EsOperacionDeVenta(p.TipoOperacion);
 
                 if (!p.EsServicio
                     && string.IsNullOrWhiteSpace(value.TipoComportamiento)
@@ -266,6 +267,8 @@ namespace AlahiaPosApi.Controllers
                 }
             }
 
+            Producto.SeVende = EsOperacionDeVenta(Producto.TipoOperacion);
+
             services.UpdateProductos(value.idProducto,Producto);
             return Ok(new { message = "Producto actualizado ✅" });
         }
@@ -323,6 +326,15 @@ namespace AlahiaPosApi.Controllers
             return sesion != null && sesion.IdSucursal > 0
                 ? sesion.IdSucursal
                 : null;
+        }
+
+        /// <summary>
+        /// El POS solo lista artículos con SeVende. Compra y Venta / Venta deben quedar marcados.
+        /// </summary>
+        private static bool EsOperacionDeVenta(string? tipoOperacion)
+        {
+            var op = (tipoOperacion ?? string.Empty).Trim().ToUpperInvariant();
+            return op == "VENTA" || op == "AMBAS";
         }
     }
 }
