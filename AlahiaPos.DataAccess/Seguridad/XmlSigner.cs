@@ -11,22 +11,14 @@ namespace AlahiaPos.DataAccess.Seguridad
 
         public static string SignXml(string xml, string p12Path, string p12Password)
         {
-            var cert = new X509Certificate2(
-                p12Path,
-                p12Password,
-                X509KeyStorageFlags.MachineKeySet | X509KeyStorageFlags.Exportable);
-
-            return SignXml(xml, cert);
+            using var abierto = CertificadoP12.Abrir(File.ReadAllBytes(p12Path), p12Password);
+            return SignXml(xml, abierto.Certificado);
         }
 
         public static string SignXml(string xml, byte[] p12Bytes, string p12Password)
         {
-            var cert = new X509Certificate2(
-                p12Bytes,
-                p12Password,
-                X509KeyStorageFlags.MachineKeySet | X509KeyStorageFlags.Exportable);
-
-            return SignXml(xml, cert);
+            using var abierto = CertificadoP12.Abrir(p12Bytes, p12Password);
+            return SignXml(xml, abierto.Certificado);
         }
 
         public static string SignXml(string xml, X509Certificate2 cert)

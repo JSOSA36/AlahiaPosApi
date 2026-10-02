@@ -3,6 +3,7 @@ using AlahiaPos.Entities.Dto;
 using AlahiaPos.Entities.Dto.Fiscal;
 using AlahiaPos.Entities.Interfaces;
 using AlahiaPos.DataAccess.Data;
+using AlahiaPos.DataAccess.Seguridad;
 using AlahiaPos.DataAccess.Servicios.FacturacionElectronica;
 using AlahiaPos.DataAccess.Servicios.FiscalGateway;
 using AlahiaPos.DataAccess.Servicios.FiscalGateway.DgiiDirecto;
@@ -353,19 +354,15 @@ namespace AlahiaPosApi.Controllers
             string? thumbprint;
             try
             {
-                using var x509 = new X509Certificate2(
-                    bytes,
-                    password,
-                    X509KeyStorageFlags.EphemeralKeySet | X509KeyStorageFlags.Exportable);
-                if (!x509.HasPrivateKey)
-                    return BadRequest("El certificado no contiene llave privada. Use el .p12/.pfx de firma.");
-                fechaExp = x509.NotAfter;
-                subject = x509.Subject;
-                thumbprint = x509.Thumbprint;
+                using var abierto = CertificadoP12.Abrir(bytes, password);
+                fechaExp = abierto.Certificado.NotAfter;
+                subject = abierto.Certificado.Subject;
+                thumbprint = abierto.Certificado.Thumbprint;
+                bytes = abierto.BytesCompatibles;
             }
-            catch (Exception ex)
+            catch (InvalidOperationException ex)
             {
-                return BadRequest($"No se pudo abrir el certificado con esa contraseña: {ex.Message}");
+                return BadRequest(ex.Message);
             }
 
             var activos = await _ctx.CertificadosDigitales.AsTracking()

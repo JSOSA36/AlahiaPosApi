@@ -162,23 +162,8 @@ namespace Alahia.eCF.Api.Controllers
                 return _certs.Firmar(arecf, material);
             }
 
-            try
-            {
-                using var enMemoria = new X509Certificate2(
-                    cert.ArchivoBytes,
-                    cert.PasswordEncriptado,
-                    X509KeyStorageFlags.EphemeralKeySet);
-                return XmlSigner.SignXml(arecf, enMemoria);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Firma ARECF en memoria falló. Reintento con almacén de máquina.");
-                using var enMaquina = new X509Certificate2(
-                    cert.ArchivoBytes,
-                    cert.PasswordEncriptado,
-                    X509KeyStorageFlags.MachineKeySet | X509KeyStorageFlags.Exportable);
-                return XmlSigner.SignXml(arecf, enMaquina);
-            }
+            using var abierto = CertificadoP12.Abrir(cert.ArchivoBytes, cert.PasswordEncriptado ?? "");
+            return XmlSigner.SignXml(arecf, abierto.Certificado);
         }
 
         private static string? Cortar(string? s, int max)

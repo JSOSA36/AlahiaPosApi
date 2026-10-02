@@ -1,4 +1,5 @@
 ﻿using Alahia.eCF.Api.Interfaces;
+using AlahiaPos.DataAccess.Seguridad;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Cryptography.Xml;
 using System.Xml;
@@ -13,12 +14,8 @@ public class XmlFirmaService : IXmlFirmaService
         xmlDoc.LoadXml(xmlString);
 
         // Cargar certificado P12
-        X509Certificate2 cert = new X509Certificate2(
-            rutaCertificado,
-            passwordCertificado,
-            X509KeyStorageFlags.MachineKeySet |
-            X509KeyStorageFlags.Exportable
-        );
+        using var abierto = CertificadoP12.Abrir(File.ReadAllBytes(rutaCertificado), passwordCertificado);
+        X509Certificate2 cert = abierto.Certificado;
 
         // Crear SignedXml
         SignedXml signedXml = new SignedXml(xmlDoc);

@@ -49,10 +49,7 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.DgiiDirecto
                     {
                         return new DgiiCertificadoMaterial
                         {
-                            Certificate = new X509Certificate2(
-                                cert.RutaArchivo,
-                                password,
-                                X509KeyStorageFlags.MachineKeySet | X509KeyStorageFlags.Exportable),
+                            Certificate = CertificadoP12.Abrir(File.ReadAllBytes(cert.RutaArchivo), password ?? "").Certificado,
                             Source = $"File:{cert.RutaArchivo}"
                         };
                     }
@@ -61,10 +58,7 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.DgiiDirecto
                     {
                         return new DgiiCertificadoMaterial
                         {
-                            Certificate = new X509Certificate2(
-                                cert.ArchivoBytes,
-                                password,
-                                X509KeyStorageFlags.MachineKeySet | X509KeyStorageFlags.Exportable),
+                            Certificate = CertificadoP12.Abrir(cert.ArchivoBytes, password ?? "").Certificado,
                             Source = $"DB:{cert.IdCertificado}"
                         };
                     }
@@ -101,10 +95,7 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.DgiiDirecto
 
             return new DgiiCertificadoMaterial
             {
-                Certificate = new X509Certificate2(
-                    _settings.P12Path,
-                    _settings.P12Password,
-                    X509KeyStorageFlags.MachineKeySet | X509KeyStorageFlags.Exportable),
+                Certificate = CertificadoP12.Abrir(File.ReadAllBytes(_settings.P12Path), _settings.P12Password).Certificado,
                 Source = $"Config:{_settings.P12Path}"
             };
         }

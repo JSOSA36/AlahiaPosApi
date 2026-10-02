@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using AlahiaPos.DataAccess.Data;
+using AlahiaPos.DataAccess.Seguridad;
 using AlahiaPos.DataAccess.Servicios.FacturacionElectronica;
 using AlahiaPos.DataAccess.Servicios.FiscalGateway.DgiiDirecto;
 using AlahiaPos.Entities.Domain;
@@ -209,51 +210,21 @@ public class CertecfPuenteController : ControllerBase
         await using var ms = new MemoryStream();
         await certificado.CopyToAsync(ms, ct);
         var bytes = ms.ToArray();
-        var abierto = Abrir(bytes, password);
+        using var abierto = CertificadoP12.Abrir(bytes, password);
 
         var nuevo = new CertificadoDigital
         {
             IdEmpresa = idEmpresa,
             NombreArchivo = string.IsNullOrWhiteSpace(certificado.FileName) ? "certificado.p12" : Path.GetFileName(certificado.FileName),
-            ArchivoBytes = bytes,
+            ArchivoBytes = abierto.BytesCompatibles,
             PasswordEncriptado = password,
-            FechaExpiracion = abierto.NotAfter,
+            FechaExpiracion = abierto.Certificado.NotAfter,
             Activo = true,
             Ambiente = DgiiAmbienteHelper.EtiquetaSecuencia(DgiiAmbienteHelper.Certificacion),
             FechaCreacion = DateTime.Now
         };
-        abierto.Dispose();
         _ctx.CertificadosDigitales.Add(nuevo);
         await _ctx.SaveChangesAsync(ct);
-    }
-
-    private static X509Certificate2 Abrir(byte[] bytes, string password)
-    {
-        X509KeyStorageFlags[] modos =
-        {
-            X509KeyStorageFlags.EphemeralKeySet,
-            X509KeyStorageFlags.MachineKeySet | X509KeyStorageFlags.Exportable,
-            X509KeyStorageFlags.UserKeySet | X509KeyStorageFlags.Exportable
-        };
-        Exception? ultimo = null;
-        foreach (var modo in modos)
-        {
-            try
-            {
-                var cert = new X509Certificate2(bytes, password, modo);
-                if (!cert.HasPrivateKey)
-                {
-                    cert.Dispose();
-                    throw new InvalidOperationException("El archivo no trae la llave privada.");
-                }
-                return cert;
-            }
-            catch (InvalidOperationException) { throw; }
-            catch (Exception ex) { ultimo = ex; }
-        }
-        throw new InvalidOperationException(
-            "No se pudo abrir el certificado. Revise el archivo y la contraseña."
-            + (string.IsNullOrWhiteSpace(ultimo?.Message) ? "" : $" ({ultimo.Message})"));
     }
 
     private bool LlaveOk()
