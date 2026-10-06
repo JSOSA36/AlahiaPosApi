@@ -4,6 +4,7 @@ using AlahiaPos.Entities.Dto.Fiscal;
 using AlahiaPos.Entities.Interfaces;
 using AlahiaPos.DataAccess.Data;
 using AlahiaPos.DataAccess.Seguridad;
+using AlahiaPos.DataAccess.Servicios;
 using AlahiaPos.DataAccess.Servicios.FacturacionElectronica;
 using AlahiaPos.DataAccess.Servicios.FiscalGateway;
 using AlahiaPos.DataAccess.Servicios.FiscalGateway.DgiiDirecto;
@@ -531,6 +532,21 @@ namespace AlahiaPosApi.Controllers
                         ecf.FechaFirma = resultado.FechaFirma;
                         dirty = true;
                     }
+                    if (resultado.Mensajes.Count > 0)
+                    {
+                        var texto = string.Join("; ", resultado.Mensajes.Where(m => !string.IsNullOrWhiteSpace(m)));
+                        if (!string.IsNullOrWhiteSpace(texto) && !string.Equals(ecf.MensajeRespuesta, texto, StringComparison.Ordinal))
+                        {
+                            ecf.MensajeRespuesta = texto;
+                            dirty = true;
+                        }
+                    }
+                    if (!string.IsNullOrWhiteSpace(resultado.CodigoError)
+                        && !string.Equals(ecf.CodigoError, resultado.CodigoError, StringComparison.Ordinal))
+                    {
+                        ecf.CodigoError = resultado.CodigoError;
+                        dirty = true;
+                    }
                     if (dirty)
                         await _ctx.SaveChangesAsync();
                 }
@@ -563,6 +579,165 @@ namespace AlahiaPosApi.Controllers
 
             var ok = await _gateway.VerificarConexionAsync();
             return Ok(new { conectado = ok, proveedor = ProveedorFiscalHelper.DgiiDirecto });
+        }
+
+        // ============================================================
+        // Vista previa: factura, QR y motivo DGII
+        // ============================================================
+
+        [HttpGet("detalle/{idEcf}")]
+        public async Task<IActionResult> Detalle(int idEcf)
+        {
+            var ecf = await _ctx.ECFEncabezados.AsTracking().FirstOrDefaultAsync(e => e.IdECF == idEcf);
+            if (ecf == null)
+                return NotFound("Documento no encontrado");
+
+            var empresa = await _ctx.Empresas.AsNoTracking()
+                .Where(x => x.IdEmpresa == ecf.IdEmpresa)
+                .Select(x => new { x.NombreComercial, x.Direccion, x.Telefono })
+                .FirstOrDefaultAsync();
+
+            int tipo = 0;
+            int.TryParse(ecf.TipoECF, out tipo);
+
+            var mensajes = (ecf.MensajeRespuesta ?? "")
+                .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Where(m => !string.IsNullOrWhiteSpace(m))
+                .ToList();
+
+            var estado = (ecf.EstadoDGII ?? "").Trim();
+            var necesitaMotivo = mensajes.Count == 0
+                && (estado.Contains("Rechazado", StringComparison.OrdinalIgnoreCase)
+                    || estado.Contains("Error", StringComparison.OrdinalIgnoreCase));
+            var trackOk = !string.IsNullOrWhiteSpace(ecf.TrackId)
+                && !string.Equals(ecf.TrackId, "00000000-0000-0000-0000-000000000000", StringComparison.OrdinalIgnoreCase);
+
+            if (necesitaMotivo && trackOk)
+            {
+                var consulta = await _feService.ConsultarEstadoDgiiAsync(ecf.TrackId!, ecf.IdEmpresa);
+                var texto = string.Join("; ", (consulta.Mensajes ?? new List<string>()).Where(m => !string.IsNullOrWhiteSpace(m)));
+                if (!string.IsNullOrWhiteSpace(texto))
+                {
+                    ecf.MensajeRespuesta = texto;
+                    mensajes = texto.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+                }
+                if (!string.IsNullOrWhiteSpace(consulta.CodigoError))
+                    ecf.CodigoError = consulta.CodigoError;
+                if (!string.IsNullOrWhiteSpace(consulta.Estado)
+                    && !string.Equals(consulta.Estado, "Error", StringComparison.OrdinalIgnoreCase)
+                    && !string.Equals(ecf.EstadoDGII, consulta.Estado, StringComparison.OrdinalIgnoreCase))
+                {
+                    ecf.EstadoDGII = consulta.Estado;
+                    estado = consulta.Estado;
+                }
+                await _ctx.SaveChangesAsync();
+            }
+
+            var subMostrado = ecf.MontoGravado;
+            var itbisMostrado = ecf.TotalITBIS;
+            var totalMostrado = ecf.TotalGeneral;
+            string? numeroDocumento = ecf.NumeroFacturaInterna;
+            var items = new List<object>();
+            if (ecf.OrigenDocumento is (int)OrigenDocumento.Pos or (int)OrigenDocumento.Facturacion && ecf.IdOrigen > 0)
+            {
+                var factura = await _ctx.FacturaHeaders.AsNoTracking()
+                    .Where(f => f.IdFacturaHeader == ecf.IdOrigen)
+                    .Select(f => f.NumeroDocumento)
+                    .FirstOrDefaultAsync();
+                if (!string.IsNullOrWhiteSpace(factura))
+                    numeroDocumento = factura;
+
+                var lineas = await (
+                    from d in _ctx.FacturaDetalles.AsNoTracking()
+                    join p in _ctx.Productos.AsNoTracking() on d.IdProducto equals p.IdProducto into pj
+                    from p in pj.DefaultIfEmpty()
+                    where d.IdFacturaHeader == ecf.IdOrigen
+                    orderby d.IdFacturaDetalle
+                    select new { d.Cantidad, d.Itbis, d.SubTotal, d.Comentario, Nombre = p != null ? p.Nombre : null }
+                ).ToListAsync();
+
+                decimal baseSum = 0, itbisSum = 0;
+                foreach (var d in lineas)
+                {
+                    var cantidad = d.Cantidad <= 0 ? 1m : d.Cantidad;
+                    var itbisLinea = ItbisPosLinea.ExtenderSiEsUnitario(d.Itbis, d.SubTotal, d.Cantidad);
+                    var baseLinea = d.SubTotal - d.Itbis;
+                    if (baseLinea < 0) baseLinea = 0;
+                    var nombre = string.IsNullOrWhiteSpace(d.Nombre) ? "Ítem" : d.Nombre.Trim();
+                    if (!string.IsNullOrWhiteSpace(d.Comentario))
+                        nombre = nombre + " — " + d.Comentario.Trim();
+                    baseSum += baseLinea;
+                    itbisSum += itbisLinea;
+                    items.Add(new
+                    {
+                        nombre,
+                        cantidad = d.Cantidad,
+                        precio = Math.Round(baseLinea / cantidad, 2, MidpointRounding.AwayFromZero),
+                        itbis = itbisLinea,
+                        subTotal = baseLinea + itbisLinea
+                    });
+                }
+
+                if (lineas.Count > 0)
+                {
+                    subMostrado = baseSum;
+                    itbisMostrado = itbisSum;
+                    totalMostrado = baseSum + itbisSum;
+                }
+            }
+
+            var fechaVencimiento = await _ctx.SecuenciasECF.AsNoTracking()
+                .Where(s => s.IdEmpresa == ecf.IdEmpresa && s.TipoEcfDgii == tipo && s.Activo)
+                .Select(s => (DateTime?)s.fechaVencimiento)
+                .FirstOrDefaultAsync();
+
+            var xmlGuardado = await EcfXmlStore.TieneFirmadoAsync(_ctx, idEcf);
+
+            string? notaTrackId = null;
+            if (!trackOk)
+            {
+                notaTrackId = tipo == 32
+                    ? "DGII no asignó TrackId. Este e32 se envió por resumen de consumo (RFCE) y la aceptación es directa. La constancia es el código de seguridad y el QR."
+                    : "DGII no devolvió TrackId para este comprobante.";
+            }
+
+            if (necesitaMotivo && mensajes.Count == 0)
+            {
+                mensajes.Add(trackOk
+                    ? "DGII no devolvió el texto del rechazo en la consulta de este TrackId."
+                    : "No hay TrackId ni respuesta DGII guardada, así que no se puede leer el motivo.");
+            }
+
+            return Ok(new
+            {
+                idEcf = ecf.IdECF,
+                encf = ecf.ENCF,
+                tipoEcfDgii = tipo,
+                estadoDGII = ecf.EstadoDGII,
+                trackId = ecf.TrackId,
+                fechaEmision = ecf.FechaEmision,
+                fechaFirma = ecf.FechaFirma,
+                montoTotal = totalMostrado,
+                subTotal = subMostrado,
+                totalItbis = itbisMostrado,
+                rncComprador = ecf.RncReceptor,
+                nombreReceptor = ecf.NombreReceptor,
+                mensajeRespuesta = ecf.MensajeRespuesta,
+                codigoError = ecf.CodigoError,
+                securityCode = ecf.SecurityCode,
+                urlQR = ecf.UrlQR,
+                rncEmisor = ecf.RncEmisor,
+                razonSocialEmisor = empresa?.NombreComercial,
+                nombreComercial = empresa?.NombreComercial,
+                fechaVencimiento,
+                direccion = empresa?.Direccion,
+                telefono = empresa?.Telefono,
+                numeroDocumento,
+                notaTrackId,
+                xmlGuardado,
+                mensajesDgii = mensajes,
+                items
+            });
         }
 
         // ============================================================
