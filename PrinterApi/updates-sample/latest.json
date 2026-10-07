@@ -1,10 +1,10 @@
 ﻿{
-    "version":  "1.0.19",
-    "url":  "https://alahiaposapidemo.alahiapos.com/updates/printer/AlahiaPrinterApi-1.0.19.zip",
-    "sha256":  "2CA2DA16C02872AA8119A396BF54AD663DB0E065957E7475EE7FDF5ECCB3461A",
+    "version":  "1.0.23",
+    "url":  "https://alahiaposapidemo.alahiapos.com/updates/printer/AlahiaPrinterApi-1.0.23.zip",
+    "sha256":  "BAE67248C88BE328C98CBD8C97130A8F09331FC410A757AF2191E7436706D9CC",
     "mandatory":  false,
-    "notes":  "Ticket lavador: cabecera un poco mas baja, sin doble ancho. Acentos y nombre de la empresa.",
-    "released":  "2026-09-25T18:03:27.5634472Z",
+    "notes":  "Cantidad x precio sin ITBIS, y el ITBIS de cada linea.",
+    "released":  "2026-10-07T19:12:13.1645767Z",
     "runtime":  "win-x64",
     "selfContained":  true
 }
