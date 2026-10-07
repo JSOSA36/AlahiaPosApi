@@ -1354,7 +1354,13 @@ namespace AlahiaPosApi.Controllers
                             ? item.PrecioOferta
                             : prod.PrecioVenta;
 
-                        item.SubTotal = (precio * item.Cantidad) + item.Itbis;
+                        var itbisUnitario = item.Itbis < 0 ? 0 : item.Itbis;
+                        var itbis = ItbisPosLinea.ExtenderSiEsUnitario(
+                            itbisUnitario,
+                            (precio * item.Cantidad) + itbisUnitario,
+                            item.Cantidad);
+                        item.Itbis = itbis;
+                        item.SubTotal = (precio * item.Cantidad) + itbis;
 
                         if (!item.IdEmpleadoComision.HasValue)
                             item.IdEmpleadoComision = 0;
