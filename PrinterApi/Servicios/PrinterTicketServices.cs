@@ -123,7 +123,7 @@ public class PrinterTicketServices : IPrinterTicket
                 TicketLine(bytes, "--------------------------------");
                 bytes.AddRange(emitter.CenterAlign());
                 bytes.AddRange(emitter.SetStyles(PrintStyle.Bold));
-                TicketLine(bytes, "GRACIAS POR SU TRABAJO");
+                TicketLine(bytes, "GRACIAS POR SU TRABAJO!");
                 bytes.AddRange(emitter.SetStyles(PrintStyle.None));
 
                 bytes.AddRange(emitter.FeedLines(4));
@@ -952,7 +952,7 @@ public async Task GenerateTicketFacturaCliente(int idFactura)
             }
 
             bytes.AddRange(emitter.CenterAlign());
-            TicketLine(bytes, "GRACIAS POR PREFERIRNOS");
+            TicketLine(bytes, "GRACIAS POR PREFERIRNOS!");
 
             bytes.AddRange(emitter.FeedLines(4));
             // Abrir caj?n (pin 2)

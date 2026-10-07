@@ -153,7 +153,7 @@ public static class TicketFacturaPreviewPdf
                         Sep(col);
                     }
 
-                    CenterBold(col, "GRACIAS POR PREFERIRNOS", 8);
+                    CenterBold(col, "GRACIAS POR PREFERIRNOS!", 8);
                     col.Item().PaddingTop(8).AlignCenter()
                         .Text("[PREVIEW — no enviado a impresora]")
                         .FontSize(7)

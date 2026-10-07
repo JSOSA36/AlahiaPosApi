@@ -76,7 +76,7 @@ namespace PrinterServices.Servicios
 
                         bytes.AddRange(emitter.CenterAlign());
                         bytes.AddRange(emitter.SetStyles(PrintStyle.Bold));
-                        bytes.AddRange(emitter.PrintLine("GRACIAS POR SU TRABAJO"));
+                        bytes.AddRange(emitter.PrintLine("GRACIAS POR SU TRABAJO!"));
 
                         bytes.AddRange(emitter.FeedLines(4));
                         bytes.AddRange(emitter.FullCut());
@@ -178,7 +178,7 @@ namespace PrinterServices.Servicios
                         bytes.AddRange(emitter.PrintLine("--------------------------------"));
 
                         bytes.AddRange(emitter.CenterAlign());
-                        bytes.AddRange(emitter.PrintLine("GRACIAS POR PREFERIRNOS"));
+                        bytes.AddRange(emitter.PrintLine("GRACIAS POR PREFERIRNOS!"));
 
                         bytes.AddRange(emitter.FeedLines(4));
                         bytes.AddRange(emitter.FullCut());

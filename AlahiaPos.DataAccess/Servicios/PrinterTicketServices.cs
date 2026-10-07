@@ -84,7 +84,7 @@ public class PrinterTicketServices: IPrinterTicket
 
                     bytes.AddRange(emitter.CenterAlign());
                     bytes.AddRange(emitter.SetStyles(PrintStyle.Bold));
-                    bytes.AddRange(emitter.PrintLine("GRACIAS POR SU TRABAJO"));
+                    bytes.AddRange(emitter.PrintLine("GRACIAS POR SU TRABAJO!"));
 
                     bytes.AddRange(emitter.FeedLines(4));
                     bytes.AddRange(emitter.FullCut());
@@ -202,7 +202,7 @@ public class PrinterTicketServices: IPrinterTicket
             }
 
             bytes.AddRange(emitter.CenterAlign());
-            bytes.AddRange(emitter.PrintLine("GRACIAS POR PREFERIRNOS"));
+            bytes.AddRange(emitter.PrintLine("GRACIAS POR PREFERIRNOS!"));
 
             bytes.AddRange(emitter.FeedLines(4));
             bytes.AddRange(emitter.FullCut());
