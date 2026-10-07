@@ -1302,6 +1302,22 @@ namespace AlahiaPos.DataAccess.Servicios
             }
 
             // ⭐ ARMAR DTO
+            // El POS guarda el ITBIS de una unidad. El ticket tiene que llevar el de la cantidad.
+            var lineasImpuesto = detalles.Select(det =>
+            {
+                var itbisLinea = ItbisPosLinea.ExtenderSiEsUnitario(det.Itbis, det.SubTotal, det.Cantidad);
+                var baseLinea = det.SubTotal - det.Itbis;
+                if (baseLinea < 0)
+                    baseLinea = 0;
+                return new { itbisLinea, baseLinea, bruto = baseLinea + itbisLinea };
+            }).ToList();
+            var descuentoTicket = factura.TotalDescuento < 0 ? 0 : factura.TotalDescuento;
+            var subTotalTicket = lineasImpuesto.Sum(l => l.baseLinea);
+            var totalItbisTicket = lineasImpuesto.Sum(l => l.itbisLinea);
+            var totalTicket = lineasImpuesto.Sum(l => l.bruto) - descuentoTicket;
+            if (totalTicket < 0)
+                totalTicket = 0;
+
             var dto = new TicketFacturaClienteDto
             {
                 NumeroFactura = factura.IdFacturaHeader,
@@ -1316,13 +1332,13 @@ namespace AlahiaPos.DataAccess.Servicios
                 RncCliente = !string.IsNullOrWhiteSpace(cliente?.CedulaRNC)
                     ? cliente!.CedulaRNC
                     : factura.RNC,
-                SubTotal = factura.SubTotal,
-                TotalItbis = factura.TotalItbis,
+                SubTotal = subTotalTicket,
+                TotalItbis = totalItbisTicket,
                 TotalDescuento = factura.TotalDescuento,
                 MontoCargo = factura.MontoCargo,
-                Total = factura.Total,
+                Total = totalTicket + factura.MontoCargo,
                 Pagado = factura.Pagado,
-                Pendiente = factura.Pendiente,
+                Pendiente = (totalTicket + factura.MontoCargo) - factura.Pagado,
                 TipoFactura = factura.TipoFactura ?? "",
                 FormaPago = factura.FormaPago ?? "",
 
@@ -1349,13 +1365,23 @@ namespace AlahiaPos.DataAccess.Servicios
 
                     var nombreLinea = prod?.Nombre ?? $"Producto {det.IdProducto}";
                     var guarnicion = (det.Comentario ?? "").Trim();
+                    var itbisLinea = ItbisPosLinea.ExtenderSiEsUnitario(det.Itbis, det.SubTotal, det.Cantidad);
+                    var baseLinea = det.SubTotal - det.Itbis;
+                    if (baseLinea < 0)
+                        baseLinea = 0;
+                    var cantidad = det.Cantidad <= 0 ? 1m : det.Cantidad;
+                    var unitario = decimal.Round(baseLinea / cantidad, 2, MidpointRounding.AwayFromZero);
+
                     return new TicketFacturaClienteDetalleDto
                     {
                         Cantidad = det.Cantidad,
                         Descripcion = string.IsNullOrWhiteSpace(guarnicion)
                             ? nombreLinea
                             : $"{nombreLinea} — {guarnicion}",
-                        Precio = det.SubTotal
+                        Precio = baseLinea + itbisLinea,
+                        PrecioUnitario = unitario,
+                        Monto = baseLinea,
+                        Itbis = itbisLinea
                     };
                 }).ToList()
             };

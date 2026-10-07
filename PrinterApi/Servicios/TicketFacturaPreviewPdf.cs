@@ -79,15 +79,21 @@ public static class TicketFacturaPreviewPdf
                     AppendTipoYFormaPagoPdf(col, factura);
 
                     Sep(col);
-                    Line(col, "CANT   DESCRIPCION");
+                    Line(col, TicketLineaComprobante.Encabezado);
 
                     foreach (var det in factura.Detalles ?? [])
                     {
-                        col.Item().Text(t =>
+                        foreach (var renglon in TicketLineaComprobante.Armar(det))
                         {
-                            t.Span($"{det.Cantidad}   {det.Descripcion}").Bold();
-                        });
-                        Line(col, $"       RD$ {det.Precio:N2}");
+                            if (renglon.Negrita)
+                            {
+                                col.Item().Text(t => t.Span(renglon.Texto).Bold());
+                            }
+                            else
+                            {
+                                Line(col, renglon.Texto);
+                            }
+                        }
                     }
 
                     Sep(col);

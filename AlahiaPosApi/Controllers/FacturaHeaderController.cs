@@ -908,9 +908,14 @@ namespace AlahiaPosApi.Controllers
                     // 🔥 SUBTOTAL FINAL
                     // ============================
 
+                    var itbisLinea = ItbisPosLinea.ExtenderSiEsUnitario(
+                        item.Itbis,
+                        (precioFinal * item.Cantidad) + item.Itbis,
+                        item.Cantidad);
+                    item.Itbis = itbisLinea;
                     item.SubTotal =
                         (precioFinal * item.Cantidad)
-                        + item.Itbis;
+                        + itbisLinea;
 
                     item.Productos = null;
 
@@ -1119,7 +1124,12 @@ namespace AlahiaPosApi.Controllers
                 if (item.Descuento < 0)
                     item.Descuento = 0;
 
-                item.SubTotal = (precioFinal * item.Cantidad) + item.Itbis;
+                var itbisLinea = ItbisPosLinea.ExtenderSiEsUnitario(
+                    item.Itbis,
+                    (precioFinal * item.Cantidad) + item.Itbis,
+                    item.Cantidad);
+                item.Itbis = itbisLinea;
+                item.SubTotal = (precioFinal * item.Cantidad) + itbisLinea;
                 item.Productos = null;
                 item.FacturaHeader = null;
                 lista.Add(item);
@@ -1475,7 +1485,11 @@ namespace AlahiaPosApi.Controllers
                             ? itemDto.PrecioOferta
                             : prod.PrecioVenta;
 
-                        var itbis = itemDto.Itbis < 0 ? 0 : itemDto.Itbis;
+                        var itbisUnitario = itemDto.Itbis < 0 ? 0 : itemDto.Itbis;
+                        var itbis = ItbisPosLinea.ExtenderSiEsUnitario(
+                            itbisUnitario,
+                            (precio * itemDto.Cantidad) + itbisUnitario,
+                            itemDto.Cantidad);
                         var detalle = new FacturaDetalles
                         {
                             IdFacturaDetalle = 0,
@@ -2748,6 +2762,27 @@ namespace AlahiaPosApi.Controllers
                     return NotFound("Factura no encontrada");
                 if (!TenantRecurso.EsDeLaSesion(HttpContext, existente.IdEmpresa))
                     return NotFound("Factura no encontrada");
+
+                var ecf = await _context.ECFEncabezados.AsNoTracking()
+                    .Where(e => e.IdOrigen == idFactura
+                        && (e.OrigenDocumento == (int)OrigenDocumento.Pos
+                            || e.OrigenDocumento == (int)OrigenDocumento.Facturacion))
+                    .OrderByDescending(e => e.IdECF)
+                    .Select(e => new { e.ENCF, e.EstadoDGII, e.MensajeRespuesta })
+                    .FirstOrDefaultAsync();
+                var estadoEcf = ecf?.EstadoDGII ?? "";
+                if (estadoEcf.Contains("Rechazado", StringComparison.OrdinalIgnoreCase)
+                    || estadoEcf.Contains("Error", StringComparison.OrdinalIgnoreCase))
+                {
+                    var motivo = string.IsNullOrWhiteSpace(ecf?.MensajeRespuesta)
+                        ? "DGII rechazó el comprobante."
+                        : ecf!.MensajeRespuesta;
+                    return Conflict(new
+                    {
+                        success = false,
+                        message = $"No se imprime {ecf?.ENCF}. {motivo}"
+                    });
+                }
 
                 var factura = await _facturaHeader.GetFacturaClienteById(idFactura);
 

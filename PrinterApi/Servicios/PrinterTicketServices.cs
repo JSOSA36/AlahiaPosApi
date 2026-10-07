@@ -521,11 +521,23 @@ public async Task GenerateTicketBizcocho(int idFacturaHeader, int idEmpresa)
         // DETALLES
         // ============================
 
+        decimal brutoCorregido = 0m;
+        var extendioItbis = false;
+
         foreach (var det in factura.FacturaDetalles)
         {
-            var totalLinea = det.SubTotal;
-            var itbisLinea = det.Itbis;
-            var subtotalLinea = totalLinea - itbisLinea;
+            var itbisGuardado = det.Itbis;
+            var itbisLinea = ExtenderItbisUnidad(itbisGuardado, det.SubTotal, det.Cantidad);
+            if (itbisLinea != itbisGuardado)
+                extendioItbis = true;
+
+            var baseLinea = det.SubTotal - itbisGuardado;
+            if (baseLinea < 0)
+                baseLinea = 0;
+
+            var totalLinea = baseLinea + itbisLinea;
+            var subtotalLinea = baseLinea;
+            brutoCorregido += totalLinea;
 
             bytes.AddRange(emitter.SetStyles(PrintStyle.Bold));
             var nombreProducto =
@@ -584,7 +596,16 @@ public async Task GenerateTicketBizcocho(int idFacturaHeader, int idEmpresa)
 
 
 
-            LeftLine($"TOTAL     : RD$ {factura.Total:N2}");
+            var totalImpreso = factura.Total;
+            if (extendioItbis)
+            {
+                var descuento = factura.TotalDescuento < 0 ? 0 : factura.TotalDescuento;
+                totalImpreso = brutoCorregido - descuento + factura.MontoCargo;
+                if (totalImpreso < 0)
+                    totalImpreso = 0;
+            }
+
+            LeftLine($"TOTAL     : RD$ {totalImpreso:N2}");
 
             if (esFacturaFinal && factura.Pendiente > 0.02m)
             {
@@ -864,15 +885,17 @@ public async Task GenerateTicketFacturaCliente(int idFactura)
 
             TicketLine(bytes, "--------------------------------");
 
-            TicketLine(bytes, "CANT   DESCRIPCION");
+            TicketLine(bytes, TicketLineaComprobante.Encabezado);
 
             foreach (var det in factura.Detalles.Where(d => d != null))
             {
-                bytes.AddRange(emitter.SetStyles(PrintStyle.Bold));
-                TicketLine(bytes, $"{det.Cantidad}   {det.Descripcion}");
+                foreach (var renglon in TicketLineaComprobante.Armar(det))
+                {
+                    bytes.AddRange(emitter.SetStyles(renglon.Negrita ? PrintStyle.Bold : PrintStyle.None));
+                    TicketLine(bytes, renglon.Texto);
+                }
 
                 bytes.AddRange(emitter.SetStyles(PrintStyle.None));
-                TicketLine(bytes, $"       RD$ {det.Precio:N2}");
             }
 
             TicketLine(bytes, "--------------------------------");
@@ -1956,6 +1979,26 @@ public async Task GenerateTicketFacturaCliente(int idFactura)
         }
 
 
+    }
+
+    /// <summary>
+    /// El POS a veces manda el ITBIS de una unidad. Si la tasa de esa cifra no llega al 16% de la línea, se multiplica por la cantidad.
+    /// </summary>
+    private static decimal ExtenderItbisUnidad(decimal itbis, decimal subTotal, decimal cantidad)
+    {
+        if (cantidad <= 1m || itbis <= 0m)
+            return itbis;
+
+        var baseLinea = subTotal - itbis;
+        if (baseLinea <= 0m)
+            return itbis;
+
+        var ratio = itbis / baseLinea;
+        var ratioExtendido = ratio * cantidad;
+        if (ratio < 0.13m && ratioExtendido >= 0.13m && ratioExtendido <= 0.22m)
+            return Math.Round(itbis * cantidad, 2, MidpointRounding.AwayFromZero);
+
+        return itbis;
     }
 
 }

@@ -48,8 +48,10 @@ dotnet publish (Join-Path $repoRoot "PrinterUpdater\PrinterUpdater.csproj") `
 
 Copy-Item (Join-Path $outRoot "updater\PrinterUpdater.exe") (Join-Path $stage "PrinterUpdater.exe") -Force
 
-# No incluir appsettings.Development en el release
+# No pisar la configuración de la PC del cliente (impresora, URL local).
+Remove-Item (Join-Path $stage "appsettings.json") -ErrorAction SilentlyContinue
 Remove-Item (Join-Path $stage "appsettings.Development.json") -ErrorAction SilentlyContinue
+Remove-Item (Join-Path $stage "appsettings.Production.json") -ErrorAction SilentlyContinue
 
 if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
 Compress-Archive -Path (Join-Path $stage "*") -DestinationPath $zipPath -Force
