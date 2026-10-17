@@ -1355,10 +1355,12 @@ namespace AlahiaPosApi.Controllers
                             : prod.PrecioVenta;
 
                         var itbisUnitario = item.Itbis < 0 ? 0 : item.Itbis;
-                        var itbis = ItbisPosLinea.ExtenderSiEsUnitario(
+                        var itbis = ItbisPosLinea.AsegurarEnComprobante(
                             itbisUnitario,
-                            (precio * item.Cantidad) + itbisUnitario,
-                            item.Cantidad);
+                            precio,
+                            item.Cantidad,
+                            esEcf,
+                            prod.TasaItbis);
                         item.Itbis = itbis;
                         item.SubTotal = (precio * item.Cantidad) + itbis;
 
@@ -1492,10 +1494,12 @@ namespace AlahiaPosApi.Controllers
                             : prod.PrecioVenta;
 
                         var itbisUnitario = itemDto.Itbis < 0 ? 0 : itemDto.Itbis;
-                        var itbis = ItbisPosLinea.ExtenderSiEsUnitario(
+                        var itbis = ItbisPosLinea.AsegurarEnComprobante(
                             itbisUnitario,
-                            (precio * itemDto.Cantidad) + itbisUnitario,
-                            itemDto.Cantidad);
+                            precio,
+                            itemDto.Cantidad,
+                            esEcf2,
+                            prod.TasaItbis);
                         var detalle = new FacturaDetalles
                         {
                             IdFacturaDetalle = 0,

@@ -184,18 +184,22 @@ namespace AlahiaPos.DataAccess.Servicios.Dgii
                 result.Lineas.Add(MapearNotaCredito(n, cli));
             }
 
+            await AgregarEcfFaltantesAsync(
+                result, idEmpresa, d, h, clientes, nombresPorEncf, nombresPorRnc);
+
             result.Lineas = result.Lineas
                 .OrderBy(l => l.FechaComprobante)
                 .ThenBy(l => l.Ncf)
                 .ToList();
 
-            // Resumen FC < 250K (no van al TXT detalle)
+            // Resumen FC < 250K (consulta; no van al TXT)
             var resumen = result.Lineas.Where(l => l.EsResumenFacturaConsumo).ToList();
             result.ResumenFcCantidad = resumen.Count;
             result.ResumenFcMonto = resumen.Sum(l => l.MontoFacturado);
             result.ResumenFcItbis = resumen.Sum(l => l.ItbisFacturado);
 
-            var detalle = result.Lineas.Where(l => !l.EsResumenFacturaConsumo).ToList();
+            // TXT / exportación DGII: solo E31 y notas de crédito.
+            var detalle = result.Lineas.Where(EsLineaExportableTxt).ToList();
             result.CantidadRegistros = detalle.Count;
             result.CantidadConAlertas = detalle.Count(l => !l.EsValidaParaEnvio);
             result.TotalMontoFacturado = detalle.Sum(l => l.MontoFacturado);
@@ -203,6 +207,163 @@ namespace AlahiaPos.DataAccess.Servicios.Dgii
             result.ContenidoTxt = GenerarTxt607(result, detalle);
 
             return result;
+        }
+
+        private async Task AgregarEcfFaltantesAsync(
+            Reporte607Dto result,
+            int idEmpresa,
+            DateTime d,
+            DateTime h,
+            Dictionary<int, Clientes> clientes,
+            Dictionary<string, string> nombresPorEncf,
+            Dictionary<string, string> nombresPorRnc)
+        {
+            var ya = new HashSet<string>(
+                result.Lineas.Select(l => (l.Ncf ?? "").Trim().ToUpperInvariant())
+                    .Where(x => x.Length > 0),
+                StringComparer.OrdinalIgnoreCase);
+
+            var extra = await _ctx.ECFEncabezados
+                .AsNoTracking()
+                .Where(e =>
+                    e.IdEmpresa == idEmpresa
+                    && e.ENCF != null
+                    && e.ENCF != ""
+                    && e.FechaEmision.Date >= d
+                    && e.FechaEmision.Date <= h
+                    && (
+                        e.EstadoDGII == "Aceptado"
+                        || e.EstadoDGII == "ACEPTADO"
+                        || e.EstadoDocumento == "ACEPTADO"
+                        || e.EstadoDocumento == "Aceptado"
+                    ))
+                .ToListAsync();
+
+            extra = extra
+                .Where(e => !ya.Contains((e.ENCF ?? "").Trim().ToUpperInvariant()))
+                .ToList();
+            if (extra.Count == 0)
+                return;
+
+            var idsFactura = extra
+                .Where(e => e.IdOrigen > 0)
+                .Select(e => e.IdOrigen)
+                .Distinct()
+                .ToList();
+
+            var facturasExtra = idsFactura.Count == 0
+                ? new Dictionary<int, FacturaHeaders>()
+                : await _ctx.FacturaHeaders
+                    .AsNoTracking()
+                    .Where(f =>
+                        f.IdEmpresa == idEmpresa
+                        && idsFactura.Contains(f.IdFacturaHeader)
+                        && f.IdTipoDocumentos == 1)
+                    .ToDictionaryAsync(f => f.IdFacturaHeader);
+
+            var cliFaltantes = facturasExtra.Values
+                .Where(f => f.IDCliente.HasValue && f.IDCliente.Value > 0
+                    && !clientes.ContainsKey(f.IDCliente.Value))
+                .Select(f => f.IDCliente!.Value)
+                .Distinct()
+                .ToList();
+            if (cliFaltantes.Count > 0)
+            {
+                var extraCli = await _ctx.Clientes
+                    .AsNoTracking()
+                    .Where(c => cliFaltantes.Contains(c.IDCliente))
+                    .ToListAsync();
+                foreach (var c in extraCli)
+                    clientes[c.IDCliente] = c;
+            }
+
+            foreach (var e in extra)
+            {
+                var ncf = (e.ENCF ?? "").Trim().ToUpperInvariant();
+                if (ncf.Length == 0 || ya.Contains(ncf))
+                    continue;
+
+                facturasExtra.TryGetValue(e.IdOrigen, out var factura);
+                clientes.TryGetValue(factura?.IDCliente ?? 0, out var cli);
+                nombresPorEncf.TryGetValue(ncf, out var nombreEcf);
+                nombresPorRnc.TryGetValue(LimpiarDocumento(e.RncReceptor), out var nombreRnc);
+
+                if (factura != null)
+                {
+                    var linea = MapearFactura(factura, cli, nombreEcf ?? e.NombreReceptor, nombreRnc);
+                    linea.Ncf = ncf;
+                    linea.Alertas.Clear();
+                    linea.EsResumenFacturaConsumo = EsFacturaConsumoBajoUmbral(
+                        ncf,
+                        linea.MontoFacturado + linea.ItbisFacturado + linea.MontoPropinaLegal);
+                    ValidarLinea(linea, esNotaCredito: false);
+                    result.Lineas.Add(linea);
+                }
+                else
+                {
+                    result.Lineas.Add(MapearDesdeEcf(e, nombreEcf, nombreRnc));
+                }
+
+                ya.Add(ncf);
+            }
+        }
+
+        private static Reporte607LineaDto MapearDesdeEcf(
+            ECFEncabezado e,
+            string? nombreEcf,
+            string? nombrePorRnc)
+        {
+            var ncf = (e.ENCF ?? "").Trim().ToUpperInvariant();
+            var tipoEcf = ResolverTipoEcfNumero(e.TipoECF, ncf);
+            var esNc = tipoEcf is 33 or 34;
+            var rnc = LimpiarDocumento(e.RncReceptor);
+            var monto = e.MontoGravado > 0 ? e.MontoGravado : Math.Max(0, e.TotalGeneral - e.TotalITBIS);
+            var itbis = e.TotalITBIS;
+            var totalBruto = monto + itbis;
+
+            var linea = new Reporte607LineaDto
+            {
+                IdDocumento = e.IdOrigen > 0 ? e.IdOrigen : e.IdECF,
+                TipoDocumentoAlahia = esNc ? "NotaCredito" : "Venta",
+                NumeroDocumento = e.NumeroFacturaInterna,
+                ClienteNombre = FirstNonEmpty(e.NombreReceptor, nombreEcf, nombrePorRnc),
+                RncCedulaComprador = rnc,
+                TipoIdentificacion = ResolverTipoIdentificacion(rnc, null),
+                Ncf = ncf,
+                TipoIngreso = 1,
+                FechaComprobante = e.FechaEmision.Date,
+                MontoFacturado = Redondear(monto),
+                ItbisFacturado = Redondear(itbis),
+                OtrasFormasVenta = Redondear(totalBruto),
+                EsResumenFacturaConsumo = EsFacturaConsumoBajoUmbral(ncf, totalBruto)
+            };
+
+            ValidarLinea(linea, esNotaCredito: esNc);
+            return linea;
+        }
+
+        private static bool EsLineaExportableTxt(Reporte607LineaDto linea)
+        {
+            var pref = PrefijoNcf(linea.Ncf);
+            if (string.Equals(linea.TipoDocumentoAlahia, "NotaCredito", StringComparison.OrdinalIgnoreCase))
+                return pref is "E33" or "E34";
+            return pref == "E31";
+        }
+
+        private static string PrefijoNcf(string? ncf)
+        {
+            var v = (ncf ?? "").Trim().ToUpperInvariant();
+            return v.Length >= 3 ? v.Substring(0, 3) : v;
+        }
+
+        private static int ResolverTipoEcfNumero(string? tipoEcf, string ncf)
+        {
+            if (int.TryParse((tipoEcf ?? "").Trim(), out var n) && n > 0)
+                return n;
+            var pref = PrefijoNcf(ncf);
+            if (pref.Length == 3 && pref[0] == 'E' && int.TryParse(pref.Substring(1), out var desdeNcf))
+                return desdeNcf;
+            return 0;
         }
 
         private static Reporte607LineaDto MapearFactura(
