@@ -1160,6 +1160,21 @@ namespace AlahiaPosApi.Controllers
         /// <summary>
         /// Documentos e-CF no aplican cargo de cobro (ej. Sabor Urbano / María).
         /// </summary>
+        private bool EmpresaFacturaConItbis(int idEmpresa)
+        {
+            if (idEmpresa <= 0)
+                return false;
+            var valor = _context.Parametros
+                .AsNoTracking()
+                .Where(p => p.IdEmpresa == idEmpresa
+                    && p.Activo
+                    && p.Clave == "FACTURAR_CON_ITBIS")
+                .Select(p => p.Valor)
+                .FirstOrDefault();
+            return string.Equals(valor, "true", StringComparison.OrdinalIgnoreCase)
+                || valor == "1";
+        }
+
         private static bool EsDocumentoEcfParaCargo(FacturaHeaderDto header)
         {
             var tipoComprobante = (header.TipoComprobante ?? string.Empty).Trim();
@@ -1303,6 +1318,7 @@ namespace AlahiaPosApi.Controllers
                     var esEcf = dto.Header.TipoComprobante == "Crédito Fiscal"
                              || dto.Header.TipoComprobante == "Consumidor Final"
                              || dto.Header.TipoComprobante == "Gubernamental";
+                    var facturaConItbis = EmpresaFacturaConItbis(dto.Header.IdEmpresa);
 
                     if (!esEcf && dto.Header.TipoComprobante != "FACT")
                     {
@@ -1360,6 +1376,7 @@ namespace AlahiaPosApi.Controllers
                             precio,
                             item.Cantidad,
                             esEcf,
+                            facturaConItbis,
                             prod.TasaItbis);
                         item.Itbis = itbis;
                         item.SubTotal = (precio * item.Cantidad) + itbis;
@@ -1454,6 +1471,7 @@ namespace AlahiaPosApi.Controllers
                     var esEcf2 = dto.Header.TipoComprobante == "Crédito Fiscal"
                               || dto.Header.TipoComprobante == "Consumidor Final"
                               || dto.Header.TipoComprobante == "Gubernamental";
+                    var facturaConItbis2 = EmpresaFacturaConItbis(header.IdEmpresa);
 
                     if (!esEcf2 && dto.Header.TipoComprobante != "FACT")
                     {
@@ -1499,6 +1517,7 @@ namespace AlahiaPosApi.Controllers
                             precio,
                             itemDto.Cantidad,
                             esEcf2,
+                            facturaConItbis2,
                             prod.TasaItbis);
                         var detalle = new FacturaDetalles
                         {

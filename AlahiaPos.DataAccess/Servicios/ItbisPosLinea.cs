@@ -28,13 +28,15 @@ namespace AlahiaPos.DataAccess.Servicios
         }
 
         /// <summary>
-        /// Consumo, crédito fiscal y gubernamental siempre gravan. Si el cajero apagó el ITBIS, se calcula.
+        /// Si la empresa factura con ITBIS, el comprobante no puede ir en cero.
+        /// Empresas sin ITBIS (ej. Dra Sena) no se tocan.
         /// </summary>
         public static decimal AsegurarEnComprobante(
             decimal itbis,
             decimal precioUnitario,
             decimal cantidad,
             bool esComprobante,
+            bool empresaFacturaConItbis,
             decimal? tasaProducto = null)
         {
             var itbisSafe = itbis < 0m ? 0m : itbis;
@@ -43,7 +45,7 @@ namespace AlahiaPos.DataAccess.Servicios
                 (precioUnitario * cantidad) + itbisSafe,
                 cantidad);
 
-            if (!esComprobante || extendido > 0.009m)
+            if (!esComprobante || !empresaFacturaConItbis || extendido > 0.009m)
                 return extendido;
 
             var tasa = ResolverTasa(tasaProducto);
