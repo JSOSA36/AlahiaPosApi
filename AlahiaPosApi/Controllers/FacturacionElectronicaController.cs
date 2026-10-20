@@ -806,8 +806,57 @@ namespace AlahiaPosApi.Controllers
             if (ecf.EstadoDGII != "Error" && ecf.EstadoDGII != "Rechazado" && ecf.EstadoDocumento != "ERROR")
                 return BadRequest("Solo se pueden reprocesar documentos en estado Error o Rechazado");
 
-            if (EcfSecuenciaYaUtilizada.EncabezadoYaFueEnviado(ecf)
-                || EcfSecuenciaYaUtilizada.EnMensajes(ecf.MensajeRespuesta))
+            if (EcfSecuenciaYaUtilizada.EnMensajes(ecf.MensajeRespuesta))
+            {
+                var vigente = await _ctx.ECFEncabezados.AsNoTracking()
+                    .Where(e => e.IdEmpresa == ecf.IdEmpresa
+                        && e.OrigenDocumento == ecf.OrigenDocumento
+                        && e.IdOrigen == ecf.IdOrigen
+                        && e.IdECF != ecf.IdECF
+                        && e.EstadoDGII != null
+                        && e.EstadoDGII.Contains("Aceptado"))
+                    .OrderByDescending(e => e.IdECF)
+                    .Select(e => e.ENCF)
+                    .FirstOrDefaultAsync();
+
+                if (!string.IsNullOrWhiteSpace(vigente))
+                {
+                    ecf.MensajeRespuesta =
+                        $"DGII ya tenía {ecf.ENCF}. El comprobante de esta factura es {vigente}.";
+                    await _ctx.SaveChangesAsync();
+                    return Ok(new
+                    {
+                        exitoso = true,
+                        encf = vigente,
+                        estadoDgii = "Aceptado",
+                        mensajeError = (string?)null
+                    });
+                }
+
+                if (!int.TryParse(ecf.TipoECF, out var tipoUsado) || tipoUsado <= 0)
+                    return BadRequest("Tipo e-CF inválido para tomar la siguiente secuencia");
+
+                var siguiente = await _feService.EmitirYEnviarAsync(new EmisionEcfRequest
+                {
+                    IdEmpresa = ecf.IdEmpresa,
+                    TipoEcfDgii = tipoUsado,
+                    OrigenDocumento = (OrigenDocumento)ecf.OrigenDocumento,
+                    IdOrigen = ecf.IdOrigen
+                });
+
+                if (siguiente.Exitoso
+                    && !string.IsNullOrWhiteSpace(siguiente.Encf)
+                    && !string.Equals(siguiente.Encf, ecf.ENCF, StringComparison.OrdinalIgnoreCase))
+                {
+                    ecf.MensajeRespuesta =
+                        $"DGII ya tenía {ecf.ENCF}. El comprobante de esta factura es {siguiente.Encf}.";
+                    await _ctx.SaveChangesAsync();
+                }
+
+                return Ok(siguiente);
+            }
+
+            if (EcfSecuenciaYaUtilizada.EncabezadoYaFueEnviado(ecf))
             {
                 if (!int.TryParse(ecf.TipoECF, out var tipoEcf) || tipoEcf <= 0)
                     return BadRequest("Tipo e-CF inválido para reprocesar con secuencia nueva");

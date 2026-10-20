@@ -142,7 +142,7 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway
                 ecf.ENCF, origen, payload.IdOrigen);
 
             var resultado = await _gateway.EnviarDocumentoAsync(docElectronico, ct);
-            AplicarResultado(ecf, resultado);
+            await AplicarResultadoAsync(ecf, resultado, ct);
             await _ctx.SaveChangesAsync(ct);
 
             var reintentos = 0;
@@ -197,12 +197,12 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway
                 docElectronico.Encabezado.Encf = reserva.Encf;
 
                 resultado = await _gateway.EnviarDocumentoAsync(docElectronico, ct);
-                AplicarResultado(ecf, resultado);
+                await AplicarResultadoAsync(ecf, resultado, ct);
                 await _ctx.SaveChangesAsync(ct);
             }
         }
 
-        private void AplicarResultado(ECFEncabezado ecf, FiscalEnvioResultado resultado)
+        private async Task AplicarResultadoAsync(ECFEncabezado ecf, FiscalEnvioResultado resultado, CancellationToken ct)
         {
             ecf.TrackId = resultado.TrackId;
             if (!string.IsNullOrWhiteSpace(resultado.TransmissionJobId))
@@ -211,8 +211,11 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway
             ecf.UrlQR = resultado.UrlQR;
             ecf.FechaFirma = resultado.FechaFirma;
             ecf.FechaEnvio = DateTime.Now;
+            if (!string.IsNullOrWhiteSpace(resultado.CodigoError))
+                ecf.CodigoError = resultado.CodigoError;
 
-            if (resultado.Exitoso && !EcfSecuenciaYaUtilizada.EnResultado(resultado))
+            var aceptado = resultado.Exitoso && !EcfSecuenciaYaUtilizada.EnResultado(resultado);
+            if (aceptado)
             {
                 ecf.EstadoDocumento = EstadoDocumentoElectronico.Enviado;
                 ecf.EstadoDGII = resultado.Estado;
@@ -225,9 +228,14 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway
                     || (resultado.Estado ?? "").Contains("Aceptado", StringComparison.OrdinalIgnoreCase)
                     ? "Error"
                     : resultado.Estado;
-                ecf.MensajeRespuesta = string.Join("; ", resultado.Mensajes);
-                _logger.LogWarning("ECF {Encf} rechazado por proveedor: {Error}", ecf.ENCF, ecf.MensajeRespuesta);
+                _logger.LogWarning("ECF {Encf} rechazado por proveedor: {Error}", ecf.ENCF, string.Join("; ", resultado.Mensajes));
             }
+
+            var textoDgii = EcfXmlStore.TextoDgii(resultado, aceptado);
+            if (!string.IsNullOrWhiteSpace(textoDgii))
+                ecf.MensajeRespuesta = textoDgii;
+
+            await EcfXmlStore.GuardarAsync(_ctx, ecf.IdECF, resultado, ct);
         }
 
         private async Task<int?> ClaimNextIdAsync(CancellationToken ct)

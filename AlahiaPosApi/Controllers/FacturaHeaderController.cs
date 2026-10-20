@@ -1158,7 +1158,7 @@ namespace AlahiaPosApi.Controllers
         }
 
         /// <summary>
-        /// Exento con la política activa queda en cero. El resto sigue el cálculo vigente.
+        /// El ITBIS de la línea sigue el cálculo del POS. La política no lo pone en cero.
         /// </summary>
         private static decimal ItbisDeLinea(
             Productos prod,
@@ -1166,12 +1166,8 @@ namespace AlahiaPosApi.Controllers
             decimal precio,
             decimal cantidad,
             bool esEcf,
-            bool facturaConItbis,
-            bool politicaActiva)
+            bool facturaConItbis)
         {
-            if (politicaActiva && !prod.Itbis)
-                return 0m;
-
             return ItbisPosLinea.AsegurarEnComprobante(
                 itbisUnitario,
                 precio,
@@ -1425,8 +1421,6 @@ namespace AlahiaPosApi.Controllers
                 if (decisionFiscal.Rechazar)
                     return BadRequest(new { message = decisionFiscal.Mensaje });
 
-                var politicaFiscalActiva = decisionFiscal.PoliticaActiva;
-
                 if (dto.Header.IdFacturaHeader == 0)
                 {
                     header = _Mapper.Map<FacturaHeaders>(dto.Header);
@@ -1512,8 +1506,7 @@ namespace AlahiaPosApi.Controllers
                             precio,
                             item.Cantidad,
                             esEcf,
-                            facturaConItbis,
-                            politicaFiscalActiva);
+                            facturaConItbis);
                         item.Itbis = itbis;
                         item.SubTotal = (precio * item.Cantidad) + itbis;
 
@@ -1654,8 +1647,7 @@ namespace AlahiaPosApi.Controllers
                             precio,
                             itemDto.Cantidad,
                             esEcf2,
-                            facturaConItbis2,
-                            politicaFiscalActiva);
+                            facturaConItbis2);
                         var detalle = new FacturaDetalles
                         {
                             IdFacturaDetalle = 0,
@@ -2918,13 +2910,18 @@ namespace AlahiaPosApi.Controllers
             return Ok(tickets);
         }
         [HttpGet("factura-cliente/{idFactura}")]
-        public async Task<IActionResult> GetFacturaCliente(int idFactura)
+        public async Task<IActionResult> GetFacturaCliente(
+            int idFactura,
+            [FromQuery] int idEmpresa = 0)
         {
             try
             {
                 var header = await _facturaHeader.GetAllFactById(idFactura);
                 var existente = header?.FirstOrDefault();
                 if (existente == null)
+                    return NotFound("Factura no encontrada");
+                // El número se repite entre empresas. Sin este id se puede devolver otra.
+                if (idEmpresa > 0 && existente.IdEmpresa != idEmpresa)
                     return NotFound("Factura no encontrada");
                 if (!TenantRecurso.EsDeLaSesion(HttpContext, existente.IdEmpresa))
                     return NotFound("Factura no encontrada");

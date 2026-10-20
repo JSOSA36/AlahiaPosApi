@@ -54,6 +54,6 @@ namespace AlahiaPos.Entities.Domain
         // ======================================================
 
         [ForeignKey(nameof(IdECF))]
-        public ECFEncabezado ECFEncabezado { get; set; } = null!;
+        public ECFEncabezado? ECFEncabezado { get; set; }
     }
 }

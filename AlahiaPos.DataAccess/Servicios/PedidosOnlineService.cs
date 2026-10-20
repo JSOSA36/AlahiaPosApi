@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using AlahiaPos.DataAccess.Data;
+using AlahiaPos.Entities.Delivery;
 using AlahiaPos.Entities.Domain;
 using AlahiaPos.Entities.Dto;
 using AlahiaPos.Entities.Interfaces;
@@ -23,6 +24,7 @@ namespace AlahiaPos.DataAccess.Servicios
         private readonly IProduccionPosAdapter _produccion;
         private readonly IProduccionTrabajoService _trabajos;
         private readonly INotificacionCentro _notificaciones;
+        private readonly IDeliveryCotizacionService _delivery;
 
         public PedidosOnlineService(
             AlahiaPosContext ctx,
@@ -33,7 +35,8 @@ namespace AlahiaPos.DataAccess.Servicios
             ISecuenciaDocumentoService secuencia,
             IProduccionPosAdapter produccion,
             IProduccionTrabajoService trabajos,
-            INotificacionCentro notificaciones)
+            INotificacionCentro notificaciones,
+            IDeliveryCotizacionService delivery)
         {
             _ctx = ctx;
             _productos = productos;
@@ -44,6 +47,7 @@ namespace AlahiaPos.DataAccess.Servicios
             _produccion = produccion;
             _trabajos = trabajos;
             _notificaciones = notificaciones;
+            _delivery = delivery;
         }
 
         public async Task<PedidoOnlineMenuDto> ObtenerMenuAsync(string slug)
@@ -191,8 +195,6 @@ namespace AlahiaPos.DataAccess.Servicios
                 });
             }
 
-            var total = detalles.Sum(d => d.SubTotal);
-            var totalItbis = detalles.Sum(d => d.Itbis);
             var metodo = string.IsNullOrWhiteSpace(request.MetodoPago) ? "Efectivo" : request.MetodoPago.Trim();
             (byte[] Bytes, string ContentType)? voucher = null;
             if (EsTransferencia(metodo))
@@ -204,9 +206,24 @@ namespace AlahiaPos.DataAccess.Servicios
                 lat = null;
                 lng = null;
             }
-            var nota = ConstruirNota(tipo, request.Observacion);
+            var idSucursal = await ResolverSucursalPedidoAsync(canal);
+            var calculo = await _delivery.ResolverParaPedidoAsync(
+                canal.IdEmpresa,
+                idSucursal,
+                tipo == PedidoOnlineTiposEntrega.Delivery,
+                lat,
+                lng,
+                CancellationToken.None);
+            var totalProductos = detalles.Sum(d => d.SubTotal);
+            var totalItbis = detalles.Sum(d => d.Itbis);
+            var total = totalProductos + calculo.Costo;
+            var cobrarDeliveryAlEntregar = DeliveryTarifaCalculador.CobrarAlEntregar(
+                tipo == PedidoOnlineTiposEntrega.Delivery,
+                EsTransferencia(metodo),
+                calculo.Costo,
+                request.PagarDeliveryAlRecibir);
+            var nota = ConstruirNota(tipo, request.Observacion, calculo.Costo, cobrarDeliveryAlEntregar);
             var (idEmpleado, idUsuario) = await ResolverResponsablePedidoAsync(canal.IdEmpresa);
-            var idSucursal = await ResolverSucursalPrincipalAsync(canal.IdEmpresa);
 
             var header = new FacturaHeaders
             {
@@ -251,11 +268,25 @@ namespace AlahiaPos.DataAccess.Servicios
                 IdCliente = cliente.IDCliente,
                 NombreCliente = nombre,
                 Telefono = telefono,
+                IdSucursal = idSucursal,
                 TipoEntrega = tipo,
                 Direccion = string.IsNullOrWhiteSpace(request.Direccion) ? null : request.Direccion.Trim(),
                 ReferenciaDireccion = string.IsNullOrWhiteSpace(request.Referencia) ? null : request.Referencia.Trim(),
                 Latitud = lat,
                 Longitud = lng,
+                CostoDelivery = calculo.Costo,
+                DistanciaDeliveryKm = calculo.DistanciaKm,
+                TarifaBaseAplicada = calculo.TarifaBase,
+                PrecioKmAplicado = calculo.PrecioKm,
+                RedondeoAplicado = calculo.Redondeo,
+                MinimoAplicado = calculo.Minimo,
+                ProveedorDistancia = calculo.Proveedor,
+                OrigenLatitud = calculo.OrigenLatitud,
+                OrigenLongitud = calculo.OrigenLongitud,
+                DestinoLatitud = calculo.DestinoLatitud,
+                DestinoLongitud = calculo.DestinoLongitud,
+                FechaCalculoDelivery = calculo.FechaCalculo,
+                DeliveryCobrarAlEntregar = cobrarDeliveryAlEntregar,
                 MetodoPago = metodo,
                 Observacion = string.IsNullOrWhiteSpace(request.Observacion) ? null : request.Observacion.Trim(),
                 EstadoLogistico = PedidoOnlineEstados.Nuevo,
@@ -264,10 +295,40 @@ namespace AlahiaPos.DataAccess.Servicios
             };
             _ctx.PedidoOnline.Add(pedido);
             await _ctx.SaveChangesAsync();
+            if (tipo == PedidoOnlineTiposEntrega.Delivery)
+                await GuardarDireccionClienteAsync(canal.IdEmpresa, cliente.IDCliente, nombre, telefono, pedido.Direccion, pedido.ReferenciaDireccion, lat, lng);
             if (voucher.HasValue)
                 await GuardarArchivoVoucherAsync(pedido, voucher.Value.Bytes, voucher.Value.ContentType);
 
             return MapConfirmacion(pedido, header, "Nuevo", MensajeSeguimiento("Nuevo"));
+        }
+
+        public async Task<DeliveryCotizacionDto> CotizarDeliveryAsync(string slug, DeliveryCotizacionRequest request)
+        {
+            var canal = await ObtenerCanalActivoAsync(slug);
+            request ??= new DeliveryCotizacionRequest();
+            var tipo = NormalizarTipoEntrega(request.TipoEntrega);
+            var esDelivery = tipo == PedidoOnlineTiposEntrega.Delivery;
+            var lat = esDelivery ? NormalizarCoord(request.Latitud, -90m, 90m) : null;
+            var lng = esDelivery ? NormalizarCoord(request.Longitud, -180m, 180m) : null;
+            var idSucursal = await ResolverSucursalPedidoAsync(canal);
+            return await _delivery.CotizarAsync(canal.IdEmpresa, idSucursal, esDelivery, lat, lng, CancellationToken.None);
+        }
+
+        public async Task EliminarDireccionClienteAsync(string slug, int idClienteDireccion, string telefono)
+        {
+            var (canal, tel, _) = await PedidosDeClienteAsync(slug, telefono);
+            var cliente = await _clientes.BuscarPorTelefono(tel, canal.IdEmpresa);
+            if (cliente == null)
+                throw new ArgumentException("Dirección no encontrada.");
+            var fila = await _ctx.ClienteDireccion
+                .FirstOrDefaultAsync(d => d.IdClienteDireccion == idClienteDireccion
+                    && d.IdEmpresa == canal.IdEmpresa
+                    && d.IdCliente == cliente.IDCliente);
+            if (fila == null)
+                throw new ArgumentException("Dirección no encontrada.");
+            fila.Activa = false;
+            await _ctx.SaveChangesAsync();
         }
 
         public async Task<PedidoOnlineSeguimientoDto> ObtenerSeguimientoAsync(string slug, int idPedidoOnline, string telefono)
@@ -314,7 +375,8 @@ namespace AlahiaPos.DataAccess.Servicios
                 Referencia = ultimo.ReferenciaDireccion,
                 Latitud = ultimo.Latitud,
                 Longitud = ultimo.Longitud,
-                Pedidos = pedidos.Count
+                Pedidos = pedidos.Count,
+                Direcciones = await ListarDireccionesClienteAsync(canal.IdEmpresa, cliente?.IDCliente)
             };
         }
 
@@ -334,6 +396,17 @@ namespace AlahiaPos.DataAccess.Servicios
                 cliente.Direccion = direccion;
                 _clientes.UpdateClientes(cliente.IDCliente, cliente);
             }
+
+            if (!string.IsNullOrWhiteSpace(direccion))
+                await GuardarDireccionClienteAsync(
+                    canal.IdEmpresa,
+                    cliente.IDCliente,
+                    nombre,
+                    tel,
+                    direccion,
+                    request?.Referencia,
+                    NormalizarCoord(request?.Latitud, -90m, 90m),
+                    NormalizarCoord(request?.Longitud, -180m, 180m));
 
             return await ObtenerPerfilClienteAsync(slug, tel);
         }
@@ -810,6 +883,9 @@ namespace AlahiaPos.DataAccess.Servicios
                     EnviadoCocina = enviadoCocina,
                     Observacion = p.Observacion,
                     Total = fh?.Total ?? 0,
+                    CostoDelivery = p.CostoDelivery,
+                    DistanciaDeliveryKm = p.DistanciaDeliveryKm,
+                    DeliveryCobrarAlEntregar = p.DeliveryCobrarAlEntregar,
                     EstadoCocina = estadoCocina,
                     EstadoLogistico = estadoLog,
                     EstadoUnificado = unificado,
@@ -887,6 +963,85 @@ namespace AlahiaPos.DataAccess.Servicios
             if (canal == null)
                 throw new ArgumentException("Este negocio no tiene pedidos en línea activos.");
             return canal;
+        }
+
+        private async Task<List<ClienteDireccionDto>> ListarDireccionesClienteAsync(int idEmpresa, int? idCliente)
+        {
+            if (idCliente is not > 0)
+                return new List<ClienteDireccionDto>();
+            return await _ctx.ClienteDireccion.AsNoTracking()
+                .Where(d => d.IdEmpresa == idEmpresa && d.IdCliente == idCliente && d.Activa)
+                .OrderByDescending(d => d.FechaCreacion)
+                .Take(8)
+                .Select(d => new ClienteDireccionDto
+                {
+                    IdClienteDireccion = d.IdClienteDireccion,
+                    Direccion = d.Direccion,
+                    Referencia = d.Referencia,
+                    Latitud = d.Latitud,
+                    Longitud = d.Longitud,
+                    NombreDestinatario = d.NombreDestinatario,
+                    Telefono = d.Telefono
+                })
+                .ToListAsync();
+        }
+
+        private async Task GuardarDireccionClienteAsync(
+            int idEmpresa,
+            int idCliente,
+            string nombre,
+            string telefono,
+            string? direccion,
+            string? referencia,
+            decimal? latitud,
+            decimal? longitud)
+        {
+            var texto = ClienteDireccionCoincidencia.CopiarTexto(direccion);
+            if (texto == null || idCliente <= 0)
+                return;
+            var existentes = await _ctx.ClienteDireccion
+                .Where(d => d.IdEmpresa == idEmpresa && d.IdCliente == idCliente && d.Activa)
+                .ToListAsync();
+            var misma = existentes.FirstOrDefault(d => ClienteDireccionCoincidencia.MismaUbicacion(
+                d.Direccion, d.Latitud, d.Longitud, texto, latitud, longitud));
+            if (misma != null)
+            {
+                misma.Direccion = texto;
+                misma.Referencia = ClienteDireccionCoincidencia.CopiarTexto(referencia);
+                misma.Latitud = latitud;
+                misma.Longitud = longitud;
+                misma.NombreDestinatario = nombre;
+                misma.Telefono = telefono;
+                await _ctx.SaveChangesAsync();
+                return;
+            }
+
+            _ctx.ClienteDireccion.Add(new ClienteDireccion
+            {
+                IdEmpresa = idEmpresa,
+                IdCliente = idCliente,
+                Direccion = texto,
+                Referencia = ClienteDireccionCoincidencia.CopiarTexto(referencia),
+                Latitud = latitud,
+                Longitud = longitud,
+                NombreDestinatario = nombre,
+                Telefono = telefono,
+                Activa = true,
+                FechaCreacion = DateTime.Now
+            });
+            await _ctx.SaveChangesAsync();
+        }
+
+        private async Task<int?> ResolverSucursalPedidoAsync(PedidoOnlineCanal canal)
+        {
+            if (canal.IdSucursal is > 0)
+            {
+                var asignada = await _ctx.Sucursales.AsNoTracking()
+                    .AnyAsync(s => s.IdSucursal == canal.IdSucursal && s.IdEmpresa == canal.IdEmpresa && s.Activa);
+                if (asignada)
+                    return canal.IdSucursal;
+            }
+            return await ResolverSucursalPrincipalAsync(canal.IdEmpresa);
         }
 
         private async Task<int?> ResolverSucursalPrincipalAsync(int idEmpresa)
@@ -990,12 +1145,16 @@ namespace AlahiaPos.DataAccess.Servicios
             return PedidoOnlineTiposEntrega.Delivery;
         }
 
-        private static string ConstruirNota(string tipo, string? observacion)
+        private static string ConstruirNota(string tipo, string? observacion, decimal costoDelivery = 0, bool cobrarAlEntregar = false)
         {
             var partes = new List<string>
             {
                 tipo == PedidoOnlineTiposEntrega.Delivery ? "Pedido online · Delivery" : "Pedido online · Recoger"
             };
+            if (costoDelivery > 0 && cobrarAlEntregar)
+                partes.Add($"Delivery RD${costoDelivery:0.00} se cobra al entregar");
+            else if (costoDelivery > 0)
+                partes.Add($"Delivery RD${costoDelivery:0.00}");
             if (!string.IsNullOrWhiteSpace(observacion))
                 partes.Add(observacion.Trim());
             return string.Join(" · ", partes);
@@ -1022,6 +1181,12 @@ namespace AlahiaPos.DataAccess.Servicios
                 IdFacturaHeader = pedido.IdFacturaHeader,
                 NumeroPedido = fh?.NumeroDocumento ?? pedido.IdPedidoOnline.ToString(),
                 Total = fh?.Total ?? 0,
+                CostoDelivery = pedido.CostoDelivery,
+                DistanciaDeliveryKm = pedido.DistanciaDeliveryKm,
+                DeliveryCobrarAlEntregar = pedido.DeliveryCobrarAlEntregar,
+                MontoTransferir = EsTransferencia(pedido.MetodoPago)
+                    ? DeliveryTarifaCalculador.MontoATransferir(fh?.Total ?? 0, pedido.CostoDelivery, pedido.DeliveryCobrarAlEntregar)
+                    : 0,
                 TipoEntrega = pedido.TipoEntrega,
                 Estado = unificado,
                 EstadoUnificado = unificado,

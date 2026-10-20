@@ -1321,6 +1321,7 @@ namespace AlahiaPos.DataAccess.Servicios
             var dto = new TicketFacturaClienteDto
             {
                 NumeroFactura = factura.IdFacturaHeader,
+                IdEmpresa = factura.IdEmpresa,
                 NumeroDocumento = factura.NumeroDocumento ?? "",
                 Fecha = factura.FechaInseccion,
                 Hora = factura.Hora ?? "",

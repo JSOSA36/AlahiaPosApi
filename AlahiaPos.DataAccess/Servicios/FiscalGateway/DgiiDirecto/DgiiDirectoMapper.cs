@@ -62,14 +62,23 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.DgiiDirecto
 
         public static FiscalConsultaResultado ToConsultaResultado(DgiiHttpResultado resp, string trackId)
         {
+            var estado = NormalizeEstado(resp.Estado, resp.Codigo, resp.Ok, !string.IsNullOrWhiteSpace(resp.TrackId));
+            var esFallo = !resp.Ok || estado is "Rechazado" or "Error";
+            var mensajes = resp.Mensajes.Count > 0
+                ? resp.Mensajes
+                : (esFallo && !string.IsNullOrWhiteSpace(resp.Body)
+                    ? new List<string> { Trunc(resp.Body, 2000) }
+                    : new List<string>());
             return new FiscalConsultaResultado
             {
                 TrackId = resp.TrackId ?? trackId,
-                Estado = NormalizeEstado(resp.Estado, resp.Codigo, resp.Ok, !string.IsNullOrWhiteSpace(resp.TrackId)),
+                Estado = estado,
                 Encf = resp.Encf,
                 Rnc = resp.Rnc,
-                CodigoError = resp.Ok ? null : (resp.Codigo ?? $"HTTP_{resp.StatusCode}"),
-                Mensajes = resp.Mensajes.Count > 0 ? resp.Mensajes : new List<string> { Trunc(resp.Body, 500) }
+                CodigoError = esFallo
+                    ? (!string.IsNullOrWhiteSpace(resp.Codigo) ? resp.Codigo : (resp.Ok ? null : $"HTTP_{resp.StatusCode}"))
+                    : null,
+                Mensajes = mensajes
             };
         }
 

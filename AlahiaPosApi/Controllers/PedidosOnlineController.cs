@@ -95,6 +95,33 @@ namespace AlahiaPosApi.Controllers
             }
         }
 
+        [HttpPost("{slug}/cotizar-delivery")]
+        public async Task<IActionResult> Cotizar(string slug, [FromBody] DeliveryCotizacionRequest request)
+        {
+            try
+            {
+                return Ok(await _svc.CotizarDeliveryAsync(slug, request ?? new DeliveryCotizacionRequest()));
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpDelete("{slug}/direcciones/{idClienteDireccion:int}")]
+        public async Task<IActionResult> EliminarDireccion(string slug, int idClienteDireccion, [FromQuery] string? telefono)
+        {
+            try
+            {
+                await _svc.EliminarDireccionClienteAsync(slug, idClienteDireccion, telefono ?? "");
+                return Ok(new { ok = true });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
         [HttpPost("{slug}")]
         public async Task<IActionResult> Crear(string slug, [FromBody] PedidoOnlineCheckoutRequest request)
         {

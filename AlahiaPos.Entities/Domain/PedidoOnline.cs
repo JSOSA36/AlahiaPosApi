@@ -14,6 +14,43 @@ namespace AlahiaPos.Entities.Domain
 
         public int? IdSucursal { get; set; }
 
+        [Column(TypeName = "decimal(12,2)")]
+        public decimal CostoDelivery { get; set; }
+
+        [Column(TypeName = "decimal(10,3)")]
+        public decimal DistanciaDeliveryKm { get; set; }
+
+        [Column(TypeName = "decimal(12,2)")]
+        public decimal? TarifaBaseAplicada { get; set; }
+
+        [Column(TypeName = "decimal(12,2)")]
+        public decimal? PrecioKmAplicado { get; set; }
+
+        [Column(TypeName = "decimal(12,2)")]
+        public decimal? RedondeoAplicado { get; set; }
+
+        [Column(TypeName = "decimal(12,2)")]
+        public decimal? MinimoAplicado { get; set; }
+
+        [MaxLength(40)]
+        public string? ProveedorDistancia { get; set; }
+
+        [Column(TypeName = "decimal(10,7)")]
+        public decimal? OrigenLatitud { get; set; }
+
+        [Column(TypeName = "decimal(10,7)")]
+        public decimal? OrigenLongitud { get; set; }
+
+        [Column(TypeName = "decimal(10,7)")]
+        public decimal? DestinoLatitud { get; set; }
+
+        [Column(TypeName = "decimal(10,7)")]
+        public decimal? DestinoLongitud { get; set; }
+
+        public DateTime? FechaCalculoDelivery { get; set; }
+
+        public bool DeliveryCobrarAlEntregar { get; set; }
+
         public int IdCanal { get; set; }
 
         public int IdFacturaHeader { get; set; }

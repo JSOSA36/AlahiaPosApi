@@ -8,6 +8,8 @@ namespace AlahiaPos.Entities.Interfaces
     {
         Task<PedidoOnlineMenuDto> ObtenerMenuAsync(string slug);
         Task<PedidoOnlineConfirmacionDto> CrearPedidoAsync(string slug, PedidoOnlineCheckoutRequest request);
+        Task<DeliveryCotizacionDto> CotizarDeliveryAsync(string slug, DeliveryCotizacionRequest request);
+        Task EliminarDireccionClienteAsync(string slug, int idClienteDireccion, string telefono);
         Task<PedidoOnlineSeguimientoDto> ObtenerSeguimientoAsync(string slug, int idPedidoOnline, string telefono);
         Task<PedidoOnlinePerfilDto> ObtenerPerfilClienteAsync(string slug, string telefono);
         Task<PedidoOnlinePerfilDto> GuardarPerfilClienteAsync(string slug, PedidoOnlinePerfilRequest request);

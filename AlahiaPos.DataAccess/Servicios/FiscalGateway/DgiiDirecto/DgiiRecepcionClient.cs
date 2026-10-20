@@ -171,17 +171,7 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.DgiiDirecto
                 result.Mensaje = TryGet(root, "mensaje") ?? TryGet(root, "Mensaje")
                     ?? TryGet(root, "error") ?? TryGet(root, "Error");
 
-                if (root.TryGetProperty("mensajes", out var msgs) || root.TryGetProperty("Mensajes", out msgs))
-                {
-                    if (msgs.ValueKind == JsonValueKind.Array)
-                    {
-                        foreach (var m in msgs.EnumerateArray())
-                        {
-                            var v = TryGet(m, "valor") ?? TryGet(m, "Valor") ?? m.ToString();
-                            if (!string.IsNullOrWhiteSpace(v)) result.Mensajes.Add(v!);
-                        }
-                    }
-                }
+                AgregarMensajes(result, root, "mensajes", "Mensajes", "errores", "Errores");
 
                 if (root.TryGetProperty("secuenciaUtilizada", out var su) || root.TryGetProperty("SecuenciaUtilizada", out su))
                 {
@@ -202,6 +192,33 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.DgiiDirecto
                 result.Mensajes.Add(result.Mensaje);
 
             return result;
+        }
+
+        private static void AgregarMensajes(DgiiHttpResultado result, JsonElement root, params string[] nombres)
+        {
+            foreach (var nombre in nombres)
+            {
+                if (!root.TryGetProperty(nombre, out var msgs) || msgs.ValueKind != JsonValueKind.Array)
+                    continue;
+                foreach (var m in msgs.EnumerateArray())
+                {
+                    if (m.ValueKind == JsonValueKind.String)
+                    {
+                        var s = m.GetString();
+                        if (!string.IsNullOrWhiteSpace(s)) result.Mensajes.Add(s!);
+                        continue;
+                    }
+
+                    var codigo = TryGet(m, "codigo") ?? TryGet(m, "Codigo");
+                    var valor = TryGet(m, "valor") ?? TryGet(m, "Valor")
+                        ?? TryGet(m, "mensaje") ?? TryGet(m, "Mensaje")
+                        ?? TryGet(m, "descripcion") ?? TryGet(m, "Descripcion");
+                    if (string.IsNullOrWhiteSpace(valor))
+                        valor = m.ToString();
+                    if (string.IsNullOrWhiteSpace(valor)) continue;
+                    result.Mensajes.Add(string.IsNullOrWhiteSpace(codigo) ? valor! : $"{codigo}: {valor}");
+                }
+            }
         }
 
         private static string? TryGet(JsonElement el, string prop)

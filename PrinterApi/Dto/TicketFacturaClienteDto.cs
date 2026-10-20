@@ -4,6 +4,9 @@
     {
         public int NumeroFactura { get; set; }
 
+        /// <summary>Empresa dueña de la factura. Si no coincide con la pedida, no se imprime.</summary>
+        public int IdEmpresa { get; set; }
+
         public string NumeroDocumento { get; set; } = "";
 
         public DateTime Fecha { get; set; }

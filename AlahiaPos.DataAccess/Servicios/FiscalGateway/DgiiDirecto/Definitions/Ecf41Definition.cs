@@ -101,22 +101,26 @@ namespace AlahiaPos.DataAccess.Servicios.FiscalGateway.DgiiDirecto.Definitions
                 c => EcfXmlFormat.Money(c.LineaActual!.Cantidad)),
             EcfXmlFormat.Campo("UnidadMedida", EcfCampoPresence.Opcional, 8,
                 c => c.LineaActual!.UnidadMedida),
-            EcfXmlFormat.Campo("PrecioUnitarioItem", EcfCampoPresence.Obligatorio, 9,
+            EcfXmlFormat.Campo("FechaElaboracion", EcfCampoPresence.Opcional, 9,
+                c => c.LineaActual!.FechaElaboracion is DateTime fe ? EcfXmlFormat.Date(fe) : null),
+            EcfXmlFormat.Campo("FechaVencimientoItem", EcfCampoPresence.Opcional, 10,
+                c => c.LineaActual!.FechaVencimientoItem is DateTime fv ? EcfXmlFormat.Date(fv) : null),
+            EcfXmlFormat.Campo("PrecioUnitarioItem", EcfCampoPresence.Obligatorio, 11,
                 c => EcfXmlFormat.Money(c.LineaActual!.PrecioUnitario)),
-            EcfXmlFormat.Campo("DescuentoMonto", EcfCampoPresence.Opcional, 10,
+            EcfXmlFormat.Campo("DescuentoMonto", EcfCampoPresence.Opcional, 12,
                 c => c.LineaActual!.DescuentoMonto is > 0
                     ? EcfXmlFormat.Money(c.LineaActual.DescuentoMonto.Value)
                     : null),
-            EcfXmlFormat.Campo("TablaSubDescuento", EcfCampoPresence.Opcional, 11,
+            EcfXmlFormat.Campo("TablaSubDescuento", EcfCampoPresence.Opcional, 13,
                 c => EcfXmlFormat.TablaSubDescuentoItem(c), complejo: true,
                 nota: "CerteCF: DGII rechaza DescuentoMonto sin TablaSubDescuento"),
-            EcfXmlFormat.Campo("RecargoMonto", EcfCampoPresence.Opcional, 12,
+            EcfXmlFormat.Campo("RecargoMonto", EcfCampoPresence.Opcional, 14,
                 c => c.LineaActual!.RecargoMonto is > 0
                     ? EcfXmlFormat.Money(c.LineaActual.RecargoMonto.Value)
                     : null),
-            EcfXmlFormat.Campo("TablaSubRecargo", EcfCampoPresence.Opcional, 13,
+            EcfXmlFormat.Campo("TablaSubRecargo", EcfCampoPresence.Opcional, 15,
                 c => EcfXmlFormat.TablaSubRecargoItem(c), complejo: true),
-            EcfXmlFormat.Campo("MontoItem", EcfCampoPresence.Obligatorio, 14,
+            EcfXmlFormat.Campo("MontoItem", EcfCampoPresence.Obligatorio, 16,
                 c => EcfXmlFormat.Money(c.LineaActual!.MontoItem)),
         };
 

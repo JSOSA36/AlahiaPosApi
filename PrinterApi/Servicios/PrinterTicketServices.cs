@@ -329,7 +329,7 @@ public async Task GenerateTicketBizcocho(int idFacturaHeader, int idEmpresa)
             // Listado de facturas / POS: si falla el endpoint de encargo, usar ticket cliente.
             Console.WriteLine(
                 $"Bizcocho/print falló ({ex.Message}). Reintento con factura-cliente {idFacturaHeader}.");
-            await GenerateTicketFacturaCliente(idFacturaHeader);
+            await GenerateTicketFacturaCliente(idFacturaHeader, idEmpresa);
             return;
         }
 
@@ -337,14 +337,14 @@ public async Task GenerateTicketBizcocho(int idFacturaHeader, int idEmpresa)
             factura.FacturaDetalles == null ||
             !factura.FacturaDetalles.Any())
         {
-            await GenerateTicketFacturaCliente(idFacturaHeader);
+            await GenerateTicketFacturaCliente(idFacturaHeader, idEmpresa);
             return;
         }
 
             // Factura de venta POS → ticket cliente (TOTAL / PAGADO / PENDIENTE + e-CF)
             if (factura.IdTipoDocumentos == 1)
             {
-                await GenerateTicketFacturaCliente(idFacturaHeader);
+                await GenerateTicketFacturaCliente(idFacturaHeader, idEmpresa);
                 return;
             }
 
@@ -786,20 +786,28 @@ private static List<string> DividirTextoTicket(string texto, int max)
 
     return lineas;
 }
-public async Task GenerateTicketFacturaCliente(int idFactura)
+public async Task GenerateTicketFacturaCliente(int idFactura, int idEmpresa)
     {
         try
         {
+            if (idEmpresa <= 0)
+                throw new InvalidOperationException(
+                    "Falta el id de la empresa. No se imprime.");
+
             if (string.IsNullOrWhiteSpace(_baseUrl))
                 throw new InvalidOperationException(
                     "ApiBaseUrl no configurado en PrinterApi (appsettings.Local.json).");
 
             var factura = await _http.GetFromJsonAsync<TicketFacturaClienteDto>(
-                $"{_baseUrl}/api/FacturaHeader/factura-cliente/{idFactura}");
+                $"{_baseUrl}/api/FacturaHeader/factura-cliente/{idFactura}?idEmpresa={idEmpresa}");
 
             if (factura == null)
                 throw new InvalidOperationException(
                     $"Factura {idFactura} no encontrada en la API ({_baseUrl}).");
+
+            if (factura.IdEmpresa != idEmpresa)
+                throw new InvalidOperationException(
+                    $"La factura {factura.NumeroDocumento} no es de la empresa {idEmpresa}. No se imprime.");
 
             ImprimirEscPosFacturaCliente(factura);
         }
@@ -969,13 +977,20 @@ public async Task GenerateTicketFacturaCliente(int idFactura)
         }
     }
 
-    public async Task<byte[]> PreviewTicketFacturaClientePdfAsync(int idFactura)
+    public async Task<byte[]> PreviewTicketFacturaClientePdfAsync(int idFactura, int idEmpresa)
     {
+        if (idEmpresa <= 0)
+            throw new InvalidOperationException("Falta el id de la empresa.");
+
         var factura = await _http.GetFromJsonAsync<TicketFacturaClienteDto>(
-            $"{_baseUrl}/api/FacturaHeader/factura-cliente/{idFactura}");
+            $"{_baseUrl}/api/FacturaHeader/factura-cliente/{idFactura}?idEmpresa={idEmpresa}");
 
         if (factura == null)
             throw new InvalidOperationException($"Factura {idFactura} no encontrada.");
+
+        if (factura.IdEmpresa != idEmpresa)
+            throw new InvalidOperationException(
+                $"La factura {factura.NumeroDocumento} no es de la empresa {idEmpresa}.");
 
         return PrinterApi.Servicios.TicketFacturaPreviewPdf.Build(factura);
     }

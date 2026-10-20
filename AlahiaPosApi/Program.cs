@@ -130,6 +130,13 @@ builder.Services.AddScoped<IProduccionFlujoService, AlahiaPos.DataAccess.Servici
 builder.Services.AddScoped<IProduccionTrabajoService, AlahiaPos.DataAccess.Servicios.Produccion.ProduccionTrabajoService>();
 builder.Services.AddScoped<IProduccionPosAdapter, AlahiaPos.DataAccess.Servicios.Produccion.ProduccionPosAdapter>();
 builder.Services.AddScoped<IPedidosOnlineService, AlahiaPos.DataAccess.Servicios.PedidosOnlineService>();
+builder.Services.AddHttpClient(AlahiaPos.DataAccess.Servicios.Delivery.OsrmDeliveryDistanceProvider.HttpClientName, client =>
+{
+    client.BaseAddress = new Uri("https://router.project-osrm.org/");
+    client.Timeout = TimeSpan.FromSeconds(8);
+});
+builder.Services.AddScoped<IDeliveryDistanceProvider, AlahiaPos.DataAccess.Servicios.Delivery.OsrmDeliveryDistanceProvider>();
+builder.Services.AddScoped<IDeliveryCotizacionService, AlahiaPos.DataAccess.Servicios.Delivery.DeliveryCotizacionService>();
 builder.Services.AddSingleton<IProduccionRealtime, AlahiaPosApi.Hubs.SignalRProduccionRealtime>();
 // DgiiFiscalEventHandler YA NO se registra en el pipeline s?ncrono (Sprint B.1 ? worker async)
 
@@ -366,6 +373,15 @@ if (app.Environment.IsDevelopment())
 // =============================
 //app.UseHttpsRedirection();
 
+var webRoot = app.Environment.WebRootPath ?? Path.Combine(app.Environment.ContentRootPath, "wwwroot");
+var indexHtml = Path.Combine(webRoot, "index.html");
+var servirErp = File.Exists(indexHtml);
+if (servirErp)
+{
+    app.UseDefaultFiles();
+    app.UseStaticFiles();
+}
+
 app.UseRouting();
 
 app.UseCors("PolicyConfig");
@@ -393,6 +409,8 @@ app.UseAuthorization();
 app.MapControllers();
 app.MapHub<AlahiaPosApi.Hubs.NotificacionesHub>("/hubs/notificaciones");
 app.MapHub<AlahiaPosApi.Hubs.ProduccionHub>("/hubs/produccion");
+if (servirErp)
+    app.MapFallbackToFile("index.html");
 
 app.Run();
 

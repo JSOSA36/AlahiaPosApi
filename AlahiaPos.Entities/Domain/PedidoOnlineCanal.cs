@@ -12,6 +12,8 @@ namespace AlahiaPos.Entities.Domain
 
         public int IdEmpresa { get; set; }
 
+        public int? IdSucursal { get; set; }
+
         [Required, MaxLength(80)]
         public string Slug { get; set; } = "";
 

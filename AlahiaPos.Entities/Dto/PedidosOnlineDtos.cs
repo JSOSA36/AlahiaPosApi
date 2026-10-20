@@ -56,6 +56,7 @@ namespace AlahiaPos.Entities.Dto
         public string? IdempotencyKey { get; set; }
         public decimal? Latitud { get; set; }
         public decimal? Longitud { get; set; }
+        public bool PagarDeliveryAlRecibir { get; set; }
         public List<PedidoOnlineLineaRequest> Lineas { get; set; } = new();
     }
 
@@ -72,6 +73,10 @@ namespace AlahiaPos.Entities.Dto
         public int IdFacturaHeader { get; set; }
         public string NumeroPedido { get; set; } = "";
         public decimal Total { get; set; }
+        public decimal CostoDelivery { get; set; }
+        public decimal DistanciaDeliveryKm { get; set; }
+        public bool DeliveryCobrarAlEntregar { get; set; }
+        public decimal MontoTransferir { get; set; }
         public string TipoEntrega { get; set; } = "";
         public string Estado { get; set; } = "";
         public DateTime Fecha { get; set; }
@@ -102,6 +107,18 @@ namespace AlahiaPos.Entities.Dto
         public decimal? Latitud { get; set; }
         public decimal? Longitud { get; set; }
         public int Pedidos { get; set; }
+        public List<ClienteDireccionDto> Direcciones { get; set; } = new();
+    }
+
+    public class ClienteDireccionDto
+    {
+        public int IdClienteDireccion { get; set; }
+        public string Direccion { get; set; } = "";
+        public string? Referencia { get; set; }
+        public decimal? Latitud { get; set; }
+        public decimal? Longitud { get; set; }
+        public string? NombreDestinatario { get; set; }
+        public string? Telefono { get; set; }
     }
 
     public class PedidoOnlinePerfilRequest
@@ -146,6 +163,9 @@ namespace AlahiaPos.Entities.Dto
         public bool EnviadoCocina { get; set; }
         public string? Observacion { get; set; }
         public decimal Total { get; set; }
+        public decimal CostoDelivery { get; set; }
+        public decimal DistanciaDeliveryKm { get; set; }
+        public bool DeliveryCobrarAlEntregar { get; set; }
         public string EstadoCocina { get; set; } = "";
         public string EstadoLogistico { get; set; } = "";
         public string EstadoUnificado { get; set; } = "";
@@ -207,5 +227,72 @@ namespace AlahiaPos.Entities.Dto
         public string NombrePublico { get; set; } = "";
         public string? WhatsApp { get; set; }
         public bool Activo { get; set; }
+    }
+
+    public class DeliveryCotizacionRequest
+    {
+        public string TipoEntrega { get; set; } = "Delivery";
+        public decimal? Latitud { get; set; }
+        public decimal? Longitud { get; set; }
+    }
+
+    public class DeliveryCotizacionDto
+    {
+        public decimal DistanciaKm { get; set; }
+        public int? DuracionSegundos { get; set; }
+        public decimal CostoDelivery { get; set; }
+        public string? Proveedor { get; set; }
+        public bool FueraDeZona { get; set; }
+        public bool PuedeConfirmar { get; set; }
+        public bool CalculoAutomatico { get; set; }
+        public string? Mensaje { get; set; }
+    }
+
+    public class DeliveryConfigGuardarRequest
+    {
+        public string Alcance { get; set; } = "empresa";
+        public bool DeliveryHabilitado { get; set; }
+        public bool CalculoPorDistancia { get; set; }
+        public decimal TarifaBase { get; set; }
+        public decimal PrecioPorKilometro { get; set; }
+        public decimal CostoMinimoDelivery { get; set; }
+        public decimal RedondeoDelivery { get; set; }
+        public decimal? DistanciaMaximaKm { get; set; }
+        public string AccionFueraDeZona { get; set; } = "SIN_LIMITE";
+        public string Proveedor { get; set; } = "OSRM";
+        public int MinutosCache { get; set; } = 30;
+        public bool ExigirGps { get; set; } = true;
+        public int? IdSucursalCanal { get; set; }
+    }
+
+    public class DeliverySucursalOpcionDto
+    {
+        public int IdSucursal { get; set; }
+        public string Nombre { get; set; } = "";
+        public bool EsPrincipal { get; set; }
+        public bool TieneCoordenadas { get; set; }
+    }
+
+    public class DeliveryConfigPantallaDto
+    {
+        public bool Existe { get; set; }
+        public string Alcance { get; set; } = "ninguna";
+        public bool DeliveryHabilitado { get; set; }
+        public bool CalculoPorDistancia { get; set; }
+        public decimal TarifaBase { get; set; }
+        public decimal PrecioPorKilometro { get; set; }
+        public decimal CostoMinimoDelivery { get; set; }
+        public decimal RedondeoDelivery { get; set; }
+        public decimal? DistanciaMaximaKm { get; set; }
+        public string AccionFueraDeZona { get; set; } = "SIN_LIMITE";
+        public string Proveedor { get; set; } = "OSRM";
+        public int MinutosCache { get; set; }
+        public bool ExigirGps { get; set; } = true;
+        public int IdSucursalSesion { get; set; }
+        public int? IdSucursalCanal { get; set; }
+        public string? NombreSucursalCanal { get; set; }
+        public bool SucursalTieneCoordenadas { get; set; }
+        public bool EmpresaTieneCoordenadas { get; set; }
+        public List<DeliverySucursalOpcionDto> Sucursales { get; set; } = new();
     }
 }

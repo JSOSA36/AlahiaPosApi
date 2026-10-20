@@ -8,7 +8,7 @@ namespace PrinterApi.Interfaz
         Task ImprimirCierreEncargos(
         int idEmpresa
         );
-        public Task GenerateTicketFacturaCliente(int idFactura);
+        public Task GenerateTicketFacturaCliente(int idFactura, int idEmpresa);
 
         /// <summary>
         /// Imprime ESC/POS desde el DTO. No llama al ERP (POS offline / sin internet).
@@ -20,7 +20,7 @@ namespace PrinterApi.Interfaz
         /// <summary>
         /// PDF preview del ticket 80mm (con QR e-CF). No imprime.
         /// </summary>
-        Task<byte[]> PreviewTicketFacturaClientePdfAsync(int idFactura);
+        Task<byte[]> PreviewTicketFacturaClientePdfAsync(int idFactura, int idEmpresa);
         Task ImprimirCierre(
 
     int idCajaCierre

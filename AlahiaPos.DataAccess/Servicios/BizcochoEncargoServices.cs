@@ -506,6 +506,11 @@ namespace AlahiaPos.DataAccess.Servicios
 
                     );
 
+                var itbisLinea = ItbisPosLinea.ExtenderSiEsUnitario(d.Itbis, d.SubTotal, d.Cantidad);
+                var baseLinea = d.SubTotal - d.Itbis;
+                if (baseLinea < 0)
+                    baseLinea = 0;
+
                 listaDetalles.Add(
                     new FacturaDetallesDto
                     {
@@ -514,8 +519,8 @@ namespace AlahiaPos.DataAccess.Servicios
                         IdProducto = d.IdProducto,
 
                         Cantidad = d.Cantidad,
-                        SubTotal = d.SubTotal,
-                        Itbis = d.Itbis,
+                        SubTotal = baseLinea + itbisLinea,
+                        Itbis = itbisLinea,
                         Descripcion = prod?.Nombre ?? "Producto",
                         // 🔥 BIZCOCHO
                         Libras = d.Libras ?? 0,
@@ -553,6 +558,13 @@ namespace AlahiaPos.DataAccess.Servicios
                 && ncf.StartsWith("E", StringComparison.OrdinalIgnoreCase);
 
             // 🔥 RETURN
+            var descuentoTicket = x.TotalDescuento < 0 ? 0 : x.TotalDescuento;
+            var totalTicket = listaDetalles.Sum(d => d.SubTotal) - descuentoTicket + x.MontoCargo;
+            if (totalTicket < 0)
+                totalTicket = 0;
+            var subTotalTicket = listaDetalles.Sum(d => d.SubTotal - d.Itbis);
+            var totalItbisTicket = listaDetalles.Sum(d => d.Itbis);
+
             var dto = new FacturaHeaderDto
             {
                 // HEADER
@@ -586,17 +598,17 @@ namespace AlahiaPos.DataAccess.Servicios
                 FechaEntrega = x.FechaEntrega,
                 HoraEntrega = x.HoraEntrega,
 
-                // MONTOS
-                Total = x.Total,
-                SubTotal = x.SubTotal,
-                TotalItbis = x.TotalItbis,
+                // MONTOS (el ticket usa el ITBIS de la línea, no el de una sola unidad)
+                Total = totalTicket,
+                SubTotal = subTotalTicket,
+                TotalItbis = totalItbisTicket,
                 TotalDescuento = x.TotalDescuento,
 
                 Pagado = x.Pagado,
-                Pendiente = x.Pendiente,
+                Pendiente = totalTicket - x.Pagado,
                 Abono = x.Abono,
 
-                Balance = x.Total - x.Pagado,
+                Balance = totalTicket - x.Pagado,
 
                 // 🔥 EMPRESA
                 Empresa = _Empresa.NombreComercial,

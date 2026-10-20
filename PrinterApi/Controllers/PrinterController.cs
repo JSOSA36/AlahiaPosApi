@@ -42,18 +42,24 @@ namespace PrinterApi.Controllers
 
         [HttpGet("factura/{idFactura}")]
         public async Task<IActionResult>
-        PrintFactura(int idFactura)
+        PrintFactura(int idFactura, [FromQuery] int idEmpresa)
         {
             if (idFactura <= 0)
                 return BadRequest(
                     "IdFactura inválido"
                 );
 
+            if (idEmpresa <= 0)
+                return BadRequest(
+                    "IdEmpresa inválido"
+                );
+
             try
             {
                 await _printer
                 .GenerateTicketFacturaCliente(
-                    idFactura
+                    idFactura,
+                    idEmpresa
                 );
 
                 return PrintOk(new
@@ -151,14 +157,18 @@ namespace PrinterApi.Controllers
         // ============================
 
         [HttpGet("factura-preview/{idFactura}")]
-        public async Task<IActionResult> PreviewFactura(int idFactura)
+        public async Task<IActionResult> PreviewFactura(
+            int idFactura,
+            [FromQuery] int idEmpresa)
         {
             if (idFactura <= 0)
                 return BadRequest("IdFactura inválido");
+            if (idEmpresa <= 0)
+                return BadRequest("IdEmpresa inválido");
 
             try
             {
-                var pdf = await _printer.PreviewTicketFacturaClientePdfAsync(idFactura);
+                var pdf = await _printer.PreviewTicketFacturaClientePdfAsync(idFactura, idEmpresa);
                 return File(pdf, "application/pdf", $"ticket-preview-{idFactura}.pdf");
             }
             catch (Exception ex)

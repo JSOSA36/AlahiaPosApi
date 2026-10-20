@@ -7,6 +7,9 @@ namespace AlahiaPos.Entities.Dto
     {
         public int NumeroFactura { get; set; }
 
+        /// <summary>Empresa dueña de la factura. La impresión la exige junto al id.</summary>
+        public int IdEmpresa { get; set; }
+
         public string NumeroDocumento { get; set; } = "";
 
         public DateTime Fecha { get; set; }

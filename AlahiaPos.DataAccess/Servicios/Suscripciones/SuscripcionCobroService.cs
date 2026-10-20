@@ -93,8 +93,8 @@ namespace AlahiaPos.DataAccess.Servicios.Suscripciones
                 || estado == SuscripcionEstados.PendientePago)
                 return true;
 
-            // Voucher enviado en ventana de pago (día 30 más 3 días: 31, 1 y 2): puede operar.
-            // Si ya estaba suspendido (día ≥ 3), no opera hasta aprobación admin.
+            // Voucher enviado en ventana de pago (día 30 hasta el 3): puede operar.
+            // Si ya estaba suspendido (día ≥ 4), no opera hasta aprobación admin.
             if (estado == SuscripcionEstados.PagoReportado)
                 return EstaEnVentanaPago(empresa);
 
@@ -122,10 +122,10 @@ namespace AlahiaPos.DataAccess.Servicios.Suscripciones
         }
 
         /// <summary>
-        /// Ventana de cobro: día 30 más 3 días (31, 1 y 2). Suspender a partir del día 3.
+        /// Ventana de cobro: día 30 hasta el día 3 (31, 1, 2 y 3). Suspender a partir del día 4.
         /// </summary>
         private static bool EstaEnVentanaPago(int diaCobro) =>
-            diaCobro == 30 || diaCobro == 31 || diaCobro == 1 || diaCobro == 2;
+            diaCobro == 30 || diaCobro == 31 || diaCobro == 1 || diaCobro == 2 || diaCobro == 3;
 
         /// <summary>
         /// Gracia 30→3, más el día siguiente al 30 si ese 30 fue domingo y la empresa no abre.
@@ -204,13 +204,14 @@ namespace AlahiaPos.DataAccess.Servicios.Suscripciones
             };
         }
 
-        /// <summary>Días restantes hasta el día 2 (último de la gracia: 30 + 3).</summary>
+        /// <summary>Días restantes hasta el día 3 (último día para pagar). 0 = vence hoy.</summary>
         private static int DiasHastaLimitePago(int diaCobro) => diaCobro switch
         {
-            30 => 3,
-            31 => 2,
-            1 => 1,
-            2 => 0,
+            30 => 4,
+            31 => 3,
+            1 => 2,
+            2 => 1,
+            3 => 0,
             _ => 0
         };
 
@@ -331,7 +332,7 @@ namespace AlahiaPos.DataAccess.Servicios.Suscripciones
                 return;
             }
 
-            // Ventana: 30 + 3 días (31, 1 y 2). El lunes diferido si el 30 fue domingo y no abre.
+            // Ventana: día 30 hasta el día 3. El lunes diferido si el 30 fue domingo y no abre.
             if (EstaEnVentanaPago(emp))
             {
                 var prev = emp.EstadoServicio;
@@ -346,14 +347,14 @@ namespace AlahiaPos.DataAccess.Servicios.Suscripciones
 
                 if (enviarAvisos && EsDiaModalCobro(emp))
                     await EnviarAvisoSiCorrespondeAsync(emp, ciclo, SuscripcionEstados.AvisoDia30);
-                else if (enviarAvisos && dia == 2)
+                else if (enviarAvisos && dia == 3)
                     await EnviarAvisoSiCorrespondeAsync(emp, ciclo, SuscripcionEstados.AvisoDia3);
 
                 return;
             }
 
-            // Día 3–29: fuera de la ventana 30+3 → suspensión + cargo de reconexión.
-            if (dia >= 3 && dia < 30)
+            // Día 4–29: fuera de la ventana (el día 3 todavía pueden pagar) → suspensión + cargo de reconexión.
+            if (dia >= 4 && dia < 30)
             {
                 if (ciclo != null && ciclo.Estado == SuscripcionEstados.CicloAbierto)
                     ciclo.Estado = SuscripcionEstados.CicloVencido;

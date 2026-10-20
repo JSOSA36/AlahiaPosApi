@@ -140,6 +140,10 @@ namespace AlahiaPos.DataAccess.Data
         public DbSet<PedidoOnline> PedidoOnline { get; set; }
         public DbSet<DeliveryAsignacion> DeliveryAsignacion { get; set; }
         public DbSet<DeliveryRepartidor> DeliveryRepartidor { get; set; }
+        public DbSet<DeliveryConfig> DeliveryConfig { get; set; }
+        public DbSet<DeliveryConfigAuditoria> DeliveryConfigAuditoria { get; set; }
+        public DbSet<DeliveryDistanciaCache> DeliveryDistanciaCache { get; set; }
+        public DbSet<ClienteDireccion> ClienteDireccion { get; set; }
 
         // ==============================
         // 🔥 FACTURACIÓN ELECTRÓNICA

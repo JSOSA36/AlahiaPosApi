@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 using AlahiaPos.Entities.Dto;
 using AlahiaPos.Entities.Interfaces;
+using AlahiaPosApi.Auth;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AlahiaPosApi.Controllers
@@ -11,10 +12,41 @@ namespace AlahiaPosApi.Controllers
     public class PedidosDeliveryController : ControllerBase
     {
         private readonly IPedidosOnlineService _svc;
+        private readonly IDeliveryCotizacionService _delivery;
 
-        public PedidosDeliveryController(IPedidosOnlineService svc)
+        public PedidosDeliveryController(IPedidosOnlineService svc, IDeliveryCotizacionService delivery)
         {
             _svc = svc;
+            _delivery = delivery;
+        }
+
+        [HttpGet("config")]
+        public async Task<IActionResult> Config([FromQuery] int idEmpresa)
+        {
+            if (idEmpresa <= 0)
+                return BadRequest(new { message = "idEmpresa es obligatorio." });
+            var sesion = SesionHttp.TryGet(HttpContext);
+            return Ok(await _delivery.ObtenerPantallaAsync(idEmpresa, sesion?.IdSucursal ?? 0));
+        }
+
+        [HttpPut("config")]
+        public async Task<IActionResult> GuardarConfig([FromQuery] int idEmpresa, [FromBody] DeliveryConfigGuardarRequest request)
+        {
+            if (idEmpresa <= 0)
+                return BadRequest(new { message = "idEmpresa es obligatorio." });
+            try
+            {
+                var sesion = SesionHttp.TryGet(HttpContext);
+                return Ok(await _delivery.GuardarAsync(
+                    idEmpresa,
+                    sesion?.IdSucursal ?? 0,
+                    sesion?.IdUsuario ?? 0,
+                    request ?? new DeliveryConfigGuardarRequest()));
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         [HttpGet("canal")]
