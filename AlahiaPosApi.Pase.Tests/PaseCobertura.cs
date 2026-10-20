@@ -23,7 +23,8 @@ namespace AlahiaPosApi.Pase.Tests
             nameof(ClientesComprasCitasContratoTests),
             nameof(NominaContabilidadContratoTests),
             nameof(ErpDevSmokeTests),
-            nameof(AnularEliminarOrdenContratoTests)
+            nameof(AnularEliminarOrdenContratoTests),
+            nameof(PoliticaFiscalAutomaticaTests)
         };
     }
 }

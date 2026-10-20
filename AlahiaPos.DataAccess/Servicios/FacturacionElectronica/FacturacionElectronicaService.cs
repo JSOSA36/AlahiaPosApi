@@ -1,4 +1,5 @@
 using AlahiaPos.DataAccess.Data;
+using AlahiaPos.DataAccess.Servicios;
 using AlahiaPos.DataAccess.Servicios.FiscalGateway;
 using AlahiaPos.Entities.Domain;
 using AlahiaPos.Entities.Dto;
@@ -53,6 +54,7 @@ namespace AlahiaPos.DataAccess.Servicios.FacturacionElectronica
             }
 
             var idSucursal = await ResolverIdSucursalAsync(request);
+            await AjustarTipoEcfPorPoliticaAsync(request, idSucursal);
             var reserva = await _secuencias.ReservarSiguienteAsync(
                 request.IdEmpresa, request.TipoEcfDgii, idSucursal);
             if (!reserva.Exitoso)
@@ -164,6 +166,7 @@ namespace AlahiaPos.DataAccess.Servicios.FacturacionElectronica
             var empresa = await _ctx.Empresas.AsNoTracking()
                 .FirstOrDefaultAsync(e => e.IdEmpresa == request.IdEmpresa);
             var idSucursal = await ResolverIdSucursalAsync(request, docInfo);
+            await AjustarTipoEcfPorPoliticaAsync(request, idSucursal, docInfo.RncCliente);
             var secuencia = await _secuencias.ObtenerActivaAsync(
                 request.IdEmpresa, request.TipoEcfDgii, idSucursal);
 
@@ -321,6 +324,8 @@ namespace AlahiaPos.DataAccess.Servicios.FacturacionElectronica
                 ecf.UrlQR = resultado.UrlQR;
                 ecf.FechaFirma = resultado.FechaFirma;
                 ecf.FechaEnvio = DateTime.Now;
+                if (!string.IsNullOrWhiteSpace(resultado.CodigoError))
+                    ecf.CodigoError = resultado.CodigoError;
 
                 var aceptado = resultado.Exitoso && !secuenciaYaUsada
                     && !(resultado.Estado ?? "").Contains("Rechazado", StringComparison.OrdinalIgnoreCase);
@@ -329,8 +334,6 @@ namespace AlahiaPos.DataAccess.Servicios.FacturacionElectronica
                 {
                     ecf.EstadoDocumento = EstadoDocumentoElectronico.Enviado;
                     ecf.EstadoDGII = resultado.Estado;
-                    if (resultado.Mensajes.Count > 0)
-                        ecf.MensajeRespuesta = string.Join("; ", resultado.Mensajes);
                 }
                 else
                 {
@@ -341,9 +344,13 @@ namespace AlahiaPos.DataAccess.Servicios.FacturacionElectronica
                         ecf.EstadoDGII = "Error";
                     else
                         ecf.EstadoDGII = estadoProv;
-                    ecf.MensajeRespuesta = string.Join("; ", resultado.Mensajes);
                 }
 
+                var textoDgii = EcfXmlStore.TextoDgii(resultado, aceptado);
+                if (!string.IsNullOrWhiteSpace(textoDgii))
+                    ecf.MensajeRespuesta = textoDgii;
+
+                await EcfXmlStore.GuardarAsync(_ctx, ecf.IdECF, resultado);
                 await _ctx.SaveChangesAsync();
 
                 ultimo = new EmisionEcfResultadoCompleto
@@ -513,6 +520,70 @@ namespace AlahiaPos.DataAccess.Servicios.FacturacionElectronica
                 }
             }
             CertecfArtefactos.AplicarIdentidadEmisorReal(documento, razon, comercial);
+        }
+
+        /// <summary>
+        /// Tarjeta o Billet BHD con la política activa emiten E32 antes de reservar e-NCF.
+        /// Crédito fiscal con RNC y gubernamental se respetan. No toca la idempotencia
+        /// de un e-CF ya aceptado del mismo tipo.
+        /// </summary>
+        private async Task AjustarTipoEcfPorPoliticaAsync(
+            EmisionEcfRequest request,
+            int? idSucursal,
+            string? rncDocumento = null)
+        {
+            if (request.OrigenDocumento is not (OrigenDocumento.Pos or OrigenDocumento.Facturacion))
+                return;
+            if (request.IdOrigen <= 0)
+                return;
+
+            var rows = await _ctx.Parametros.AsNoTracking()
+                .Where(p => p.IdEmpresa == request.IdEmpresa
+                    && p.Activo
+                    && p.Clave == PoliticaFiscalAutomatica.ClaveParametro)
+                .Select(p => new { p.IdSucursal, p.Valor })
+                .ToListAsync();
+            var valor = PoliticaFiscalAutomatica.ResolverValor(
+                rows.Select(r => new ParametroFiscalValor(r.IdSucursal, r.Valor)),
+                idSucursal);
+            if (!PoliticaFiscalAutomatica.ValorActivo(valor))
+                return;
+
+            var pagos = await _ctx.PagosFacturasClientes.AsNoTracking()
+                .Where(p => p.IdFacturaHeader == request.IdOrigen && p.Monto > 0)
+                .Select(p => new PagoPoliticaFiscal { Metodo = p.FormaPago, Monto = p.Monto })
+                .ToListAsync();
+
+            var rncFactura = await _ctx.FacturaHeaders.AsNoTracking()
+                .Where(f => f.IdFacturaHeader == request.IdOrigen)
+                .Select(f => f.RNC)
+                .FirstOrDefaultAsync();
+
+            var tipoSolicitado = request.TipoEcfDgii;
+            var decision = PoliticaFiscalAutomatica.Evaluar(new EntradaPoliticaFiscal
+            {
+                PoliticaActiva = true,
+                EmpresaFacturaConItbis = false,
+                FacturacionElectronica = true,
+                TipoEcfDgii = tipoSolicitado,
+                Rnc = !string.IsNullOrWhiteSpace(rncDocumento) ? rncDocumento : rncFactura,
+                Pagos = pagos,
+                Lineas = Array.Empty<LineaPoliticaFiscal>()
+            });
+
+            if (!decision.ForzarConsumo || decision.TipoEcfDgii is not int tipo || tipo == tipoSolicitado)
+                return;
+
+            _logger.LogInformation(
+                "PoliticaFiscalAutomatica emision Empresa={Empresa} Sucursal={Sucursal} Usuario={Usuario} Metodo={Metodo} TipoComprobante={Tipo} Regla={Regla}",
+                request.IdEmpresa,
+                idSucursal,
+                request.IdUsuario,
+                decision.MetodoPago,
+                tipo,
+                decision.Regla);
+
+            request.TipoEcfDgii = tipo;
         }
 
         private async Task<int?> ResolverIdSucursalAsync(

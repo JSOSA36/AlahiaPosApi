@@ -1,4 +1,5 @@
-﻿using AlahiaPos.Entities.Domain;
+﻿using AlahiaPos.DataAccess.Servicios;
+using AlahiaPos.Entities.Domain;
 using AlahiaPos.Entities.Dto;
 using AlahiaPos.Entities.Interfaces;
 using AutoMapper;
@@ -62,6 +63,10 @@ namespace AlahiaPosApi.Controllers
             if (parametros == null || !parametros.Any())
                 return BadRequest(new { message = "La lista de parámetros está vacía." });
 
+            var rechazo = await RechazoApagadoItbisAsync(parametros);
+            if (rechazo != null)
+                return BadRequest(new { message = rechazo });
+
             try
             {
                 foreach (var p in parametros)
@@ -110,6 +115,10 @@ namespace AlahiaPosApi.Controllers
         [HttpPost]
         public async Task<IActionResult> Post([FromForm] ParametrosDto value)
         {
+            var rechazo = await RechazoApagadoItbisAsync(new List<ParametrosDto> { value });
+            if (rechazo != null)
+                return BadRequest(new { message = rechazo });
+
             try
             {
                 var parametro = _Mapper.Map<Parametros>(value);
@@ -132,6 +141,10 @@ namespace AlahiaPosApi.Controllers
         [HttpPut]
         public async Task<IActionResult> Put([FromForm] ParametrosDto value)
         {
+            var rechazo = await RechazoApagadoItbisAsync(new List<ParametrosDto> { value });
+            if (rechazo != null)
+                return BadRequest(new { message = rechazo });
+
             try
             {
                 var parametro = _Mapper.Map<Parametros>(value);
@@ -148,6 +161,47 @@ namespace AlahiaPosApi.Controllers
                     error = ex.Message
                 });
             }
+        }
+
+        private async Task<string?> RechazoApagadoItbisAsync(List<ParametrosDto> parametros)
+        {
+            foreach (var grupo in parametros.GroupBy(p => p.IdEmpresa))
+            {
+                var lista = grupo.ToList();
+                var politicaEnLista = lista.FirstOrDefault(p =>
+                    string.Equals((p.Clave ?? "").Trim(), PoliticaFiscalAutomatica.ClaveParametro, StringComparison.OrdinalIgnoreCase));
+
+                bool politicaActiva;
+                if (politicaEnLista != null)
+                    politicaActiva = PoliticaFiscalAutomatica.ValorActivo(politicaEnLista.Valor);
+                else
+                {
+                    var guardada = await _ParametrosService.GetParametro(
+                        grupo.Key,
+                        PoliticaFiscalAutomatica.ClaveParametro);
+                    politicaActiva = guardada != null
+                        && guardada.Activo
+                        && PoliticaFiscalAutomatica.ValorActivo(guardada.Valor);
+                }
+
+                if (!politicaActiva)
+                    continue;
+
+                foreach (var p in lista)
+                {
+                    if (!string.Equals((p.Clave ?? "").Trim(), PoliticaFiscalAutomatica.ClaveFacturarConItbis, StringComparison.OrdinalIgnoreCase))
+                        continue;
+
+                    var actual = await _ParametrosService.GetParametro(grupo.Key, PoliticaFiscalAutomatica.ClaveFacturarConItbis);
+                    var estabaActivo = actual != null
+                        && actual.Activo
+                        && PoliticaFiscalAutomatica.ValorActivo(actual.Valor);
+                    if (PoliticaFiscalAutomatica.BloqueaApagadoItbisGlobal(politicaActiva, estabaActivo, p.Clave, p.Valor))
+                        return "La política fiscal automática no permite desactivar el ITBIS de la empresa.";
+                }
+            }
+
+            return null;
         }
 
         // 🔹 DELETE: api/Parametros/5
