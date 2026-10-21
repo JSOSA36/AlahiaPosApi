@@ -6,6 +6,7 @@ using AlahiaPos.Entities.Dto;
 using AlahiaPos.Entities.Dto.Invoice;
 using AlahiaPos.Entities.Interfaces;
 using AlahiaPosApi.Auth;
+using AlahiaPosApi.Servicios;
 using Microsoft.Extensions.Logging;
 using AutoMapper;
 using Google.Apis.Util;
@@ -3050,6 +3051,102 @@ namespace AlahiaPosApi.Controllers
         /// <summary>
         /// Vista pública (sin login): el cliente abre el link enviado por WhatsApp/correo.
         /// </summary>
+        [HttpPost("factura/{idFacturaHeader}/compartir")]
+        public async Task<IActionResult> CrearLinkFacturaPublica(
+            int idFacturaHeader,
+            [FromQuery] int idEmpresa,
+            [FromBody] CotizacionCompartirRequest? request)
+        {
+            if (idFacturaHeader <= 0 || idEmpresa <= 0)
+                return BadRequest(new { message = "Factura o empresa inválida." });
+            if (!TenantRecurso.EsDeLaSesion(HttpContext, idEmpresa))
+                return StatusCode(403, new { message = SesionHttp.ForbiddenOtraEmpresa });
+
+            var link = await _facturaHeader.CrearLinkFacturaPublicaAsync(idFacturaHeader, idEmpresa);
+            if (link == null)
+                return NotFound(new { message = "Factura no encontrada o no se puede compartir." });
+
+            var baseUrl = (request?.PublicBaseUrl ?? "").Trim().TrimEnd('/');
+            if (!string.IsNullOrWhiteSpace(baseUrl) &&
+                Uri.TryCreate(baseUrl, UriKind.Absolute, out var baseUri) &&
+                (baseUri.Scheme == Uri.UriSchemeHttp || baseUri.Scheme == Uri.UriSchemeHttps))
+            {
+                link.Url = $"{baseUrl}/factura/ver/{link.Token}";
+                link.UrlCorta = await AcortarUrlParaWhatsAppAsync(link.Url);
+            }
+
+            return Ok(link);
+        }
+
+        [HttpGet("factura-publica/{token}")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetFacturaPublica(string token)
+        {
+            var vista = await _facturaHeader.ObtenerFacturaPublicaAsync(token);
+            if (vista == null)
+                return NotFound(new { message = "Factura no encontrada o enlace inválido." });
+            return Ok(vista);
+        }
+
+        [HttpPost("factura/{idFacturaHeader}/enviar-correo")]
+        public async Task<IActionResult> EnviarFacturaCorreo(
+            int idFacturaHeader,
+            [FromQuery] int idEmpresa,
+            [FromBody] EnviarFacturaCorreoRequest? request)
+        {
+            if (idFacturaHeader <= 0 || idEmpresa <= 0)
+                return BadRequest(new { message = "Factura o empresa inválida." });
+            if (!TenantRecurso.EsDeLaSesion(HttpContext, idEmpresa))
+                return StatusCode(403, new { message = SesionHttp.ForbiddenOtraEmpresa });
+
+            var correo = (request?.Correo ?? "").Trim();
+            if (!correo.Contains('@') || !correo.Contains('.'))
+                return BadRequest(new { message = "Indique un correo válido." });
+
+            var link = await _facturaHeader.CrearLinkFacturaPublicaAsync(idFacturaHeader, idEmpresa);
+            if (link == null)
+                return NotFound(new { message = "Factura no encontrada o no se puede compartir." });
+
+            var baseUrl = (request?.PublicBaseUrl ?? "").Trim().TrimEnd('/');
+            if (!string.IsNullOrWhiteSpace(baseUrl) &&
+                Uri.TryCreate(baseUrl, UriKind.Absolute, out var baseUri) &&
+                (baseUri.Scheme == Uri.UriSchemeHttp || baseUri.Scheme == Uri.UriSchemeHttps))
+            {
+                link.Url = $"{baseUrl}/factura/ver/{link.Token}";
+                link.UrlCorta = await AcortarUrlParaWhatsAppAsync(link.Url);
+            }
+
+            var vista = await _facturaHeader.ObtenerFacturaPublicaAsync(link.Token);
+            if (vista == null)
+                return NotFound(new { message = "Factura no encontrada." });
+
+            var empresa = await _Empresas.GetEmpresaById(idEmpresa);
+            if (empresa == null)
+                return NotFound(new { message = "Empresa no encontrada." });
+
+            var url = string.IsNullOrWhiteSpace(link.UrlCorta) ? link.Url : link.UrlCorta;
+            var asunto = $"Factura {vista.NumeroDocumento} · {vista.NombreEmpresa}";
+            var html = $@"<p>{System.Net.WebUtility.HtmlEncode(vista.NombreEmpresa)} le envía la factura <strong>{System.Net.WebUtility.HtmlEncode(vista.NumeroDocumento)}</strong>.</p>
+<p>Total: <strong>{vista.Total:N2} {System.Net.WebUtility.HtmlEncode(vista.Moneda ?? "DOP")}</strong></p>
+{(string.IsNullOrWhiteSpace(vista.Ncf) ? "" : $"<p>e-NCF: {System.Net.WebUtility.HtmlEncode(vista.Ncf)}</p>")}
+{(string.IsNullOrWhiteSpace(url) ? "" : $"<p><a href=\"{System.Net.WebUtility.HtmlEncode(url)}\">Ver factura</a></p>")}";
+
+            try
+            {
+                FacturaCorreoEnvio.Enviar(empresa, correo, asunto, html);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "No se pudo enviar el correo.", detail = ex.Message });
+            }
+
+            return Ok(new { enviado = true, correo });
+        }
+
         [HttpGet("cotizacion-publica/{token}")]
         [AllowAnonymous]
         public async Task<IActionResult> GetCotizacionPublica(string token)

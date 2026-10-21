@@ -1238,6 +1238,101 @@ namespace AlahiaPos.DataAccess.Servicios
             };
         }
 
+        public async Task<CotizacionPublicaLinkDto?> CrearLinkFacturaPublicaAsync(
+            int idFacturaHeader,
+            int idEmpresa)
+        {
+            var factura = await _repository.GetByExpresionAsync(
+                c => c.IdFacturaHeader == idFacturaHeader
+                     && c.IdEmpresa == idEmpresa
+                     && c.IdTipoDocumentos == 1
+                     && !c.EstaCancelada);
+
+            if (factura == null)
+                return null;
+
+            return new CotizacionPublicaLinkDto
+            {
+                Token = FacturaShareToken.Create(idEmpresa, idFacturaHeader),
+                IdFacturaHeader = idFacturaHeader,
+                NumeroDocumento = string.IsNullOrWhiteSpace(factura.NumeroDocumento)
+                    ? idFacturaHeader.ToString()
+                    : factura.NumeroDocumento.Trim()
+            };
+        }
+
+        public async Task<FacturaPublicaDto?> ObtenerFacturaPublicaAsync(string token)
+        {
+            if (!FacturaShareToken.TryParse(token, out var idEmpresa, out var idFacturaHeader))
+                return null;
+
+            var factura = await _repository.GetByExpresionAsync(
+                c => c.IdFacturaHeader == idFacturaHeader
+                     && c.IdEmpresa == idEmpresa
+                     && c.IdTipoDocumentos == 1
+                     && !c.EstaCancelada);
+
+            if (factura == null)
+                return null;
+
+            var empresa = _Empresas.GetById(idEmpresa);
+            var detalles = _FacturaDetalles
+                .GetAllByExpresionNoAsync(d => d.IdFacturaHeader == idFacturaHeader)
+                .ToList();
+            var productosIds = detalles.Select(x => x.IdProducto).Distinct().ToList();
+            var productos = productosIds.Count == 0
+                ? new List<Productos>()
+                : _Productos.GetAllByExpresionNoAsync(p => productosIds.Contains(p.IdProducto)).ToList();
+
+            Clientes? cliente = null;
+            if (factura.IDCliente != null)
+            {
+                cliente = _Clientes
+                    .GetAllByExpresionNoAsync(c => c.IDCliente == factura.IDCliente)
+                    .FirstOrDefault();
+            }
+
+            var ncf = (factura.NCF ?? "").Trim();
+
+            return new FacturaPublicaDto
+            {
+                NumeroDocumento = string.IsNullOrWhiteSpace(factura.NumeroDocumento)
+                    ? idFacturaHeader.ToString()
+                    : factura.NumeroDocumento.Trim(),
+                Ncf = ncf.Length == 0 ? null : ncf,
+                Fecha = factura.FechaInseccion,
+                NombreEmpresa = empresa?.NombreComercial ?? factura.NombreEmpresa ?? "",
+                TelefonoEmpresa = empresa?.Telefono,
+                DireccionEmpresa = empresa?.Direccion,
+                RncEmpresa = empresa?.RNC,
+                ClienteNombre = cliente?.NombreComercial
+                    ?? (string.IsNullOrWhiteSpace(factura.NombreCuenta) ? "Cliente" : factura.NombreCuenta),
+                ClienteTelefono = PrimeroNoVacio(cliente?.Celular, cliente?.Telefono),
+                ClienteRnc = PrimeroNoVacio(cliente?.CedulaRNC, factura.RNC),
+                ClienteCorreo = PrimeroNoVacio(cliente?.Email),
+                SubTotal = factura.SubTotal,
+                TotalItbis = factura.TotalItbis,
+                TotalDescuento = factura.TotalDescuento,
+                Total = factura.Total,
+                Nota = factura.Nota,
+                Moneda = string.IsNullOrWhiteSpace(factura.Moneda) ? "DOP" : factura.Moneda,
+                Lineas = detalles.Select(det =>
+                {
+                    var prod = productos.FirstOrDefault(p => p.IdProducto == det.IdProducto);
+                    var precio = det.PrecioOferta > 0 ? det.PrecioOferta : det.SubTotal;
+                    return new CotizacionPublicaLineaDto
+                    {
+                        Cantidad = det.Cantidad,
+                        Descripcion = prod?.Nombre ?? prod?.Descripcion ?? "Producto",
+                        PrecioUnitario = precio,
+                        SubTotal = det.SubTotal > 0
+                            ? det.SubTotal
+                            : Math.Round(precio * det.Cantidad, 2)
+                    };
+                }).ToList()
+            };
+        }
+
         public async Task<TicketFacturaClienteDto?> GetFacturaClienteById(int idFacturaHeader)
         {
             // ⭐ FACTURA

@@ -43,6 +43,8 @@ CerrarFacturasPendientes(
         Task<TicketFacturaClienteDto?> GetFacturaClienteById(int idFacturaHeader);
         Task<CotizacionPublicaLinkDto?> CrearLinkCotizacionPublicaAsync(int idFacturaHeader, int idEmpresa);
         Task<CotizacionPublicaDto?> ObtenerCotizacionPublicaAsync(string token);
+        Task<CotizacionPublicaLinkDto?> CrearLinkFacturaPublicaAsync(int idFacturaHeader, int idEmpresa);
+        Task<FacturaPublicaDto?> ObtenerFacturaPublicaAsync(string token);
         Task<IEnumerable<FacturaHeaders>> GetAllFacturas(int IdEmpresa);
         Task<List<TicketLavadorDto>> GetTicketsLavadorByFactura(int idFacturaHeader);
         public Task<IEnumerable<FacturaHeaders>> GetAllFacturaFacturaHeader(int IdEmpresa);
