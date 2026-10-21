@@ -93,7 +93,11 @@ namespace AlahiaPosApi.Controllers
                 Clientes c = new Clientes();
                 c.CedulaRNC = "00000";
                 c.NombreComercial = value.NombreComercial;
-                c.Celular = value.Celular;
+                var tel = !string.IsNullOrWhiteSpace(value.Celular)
+                    ? value.Celular.Trim()
+                    : (value.Telefono ?? "").Trim();
+                c.Celular = tel;
+                c.Telefono = tel;
                 c.Email = value.Email;
                 c.Direccion = value.Direccion;
                 c.FechaInseccion = DateTime.Now.Date;
