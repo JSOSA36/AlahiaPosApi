@@ -67,7 +67,7 @@ namespace AlahiaPos.DataAccess.Servicios
     int IdEmpresa
 )
         {
-            return await _repository
+            var lista = await _repository
                 .GetAllByExpresionAsync(c =>
 
                     c.IdTipoDocumentos == 10
@@ -78,13 +78,16 @@ namespace AlahiaPos.DataAccess.Servicios
                     "Clientes",
                     "FacturaDetalles"
                 );
+            return lista
+                .OrderByDescending(c => c.FechaInseccion)
+                .ThenByDescending(c => c.IdFacturaHeader);
         }
 
         public async Task<IEnumerable<FacturaHeaders>> GetAllCotizaciones(
             int IdEmpresa
         )
         {
-            return await _repository
+            var lista = await _repository
                 .GetAllByExpresionAsync(c =>
 
                     c.IdTipoDocumentos == 2
@@ -95,6 +98,9 @@ namespace AlahiaPos.DataAccess.Servicios
                     "Clientes",
                     "FacturaDetalles"
                 );
+            return lista
+                .OrderByDescending(c => c.FechaInseccion)
+                .ThenByDescending(c => c.IdFacturaHeader);
         }
         public async Task<IEnumerable<FacturaHeaders>> GetAllFacturas(int IdEmpresa)
         {
