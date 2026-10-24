@@ -12,6 +12,7 @@ namespace AlahiaPos.DataAccess.Servicios
     public static class PoliticaFiscalAutomatica
     {
         public const string ClaveParametro = "AplicarPoliticaFiscalAutomatica";
+        public const string ClavePermitirApagarItbisPos = "PermitirApagarItbisPos";
         public const string ClaveFacturarConItbis = "FACTURAR_CON_ITBIS";
         public const string ClaveFacturacionElectronica = "FACTURACION_ELECTRONICA";
 
@@ -114,7 +115,9 @@ namespace AlahiaPos.DataAccess.Servicios
                 return Passthrough(tipo, tipoEcf, "Ninguna", null);
             }
 
-            if (entrada.EmpresaFacturaConItbis && IntentoApagarItbisEnLineas(entrada.Lineas))
+            if (!entrada.PermitirApagarItbisPos
+                && entrada.EmpresaFacturaConItbis
+                && IntentoApagarItbisEnLineas(entrada.Lineas))
             {
                 return new ResultadoPoliticaFiscal
                 {
@@ -152,6 +155,9 @@ namespace AlahiaPos.DataAccess.Servicios
                 ConsumioSecuencia = false
             };
         }
+
+        public static bool VentaGravadaSinItbis(IReadOnlyList<LineaPoliticaFiscal>? lineas)
+            => IntentoApagarItbisEnLineas(lineas);
 
         private static bool IntentoApagarItbisEnLineas(IReadOnlyList<LineaPoliticaFiscal>? lineas)
         {
@@ -244,6 +250,8 @@ namespace AlahiaPos.DataAccess.Servicios
         public bool PoliticaActiva { get; set; }
         public bool EmpresaFacturaConItbis { get; set; }
         public bool FacturacionElectronica { get; set; }
+        /// <summary>El POS de esa empresa puede cobrar la venta sin ITBIS.</summary>
+        public bool PermitirApagarItbisPos { get; set; }
         public string? TipoComprobante { get; set; }
         public int? TipoEcfDgii { get; set; }
         public string? Rnc { get; set; }

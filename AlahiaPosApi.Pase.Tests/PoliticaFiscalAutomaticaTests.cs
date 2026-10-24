@@ -75,6 +75,27 @@ namespace AlahiaPosApi.Pase.Tests
         }
 
         [Fact]
+        public void Pos_puede_apagar_itbis_y_la_tarjeta_sigue_en_consumo()
+        {
+            var r = PoliticaFiscalAutomatica.Evaluar(new EntradaPoliticaFiscal
+            {
+                PoliticaActiva = true,
+                PermitirApagarItbisPos = true,
+                EmpresaFacturaConItbis = true,
+                FacturacionElectronica = true,
+                TipoComprobante = "Consumidor Final",
+                TipoEcfDgii = 32,
+                Pagos = new[] { Pago("Tarjeta", 50m) },
+                Lineas = new[] { Gravada(0m) }
+            });
+
+            Assert.False(r.Rechazar);
+            Assert.True(r.ForzarConsumo);
+            Assert.Equal(32, r.TipoEcfDgii);
+            Assert.Equal("Tarjeta", r.Regla);
+        }
+
+        [Fact]
         public void Producto_exento_no_se_trata_como_apagado_global()
         {
             var r = PoliticaFiscalAutomatica.Evaluar(new EntradaPoliticaFiscal

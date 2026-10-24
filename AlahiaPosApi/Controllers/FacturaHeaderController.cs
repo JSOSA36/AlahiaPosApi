@@ -1178,36 +1178,30 @@ namespace AlahiaPosApi.Controllers
                 prod.TasaItbis);
         }
 
-        private async Task<(bool Rechazar, string? Mensaje, bool PoliticaActiva)> AplicarPoliticaFiscalAsync(
+        private async Task<(bool Rechazar, string? Mensaje, bool PoliticaActiva, bool RespetarItbisEnCero)> AplicarPoliticaFiscalAsync(
             FacturaDirectaDTO dto,
             int idUsuario)
         {
             var idEmpresa = dto.Header.IdEmpresa;
             var idSucursal = dto.Header.IdSucursal;
+            var permitirApagar = await PoliticaFiscalActivaAsync(
+                idEmpresa,
+                idSucursal,
+                PoliticaFiscalAutomatica.ClavePermitirApagarItbisPos);
+            var lineas = LineasPolitica(dto);
+            var respetarCero = permitirApagar
+                && PoliticaFiscalAutomatica.VentaGravadaSinItbis(lineas);
+
             var politica = await PoliticaFiscalActivaAsync(idEmpresa, idSucursal);
             if (!politica)
             {
-                return (false, null, false);
-            }
-
-            var lineas = new List<LineaPoliticaFiscal>();
-            foreach (var item in dto.Header.FacturaDetalles ?? new List<FacturaDetallesDto>())
-            {
-                if (item.IdProducto <= 0)
-                    continue;
-                var prod = _Productos.GetProductoById(item.IdProducto);
-                if (prod == null)
-                    continue;
-                lineas.Add(new LineaPoliticaFiscal
-                {
-                    GravaItbis = prod.Itbis,
-                    Itbis = item.Itbis < 0 ? 0 : item.Itbis
-                });
+                return (false, null, false, respetarCero);
             }
 
             var decision = PoliticaFiscalAutomatica.Evaluar(new EntradaPoliticaFiscal
             {
                 PoliticaActiva = true,
+                PermitirApagarItbisPos = permitirApagar,
                 EmpresaFacturaConItbis = EmpresaFacturaConItbis(idEmpresa),
                 FacturacionElectronica = ParametroEmpresaActivo(idEmpresa, PoliticaFiscalAutomatica.ClaveFacturacionElectronica),
                 TipoComprobante = dto.Header.TipoComprobante,
@@ -1232,12 +1226,31 @@ namespace AlahiaPosApi.Controllers
             }
 
             if (decision.Rechazar)
-                return (true, decision.Mensaje, true);
+                return (true, decision.Mensaje, true, false);
 
             if (decision.ForzarConsumo)
                 dto.Header.TipoComprobante = decision.TipoComprobante;
 
-            return (false, null, true);
+            return (false, null, true, respetarCero);
+        }
+
+        private List<LineaPoliticaFiscal> LineasPolitica(FacturaDirectaDTO dto)
+        {
+            var lineas = new List<LineaPoliticaFiscal>();
+            foreach (var item in dto.Header.FacturaDetalles ?? new List<FacturaDetallesDto>())
+            {
+                if (item.IdProducto <= 0)
+                    continue;
+                var prod = _Productos.GetProductoById(item.IdProducto);
+                if (prod == null)
+                    continue;
+                lineas.Add(new LineaPoliticaFiscal
+                {
+                    GravaItbis = prod.Itbis,
+                    Itbis = item.Itbis < 0 ? 0 : item.Itbis
+                });
+            }
+            return lineas;
         }
 
         private static int? TipoEcfDesdeComprobante(string? tipo)
@@ -1253,15 +1266,16 @@ namespace AlahiaPosApi.Controllers
             return null;
         }
 
-        private async Task<bool> PoliticaFiscalActivaAsync(int idEmpresa, int? idSucursal)
+        private async Task<bool> PoliticaFiscalActivaAsync(int idEmpresa, int? idSucursal, string? clave = null)
         {
             if (idEmpresa <= 0)
                 return false;
 
+            clave ??= PoliticaFiscalAutomatica.ClaveParametro;
             var rows = await _context.Parametros.AsNoTracking()
                 .Where(p => p.IdEmpresa == idEmpresa
                     && p.Activo
-                    && p.Clave == PoliticaFiscalAutomatica.ClaveParametro)
+                    && p.Clave == clave)
                 .Select(p => new { p.IdSucursal, p.Valor })
                 .ToListAsync();
 
@@ -1448,7 +1462,8 @@ namespace AlahiaPosApi.Controllers
                     var esEcf = dto.Header.TipoComprobante == "Crédito Fiscal"
                              || dto.Header.TipoComprobante == "Consumidor Final"
                              || dto.Header.TipoComprobante == "Gubernamental";
-                    var facturaConItbis = EmpresaFacturaConItbis(dto.Header.IdEmpresa);
+                    var facturaConItbis = EmpresaFacturaConItbis(dto.Header.IdEmpresa)
+                        && !decisionFiscal.RespetarItbisEnCero;
 
                     if (!esEcf && dto.Header.TipoComprobante != "FACT")
                     {
@@ -1601,7 +1616,8 @@ namespace AlahiaPosApi.Controllers
                     var esEcf2 = dto.Header.TipoComprobante == "Crédito Fiscal"
                               || dto.Header.TipoComprobante == "Consumidor Final"
                               || dto.Header.TipoComprobante == "Gubernamental";
-                    var facturaConItbis2 = EmpresaFacturaConItbis(header.IdEmpresa);
+                    var facturaConItbis2 = EmpresaFacturaConItbis(header.IdEmpresa)
+                        && !decisionFiscal.RespetarItbisEnCero;
 
                     if (!esEcf2 && dto.Header.TipoComprobante != "FACT")
                     {
