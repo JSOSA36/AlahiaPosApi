@@ -75,6 +75,71 @@ namespace AlahiaPosApi.Pase.Tests
         }
 
         [Fact]
+        public void Consumo_con_itbis_apagado_desglosa_el_impuesto_dentro_del_precio()
+        {
+            var r = ItbisPosLinea.ResolverLinea(
+                itbisEnviado: 0m,
+                precioUnitario: 225m,
+                cantidad: 1m,
+                esComprobante: true,
+                esConsumo: true,
+                empresaFacturaConItbis: true,
+                productoGrava: true,
+                respetarItbisEnCero: true,
+                tasaProducto: 0.18m);
+
+            Assert.Equal(190.68m, r.PrecioUnitario);
+            Assert.Equal(34.32m, r.Itbis);
+            Assert.Equal(225m, r.SubTotal);
+        }
+
+        [Fact]
+        public void Dos_unidades_de_consumo_cuadran_el_itbis_con_lo_cobrado()
+        {
+            var r = ItbisPosLinea.ResolverLinea(
+                0m, 225m, 2m,
+                esComprobante: true,
+                esConsumo: true,
+                empresaFacturaConItbis: true,
+                productoGrava: true,
+                respetarItbisEnCero: true);
+
+            Assert.Equal(450m, r.SubTotal);
+            Assert.Equal(68.64m, r.Itbis);
+            Assert.Equal(381.36m, r.PrecioUnitario * 2m);
+        }
+
+        [Fact]
+        public void Factura_sin_consumo_puede_quedar_sin_itbis()
+        {
+            var r = ItbisPosLinea.ResolverLinea(
+                0m, 225m, 1m,
+                esComprobante: false,
+                esConsumo: false,
+                empresaFacturaConItbis: true,
+                productoGrava: true,
+                respetarItbisEnCero: true);
+
+            Assert.Equal(0m, r.Itbis);
+            Assert.Equal(225m, r.PrecioUnitario);
+            Assert.Equal(225m, r.SubTotal);
+        }
+
+        [Fact]
+        public void Producto_exento_y_empresa_sin_itbis_no_se_desglosan()
+        {
+            var exento = ItbisPosLinea.ResolverLinea(
+                0m, 225m, 1m, true, true, true, productoGrava: false, respetarItbisEnCero: true);
+            Assert.Equal(0m, exento.Itbis);
+            Assert.Equal(225m, exento.SubTotal);
+
+            var sinItbis = ItbisPosLinea.ResolverLinea(
+                0m, 225m, 1m, true, true, empresaFacturaConItbis: false, productoGrava: true, respetarItbisEnCero: true);
+            Assert.Equal(0m, sinItbis.Itbis);
+            Assert.Equal(225m, sinItbis.SubTotal);
+        }
+
+        [Fact]
         public void Pos_puede_apagar_itbis_y_la_tarjeta_sigue_en_consumo()
         {
             var r = PoliticaFiscalAutomatica.Evaluar(new EntradaPoliticaFiscal

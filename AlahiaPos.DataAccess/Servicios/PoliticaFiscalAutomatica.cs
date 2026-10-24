@@ -18,6 +18,17 @@ namespace AlahiaPos.DataAccess.Servicios
 
         public const string TipoConsumo = "Consumidor Final";
         public const int TipoEcfConsumo = 32;
+
+        public static bool EsComprobanteConsumo(string? tipoComprobante, int? tipoEcf = null)
+        {
+            if (tipoEcf == TipoEcfConsumo)
+                return true;
+
+            return string.Equals(
+                (tipoComprobante ?? "").Trim(),
+                TipoConsumo,
+                StringComparison.OrdinalIgnoreCase);
+        }
         public const int TipoEcfCreditoFiscal = 31;
         public const int TipoEcfGubernamental = 45;
 
@@ -250,7 +261,10 @@ namespace AlahiaPos.DataAccess.Servicios
         public bool PoliticaActiva { get; set; }
         public bool EmpresaFacturaConItbis { get; set; }
         public bool FacturacionElectronica { get; set; }
-        /// <summary>El POS de esa empresa puede cobrar la venta sin ITBIS.</summary>
+        /// <summary>
+        /// El POS puede cobrar sin ITBIS en una factura que no es de consumo.
+        /// El comprobante de consumo (E32) igual desglosa el ITBIS.
+        /// </summary>
         public bool PermitirApagarItbisPos { get; set; }
         public string? TipoComprobante { get; set; }
         public int? TipoEcfDgii { get; set; }

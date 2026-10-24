@@ -1159,22 +1159,28 @@ namespace AlahiaPosApi.Controllers
         }
 
         /// <summary>
-        /// El ITBIS de la línea sigue el cálculo del POS. La política no lo pone en cero.
+        /// Consumo (E32) de una empresa que factura con ITBIS desglosa el impuesto
+        /// dentro del precio cobrado. El resto sigue el ITBIS que mandó el POS.
         /// </summary>
-        private static decimal ItbisDeLinea(
+        private static ItbisLineaResuelta ItbisDeLinea(
             Productos prod,
             decimal itbisUnitario,
             decimal precio,
             decimal cantidad,
             bool esEcf,
-            bool facturaConItbis)
+            bool esConsumo,
+            bool empresaFacturaConItbis,
+            bool respetarItbisEnCero)
         {
-            return ItbisPosLinea.AsegurarEnComprobante(
+            return ItbisPosLinea.ResolverLinea(
                 itbisUnitario,
                 precio,
                 cantidad,
                 esEcf,
-                facturaConItbis,
+                esConsumo,
+                empresaFacturaConItbis,
+                prod.Itbis,
+                respetarItbisEnCero,
                 prod.TasaItbis);
         }
 
@@ -1462,8 +1468,8 @@ namespace AlahiaPosApi.Controllers
                     var esEcf = dto.Header.TipoComprobante == "Crédito Fiscal"
                              || dto.Header.TipoComprobante == "Consumidor Final"
                              || dto.Header.TipoComprobante == "Gubernamental";
-                    var facturaConItbis = EmpresaFacturaConItbis(dto.Header.IdEmpresa)
-                        && !decisionFiscal.RespetarItbisEnCero;
+                    var esConsumo = PoliticaFiscalAutomatica.EsComprobanteConsumo(dto.Header.TipoComprobante);
+                    var empresaFacturaConItbis = EmpresaFacturaConItbis(dto.Header.IdEmpresa);
 
                     if (!esEcf && dto.Header.TipoComprobante != "FACT")
                     {
@@ -1516,15 +1522,18 @@ namespace AlahiaPosApi.Controllers
                             : prod.PrecioVenta;
 
                         var itbisUnitario = item.Itbis < 0 ? 0 : item.Itbis;
-                        var itbis = ItbisDeLinea(
+                        var lineaItbis = ItbisDeLinea(
                             prod,
                             itbisUnitario,
                             precio,
                             item.Cantidad,
                             esEcf,
-                            facturaConItbis);
-                        item.Itbis = itbis;
-                        item.SubTotal = (precio * item.Cantidad) + itbis;
+                            esConsumo,
+                            empresaFacturaConItbis,
+                            decisionFiscal.RespetarItbisEnCero);
+                        item.PrecioOferta = lineaItbis.PrecioUnitario;
+                        item.Itbis = lineaItbis.Itbis;
+                        item.SubTotal = lineaItbis.SubTotal;
 
                         if (!item.IdEmpleadoComision.HasValue)
                             item.IdEmpleadoComision = 0;
@@ -1616,8 +1625,8 @@ namespace AlahiaPosApi.Controllers
                     var esEcf2 = dto.Header.TipoComprobante == "Crédito Fiscal"
                               || dto.Header.TipoComprobante == "Consumidor Final"
                               || dto.Header.TipoComprobante == "Gubernamental";
-                    var facturaConItbis2 = EmpresaFacturaConItbis(header.IdEmpresa)
-                        && !decisionFiscal.RespetarItbisEnCero;
+                    var esConsumo2 = PoliticaFiscalAutomatica.EsComprobanteConsumo(dto.Header.TipoComprobante);
+                    var empresaFacturaConItbis2 = EmpresaFacturaConItbis(header.IdEmpresa);
 
                     if (!esEcf2 && dto.Header.TipoComprobante != "FACT")
                     {
@@ -1658,26 +1667,28 @@ namespace AlahiaPosApi.Controllers
                             : prod.PrecioVenta;
 
                         var itbisUnitario = itemDto.Itbis < 0 ? 0 : itemDto.Itbis;
-                        var itbis = ItbisDeLinea(
+                        var lineaItbis = ItbisDeLinea(
                             prod,
                             itbisUnitario,
                             precio,
                             itemDto.Cantidad,
                             esEcf2,
-                            facturaConItbis2);
+                            esConsumo2,
+                            empresaFacturaConItbis2,
+                            decisionFiscal.RespetarItbisEnCero);
                         var detalle = new FacturaDetalles
                         {
                             IdFacturaDetalle = 0,
                             IdFacturaHeader = header.IdFacturaHeader,
                             IdProducto = itemDto.IdProducto,
                             Cantidad = itemDto.Cantidad,
-                            PrecioOferta = precio,
+                            PrecioOferta = lineaItbis.PrecioUnitario,
                             Descuento = itemDto.Descuento < 0 ? 0 : itemDto.Descuento,
-                            Itbis = itbis,
+                            Itbis = lineaItbis.Itbis,
                             IdEmpleadoComision = itemDto.IdEmpleadoComision ?? 0,
                             IdEmpresa = header.IdEmpresa,
                             FechaInseccion = DateTime.Now,
-                            SubTotal = (precio * itemDto.Cantidad) + itbis,
+                            SubTotal = lineaItbis.SubTotal,
                             Comentario = itemDto.Comentario ?? "",
                             TipoMasa = itemDto.TipoMasa,
                             TipoRelleno = itemDto.TipoRelleno,

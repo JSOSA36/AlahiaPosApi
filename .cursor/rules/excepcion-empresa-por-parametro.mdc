@@ -1,0 +1,18 @@
+---
+description: Excepciones por empresa (ITBIS del POS, comprobante de consumo) se activan en Parametros, no con código nuevo.
+alwaysApply: true
+---
+
+# Excepción de empresa: base de datos, no código
+
+Si una empresa debe comportarse distinto en una regla que ya existe (apagar ITBIS en el POS, comprobante de consumo en tarjeta, Billet BHD), el cambio es una fila en `Parametros`. No se escribe código nuevo ni se hardcodea el `IdEmpresa`.
+
+## Claves que ya deciden
+
+- `AplicarPoliticaFiscalAutomatica`: tarjeta y Billet BHD emiten e-CF de consumo (E32).
+- `PermitirApagarItbisPos`: el POS puede cobrar sin ITBIS cuando el documento no es factura de consumo. El E32 siempre desglosa el ITBIS dentro del precio cobrado; no sale en cero. La tarjeta sigue en E32.
+- `FACTURAR_CON_ITBIS`: la empresa factura con ITBIS por defecto.
+
+Sucursal pisa empresa. Sin fila, la regla queda apagada. Solo la empresa pedida. Dev por defecto; Prod solo si el usuario lo autoriza en ese mensaje.
+
+Código nuevo solo si el programa todavía no lee esa clave. Después, la siguiente empresa es únicamente el `INSERT`/`UPDATE`.

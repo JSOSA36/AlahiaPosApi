@@ -52,6 +52,68 @@ namespace AlahiaPos.DataAccess.Servicios
             return Math.Round(precioUnitario * cantidad * tasa, 2, MidpointRounding.AwayFromZero);
         }
 
+        /// <summary>
+        /// Factura de consumo (E32): el ITBIS es obligatorio si la empresa factura con ITBIS
+        /// y el producto está gravado. El precio que llegó en cero es el monto cobrado;
+        /// el impuesto se desglosa adentro y el total de la línea no cambia.
+        /// El interruptor del POS sigue pudiendo dejar en cero una factura sin ese comprobante.
+        /// </summary>
+        public static ItbisLineaResuelta ResolverLinea(
+            decimal itbisEnviado,
+            decimal precioUnitario,
+            decimal cantidad,
+            bool esComprobante,
+            bool esConsumo,
+            bool empresaFacturaConItbis,
+            bool productoGrava,
+            bool respetarItbisEnCero,
+            decimal? tasaProducto = null)
+        {
+            var cant = cantidad <= 0m ? 1m : cantidad;
+            var itbisSafe = itbisEnviado < 0m ? 0m : itbisEnviado;
+
+            // El precio en cero con el interruptor del POS es el monto cobrado (bruto).
+            // En consumo se abre el ITBIS adentro. En otro comprobante se respeta el cero.
+            if (esConsumo
+                && respetarItbisEnCero
+                && empresaFacturaConItbis
+                && productoGrava
+                && itbisSafe <= 0.009m)
+            {
+                return DesglosarItbisIncluido(precioUnitario, cant, tasaProducto);
+            }
+
+            var itbis = AsegurarEnComprobante(
+                itbisSafe,
+                precioUnitario,
+                cant,
+                esComprobante,
+                empresaFacturaConItbis && !respetarItbisEnCero,
+                tasaProducto);
+
+            return new ItbisLineaResuelta(precioUnitario, itbis, (precioUnitario * cant) + itbis);
+        }
+
+        public static ItbisLineaResuelta DesglosarItbisIncluido(
+            decimal precioBrutoUnitario,
+            decimal cantidad,
+            decimal? tasaProducto = null)
+        {
+            var cant = cantidad <= 0m ? 1m : cantidad;
+            var bruto = Math.Round(precioBrutoUnitario * cant, 2, MidpointRounding.AwayFromZero);
+            var tasa = ResolverTasa(tasaProducto);
+            var neto = Math.Round(bruto / (1m + tasa), 2, MidpointRounding.AwayFromZero);
+            var itbis = Math.Round(neto * tasa, 2, MidpointRounding.AwayFromZero);
+            if (neto + itbis != bruto)
+                itbis = bruto - neto;
+
+            var precioNeto = cant == 1m
+                ? neto
+                : Math.Round(neto / cant, 2, MidpointRounding.AwayFromZero);
+
+            return new ItbisLineaResuelta(precioNeto, itbis, bruto);
+        }
+
         private static decimal ResolverTasa(decimal? tasaProducto)
         {
             if (tasaProducto == null)
@@ -62,5 +124,19 @@ namespace AlahiaPos.DataAccess.Servicios
                 return tasaProducto.Value / 100m;
             return 0.18m;
         }
+    }
+
+    public readonly struct ItbisLineaResuelta
+    {
+        public ItbisLineaResuelta(decimal precioUnitario, decimal itbis, decimal subTotal)
+        {
+            PrecioUnitario = precioUnitario;
+            Itbis = itbis;
+            SubTotal = subTotal;
+        }
+
+        public decimal PrecioUnitario { get; }
+        public decimal Itbis { get; }
+        public decimal SubTotal { get; }
     }
 }
