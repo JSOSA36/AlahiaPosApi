@@ -29,8 +29,24 @@ public class PrinterTicketServices : IPrinterTicket
     public PrinterTicketServices(HttpClient http, IConfiguration config, IPrinterLocalSettings printerSettings)
     {
         _http = http;
+        _http.DefaultRequestHeaders.CacheControl =
+            new System.Net.Http.Headers.CacheControlHeaderValue
+            {
+                NoCache = true,
+                NoStore = true
+            };
         _baseUrl = config["ApiBaseUrl"];
         _printerSettings = printerSettings;
+    }
+
+    /// <summary>
+    /// Cada impresión lee la orden en ese momento. Sin esto, un GET repetido
+    /// puede devolver el ticket de antes de editar la orden.
+    /// </summary>
+    private static string SinCache(string url)
+    {
+        var sep = url.Contains('?') ? "&" : "?";
+        return url + sep + "_=" + DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
     }
 
     private string PrinterFactura => _printerSettings.Factura;
@@ -52,7 +68,7 @@ public class PrinterTicketServices : IPrinterTicket
                     "Impresora de lavador no configurada en el agente de impresión.");
 
             var listado = await _http.GetFromJsonAsync<List<TicketLavadorDto>>(
-                $"{_baseUrl}/api/FacturaHeader/ticket-lavador/{idFacturaHeader}");
+                SinCache($"{_baseUrl}/api/FacturaHeader/ticket-lavador/{idFacturaHeader}"));
 
             if (listado == null || listado.Count == 0)
             {
@@ -66,7 +82,7 @@ public class PrinterTicketServices : IPrinterTicket
                 try
                 {
                     empresaTicket = await _http.GetFromJsonAsync<TicketFacturaClienteDto>(
-                        $"{_baseUrl}/api/FacturaHeader/factura-cliente/{idFacturaHeader}");
+                        SinCache($"{_baseUrl}/api/FacturaHeader/factura-cliente/{idFacturaHeader}"));
                 }
                 catch (Exception exEmpresa)
                 {
@@ -152,7 +168,7 @@ public class PrinterTicketServices : IPrinterTicket
         try
         {
             var factura = await _http.GetFromJsonAsync<TicketFacturaClienteDto>(
-                $"{_baseUrl}/api/FacturaHeader/factura-cliente/{idFactura}");
+                SinCache($"{_baseUrl}/api/FacturaHeader/factura-cliente/{idFactura}"));
 
             if (factura == null)
             {
@@ -319,9 +335,10 @@ public async Task GenerateTicketBizcocho(int idFacturaHeader, int idEmpresa)
         try
         {
             factura = await _http.GetFromJsonAsync<FacturaHeaderDto>(
-                $"{_baseUrl}/api/BizcochoEncargo/print" +
-                $"?IdFacturaHeader={idFacturaHeader}" +
-                $"&IdEmpresa={idEmpresa}"
+                SinCache(
+                    $"{_baseUrl}/api/BizcochoEncargo/print" +
+                    $"?IdFacturaHeader={idFacturaHeader}" +
+                    $"&IdEmpresa={idEmpresa}")
             );
         }
         catch (Exception ex)
@@ -799,7 +816,7 @@ public async Task GenerateTicketFacturaCliente(int idFactura, int idEmpresa)
                     "ApiBaseUrl no configurado en PrinterApi (appsettings.Local.json).");
 
             var factura = await _http.GetFromJsonAsync<TicketFacturaClienteDto>(
-                $"{_baseUrl}/api/FacturaHeader/factura-cliente/{idFactura}?idEmpresa={idEmpresa}");
+                SinCache($"{_baseUrl}/api/FacturaHeader/factura-cliente/{idFactura}?idEmpresa={idEmpresa}"));
 
             if (factura == null)
                 throw new InvalidOperationException(
@@ -983,7 +1000,7 @@ public async Task GenerateTicketFacturaCliente(int idFactura, int idEmpresa)
             throw new InvalidOperationException("Falta el id de la empresa.");
 
         var factura = await _http.GetFromJsonAsync<TicketFacturaClienteDto>(
-            $"{_baseUrl}/api/FacturaHeader/factura-cliente/{idFactura}?idEmpresa={idEmpresa}");
+            SinCache($"{_baseUrl}/api/FacturaHeader/factura-cliente/{idFactura}?idEmpresa={idEmpresa}"));
 
         if (factura == null)
             throw new InvalidOperationException($"Factura {idFactura} no encontrada.");

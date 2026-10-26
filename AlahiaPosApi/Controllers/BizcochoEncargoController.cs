@@ -207,6 +207,9 @@ namespace AlahiaPosApi.Controllers
             if (idFacturaHeader <= 0 || idEmpresa <= 0)
                 return BadRequest(new { message = "idFacturaHeader e idEmpresa son obligatorios" });
 
+            Response.Headers["Cache-Control"] = "no-store, no-cache, max-age=0";
+            Response.Headers["Pragma"] = "no-cache";
+
             try
             {
                 var data = await _service.GetEncargoPrintByIdAsync(idFacturaHeader, idEmpresa);

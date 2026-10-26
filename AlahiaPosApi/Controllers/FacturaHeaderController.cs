@@ -2942,6 +2942,9 @@ namespace AlahiaPosApi.Controllers
             int idFactura,
             [FromQuery] int idEmpresa = 0)
         {
+            Response.Headers["Cache-Control"] = "no-store, no-cache, max-age=0";
+            Response.Headers["Pragma"] = "no-cache";
+
             try
             {
                 var header = await _facturaHeader.GetAllFactById(idFactura);

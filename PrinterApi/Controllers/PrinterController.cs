@@ -21,6 +21,9 @@ namespace PrinterApi.Controllers
         /// </summary>
         private IActionResult PrintOk(object payload)
         {
+            Response.Headers["Cache-Control"] = "no-store, no-cache, max-age=0";
+            Response.Headers["Pragma"] = "no-cache";
+
             if (Request.Query.ContainsKey("nav"))
             {
                 return Content(

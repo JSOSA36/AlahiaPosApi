@@ -1350,7 +1350,7 @@ namespace AlahiaPos.DataAccess.Servicios
             // ⭐ EMPRESA
             var empresa = _Empresas.GetById(factura.IdEmpresa);
 
-            // ⭐ DETALLES
+            // ⭐ DETALLES — la factura imprime todas las líneas cobradas
             var detalles = _FacturaDetalles
                 .GetAllByExpresionNoAsync(d => d.IdFacturaHeader == idFacturaHeader)
                 .ToList();

@@ -484,13 +484,12 @@ namespace AlahiaPos.DataAccess.Servicios
             }
 
             // 🔥 DETALLES
-            var detalles = await _facturaDetalleRepository
+            // Misma regla que el listado: las líneas ya cerradas (StatuItem) no salen en el ticket.
+            var detalles = (await _facturaDetalleRepository
                 .GetAllByExpresionAsync(d =>
-
-                    d.IdFacturaHeader ==
-                    x.IdFacturaHeader
-
-                );
+                    d.IdFacturaHeader == x.IdFacturaHeader
+                    && d.StatuItem == false
+                )).ToList();
 
             // 🔥 DTO
             var listaDetalles = new List<FacturaDetallesDto>();
